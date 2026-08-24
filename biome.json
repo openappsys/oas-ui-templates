@@ -5,7 +5,9 @@
     "includes": [
       "**/*.{ts,tsx,js,jsx,mjs,cjs,json,jsonc,css}",
       "!**/dist/**",
-      "!**/node_modules/**"
+      "!**/node_modules/**",
+      "!**/test-results/**",
+      "!**/playwright-report/**"
     ]
   },
   "formatter": {
