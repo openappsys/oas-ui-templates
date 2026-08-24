@@ -23,7 +23,7 @@ async function login(page: Page, name: string, role: 'admin' | 'viewer'): Promis
 test('未登录访问任意路由跳转登录页', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await page.goto('/#/users')
-  await expect(page.getByText('OAS Admin 登录')).toBeVisible()
+  await expect(page.getByTestId('login-submit')).toBeVisible()
   expect(errors).toEqual([])
 })
 
