@@ -11,6 +11,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@oas-ui/icons": "^2.2.2",
     "@oas-ui/theme": "^2.2.0",
     "@oas-ui/ui": "^2.2.0",
     "echarts": "^6.0.0"

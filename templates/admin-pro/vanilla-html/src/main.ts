@@ -1,5 +1,4 @@
-import '@oas-ui/theme'
-import '@oas-ui/ui'
+import './components/registry'
 import './styles/app.css'
 import { mountApp } from './components/app-shell'
 import { initRouter } from './router/router'
