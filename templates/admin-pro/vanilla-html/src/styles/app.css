@@ -349,9 +349,11 @@ oas-layout::part(sider) {
 .login-brand-main {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--oas-space-3);
-  max-width: 480px;
+  max-width: 560px;
+  margin: 0 auto;
+  text-align: center;
 }
 .login-brand h1 {
   margin: var(--oas-space-2) 0 0;
@@ -369,6 +371,7 @@ oas-layout::part(sider) {
   gap: var(--oas-space-6);
   margin-top: var(--oas-space-3);
   flex-wrap: wrap;
+  justify-content: center;
 }
 .brand-stat {
   display: flex;
@@ -387,9 +390,13 @@ oas-layout::part(sider) {
 }
 .brand-code {
   position: absolute;
-  left: 64px;
+  left: 0;
+  right: 0;
   bottom: 48px;
-  margin: 0;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  text-align: center;
   font-family: var(--app-mono);
   font-size: 12px;
   line-height: 1.7;
@@ -558,47 +565,6 @@ oas-layout::part(sider) {
 @media (min-width: 2000px) {
   .page {
     max-width: 1600px;
-  }
-
-  .login-split {
-    position: relative;
-    isolation: isolate;
-    max-width: 1800px;
-    margin: 0 auto;
-  }
-
-  .login-split::before,
-  .login-split::after {
-    content: "";
-    position: fixed;
-    top: 0;
-    bottom: 0;
-    width: calc((100vw - 1800px) / 2);
-    z-index: -1;
-  }
-
-  .login-split::before {
-    left: 0;
-    background: #0a0f1e;
-  }
-
-  .login-split::after {
-    right: 0;
-    background: var(--oas-color-bg);
-  }
-
-  .login-brand {
-    align-items: center;
-  }
-
-  .login-brand-main {
-    align-items: center;
-    text-align: center;
-    max-width: 560px;
-  }
-
-  .brand-stats {
-    justify-content: center;
   }
 }
 
