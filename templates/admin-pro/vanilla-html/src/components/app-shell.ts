@@ -34,9 +34,9 @@ export function mountApp(root: HTMLElement): void {
           <oas-avatar id="user-avatar" size="28"></oas-avatar>
         </oas-dropdown>
       </header>
-      <div slot="sider" class="sider-wrap">
+      <oas-sider slot="sider">
         <oas-sidebar id="nav" items='${sidebarItems()}'></oas-sidebar>
-      </div>
+      </oas-sider>
       <div slot="content" class="content-col">
         <div class="crumbs-bar"><oas-breadcrumb id="crumbs"></oas-breadcrumb></div>
         <main id="view"></main>
