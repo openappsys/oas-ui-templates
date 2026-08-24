@@ -11,6 +11,6 @@ describe('app shell', () => {
     expect(root.querySelector('#nav')).not.toBeNull()
     expect(root.querySelector('#view')).not.toBeNull()
     expect(root.querySelector('#theme-toggle')).not.toBeNull()
-    expect(root.querySelector('.brand')?.textContent).toBe('OAS Admin')
+    expect(root.querySelector('.oas-logo-word')?.textContent).toBe('OAS Admin')
   })
 })

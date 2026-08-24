@@ -17,17 +17,17 @@ export interface Route {
 export const routes: Route[] = [
   {
     path: '/dashboard',
-    meta: { title: '仪表盘', icon: '📊' },
+    meta: { title: '仪表盘', icon: 'star' },
     load: () => import('../pages/dashboard'),
   },
   {
     path: '/users',
-    meta: { title: '用户管理', icon: '👥', roles: ['admin'] },
+    meta: { title: '用户管理', icon: 'user', roles: ['admin'] },
     load: () => import('../pages/users'),
   },
   {
     path: '/profile',
-    meta: { title: '个人中心', icon: '👤' },
+    meta: { title: '个人中心', icon: 'gear' },
     load: () => import('../pages/profile'),
   },
 ]
