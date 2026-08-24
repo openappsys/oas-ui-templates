@@ -5,16 +5,7 @@
     "includes": [
       "**/*.{ts,tsx,js,jsx,mjs,cjs,json,jsonc,css}",
       "!**/dist/**",
-      "!packages/playground/dist-*/**",
-      "!**/node_modules/**",
-      "!packages/docs/docs/.vitepress/**",
-      "!packages/icons/src/icons/**",
-      "!packages/icons/src/registry.ts",
-      "!docs/api-manifest.json",
-      "!docs/api-descriptions.*.json",
-      "!*.vue",
-      "!wrangler.jsonc",
-      "!.markdownlint-cli2.jsonc"
+      "!**/node_modules/**"
     ]
   },
   "formatter": {
