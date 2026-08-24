@@ -22,6 +22,9 @@ export function mountApp(root: HTMLElement): void {
   root.innerHTML = `
     <oas-layout class="app">
       <header class="app-header" slot="header">
+        <oas-button id="nav-toggle" class="nav-toggle" type="text" aria-label="打开菜单">
+          <oas-icon name="menu" size="18"></oas-icon>
+        </oas-button>
         ${LOGO}
         <span class="spacer"></span>
         <div class="global-search">
@@ -45,6 +48,11 @@ export function mountApp(root: HTMLElement): void {
     </oas-layout>`
   const sidebar = root.querySelector<HTMLElement>('#nav')!
   const sider = root.querySelector<HTMLElement>('oas-sider')!
+
+  root.querySelector<HTMLElement>('#nav-toggle')!.addEventListener('click', () => {
+    if (sidebar.hasAttribute('drawer-open')) (sidebar as any).closeDrawer()
+    else (sidebar as any).openDrawer()
+  })
 
   sidebar.addEventListener('oas-collapse', (e) => {
     const collapsed = (e as CustomEvent<{ collapsed: boolean }>).detail.collapsed

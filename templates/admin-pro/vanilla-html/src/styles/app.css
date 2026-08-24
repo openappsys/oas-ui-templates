@@ -876,9 +876,23 @@ oas-table::part(table) {
   color: var(--oas-color-text-primary);
 }
 
+oas-sidebar::part(trigger) {
+  display: none;
+}
+
+.nav-toggle {
+  display: none;
+}
+
 @media (max-width: 768px) {
-  .app-header {
-    padding-left: 48px;
+  .nav-toggle {
+    display: inline-flex;
+  }
+  oas-sider,
+  oas-sider[collapsed] {
+    width: 0;
+    padding: 0;
+    overflow: hidden;
   }
   .global-search {
     display: none;
