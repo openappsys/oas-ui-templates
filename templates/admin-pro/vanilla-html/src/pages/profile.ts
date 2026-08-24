@@ -36,12 +36,14 @@ export function render(el: HTMLElement): () => void {
       <div class="profile-layout">
         <oas-card class="profile-left">
           <div class="profile-avatar-wrap">
-            <oas-avatar id="profile-avatar" size="64"><span slot="fallback" id="profile-avatar-text"></span></oas-avatar>
+            <oas-avatar id="profile-avatar" size="64"><span slot="fallback" id="profile-avatar-text" class="profile-avatar-fallback"></span></oas-avatar>
             <div id="profile-name" class="profile-name"></div>
             <oas-tag id="profile-role-tag" type="primary">${roleLabel}</oas-tag>
           </div>
           <oas-divider></oas-divider>
-          <oas-button id="profile-logout" type="danger" block>退出登录</oas-button>
+          <div class="profile-logout-wrap">
+            <oas-button id="profile-logout" type="danger" variant="text">退出登录</oas-button>
+          </div>
         </oas-card>
         <oas-card class="profile-right" title="账户信息">
           <oas-descriptions column="2">

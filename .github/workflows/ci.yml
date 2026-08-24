@@ -30,8 +30,9 @@ jobs:
       - run: pnpm exec tsc --noEmit
       - run: pnpm test
       - run: pnpm build
+      - run: pnpm size
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:e2e
       - name: 提醒升级依赖（schedule/dispatch 才有意义）
         if: github.event_name == 'schedule' || github.event_name == 'repository_dispatch'
-        run: pnpm update @oas-ui/ui @oas-ui/theme && pnpm install --no-frozen-lockfile && pnpm test && pnpm build && pnpm test:e2e
+        run: pnpm update @oas-ui/ui @oas-ui/theme && pnpm install --no-frozen-lockfile && pnpm test && pnpm build && pnpm size && pnpm test:e2e

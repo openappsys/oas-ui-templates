@@ -30,8 +30,16 @@ function clearDispose(): void {
   dispose = undefined
 }
 
+const NOTICE_DESC: Record<string, string> = {
+  '404': '你访问的页面不存在或已被移除。',
+  '403': '当前账号没有权限访问该页面。',
+  '500': '页面加载出现异常，请稍后重试。',
+}
+
 function renderNotice(el: HTMLElement, code: string, text: string): void {
-  el.innerHTML = `<div class="page notice"><h1>${code}</h1><p>${text}</p><oas-button type="primary" data-action="home">返回首页</oas-button></div>`
+  const title = `${code} ${text}`
+  const desc = NOTICE_DESC[code] ?? ''
+  el.innerHTML = `<div class="page notice"><div class="notice-code">${code}</div><h1 class="notice-title">${title}</h1><p class="notice-desc">${desc}</p><oas-button type="primary" data-action="home">返回首页</oas-button></div>`
   el.querySelector('[data-action="home"]')?.addEventListener('click', () => {
     location.hash = routes[0].path
   })

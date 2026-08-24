@@ -8,7 +8,8 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "size": "node scripts/size.mjs"
   },
   "dependencies": {
     "@oas-ui/icons": "^2.2.2",

@@ -217,8 +217,55 @@ oas-layout::part(sider) {
 }
 
 .notice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: var(--oas-space-3);
   text-align: center;
-  padding-top: 120px;
+}
+
+.notice-code {
+  font-family: var(--app-mono);
+  font-size: 96px;
+  font-weight: 700;
+  line-height: 1;
+  color: transparent;
+  -webkit-text-stroke: 1.5px var(--oas-color-border);
+}
+
+.notice-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.notice-desc {
+  font-size: 13px;
+  color: var(--oas-color-text-secondary);
+  margin: 0;
+}
+
+.stat-card,
+.chart-grid > oas-card {
+  transition: transform var(--oas-transition-fast, 120ms) var(--oas-ease-out, ease-out);
+}
+
+.stat-card:hover,
+.chart-grid > oas-card:hover {
+  transform: translateY(-2px);
+}
+
+.profile-avatar-fallback {
+  font-size: 24px;
+  font-weight: 500;
+  color: var(--oas-color-text-on-primary);
+}
+
+.profile-logout-wrap {
+  display: flex;
+  justify-content: center;
 }
 
 .page-title {
@@ -366,7 +413,7 @@ oas-layout::part(sider) {
   border-radius: 16px;
   background: var(--oas-color-bg-elevated);
   border: 1px solid var(--oas-color-border);
-  box-shadow: 0 12px 40px rgba(11, 108, 255, 0.10);
+  box-shadow: 0 12px 40px rgba(11, 108, 255, 0.1);
 }
 
 .login-title {
@@ -507,7 +554,7 @@ oas-layout::part(sider) {
 :root {
   --oas-tint-violet: #7c3aed;
 }
-html[data-theme='dark'] {
+html[data-theme="dark"] {
   --oas-tint-violet: #8b5cf6;
 }
 
@@ -753,7 +800,7 @@ button.link-btn:hover {
 }
 .light-mini::before,
 .light-mini::after {
-  content: '';
+  content: "";
   position: absolute;
   background: var(--oas-color-bg-hover);
   border-radius: 2px;
@@ -776,7 +823,7 @@ button.link-btn:hover {
 }
 .dark-mini::before,
 .dark-mini::after {
-  content: '';
+  content: "";
   position: absolute;
   background: var(--oas-color-text-secondary);
   border-radius: 2px;
@@ -798,7 +845,7 @@ button.link-btn:hover {
   position: relative;
 }
 .system-mini::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 12px;
   left: 10px;

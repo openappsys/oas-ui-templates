@@ -136,7 +136,8 @@ export function render(el: HTMLElement): () => void {
   function filtered(): UserRow[] {
     const kw = state.keyword.trim().toLowerCase()
     return state.rows.filter((r) => {
-      if (kw && !(r.name.toLowerCase().includes(kw) || r.email.toLowerCase().includes(kw))) return false
+      if (kw && !(r.name.toLowerCase().includes(kw) || r.email.toLowerCase().includes(kw)))
+        return false
       if (state.roleFilter && r.role !== state.roleFilter) return false
       if (state.statusFilter && r.status !== state.statusFilter) return false
       return true

@@ -1,12 +1,25 @@
 import * as echarts from 'echarts/core'
 import { LineChart, PieChart } from 'echarts/charts'
-import { GridComponent, TooltipComponent, LegendComponent, GraphicComponent } from 'echarts/components'
+import {
+  GridComponent,
+  TooltipComponent,
+  LegendComponent,
+  GraphicComponent,
+} from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
 import type { EChartsOption } from 'echarts'
 import { message } from '@oas-ui/ui/feedback/message'
 import { session } from '../store/session'
 
-echarts.use([LineChart, PieChart, GridComponent, TooltipComponent, LegendComponent, GraphicComponent, CanvasRenderer])
+echarts.use([
+  LineChart,
+  PieChart,
+  GridComponent,
+  TooltipComponent,
+  LegendComponent,
+  GraphicComponent,
+  CanvasRenderer,
+])
 
 const TREND = [820, 932, 901, 1290, 1330, 1520, 1680]
 
@@ -193,7 +206,7 @@ export function render(el: HTMLElement): () => void {
     const grid = el.querySelector<HTMLElement>('#stat-grid')!
     grid.innerHTML = STATS.map((s) => {
       const tone = getToneVars(s.tone)
-      const arrow = s.delta >= 0 ? 'arrow-up' : 'arrow-down'
+      const arrow = s.delta >= 0 ? 'arrow-down' : 'arrow-up'
       const deltaCls = s.delta >= 0 ? 'delta-up' : 'delta-down'
       const num = formatNumber(s.value)
       return `
