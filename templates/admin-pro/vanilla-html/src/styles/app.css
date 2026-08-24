@@ -26,7 +26,7 @@ body {
   width: 100%;
   padding: var(--oas-space-4);
   max-width: 1280px;
-  margin: 0 auto;
+  margin: 0;
 }
 
 .app {
@@ -206,7 +206,7 @@ oas-layout::part(sider) {
   width: 100%;
   padding: var(--oas-space-4);
   max-width: 1280px;
-  margin: 0 auto;
+  margin: 0;
   animation: pageIn 120ms ease-out;
 }
 @keyframes pageIn {
@@ -599,6 +599,12 @@ oas-layout::part(sider) {
 
   .brand-stats {
     justify-content: center;
+  }
+}
+
+@media (min-width: 2560px) {
+  .page {
+    max-width: 2000px;
   }
 }
 
