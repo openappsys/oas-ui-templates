@@ -4,12 +4,25 @@
 
 ## 模版
 
-| 模版 | 技术栈 | 说明 |
-| --- | --- | --- |
-| `templates/admin-pro/vanilla-html` | Vite + TypeScript | 后台管理系统（零框架） |
+| 模版 | 技术栈 | 说明 | 单测 | e2e | 状态 |
+| --- | --- | --- | --- | --- | --- |
+| `templates/admin-pro/vanilla-html` | Vite + TypeScript | 后台管理系统（零框架） | ✅ | ✅ | 可用 |
 
 ## 开发
 
 pnpm workspace；根目录执行 `pnpm install` 后：
 
+```bash
 pnpm build / pnpm test / pnpm check
+```
+
+e2e（需本地 Chromium）：
+
+```bash
+pnpm --filter admin-pro-vanilla test:e2e
+```
+
+## CI
+
+- push / PR：每模版 install + build + test + e2e
+- 每周一 03:00 UTC 定时 + oas-ui 发版 repository_dispatch 触发依赖升级复测（防模版随主库演进腐烂）
