@@ -23,3 +23,37 @@ body {
   max-width: 1280px;
   margin: 0 auto;
 }
+
+.app {
+  height: 100%;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-3);
+  padding: 0 var(--oas-space-4);
+  height: 56px;
+  border-bottom: 1px solid var(--oas-color-border);
+}
+
+.brand {
+  font-weight: 700;
+  font-size: var(--oas-font-size-lg);
+}
+.spacer {
+  flex: 1;
+}
+
+.sider-wrap {
+  height: 100%;
+}
+#view {
+  min-height: 0;
+  overflow: auto;
+}
+
+.notice {
+  text-align: center;
+  padding-top: 120px;
+}

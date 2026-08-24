@@ -1,6 +1,9 @@
 import '@oas-ui/theme'
 import '@oas-ui/ui'
 import './styles/app.css'
+import { mountApp } from './components/app-shell'
+import { initRouter } from './router/router'
 
-document.querySelector<HTMLDivElement>('#app')!.innerHTML =
-  '<main id="view" class="page"><h1>boot ok</h1></main>'
+const root = document.querySelector<HTMLDivElement>('#app')!
+mountApp(root)
+initRouter(root.querySelector<HTMLElement>('#view')!)
