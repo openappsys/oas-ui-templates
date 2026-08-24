@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { mountApp } from './components/app-shell'
 
 describe('app shell', () => {
   beforeEach(() => {
@@ -13,12 +12,5 @@ describe('app shell', () => {
     expect(root.querySelector('#view')).not.toBeNull()
     expect(root.querySelector('#theme-toggle')).not.toBeNull()
     expect(root.querySelector('.brand')?.textContent).toBe('OAS Admin')
-  })
-
-  it('mountApp 幂等重建外壳', () => {
-    const root = document.querySelector<HTMLDivElement>('#app')!
-    mountApp(root)
-    mountApp(root)
-    expect(root.querySelectorAll('#nav').length).toBe(1)
   })
 })

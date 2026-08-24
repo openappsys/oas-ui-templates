@@ -17,7 +17,7 @@ export function mountApp(root: HTMLElement): void {
         <span class="spacer"></span>
         <oas-button id="theme-toggle" size="small" title="切换主题">🌙</oas-button>
         <oas-dropdown id="user-menu" placement="bottom" items='[{"label":"个人中心","value":"/profile"},{"label":"退出登录","value":"logout"}]'>
-          <oas-button size="small">${session.user?.name ?? ''}</oas-button>
+          <oas-button id="user-name" size="small"></oas-button>
         </oas-dropdown>
       </header>
       <div slot="sider" class="sider-wrap">
@@ -50,4 +50,12 @@ export function mountApp(root: HTMLElement): void {
       location.hash = value
     }
   })
+
+  function syncUser(): void {
+    const btn = root.querySelector<HTMLElement>('#user-name')
+    if (btn) btn.textContent = session.user?.name ?? ''
+  }
+
+  syncUser()
+  session.subscribe(syncUser)
 }

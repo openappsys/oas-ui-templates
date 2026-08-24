@@ -19,14 +19,14 @@ export function render(el: HTMLElement): () => void {
 
   const form = el.querySelector<HTMLElement>('#login-form')!
 
-  form.querySelectorAll('oas-input').forEach((input) => {
-    input.addEventListener('oas-input', (e) => {
-      input.setAttribute('value', (e as CustomEvent<{ value: string }>).detail.value)
-    })
-  })
-
   form.querySelector('[data-testid="login-submit"]')!.addEventListener('click', () => {
     ;(form.shadowRoot?.querySelector('form') as HTMLFormElement | null)?.requestSubmit()
+  })
+
+  form.querySelectorAll('oas-input').forEach((input) => {
+    input.addEventListener('oas-enter', () => {
+      ;(form.shadowRoot?.querySelector('form') as HTMLFormElement | null)?.requestSubmit()
+    })
   })
 
   form.addEventListener('oas-submit', (e) => {
