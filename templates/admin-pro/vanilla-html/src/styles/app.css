@@ -1,0 +1,25 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+body {
+  font-family:
+    system-ui, -apple-system, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--oas-color-bg);
+  color: var(--oas-color-text-primary);
+}
+
+#app {
+  height: 100%;
+}
+
+.page {
+  padding: var(--oas-space-4);
+  max-width: 1280px;
+  margin: 0 auto;
+}
