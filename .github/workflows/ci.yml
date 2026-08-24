@@ -1,5 +1,8 @@
 name: CI
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [main]
@@ -19,13 +22,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-        with:
-          version: 11.20.0
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: pnpm
-      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm install
       - run: pnpm exec tsc --noEmit
       - run: pnpm test
       - run: pnpm build
@@ -33,4 +34,4 @@ jobs:
       - run: pnpm test:e2e
       - name: 提醒升级依赖（schedule/dispatch 才有意义）
         if: github.event_name == 'schedule' || github.event_name == 'repository_dispatch'
-        run: pnpm update @oas-ui/ui @oas-ui/theme && pnpm install --no-frozen-lockfile && pnpm test && pnpm build
+        run: pnpm update @oas-ui/ui @oas-ui/theme && pnpm install --no-frozen-lockfile && pnpm test && pnpm build && pnpm test:e2e

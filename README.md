@@ -25,4 +25,4 @@ pnpm --filter admin-pro-vanilla test:e2e
 ## CI
 
 - push / PR：每模版 install + build + test + e2e
-- 每周一 03:00 UTC 定时 + oas-ui 发版 repository_dispatch 触发依赖升级复测（防模版随主库演进腐烂）
+- 每周一 03:00 UTC 定时 + oas-ui 发版 repository_dispatch 触发依赖升级复测（防模版随主库演进腐烂）；仅覆盖 semver 范围内（^2.x）的 minor/patch 升级，主版本升级需人工评估
