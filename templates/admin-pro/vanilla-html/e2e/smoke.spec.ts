@@ -66,3 +66,39 @@ test('主题切换写 data-theme', async ({ page }) => {
   await page.locator('#theme-toggle').click()
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
 })
+
+test('admin 编辑用户弹窗无滚动条且下拉浮层展开', async ({ page }) => {
+  const errors = await noConsoleErrors(page)
+  await login(page, '张伟', 'admin')
+  await page.locator('#nav').getByText('用户管理').click()
+  await expect(page.getByTestId('users-table')).toContainText('张伟')
+
+  await page.getByTestId('users-table').locator('tbody tr').first().click()
+  await expect(page.getByTestId('detail-edit')).toBeVisible()
+  await page.getByTestId('detail-edit').click()
+  await expect(page.getByTestId('form-cancel')).toBeVisible()
+
+  const read = () =>
+    page.getByTestId('user-form-modal').evaluate((modal) => {
+      const host = modal as HTMLElement & { shadowRoot: ShadowRoot }
+      const body = host.shadowRoot?.querySelector('.body') as HTMLElement | null
+      const dialog = host.shadowRoot?.querySelector('.dialog') as HTMLElement | null
+      return {
+        overflowX: body ? body.scrollWidth - body.clientWidth : null,
+        overflowY: body ? getComputedStyle(body).overflowY : null,
+        dialogHeight: dialog ? Math.round(dialog.getBoundingClientRect().height) : null,
+        winHeight: window.innerHeight,
+      }
+    })
+
+  const before = await read()
+  expect(before.overflowX).toBeLessThanOrEqual(1)
+  expect(before.overflowY).toBe('visible')
+  expect(before.dialogHeight!).toBeLessThanOrEqual(before.winHeight)
+
+  await page.getByTestId('field-role').click()
+  const after = await read()
+  expect(after.overflowX).toBeLessThanOrEqual(1)
+  expect(after.overflowY).toBe('visible')
+  expect(errors).toEqual([])
+})

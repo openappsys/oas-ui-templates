@@ -308,6 +308,10 @@ oas-sider[collapsed] {
   font-size: var(--oas-font-size-lg);
 }
 
+oas-modal[data-testid="user-form-modal"]::part(body) {
+  overflow: visible;
+}
+
 .login-split {
   min-height: 100%;
   display: flex;
