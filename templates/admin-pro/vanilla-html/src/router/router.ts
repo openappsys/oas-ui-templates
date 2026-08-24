@@ -23,6 +23,7 @@ export function guard(path: string): GuardResult {
 
 let view: HTMLElement | null = null
 let dispose: (() => void) | undefined
+let epoch = 0
 
 function clearDispose(): void {
   dispose?.()
@@ -36,21 +37,30 @@ function renderNotice(el: HTMLElement, code: string, text: string): void {
   })
 }
 
+function runResolve(): void {
+  resolve().catch(() => {
+    if (view && view.innerHTML === '') renderNotice(view, '500', '页面加载失败')
+  })
+}
+
 export function initRouter(el: HTMLElement): void {
   view = el
-  window.addEventListener('hashchange', resolve)
-  void resolve()
+  window.addEventListener('hashchange', runResolve)
+  runResolve()
 }
 
 export async function resolve(): Promise<void> {
   if (!view) return
+  const token = ++epoch
   const path = parseHash(location.hash)
   const g = guard(path)
   clearDispose()
   view.innerHTML = ''
   if (!g.ok) {
     if (g.reason === 'login') {
-      dispose = (await import('../pages/login')).render(view)
+      const mod = await import('../pages/login')
+      if (token !== epoch) return
+      dispose = mod.render(view)
     } else if (g.reason === 'not-found') {
       renderNotice(view, '404', '页面不存在')
     } else {
@@ -60,8 +70,7 @@ export async function resolve(): Promise<void> {
   }
   const route = matchRoute(path)!
   const mod: PageModule = await route.load()
-  clearDispose()
-  view.innerHTML = ''
-  document.title = `${route.meta.title} · OAS Admin`
+  if (token !== epoch) return
   dispose = mod.render(view)
+  document.title = `${route.meta.title} · OAS Admin`
 }
