@@ -48,6 +48,7 @@ test('admin 全链路：用户管理新建/删除', async ({ page }) => {
 
   await page.getByTestId('users-table').getByText('e2e新人').first().click()
   await page.getByTestId('detail-delete').click()
+  await page.locator('oas-popconfirm').locator('[part="ok"]').click()
   await expect(page.getByTestId('users-table')).not.toContainText('e2e新人')
   expect(errors).toEqual([])
 })

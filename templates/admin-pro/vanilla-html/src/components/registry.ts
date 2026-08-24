@@ -1,5 +1,6 @@
 import '@oas-ui/theme'
 import '@oas-ui/ui/basic/button'
+import '@oas-ui/ui/basic/divider'
 import '@oas-ui/ui/basic/icon'
 import '@oas-ui/ui/basic/space'
 import '@oas-ui/ui/basic/tag'

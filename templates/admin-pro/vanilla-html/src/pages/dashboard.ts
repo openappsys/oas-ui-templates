@@ -1,12 +1,15 @@
 import * as echarts from 'echarts/core'
-import { BarChart, LineChart } from 'echarts/charts'
-import { GridComponent, TooltipComponent } from 'echarts/components'
+import { LineChart, PieChart } from 'echarts/charts'
+import { GridComponent, TooltipComponent, LegendComponent, GraphicComponent } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
 import type { EChartsOption } from 'echarts'
+import { message } from '@oas-ui/ui/feedback/message'
+import { session } from '../store/session'
 
-echarts.use([LineChart, BarChart, GridComponent, TooltipComponent, CanvasRenderer])
+echarts.use([LineChart, PieChart, GridComponent, TooltipComponent, LegendComponent, GraphicComponent, CanvasRenderer])
 
 const TREND = [820, 932, 901, 1290, 1330, 1520, 1680]
+
 const ORDERS = [120, 200, 150, 180, 220, 170, 210]
 const DAYS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
 
@@ -18,32 +21,163 @@ const RECENT_ORDERS = [
   { id: 'SO-10082', customer: '云图软件', amount: '¥ 6,900', status: '已取消' },
 ]
 
+const STATS = [
+  {
+    testid: 'stat-visits',
+    icon: 'eye',
+    tone: 'blue',
+    label: '今日访问',
+    value: 12480,
+    delta: 12.4,
+  },
+  {
+    testid: undefined,
+    icon: 'user',
+    tone: 'green',
+    label: '新增用户',
+    value: 328,
+    delta: 8.2,
+  },
+  {
+    testid: undefined,
+    icon: 'arrow-up',
+    tone: 'violet',
+    label: '订单量',
+    value: 1926,
+    delta: 3.1,
+  },
+  {
+    testid: undefined,
+    icon: 'clock',
+    tone: 'orange',
+    label: '转化率',
+    value: 4.6,
+    suffix: '%',
+    delta: -0.4,
+  },
+]
+
+const PIE_DATA = [
+  { value: 42, name: '已完成' },
+  { value: 31, name: '配送中' },
+  { value: 18, name: '待支付' },
+  { value: 9, name: '已取消' },
+]
+
+const SEGMENTED_OPTIONS = [
+  { label: '7日', value: '7' },
+  { label: '14日', value: '14' },
+  { label: '30日', value: '30' },
+]
+
 function isDark(): boolean {
   return document.documentElement.dataset.theme === 'dark'
 }
 
+function todayLabel(): string {
+  const d = new Date()
+  return new Intl.DateTimeFormat('zh-CN', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }).format(d)
+}
+
+function readTokenColor(name: string): string {
+  const val = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+  return val || '#999'
+}
+
+function makeTrend(days: number): number[] {
+  return Array.from({ length: days }, (_, i) => {
+    const base = TREND[i % TREND.length]
+    const wave = Math.sin(i * 1.3 + 1) * 60
+    return Math.max(200, Math.round(base + wave))
+  })
+}
+
+function makeTrendLabels(days: number): string[] {
+  return Array.from({ length: days }, (_, i) => `${i + 1}日`)
+}
+
+function formatNumber(n: number): string {
+  return n.toLocaleString('en-US')
+}
+
+function getToneVars(tone: string): { bg: string; icon: string } {
+  if (tone === 'blue') {
+    return { bg: 'var(--oas-color-primary)', icon: 'var(--oas-color-primary)' }
+  }
+  if (tone === 'green') {
+    return { bg: 'var(--oas-color-success)', icon: 'var(--oas-color-success)' }
+  }
+  if (tone === 'violet') {
+    return { bg: 'var(--oas-tint-violet)', icon: 'var(--oas-tint-violet)' }
+  }
+  return { bg: 'var(--oas-color-warning)', icon: 'var(--oas-color-warning)' }
+}
+
 export function render(el: HTMLElement): () => void {
+  const user = session.user
+  const name = user?.name ?? ''
+
   el.innerHTML = `
     <div class="page">
-      <h1 class="page-title">仪表盘</h1>
-      <div class="stat-grid">
-        <oas-card><oas-statistic data-testid="stat-visits" value="12480" prefix="今日访问"></oas-statistic></oas-card>
-        <oas-card><oas-statistic value="328" prefix="新增用户"></oas-statistic></oas-card>
-        <oas-card><oas-statistic value="1926" prefix="订单量"></oas-statistic></oas-card>
-        <oas-card><oas-statistic value="4.6" precision="1" suffix="%" prefix="转化率"></oas-statistic></oas-card>
+      <div class="page-head">
+        <div>
+          <h1 class="page-title">仪表盘</h1>
+          <p class="page-subtitle">欢迎回来，${name} · 今天是 ${todayLabel()}</p>
+        </div>
+        <oas-space>
+          <oas-button id="dash-refresh" icon="refresh">刷新</oas-button>
+          <oas-button id="dash-export" icon="download">导出</oas-button>
+        </oas-space>
+      </div>
+      <div class="stat-grid" id="stat-grid">
+        ${Array.from({ length: 4 }, () => `<oas-card class="stat-card stat-card--skeleton"><oas-skeleton active rows="3"></oas-skeleton></oas-card>`).join('')}
       </div>
       <div class="chart-grid">
-        <oas-card title="访问趋势"><div id="chart-trend" class="chart"></div></oas-card>
-        <oas-card title="本周订单"><div id="chart-orders" class="chart"></div></oas-card>
+        <oas-card title="访问趋势">
+          <oas-segmented id="trend-range" slot="extra" options='${JSON.stringify(SEGMENTED_OPTIONS)}' value="7"></oas-segmented>
+          <div id="chart-trend" class="chart"></div>
+        </oas-card>
+        <oas-card title="订单构成">
+          <div id="chart-orders" class="chart"></div>
+        </oas-card>
       </div>
-      <oas-card title="最近订单">
-        <oas-table
-          data-testid="orders-table"
-          row-key="id"
-          columns='[{"key":"id","title":"订单号"},{"key":"customer","title":"客户"},{"key":"amount","title":"金额"},{"key":"status","title":"状态"}]'
-          data="[]"
-        ></oas-table>
-      </oas-card>
+      <div class="bottom-grid">
+        <oas-card title="最近订单">
+          <button id="orders-view-all" class="link-btn" slot="extra">
+            查看全部 <oas-icon name="chevron-right" size="12"></oas-icon>
+          </button>
+          <oas-table
+            data-testid="orders-table"
+            row-key="id"
+            columns='[{"key":"id","title":"订单号"},{"key":"customer","title":"客户"},{"key":"amount","title":"金额"},{"key":"status","title":"状态"}]'
+            data="[]"
+          ></oas-table>
+        </oas-card>
+        <oas-card title="为什么零框架？">
+          <div class="showcase">
+            <div class="showcase-point">
+              <oas-icon class="showcase-icon success-icon" name="check-circle" size="16"></oas-icon>
+              <span>零框架运行时 · 一套组件到处运行</span>
+            </div>
+            <div class="showcase-point">
+              <oas-icon class="showcase-icon success-icon" name="check-circle" size="16"></oas-icon>
+              <span>浏览器原生标准 · 不是某代框架</span>
+            </div>
+            <div class="showcase-point">
+              <oas-icon class="showcase-icon success-icon" name="check-circle" size="16"></oas-icon>
+              <span>Shadow DOM 样式隔离 · 不怕样式污染</span>
+            </div>
+            <div class="showcase-code"><code>&lt;oas-table data="…"&gt;&lt;/oas-table&gt;</code></div>
+            <a class="link-btn" href="https://oas-ui.dev" target="_blank" rel="noopener noreferrer">
+              了解 OAS-UI <oas-icon name="external-link" size="12"></oas-icon>
+            </a>
+          </div>
+        </oas-card>
+      </div>
     </div>`
 
   el.querySelector<HTMLElement>('[data-testid="orders-table"]')!.setAttribute(
@@ -51,33 +185,131 @@ export function render(el: HTMLElement): () => void {
     JSON.stringify(RECENT_ORDERS),
   )
 
+  let skeletonTimer: ReturnType<typeof setTimeout> | null = null
+  let currentRange = '7'
   const charts: Array<echarts.ECharts> = []
+
+  function fillStats(): void {
+    const grid = el.querySelector<HTMLElement>('#stat-grid')!
+    grid.innerHTML = STATS.map((s) => {
+      const tone = getToneVars(s.tone)
+      const arrow = s.delta >= 0 ? 'arrow-up' : 'arrow-down'
+      const deltaCls = s.delta >= 0 ? 'delta-up' : 'delta-down'
+      const num = formatNumber(s.value)
+      return `
+        <oas-card class="stat-card" ${s.testid ? `data-testid="${s.testid}"` : ''}>
+          <div class="stat-row">
+            <div class="stat-icon" style="--stat-icon-bg:${tone.bg};--stat-icon-color:${tone.icon}">
+              <oas-icon name="${s.icon}" size="16"></oas-icon>
+            </div>
+            <div class="stat-body">
+              <div class="stat-label">${s.label}</div>
+              <div class="stat-value mono">${num}${s.suffix ?? ''}</div>
+              <div class="stat-delta">
+                <oas-icon name="${arrow}" size="12" class="${deltaCls}"></oas-icon>
+                <span class="${deltaCls}">${s.delta > 0 ? '+' : ''}${s.delta}%</span>
+                <span class="stat-delta-label">较昨日</span>
+              </div>
+            </div>
+          </div>
+        </oas-card>`
+    }).join('')
+  }
 
   function draw(): void {
     for (const c of charts.splice(0)) c.dispose()
+    const primary = readTokenColor('--oas-color-primary')
+    const success = readTokenColor('--oas-color-success')
+    const warning = readTokenColor('--oas-color-warning')
+    const danger = readTokenColor('--oas-color-danger')
+    const textSecondary = readTokenColor('--oas-color-text-secondary')
+    const border = readTokenColor('--oas-color-border')
+    const textPrimary = readTokenColor('--oas-color-text-primary')
+
     const trend = el.querySelector<HTMLDivElement>('#chart-trend')
-    const orders = el.querySelector<HTMLDivElement>('#chart-orders')
     if (trend) {
+      const days = Number(currentRange)
+      const data = makeTrend(days)
+      const labels = makeTrendLabels(days)
       const c = echarts.init(trend)
       c.setOption({
         darkMode: isDark(),
         tooltip: { trigger: 'axis' },
         grid: { left: 40, right: 16, top: 20, bottom: 24 },
-        xAxis: { type: 'category', data: DAYS },
-        yAxis: { type: 'value' },
-        series: [{ type: 'line', data: TREND, smooth: true }],
+        xAxis: {
+          type: 'category',
+          data: labels,
+          axisLine: { lineStyle: { color: border } },
+          axisLabel: { color: textSecondary },
+          splitLine: { show: false },
+        },
+        yAxis: {
+          type: 'value',
+          axisLine: { show: false },
+          axisLabel: { color: textSecondary },
+          splitLine: { lineStyle: { color: border } },
+        },
+        series: [
+          {
+            type: 'line',
+            data,
+            smooth: true,
+            symbol: 'none',
+            lineStyle: { width: 2, color: primary },
+            areaStyle: {
+              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                { offset: 0, color: `${primary}33` },
+                { offset: 1, color: `${primary}05` },
+              ]),
+            },
+          },
+        ],
       } as EChartsOption)
       charts.push(c)
     }
+
+    const orders = el.querySelector<HTMLDivElement>('#chart-orders')
     if (orders) {
       const c = echarts.init(orders)
       c.setOption({
         darkMode: isDark(),
-        tooltip: { trigger: 'axis' },
-        grid: { left: 40, right: 16, top: 20, bottom: 24 },
-        xAxis: { type: 'category', data: DAYS },
-        yAxis: { type: 'value' },
-        series: [{ type: 'bar', data: ORDERS }],
+        tooltip: { trigger: 'item', formatter: '{b}: {d}%' },
+        legend: { bottom: 0, textStyle: { color: textSecondary } },
+        color: [success, primary, warning, danger],
+        graphic: [
+          {
+            type: 'text',
+            left: 'center',
+            top: '42%',
+            style: {
+              text: '1,926',
+              fontSize: 20,
+              fontWeight: 700,
+              fill: textPrimary,
+              textAlign: 'center',
+            },
+          },
+          {
+            type: 'text',
+            left: 'center',
+            top: '54%',
+            style: {
+              text: '订单',
+              fontSize: 12,
+              fill: textSecondary,
+              textAlign: 'center',
+            },
+          },
+        ],
+        series: [
+          {
+            type: 'pie',
+            radius: ['45%', '70%'],
+            center: ['50%', '45%'],
+            label: { show: false },
+            data: PIE_DATA,
+          },
+        ],
       } as EChartsOption)
       charts.push(c)
     }
@@ -87,11 +319,36 @@ export function render(el: HTMLElement): () => void {
     for (const c of charts) c.resize()
   }
 
+  skeletonTimer = setTimeout(() => {
+    skeletonTimer = null
+    fillStats()
+  }, 300)
+
   draw()
+
   window.addEventListener('resize', onResize)
   document.addEventListener('themechange', draw)
 
+  el.querySelector<HTMLElement>('#dash-refresh')!.addEventListener('click', () => {
+    draw()
+    message.success('已刷新')
+  })
+
+  el.querySelector<HTMLElement>('#dash-export')!.addEventListener('click', () => {
+    message.info('演示环境未接入导出')
+  })
+
+  el.querySelector<HTMLElement>('#orders-view-all')!.addEventListener('click', () => {
+    message.info('演示环境未接入全部订单')
+  })
+
+  el.querySelector<HTMLElement>('#trend-range')!.addEventListener('oas-change', (e) => {
+    currentRange = (e as CustomEvent<{ value: string }>).detail.value
+    draw()
+  })
+
   return () => {
+    if (skeletonTimer) clearTimeout(skeletonTimer)
     window.removeEventListener('resize', onResize)
     document.removeEventListener('themechange', draw)
     for (const c of charts.splice(0)) c.dispose()

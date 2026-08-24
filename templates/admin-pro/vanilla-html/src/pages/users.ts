@@ -12,54 +12,100 @@ const COLUMNS =
 const RULES =
   '{"name":[{"required":true,"message":"请输入姓名"}],"email":[{"required":true,"message":"请输入邮箱"},{"pattern":"^\\\\S+@\\\\S+$","message":"邮箱格式不正确"}]}'
 
+const ROLE_OPTIONS = [
+  { label: '全部角色', value: '' },
+  { label: '管理员', value: 'admin' },
+  { label: '编辑', value: 'editor' },
+  { label: '访客', value: 'viewer' },
+]
+
+const STATUS_OPTIONS = [
+  { label: '全部状态', value: '' },
+  { label: '启用', value: 'active' },
+  { label: '禁用', value: 'disabled' },
+]
+
 interface PageState {
   rows: UserRow[]
   keyword: string
   page: number
   editingId: number | null
+  roleFilter: UserRole | ''
+  statusFilter: UserStatus | ''
 }
 
 export function render(el: HTMLElement): () => void {
-  const state: PageState = { rows: [], keyword: '', page: 1, editingId: null }
+  const state: PageState = {
+    rows: [],
+    keyword: '',
+    page: 1,
+    editingId: null,
+    roleFilter: '',
+    statusFilter: '',
+  }
   let saving = false
 
   el.innerHTML = `
     <div class="page">
-      <div class="table-toolbar">
-        <h1 class="page-title">用户管理</h1>
-        <div class="toolbar-actions">
-          <oas-input data-testid="user-search" placeholder="搜索姓名 / 邮箱" clearable></oas-input>
-          <oas-button data-testid="user-create" type="primary">新建用户</oas-button>
+      <div class="page-head">
+        <div>
+          <h1 class="page-title">用户管理</h1>
+          <p class="page-subtitle">管理系统成员与权限</p>
         </div>
+        <oas-button data-testid="user-create" type="primary" icon="plus">新建用户</oas-button>
       </div>
-      <oas-table data-testid="users-table" row-key="id" columns='${COLUMNS}' data="[]"></oas-table>
-      <oas-pagination data-testid="users-pager" total="0" page-size="${PAGE_SIZE}" current="1" show-total></oas-pagination>
+      <oas-card title="用户列表">
+        <div class="users-toolbar" slot="extra">
+          <oas-input data-testid="user-search" placeholder="搜索姓名 / 邮箱" clearable prefix-icon="search"></oas-input>
+          <oas-select data-testid="role-filter" placeholder="角色" options='${JSON.stringify(ROLE_OPTIONS)}' value=""></oas-select>
+          <oas-select data-testid="status-filter" placeholder="状态" options='${JSON.stringify(STATUS_OPTIONS)}' value=""></oas-select>
+          <oas-button id="users-refresh" icon="refresh" title="刷新"></oas-button>
+        </div>
+        <div class="table-wrap" id="table-wrap">
+          <oas-table data-testid="users-table" row-key="id" columns='${COLUMNS}' data="[]"></oas-table>
+          <div class="empty-overlay" id="empty-overlay" hidden>
+            <oas-empty description="未找到匹配用户"></oas-empty>
+            <oas-button id="clear-filters" type="primary">清除筛选</oas-button>
+          </div>
+        </div>
+        <oas-pagination data-testid="users-pager" total="0" page-size="${PAGE_SIZE}" current="1" show-total></oas-pagination>
+      </oas-card>
 
       <oas-modal data-testid="user-form-modal" no-footer>
         <div class="modal-body">
           <h2 id="form-title">新建用户</h2>
           <oas-form id="user-form" rules='${RULES}'>
-            <oas-space direction="vertical" style="width: 100%">
+            <div class="form-grid">
               <oas-input data-testid="field-name" name="name" placeholder="姓名"></oas-input>
               <oas-input data-testid="field-email" name="email" placeholder="邮箱"></oas-input>
               <oas-select data-testid="field-role" name="role" options='[{"label":"管理员","value":"admin"},{"label":"编辑","value":"editor"},{"label":"访客","value":"viewer"}]'></oas-select>
               <oas-select data-testid="field-status" name="status" options='[{"label":"启用","value":"active"},{"label":"禁用","value":"disabled"}]'></oas-select>
-              <oas-space>
+            </div>
+            <div class="form-actions">
+              <oas-space justify="end">
                 <oas-button data-testid="form-cancel">取消</oas-button>
                 <oas-button data-testid="form-save" type="primary">保存</oas-button>
               </oas-space>
-            </oas-space>
+            </div>
           </oas-form>
         </div>
       </oas-modal>
 
       <oas-modal data-testid="user-detail-modal" no-footer>
         <div class="modal-body">
-          <h2>用户详情</h2>
+          <div class="detail-header">
+            <oas-avatar id="detail-avatar" size="48"><span slot="fallback" id="detail-avatar-text"></span></oas-avatar>
+            <div>
+              <div id="detail-name" class="detail-name"></div>
+              <oas-tag id="detail-role-tag" type="primary"></oas-tag>
+            </div>
+          </div>
           <oas-descriptions id="detail-desc" column="1"></oas-descriptions>
-          <oas-space>
-            <oas-button data-testid="detail-edit">编辑</oas-button>
-            <oas-button data-testid="detail-delete" type="danger">删除</oas-button>
+          <oas-space justify="end">
+            <oas-button data-testid="detail-edit" type="primary">编辑</oas-button>
+            <oas-popconfirm title="确认删除该用户？" id="delete-popconfirm">
+              <oas-button data-testid="detail-delete" type="danger">删除</oas-button>
+            </oas-popconfirm>
           </oas-space>
         </div>
       </oas-modal>
@@ -68,9 +114,13 @@ export function render(el: HTMLElement): () => void {
   const table = el.querySelector<HTMLElement>('[data-testid="users-table"]')!
   const pager = el.querySelector<HTMLElement>('[data-testid="users-pager"]')!
   const search = el.querySelector<HTMLElement>('[data-testid="user-search"]')!
+  const roleFilter = el.querySelector<HTMLElement>('[data-testid="role-filter"]')!
+  const statusFilter = el.querySelector<HTMLElement>('[data-testid="status-filter"]')!
   const formModal = el.querySelector<HTMLElement>('[data-testid="user-form-modal"]')!
   const detailModal = el.querySelector<HTMLElement>('[data-testid="user-detail-modal"]')!
   const form = el.querySelector<HTMLElement>('#user-form')!
+  const tableWrap = el.querySelector<HTMLElement>('#table-wrap')!
+  const emptyOverlay = el.querySelector<HTMLElement>('#empty-overlay')!
 
   function toDisplay(row: UserRow) {
     return {
@@ -85,14 +135,38 @@ export function render(el: HTMLElement): () => void {
 
   function filtered(): UserRow[] {
     const kw = state.keyword.trim().toLowerCase()
-    if (!kw) return state.rows
-    return state.rows.filter(
-      (r) => r.name.toLowerCase().includes(kw) || r.email.toLowerCase().includes(kw),
-    )
+    return state.rows.filter((r) => {
+      if (kw && !(r.name.toLowerCase().includes(kw) || r.email.toLowerCase().includes(kw))) return false
+      if (state.roleFilter && r.role !== state.roleFilter) return false
+      if (state.statusFilter && r.status !== state.statusFilter) return false
+      return true
+    })
+  }
+
+  function setEmpty(empty: boolean): void {
+    if (empty) {
+      table.setAttribute('data', '[]')
+      table.classList.add('table-hidden')
+      pager.classList.add('table-hidden')
+      emptyOverlay.hidden = false
+      tableWrap.classList.add('is-empty')
+    } else {
+      table.classList.remove('table-hidden')
+      pager.classList.remove('table-hidden')
+      emptyOverlay.hidden = true
+      tableWrap.classList.remove('is-empty')
+    }
   }
 
   function renderTable(): void {
     const list = filtered()
+    if (list.length === 0) {
+      pager.setAttribute('total', '0')
+      pager.setAttribute('current', '1')
+      setEmpty(true)
+      return
+    }
+    setEmpty(false)
     const maxPage = Math.max(1, Math.ceil(list.length / PAGE_SIZE))
     if (state.page > maxPage) state.page = maxPage
     const slice = list.slice((state.page - 1) * PAGE_SIZE, state.page * PAGE_SIZE)
@@ -137,6 +211,16 @@ export function render(el: HTMLElement): () => void {
       : '新建用户'
   }
 
+  function tagTypeForStatus(status: UserStatus): string {
+    return status === 'active' ? 'success' : 'danger'
+  }
+
+  function tagTypeForRole(role: UserRole): string {
+    if (role === 'admin') return 'primary'
+    if (role === 'editor') return 'warning'
+    return 'default'
+  }
+
   el.querySelector('[data-testid="user-create"]')!.addEventListener('click', () => {
     state.editingId = null
     fillForm(null)
@@ -148,22 +232,29 @@ export function render(el: HTMLElement): () => void {
     const id = Number(row.id)
     const target = state.rows.find((r) => r.id === id)
     if (!target) return
+    el.querySelector<HTMLElement>('#detail-avatar-text')!.textContent = target.name.charAt(0)
+    el.querySelector<HTMLElement>('#detail-name')!.textContent = target.name
+    const roleTag = el.querySelector<HTMLElement>('#detail-role-tag')!
+    roleTag.textContent = ROLE_LABEL[target.role]
+    roleTag.setAttribute('type', tagTypeForRole(target.role))
     const desc = el.querySelector<HTMLElement>('#detail-desc')!
     desc.innerHTML = `
       <oas-descriptions-item label="ID"><span id="detail-id"></span></oas-descriptions-item>
-      <oas-descriptions-item label="姓名"><span id="detail-name"></span></oas-descriptions-item>
+      <oas-descriptions-item label="姓名"><span id="detail-name2"></span></oas-descriptions-item>
       <oas-descriptions-item label="邮箱"><span id="detail-email"></span></oas-descriptions-item>
       <oas-descriptions-item label="角色"><span id="detail-role"></span></oas-descriptions-item>
-      <oas-descriptions-item label="状态"><span id="detail-status"></span></oas-descriptions-item>
+      <oas-descriptions-item label="状态"><oas-tag id="detail-status-tag"></oas-tag></oas-descriptions-item>
       <oas-descriptions-item label="创建日期"><span id="detail-created"></span></oas-descriptions-item>`
     const text = (sel: string, v: string) => {
       desc.querySelector<HTMLElement>(sel)!.textContent = v
     }
     text('#detail-id', String(target.id))
-    text('#detail-name', target.name)
+    text('#detail-name2', target.name)
     text('#detail-email', target.email)
     text('#detail-role', ROLE_LABEL[target.role])
-    text('#detail-status', STATUS_LABEL[target.status])
+    const statusTag = desc.querySelector<HTMLElement>('#detail-status-tag')!
+    statusTag.textContent = STATUS_LABEL[target.status]
+    statusTag.setAttribute('type', tagTypeForStatus(target.status))
     text('#detail-created', target.created)
     state.editingId = target.id
     openModal(detailModal)
@@ -177,7 +268,7 @@ export function render(el: HTMLElement): () => void {
     openModal(formModal)
   })
 
-  el.querySelector('[data-testid="detail-delete"]')!.addEventListener('click', async () => {
+  el.querySelector<HTMLElement>('#delete-popconfirm')!.addEventListener('oas-ok', async () => {
     if (state.editingId == null) return
     await removeUser(state.editingId)
     state.editingId = null
@@ -240,6 +331,33 @@ export function render(el: HTMLElement): () => void {
     state.keyword = ''
     state.page = 1
     renderTable()
+  })
+
+  roleFilter.addEventListener('oas-change', (e) => {
+    state.roleFilter = (e as CustomEvent<{ value: string }>).detail.value as UserRole | ''
+    state.page = 1
+    renderTable()
+  })
+
+  statusFilter.addEventListener('oas-change', (e) => {
+    state.statusFilter = (e as CustomEvent<{ value: string }>).detail.value as UserStatus | ''
+    state.page = 1
+    renderTable()
+  })
+
+  el.querySelector<HTMLElement>('#clear-filters')!.addEventListener('click', () => {
+    state.keyword = ''
+    state.roleFilter = ''
+    state.statusFilter = ''
+    state.page = 1
+    search.setAttribute('value', '')
+    roleFilter.setAttribute('value', '')
+    statusFilter.setAttribute('value', '')
+    renderTable()
+  })
+
+  el.querySelector<HTMLElement>('#users-refresh')!.addEventListener('click', () => {
+    void refresh()
   })
 
   pager.addEventListener('oas-change', (e) => {
