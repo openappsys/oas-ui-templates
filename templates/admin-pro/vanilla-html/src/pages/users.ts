@@ -21,6 +21,7 @@ interface PageState {
 
 export function render(el: HTMLElement): () => void {
   const state: PageState = { rows: [], keyword: '', page: 1, editingId: null }
+  let saving = false
 
   el.innerHTML = `
     <div class="page">
@@ -194,30 +195,36 @@ export function render(el: HTMLElement): () => void {
   })
 
   form.addEventListener('oas-submit', async (e) => {
-    const values = (
-      e as CustomEvent<{
-        values: { name: string; email: string; role: UserRole; status: UserStatus }
-      }>
-    ).detail.values
-    if (state.editingId == null) {
-      await createUser({
-        name: values.name,
-        email: values.email,
-        role: values.role || 'viewer',
-        status: values.status || 'active',
-      })
-      message.success('已创建')
-    } else {
-      await updateUser(state.editingId, {
-        name: values.name,
-        email: values.email,
-        role: values.role,
-        status: values.status,
-      })
-      message.success('已保存')
+    if (saving) return
+    saving = true
+    try {
+      const values = (
+        e as CustomEvent<{
+          values: { name: string; email: string; role: UserRole; status: UserStatus }
+        }>
+      ).detail.values
+      if (state.editingId == null) {
+        await createUser({
+          name: values.name,
+          email: values.email,
+          role: values.role || 'viewer',
+          status: values.status || 'active',
+        })
+        message.success('已创建')
+      } else {
+        await updateUser(state.editingId, {
+          name: values.name,
+          email: values.email,
+          role: values.role,
+          status: values.status,
+        })
+        message.success('已保存')
+      }
+      closeModal(formModal)
+      void refresh()
+    } finally {
+      saving = false
     }
-    closeModal(formModal)
-    void refresh()
   })
 
   search.addEventListener('oas-input', (e) => {

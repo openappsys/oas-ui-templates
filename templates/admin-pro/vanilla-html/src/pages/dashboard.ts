@@ -30,7 +30,7 @@ export function render(el: HTMLElement): () => void {
         <oas-card><oas-statistic data-testid="stat-visits" value="12480" prefix="今日访问"></oas-statistic></oas-card>
         <oas-card><oas-statistic value="328" prefix="新增用户"></oas-statistic></oas-card>
         <oas-card><oas-statistic value="1926" prefix="订单量"></oas-statistic></oas-card>
-        <oas-card><oas-statistic value="4.6" suffix="%" prefix="转化率"></oas-statistic></oas-card>
+        <oas-card><oas-statistic value="4.6" precision="1" suffix="%" prefix="转化率"></oas-statistic></oas-card>
       </div>
       <div class="chart-grid">
         <oas-card title="访问趋势"><div id="chart-trend" class="chart"></div></oas-card>
@@ -38,12 +38,18 @@ export function render(el: HTMLElement): () => void {
       </div>
       <oas-card title="最近订单">
         <oas-table
+          data-testid="orders-table"
           row-key="id"
           columns='[{"key":"id","title":"订单号"},{"key":"customer","title":"客户"},{"key":"amount","title":"金额"},{"key":"status","title":"状态"}]'
-          data='${JSON.stringify(RECENT_ORDERS)}'
+          data="[]"
         ></oas-table>
       </oas-card>
     </div>`
+
+  el.querySelector<HTMLElement>('[data-testid="orders-table"]')!.setAttribute(
+    'data',
+    JSON.stringify(RECENT_ORDERS),
+  )
 
   const charts: Array<echarts.ECharts> = []
 
