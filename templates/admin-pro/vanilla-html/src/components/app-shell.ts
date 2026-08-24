@@ -44,6 +44,13 @@ export function mountApp(root: HTMLElement): void {
       </div>
     </oas-layout>`
   const sidebar = root.querySelector<HTMLElement>('#nav')!
+  const sider = root.querySelector<HTMLElement>('oas-sider')!
+
+  sidebar.addEventListener('oas-collapse', (e) => {
+    const collapsed = (e as CustomEvent<{ collapsed: boolean }>).detail.collapsed
+    if (collapsed) sider.setAttribute('collapsed', '')
+    else sider.removeAttribute('collapsed')
+  })
 
   function patchSidebarIcons(): void {
     sidebar.shadowRoot?.querySelectorAll<HTMLElement>('.icon').forEach((span) => {

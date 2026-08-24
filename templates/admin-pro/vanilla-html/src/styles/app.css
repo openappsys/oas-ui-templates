@@ -150,6 +150,12 @@ html[data-theme="dark"] .theme-dot::before {
 oas-sider {
   height: 100%;
   --oas-sidebar-width: 168px;
+  transition:
+    width var(--oas-transition-base, 180ms) var(--oas-ease-out, cubic-bezier(0.2, 0, 0.2, 1)),
+    padding var(--oas-transition-base, 180ms) var(--oas-ease-out, cubic-bezier(0.2, 0, 0.2, 1));
+}
+oas-sider[collapsed] {
+  padding: 0;
 }
 
 .content-col {
