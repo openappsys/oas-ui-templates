@@ -50,9 +50,7 @@ function splitTemplate(): string {
             <div class="brand-stat"><span class="num">0</span><span class="label">框架运行时依赖</span></div>
           </div>
         </div>
-        <pre class="brand-code">&lt;oas-button type="primary"&gt;
-  保存
-&lt;/oas-button&gt;</pre>
+        <pre class="brand-code">&lt;oas-button type="primary"&gt;保存&lt;/oas-button&gt;</pre>
       </div>
       <div class="login-panel">
         <div class="login-card">
@@ -69,8 +67,10 @@ function glassTemplate(): string {
       <div class="glass-card" data-theme="dark">
         ${formBlock()}
       </div>
-      <p class="glass-slogan">框架无关 · Web Components UI</p>
-      <button class="link-btn link-btn-light" type="button" data-style="split">切换分屏版</button>
+      <div class="glass-foot">
+        <p class="glass-slogan">框架无关 · Web Components UI</p>
+        <button class="link-btn link-btn-light" type="button" data-style="split">切换分屏版</button>
+      </div>
     </div>`
 }
 

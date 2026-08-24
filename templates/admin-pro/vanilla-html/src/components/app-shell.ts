@@ -36,9 +36,6 @@ export function mountApp(root: HTMLElement): void {
       </header>
       <div slot="sider" class="sider-wrap">
         <oas-sidebar id="nav" items='${sidebarItems()}'></oas-sidebar>
-        <div class="sider-foot">
-          <span class="wc-badge" title="零框架 · Web Components">⚡ WC</span>
-        </div>
       </div>
       <div slot="content" class="content-col">
         <div class="crumbs-bar"><oas-breadcrumb id="crumbs"></oas-breadcrumb></div>
@@ -118,10 +115,11 @@ export function mountApp(root: HTMLElement): void {
   function syncCrumbs(): void {
     const home = routes[0]
     const route = matchRoute(parseHash(location.hash))
+    const rootLabel = '应用'
     const items =
       route === undefined || route.path === home.path
-        ? [{ label: home.meta.title }]
-        : [{ label: home.meta.title, href: `#${home.path}` }, { label: route.meta.title }]
+        ? [{ label: rootLabel }, { label: home.meta.title }]
+        : [{ label: rootLabel, href: `#${home.path}` }, { label: route.meta.title }]
     crumbs.setAttribute('items', JSON.stringify(items))
   }
 

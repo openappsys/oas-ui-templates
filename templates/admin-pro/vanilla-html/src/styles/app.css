@@ -23,6 +23,7 @@ body {
 }
 
 .page {
+  width: 100%;
   padding: var(--oas-space-4);
   max-width: 1280px;
   margin: 0 auto;
@@ -105,43 +106,60 @@ body {
   background: transparent;
   cursor: pointer;
 }
-.theme-dot::after {
+.theme-dot::before {
   content: "";
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   border: 1px solid var(--oas-color-border);
-  background: linear-gradient(
-    90deg,
-    var(--oas-color-bg-elevated) 0 50%,
-    var(--oas-color-text-secondary) 50% 100%
-  );
+  background: transparent;
+  box-shadow: inset 4px 2px 0 0 var(--oas-color-text-primary);
+}
+html[data-theme="dark"] .theme-dot::before {
+  background:
+    radial-gradient(circle, var(--oas-color-text-primary) 4px, transparent 5px),
+    conic-gradient(
+      from 0deg,
+      var(--oas-color-text-primary) 0deg 12deg,
+      transparent 12deg 33deg,
+      var(--oas-color-text-primary) 33deg 45deg,
+      transparent 45deg 66deg,
+      var(--oas-color-text-primary) 66deg 78deg,
+      transparent 78deg 99deg,
+      var(--oas-color-text-primary) 99deg 111deg,
+      transparent 111deg 132deg,
+      var(--oas-color-text-primary) 132deg 144deg,
+      transparent 144deg 165deg,
+      var(--oas-color-text-primary) 165deg 177deg,
+      transparent 177deg 198deg,
+      var(--oas-color-text-primary) 198deg 210deg,
+      transparent 210deg 231deg,
+      var(--oas-color-text-primary) 231deg 243deg,
+      transparent 243deg 264deg,
+      var(--oas-color-text-primary) 264deg 276deg,
+      transparent 276deg 297deg,
+      var(--oas-color-text-primary) 297deg 309deg,
+      transparent 309deg 330deg,
+      var(--oas-color-text-primary) 330deg 342deg,
+      transparent 342deg 360deg
+    );
+  box-shadow: none;
+  border: none;
 }
 
-.sider-wrap {
-  height: 100%;
+oas-layout::part(sider) {
   display: flex;
   flex-direction: column;
+}
+.sider-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 .sider-wrap #nav {
   flex: 1;
   min-height: 0;
-}
-.sider-foot {
-  flex-shrink: 0;
-  display: flex;
-  justify-content: center;
-  padding: var(--oas-space-3) var(--oas-space-4);
-  border-top: 1px solid var(--oas-color-border);
-}
-.wc-badge {
-  font-family: var(--app-mono);
-  font-size: 10px;
-  line-height: 1;
-  color: var(--oas-color-text-secondary);
-  border: 2px solid var(--oas-color-border);
-  border-radius: 4px;
-  padding: 3px 6px;
 }
 
 .content-col {
@@ -163,6 +181,8 @@ body {
   flex: 1;
   min-height: 0;
   overflow: auto;
+  display: flex;
+  flex-direction: column;
 }
 .app-foot {
   flex-shrink: 0;
@@ -178,8 +198,12 @@ body {
 #app.no-chrome .app-foot {
   display: none;
 }
+#app.no-chrome #view {
+  min-height: 100vh;
+}
 
 .page {
+  width: 100%;
   padding: var(--oas-space-4);
   max-width: 1280px;
   margin: 0 auto;
@@ -244,6 +268,7 @@ body {
 .login-split {
   min-height: 100%;
   display: flex;
+  flex: 1;
 }
 .login-brand {
   position: relative;
@@ -321,6 +346,8 @@ body {
   font-family: var(--app-mono);
   font-size: 12px;
   line-height: 1.7;
+  white-space: pre;
+  tab-size: 2;
   color: rgba(255, 255, 255, 0.5);
 }
 
@@ -329,8 +356,9 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 100%;
   padding: var(--oas-space-6);
-  background: var(--oas-color-bg);
+  background: linear-gradient(180deg, var(--oas-color-bg) 0%, var(--oas-color-bg-hover) 100%);
 }
 .login-card {
   width: min(400px, 100%);
@@ -338,7 +366,7 @@ body {
   border-radius: 16px;
   background: var(--oas-color-bg-elevated);
   border: 1px solid var(--oas-color-border);
-  box-shadow: 0 8px 32px rgba(11, 108, 255, 0.08);
+  box-shadow: 0 12px 40px rgba(11, 108, 255, 0.10);
 }
 
 .login-title {
@@ -397,6 +425,7 @@ body {
 .login-glass {
   min-height: 100%;
   display: flex;
+  flex: 1;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -420,6 +449,14 @@ body {
       transparent 1px,
       transparent 48px
     );
+  --oas-color-border: rgba(255, 255, 255, 0.28);
+  --oas-color-bg: rgba(255, 255, 255, 0.08);
+}
+.login-glass oas-button {
+  --oas-color-primary: #0b6cff;
+  --oas-color-text-on-primary: #ffffff;
+  --oas-color-primary-hover: color-mix(in srgb, #0b6cff 85%, black);
+  --oas-color-primary-active: color-mix(in srgb, #0b6cff 75%, black);
 }
 .glass-card {
   width: min(400px, 100%);
@@ -453,6 +490,28 @@ body {
   margin: 0;
   font-size: 13px;
   color: rgba(255, 255, 255, 0.65);
+}
+.glass-foot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--oas-space-2);
+  margin-top: var(--oas-space-4);
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.65);
+}
+.glass-foot .link-btn-light {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+@media (max-width: 768px) {
+  .app-header {
+    padding-left: 48px;
+  }
+  .oas-logo-word {
+    letter-spacing: 0.4px;
+    font-size: 16px;
+  }
 }
 
 @media (max-width: 879px) {
