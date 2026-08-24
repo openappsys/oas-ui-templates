@@ -57,3 +57,21 @@ body {
   text-align: center;
   padding-top: 120px;
 }
+
+.login-wrap {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--oas-space-3);
+  padding: var(--oas-space-4);
+}
+
+.login-card {
+  width: min(360px, 100%);
+}
+.login-tip {
+  color: var(--oas-color-text-secondary);
+  font-size: var(--oas-font-size-sm);
+}
