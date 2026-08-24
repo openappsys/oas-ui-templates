@@ -275,14 +275,14 @@ oas-layout::part(sider) {
 
 .stat-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
   gap: var(--oas-space-3);
   margin-bottom: var(--oas-space-3);
 }
 
 .chart-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
   gap: var(--oas-space-3);
   margin-bottom: var(--oas-space-3);
 }
@@ -480,8 +480,12 @@ oas-layout::part(sider) {
   padding: var(--oas-space-6);
   background-color: #0a0f1e;
   background-image:
-    radial-gradient(60% 55% at 50% 0%, rgba(11, 108, 255, 0.3), transparent 70%),
-    radial-gradient(50% 50% at 85% 90%, rgba(124, 58, 237, 0.22), transparent 70%),
+    radial-gradient(1400px 720px at 50% -180px, rgba(11, 108, 255, 0.3), transparent 70%),
+    radial-gradient(
+      1000px 800px at calc(100% - 240px) calc(100% - 200px),
+      rgba(124, 58, 237, 0.22),
+      transparent 70%
+    ),
     repeating-linear-gradient(
       0deg,
       rgba(255, 255, 255, 0.04) 0,
@@ -549,6 +553,53 @@ oas-layout::part(sider) {
 }
 .glass-foot .link-btn-light {
   color: rgba(255, 255, 255, 0.65);
+}
+
+@media (min-width: 2000px) {
+  .page {
+    max-width: 1600px;
+  }
+
+  .login-split {
+    position: relative;
+    isolation: isolate;
+    max-width: 1800px;
+    margin: 0 auto;
+  }
+
+  .login-split::before,
+  .login-split::after {
+    content: "";
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    width: calc((100vw - 1800px) / 2);
+    z-index: -1;
+  }
+
+  .login-split::before {
+    left: 0;
+    background: #0a0f1e;
+  }
+
+  .login-split::after {
+    right: 0;
+    background: var(--oas-color-bg);
+  }
+
+  .login-brand {
+    align-items: center;
+  }
+
+  .login-brand-main {
+    align-items: center;
+    text-align: center;
+    max-width: 560px;
+  }
+
+  .brand-stats {
+    justify-content: center;
+  }
 }
 
 :root {
@@ -696,6 +747,10 @@ button.link-btn:hover {
 .table-wrap {
   position: relative;
   min-height: 200px;
+  overflow-x: auto;
+}
+oas-table::part(table) {
+  min-width: max-content;
 }
 .empty-overlay {
   position: absolute;
@@ -862,6 +917,9 @@ button.link-btn:hover {
 @media (max-width: 768px) {
   .app-header {
     padding-left: 48px;
+  }
+  .global-search {
+    display: none;
   }
   .oas-logo-word {
     letter-spacing: 0.4px;

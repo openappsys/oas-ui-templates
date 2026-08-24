@@ -287,7 +287,13 @@ export function render(el: HTMLElement): () => void {
       c.setOption({
         darkMode: isDark(),
         tooltip: { trigger: 'item', formatter: '{b}: {d}%' },
-        legend: { bottom: 0, textStyle: { color: textSecondary } },
+        legend: {
+          bottom: 0,
+          left: 'center',
+          width: '90%',
+          itemGap: 8,
+          textStyle: { color: textSecondary },
+        },
         color: [success, primary, warning, danger],
         graphic: [
           {
