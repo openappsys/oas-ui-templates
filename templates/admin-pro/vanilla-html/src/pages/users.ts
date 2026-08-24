@@ -212,13 +212,17 @@ export function render(el: HTMLElement): () => void {
         })
         message.success('已创建')
       } else {
-        await updateUser(state.editingId, {
+        const updated = await updateUser(state.editingId, {
           name: values.name,
           email: values.email,
           role: values.role,
           status: values.status,
         })
-        message.success('已保存')
+        if (!updated) {
+          message.error('该用户已不存在')
+        } else {
+          message.success('已保存')
+        }
       }
       closeModal(formModal)
       void refresh()

@@ -1,4 +1,5 @@
 import { message } from '@oas-ui/ui/feedback/message'
+import { routes } from '../router/routes'
 import { resolve } from '../router/router'
 import { session } from '../store/session'
 
@@ -25,7 +26,7 @@ export function render(el: HTMLElement): () => void {
   el.querySelector('#profile-logout')!.addEventListener('click', () => {
     session.logout()
     message.info('已退出登录')
-    location.hash = '/dashboard'
+    location.hash = routes[0].path
     void resolve()
   })
 
