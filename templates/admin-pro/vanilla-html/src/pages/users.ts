@@ -54,7 +54,7 @@ export function render(el: HTMLElement): () => void {
         </div>
         <oas-button data-testid="user-create" type="primary" icon="plus">新建用户</oas-button>
       </div>
-      <oas-card title="用户列表">
+      <oas-card class="list-card" title="用户列表">
         <div class="users-toolbar" slot="extra">
           <oas-input data-testid="user-search" placeholder="搜索姓名 / 邮箱" clearable prefix-icon="search"></oas-input>
           <oas-select data-testid="role-filter" placeholder="角色" options='${JSON.stringify(ROLE_OPTIONS)}' value=""></oas-select>

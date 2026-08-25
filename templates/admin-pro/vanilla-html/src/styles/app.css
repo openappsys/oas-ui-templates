@@ -980,6 +980,14 @@ oas-table::part(table) {
   display: none !important;
 }
 
+.list-card oas-pagination {
+  margin-top: var(--oas-space-3);
+}
+
+oas-card:not([title])::part(header) {
+  display: none;
+}
+
 .detail-header {
   display: flex;
   align-items: center;

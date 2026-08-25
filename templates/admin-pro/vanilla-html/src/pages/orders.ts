@@ -83,7 +83,7 @@ export function render(el: HTMLElement): () => void {
         <oas-button data-testid="orders-export" type="primary" icon="download">导出 CSV</oas-button>
       </div>
       <div class="orders-stats" id="orders-stats"></div>
-      <oas-card title="订单列表">
+      <oas-card class="list-card" title="订单列表">
         <div class="orders-toolbar" slot="extra">
           <oas-input data-testid="orders-search" placeholder="搜索客户名称" clearable prefix-icon="search"></oas-input>
         </div>
