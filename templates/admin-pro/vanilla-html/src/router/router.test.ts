@@ -52,7 +52,7 @@ describe('guard', () => {
   })
 
   it('未登录访问受保护路由 → login', () => {
-    expect(guard('/users').reason).toBe('login')
+    expect(guard('/users')).toEqual({ ok: false, reason: 'login' })
   })
 
   it('已登录未知路径 → not-found', () => {
