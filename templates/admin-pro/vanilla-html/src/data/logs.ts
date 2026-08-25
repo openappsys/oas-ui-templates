@@ -1,5 +1,3 @@
-import { persist, restore } from './store'
-
 export type LogLevel = 'info' | 'warn' | 'error'
 
 export interface LogEntry {
@@ -40,6 +38,11 @@ const ACTIONS = [
   '下载文件',
 ]
 
+function localDate(t: string): string {
+  const d = new Date(t)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 function rand(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min
 }
@@ -72,8 +75,7 @@ function seed(): LogEntry[] {
   return rows
 }
 
-const KEY = 'oas-admin.logs.v1'
-const rows: LogEntry[] = restore(KEY, seed)
+const rows: LogEntry[] = seed()
 
 function delay<T>(value: T, ms = 100): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(value), ms))
@@ -97,7 +99,7 @@ export function listLogs(filter?: LogFilter): Promise<LogEntry[]> {
     if (filter.dateRange) {
       const [start, end] = filter.dateRange
       list = list.filter((r) => {
-        const d = r.time.slice(0, 10)
+        const d = localDate(r.time)
         return d >= start && d <= end
       })
     }
@@ -108,5 +110,4 @@ export function listLogs(filter?: LogFilter): Promise<LogEntry[]> {
 export function resetLogs(): void {
   rows.length = 0
   rows.push(...seed())
-  localStorage.removeItem(KEY)
 }

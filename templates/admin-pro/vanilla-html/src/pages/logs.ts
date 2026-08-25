@@ -36,7 +36,7 @@ interface PageState {
 }
 
 function iso(d: Date): string {
-  return d.toISOString().slice(0, 10)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
 function formatTime(t: string): string {
@@ -46,7 +46,7 @@ function formatTime(t: string): string {
 }
 
 function dateKey(t: string): string {
-  return t.slice(0, 10)
+  return iso(new Date(t))
 }
 
 function anchorLabel(d: string): string {

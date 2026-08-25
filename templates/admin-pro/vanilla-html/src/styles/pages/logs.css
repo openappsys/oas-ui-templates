@@ -92,6 +92,10 @@
   background: var(--oas-color-bg);
 }
 
+.logs-empty[hidden] {
+  display: none;
+}
+
 .logs-anchor-wrap {
   position: sticky;
   top: var(--oas-space-3);
