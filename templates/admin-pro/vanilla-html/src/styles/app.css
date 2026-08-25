@@ -34,32 +34,12 @@ body {
   overflow: hidden;
 }
 
-oas-layout::part(root) {
-  height: 100%;
-}
-
-oas-layout::part(sider),
-oas-layout::part(content) {
-  height: calc(100vh - 56px);
-  overflow-y: auto;
-  min-height: 0;
-}
-
 oas-sider {
-  position: relative;
   width: 200px;
-  height: calc(100vh - 56px);
   padding: 0;
-  overflow: hidden;
 }
 oas-sidebar {
   --oas-control-height-lg: 32px;
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: auto;
-}
-oas-sidebar::part(root) {
   height: 100%;
 }
 oas-sidebar::part(panel) {

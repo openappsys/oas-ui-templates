@@ -12,9 +12,9 @@
     "size": "node scripts/size.mjs"
   },
   "dependencies": {
-    "@oas-ui/icons": "^2.2.3",
-    "@oas-ui/theme": "^2.2.3",
-    "@oas-ui/ui": "^2.2.3",
+    "@oas-ui/icons": "^2.2.4",
+    "@oas-ui/theme": "^2.2.4",
+    "@oas-ui/ui": "^2.2.4",
     "echarts": "^6.0.0"
   },
   "devDependencies": {

@@ -101,7 +101,7 @@ function safeFullscreen(p: Promise<void> | undefined): void {
 
 export function mountApp(root: HTMLElement): void {
   root.innerHTML = `
-    <oas-layout class="app">
+    <oas-layout class="app" viewport>
       <header class="app-header" slot="header">
         <oas-button id="nav-toggle" class="nav-toggle" type="text" icon="menu" aria-label="打开菜单"></oas-button>
         ${LOGO}
