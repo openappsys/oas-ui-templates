@@ -13,7 +13,7 @@ const STATUS_LABEL: Record<OrderStatus, string> = {
 const STATUS_TAG: Record<OrderStatus, string> = {
   pending: 'warning',
   paid: 'primary',
-  shipping: 'info',
+  shipping: 'purple',
   done: 'success',
   cancelled: 'danger',
 }
@@ -46,6 +46,22 @@ function formatMoney(n: number): string {
 function itemSummary(items: string[]): string {
   if (items.length <= 2) return items.join('、')
   return `${items.slice(0, 2).join('、')} 等${items.length}项`
+}
+
+function tagMarkup(status: OrderStatus): string {
+  const t = STATUS_TAG[status]
+  return t === 'purple' ? `color="purple"` : `type="${t}"`
+}
+
+function setTagType(tag: HTMLElement, status: OrderStatus): void {
+  const t = STATUS_TAG[status]
+  if (t === 'purple') {
+    tag.setAttribute('color', 'purple')
+    tag.removeAttribute('type')
+  } else {
+    tag.setAttribute('type', t)
+    tag.removeAttribute('color')
+  }
 }
 
 export function render(el: HTMLElement): () => void {
@@ -173,7 +189,7 @@ export function render(el: HTMLElement): () => void {
           <td>${r.customer}</td>
           <td class="items-cell" title="${r.items.join('、')}">${itemSummary(r.items)}</td>
           <td class="amount-cell mono">${formatMoney(r.amount)}</td>
-          <td><oas-tag type="${STATUS_TAG[r.status]}">${STATUS_LABEL[r.status]}</oas-tag></td>
+          <td><oas-tag ${tagMarkup(r.status)}>${STATUS_LABEL[r.status]}</oas-tag></td>
           <td class="mono">${r.created}</td>
         </tr>`,
       )
@@ -245,8 +261,7 @@ export function render(el: HTMLElement): () => void {
     } else {
       actionEl.hidden = true
       noteEl.hidden = false
-      noteEl.textContent =
-        row.status === 'done' ? '订单已完成，无需后续操作' : '订单已取消'
+      noteEl.textContent = row.status === 'done' ? '订单已完成，无需后续操作' : '订单已取消'
     }
   }
 
@@ -255,7 +270,7 @@ export function render(el: HTMLElement): () => void {
     el.querySelector<HTMLElement>('#order-detail-no')!.textContent = row.id
     const tag = el.querySelector<HTMLElement>('#order-detail-tag')!
     tag.textContent = STATUS_LABEL[row.status]
-    tag.setAttribute('type', STATUS_TAG[row.status])
+    setTagType(tag, row.status)
     fillDesc(row)
     renderAction(row)
     drawer.setAttribute('visible', '')
@@ -269,7 +284,9 @@ export function render(el: HTMLElement): () => void {
     }
     const header = '订单号,客户,金额,状态,商品,创建日期'
     const body = list.map((r) =>
-      [r.id, r.customer, r.amount, STATUS_LABEL[r.status], r.items.join(' | '), r.created].join(','),
+      [r.id, r.customer, r.amount, STATUS_LABEL[r.status], r.items.join(' | '), r.created].join(
+        ',',
+      ),
     )
     const csv = `\ufeff${[header, ...body].join('\n')}`
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
@@ -310,7 +327,7 @@ export function render(el: HTMLElement): () => void {
     if (row) {
       const tag = el.querySelector<HTMLElement>('#order-detail-tag')!
       tag.textContent = STATUS_LABEL[row.status]
-      tag.setAttribute('type', STATUS_TAG[row.status])
+      setTagType(tag, row.status)
       renderAction(row)
     }
   })

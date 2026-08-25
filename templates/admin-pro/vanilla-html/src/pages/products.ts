@@ -2,6 +2,7 @@ import { message } from '@oas-ui/ui/feedback/message'
 import {
   createProduct,
   listProducts,
+  stockLevel,
   toggleProductStatus,
   updateProduct,
 } from '../data/products'
@@ -14,12 +15,6 @@ const CATEGORY_OPTIONS = [
   { label: '食品', value: '食品' },
 ]
 const FILTER_OPTIONS = [{ label: '全部分类', value: '' }, ...CATEGORY_OPTIONS]
-const CATEGORY_TAG: Record<ProductCategory, string> = {
-  数码: 'primary',
-  服饰: 'success',
-  家居: 'warning',
-  食品: 'info',
-}
 
 interface PageState {
   rows: ProductRow[]
@@ -127,11 +122,11 @@ export function render(el: HTMLElement): () => void {
         <oas-card class="product-card" data-id="${r.id}">
           <div class="product-card-head">
             <div class="product-name">${r.name}</div>
-            <oas-tag type="${CATEGORY_TAG[r.category]}">${r.category}</oas-tag>
+            <oas-tag class="cat-tag">${r.category}</oas-tag>
           </div>
           <div class="product-price mono">${formatMoney(r.price)}</div>
           <div class="product-meta">
-            <span class="product-stock${r.stock < 10 ? ' is-low' : ''}">库存 ${r.stock}</span>
+            <span class="product-stock is-${stockLevel(r.stock)}">库存 ${r.stock}</span>
             <span class="product-date mono">${r.created}</span>
           </div>
           <div class="product-card-foot">
@@ -152,8 +147,14 @@ export function render(el: HTMLElement): () => void {
       'value',
       row?.category ?? '数码',
     )
-    el.querySelector<HTMLElement>('[data-testid="pf-price"]')!.setAttribute('value', row ? String(row.price) : '')
-    el.querySelector<HTMLElement>('[data-testid="pf-stock"]')!.setAttribute('value', row ? String(row.stock) : '')
+    el.querySelector<HTMLElement>('[data-testid="pf-price"]')!.setAttribute(
+      'value',
+      row ? String(row.price) : '',
+    )
+    el.querySelector<HTMLElement>('[data-testid="pf-stock"]')!.setAttribute(
+      'value',
+      row ? String(row.stock) : '',
+    )
     datePicker.setAttribute('value', row?.created ?? today())
     ;(upload as unknown as { files: unknown[] }).files = []
     drawer.setAttribute('title', row ? `编辑商品 #${row.id}` : '新建商品')
@@ -206,7 +207,9 @@ export function render(el: HTMLElement): () => void {
   form.addEventListener('oas-submit', async (e) => {
     if (saving) return
     const values = (
-      e as CustomEvent<{ values: { name: string; category: ProductCategory; price: string; stock: string } }>
+      e as CustomEvent<{
+        values: { name: string; category: ProductCategory; price: string; stock: string }
+      }>
     ).detail.values
     const price = Number(values.price)
     if (!(price > 0)) {
@@ -215,7 +218,8 @@ export function render(el: HTMLElement): () => void {
     }
     saving = true
     try {
-      const editing = state.editingId != null ? state.rows.find((r) => r.id === state.editingId) : null
+      const editing =
+        state.editingId != null ? state.rows.find((r) => r.id === state.editingId) : null
       const payload = {
         name: values.name,
         category: values.category || '数码',

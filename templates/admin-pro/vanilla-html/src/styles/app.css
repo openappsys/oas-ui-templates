@@ -689,6 +689,11 @@ html[data-theme="dark"] {
   font-family: var(--app-mono);
 }
 
+oas-tabs {
+  --oas-color-danger: var(--oas-color-bg-hover);
+  --oas-color-text-on-danger: var(--oas-color-text-secondary);
+}
+
 .page-head {
   display: flex;
   align-items: flex-start;
@@ -914,6 +919,11 @@ oas-table::part(table) {
   font-size: var(--oas-font-size-md);
   min-width: 620px;
 }
+#orders-table-wrap {
+  overflow: auto;
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-md);
+}
 .orders-table th {
   text-align: left;
   padding: var(--oas-space-3) var(--oas-space-4);
@@ -939,10 +949,10 @@ oas-table::part(table) {
 .orders-table th.num,
 .orders-table td.amount-cell {
   text-align: right;
-}
-.orders-table th.num,
-.orders-table td.amount-cell {
   white-space: nowrap;
+}
+.orders-table th.num {
+  font-family: var(--app-mono);
 }
 .orders-table td.items-cell {
   max-width: 220px;
@@ -1020,6 +1030,14 @@ oas-table::part(table) {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.product-card .cat-tag {
+  flex-shrink: 0;
+}
+.product-card .cat-tag::part(tag) {
+  background: var(--oas-color-bg-hover);
+  border-color: transparent;
+  color: var(--oas-color-text-secondary);
+}
 .product-price {
   font-size: 24px;
   font-weight: 700;
@@ -1037,8 +1055,12 @@ oas-table::part(table) {
   font-size: var(--oas-font-size-sm);
   color: var(--oas-color-text-secondary);
 }
-.product-stock.is-low {
+.product-stock.is-critical {
   color: var(--oas-color-danger);
+  font-weight: 600;
+}
+.product-stock.is-low {
+  color: var(--oas-color-warning);
   font-weight: 600;
 }
 .product-date {
@@ -1253,6 +1275,25 @@ oas-sidebar::part(trigger) {
   .users-toolbar oas-input,
   .users-toolbar oas-select {
     width: 100%;
+  }
+  .product-card .product-edit {
+    position: relative;
+  }
+  .product-card .product-edit::after {
+    content: "";
+    position: absolute;
+    inset: -12px;
+  }
+  .product-card oas-switch::part(switch) {
+    --track-w: 72px;
+    --track-h: 44px;
+    --thumb-size: 36px;
+    --thumb-offset: 4px;
+    --thumb-travel: 28px;
+  }
+  oas-drawer oas-button::part(button),
+  oas-modal oas-button::part(button) {
+    min-height: 44px;
   }
 }
 

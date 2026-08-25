@@ -1,5 +1,12 @@
 export type ProductCategory = '数码' | '服饰' | '家居' | '食品'
 export type ProductStatus = 'on' | 'off'
+export type StockLevel = 'ok' | 'low' | 'critical'
+
+export function stockLevel(stock: number): StockLevel {
+  if (stock < 5) return 'critical'
+  if (stock <= 20) return 'low'
+  return 'ok'
+}
 
 export interface ProductRow {
   id: number

@@ -4,6 +4,7 @@ import {
   listProducts,
   removeProduct,
   resetProducts,
+  stockLevel,
   toggleProductStatus,
   updateProduct,
 } from './products'
@@ -79,5 +80,15 @@ describe('products 数据源', () => {
     expect((await listProducts()).length).toBe(9)
     resetProducts()
     expect((await listProducts()).length).toBe(8)
+  })
+
+  it('stockLevel 三级库存阈值', () => {
+    expect(stockLevel(0)).toBe('critical')
+    expect(stockLevel(4)).toBe('critical')
+    expect(stockLevel(5)).toBe('low')
+    expect(stockLevel(15)).toBe('low')
+    expect(stockLevel(20)).toBe('low')
+    expect(stockLevel(21)).toBe('ok')
+    expect(stockLevel(120)).toBe('ok')
   })
 })
