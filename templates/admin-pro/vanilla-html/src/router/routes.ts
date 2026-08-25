@@ -34,6 +34,9 @@ export const routes: Route[] = [
   { path: '/system/logs', meta: { titleKey: 'nav.logs', icon: 'clock', roles: ['admin'], group: 'nav.system' }, load: () => import('../pages/logs') },
   { path: '/settings', meta: { titleKey: 'nav.settings', icon: 'filter', group: 'nav.system' }, load: () => import('../pages/settings') },
   { path: '/products/edit', meta: { titleKey: 'nav.products', icon: 'edit', roles: ['admin'], hidden: true }, load: () => import('../pages/product-edit') },
+  { path: '/forbidden', meta: { titleKey: 'nav.forbidden', icon: 'ban', hidden: true }, load: () => import('../pages/forbidden') },
+  { path: '/not-found', meta: { titleKey: 'nav.notFound', icon: 'search', hidden: true }, load: () => import('../pages/not-found') },
+  { path: '/basic-form', meta: { titleKey: 'nav.basicForm', icon: 'plus', group: 'nav.business' }, load: () => import('../pages/basic-form') },
 ]
 
 export function matchRoute(path: string): Route | undefined {

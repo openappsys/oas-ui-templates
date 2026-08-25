@@ -69,12 +69,14 @@ export async function resolve(): Promise<void> {
       const mod = await import('../pages/login')
       if (token !== epoch) return
       dispose = mod.render(view)
+      return
     } else if (g.reason === 'not-found') {
-      renderNotice(view, '404')
+      location.hash = '/not-found'
+      return
     } else {
-      renderNotice(view, '403')
+      location.hash = '/forbidden'
+      return
     }
-    return
   }
   const route = matchRoute(path)!
   const mod: PageModule = await route.load()
