@@ -21,6 +21,16 @@ export const routes: Route[] = [
     load: () => import('../pages/dashboard'),
   },
   {
+    path: '/orders',
+    meta: { title: '订单管理', icon: 'calendar' },
+    load: () => import('../pages/orders'),
+  },
+  {
+    path: '/products',
+    meta: { title: '商品管理', icon: 'edit', roles: ['admin'] },
+    load: () => import('../pages/products'),
+  },
+  {
     path: '/users',
     meta: { title: '用户管理', icon: 'user', roles: ['admin'] },
     load: () => import('../pages/users'),

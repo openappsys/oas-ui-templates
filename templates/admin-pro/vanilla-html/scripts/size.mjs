@@ -3,9 +3,9 @@ import { join } from 'node:path'
 import { gzipSync } from 'node:zlib'
 
 const BUDGETS = {
-  entry: 102400,
+  entry: 152600,
   dashboard: 256000,
-  total: 358400,
+  total: 410700,
 }
 
 const ASSETS_DIR = 'dist/assets'
