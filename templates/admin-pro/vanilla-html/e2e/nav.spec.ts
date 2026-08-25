@@ -64,3 +64,16 @@ test('admin 断点切换：500px 汉堡可见，800px 隐藏并恢复侧栏', as
   await expect(page.locator('#nav')).not.toHaveAttribute('data-mobile')
   await expect.poll(() => siderWidth(page)).toBe(200)
 })
+
+test('admin 选中高亮随路由同步：active 属性随路由迁移', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await login(page)
+
+  await expect(page.locator('#nav')).toHaveAttribute('active', '/dashboard')
+
+  await page.locator('#nav').getByText('用户管理').click()
+  await expect(page.locator('#nav')).toHaveAttribute('active', '/users')
+
+  await page.locator('#nav').getByText('个人中心').click()
+  await expect(page.locator('#nav')).toHaveAttribute('active', '/profile')
+})

@@ -127,19 +127,21 @@ export function mountApp(root: HTMLElement): void {
 
   const crumbs = root.querySelector<HTMLElement>('#crumbs')!
 
-  function syncCrumbs(): void {
+  function syncNav(): void {
+    const path = parseHash(location.hash)
+    const route = matchRoute(path)
     const home = routes[0]
-    const route = matchRoute(parseHash(location.hash))
     const rootLabel = '应用'
     const items =
       route === undefined || route.path === home.path
         ? [{ label: rootLabel }, { label: home.meta.title }]
         : [{ label: rootLabel, href: `#${home.path}` }, { label: route.meta.title }]
     crumbs.setAttribute('items', JSON.stringify(items))
+    sidebar.setAttribute('active', route === undefined ? '' : route.path)
   }
 
-  window.addEventListener('hashchange', syncCrumbs)
-  syncCrumbs()
+  window.addEventListener('hashchange', syncNav)
+  syncNav()
 
   function syncUser(): void {
     const avatar = root.querySelector<HTMLElement>('#user-avatar')
