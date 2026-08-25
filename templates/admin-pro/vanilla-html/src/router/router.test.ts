@@ -25,6 +25,25 @@ describe('matchRoute', () => {
   })
 })
 
+describe('routes 分组约束', () => {
+  it('新增系统路由 /system/roles 与 /system/menus 限定 admin', () => {
+    expect(matchRoute('/system/roles')?.meta.roles).toContain('admin')
+    expect(matchRoute('/system/menus')?.meta.roles).toContain('admin')
+    expect(matchRoute('/system/roles')?.meta.group).toBe('系统')
+    expect(matchRoute('/system/menus')?.meta.group).toBe('系统')
+  })
+
+  it('现有可见路由均分配分组', () => {
+    const visible = routes.filter((r) => !r.meta.hidden)
+    for (const r of visible) {
+      expect(['总览', '业务', '系统']).toContain(r.meta.group)
+    }
+    expect(matchRoute('/dashboard')?.meta.group).toBe('总览')
+    expect(matchRoute('/orders')?.meta.group).toBe('业务')
+    expect(matchRoute('/profile')?.meta.group).toBe('总览')
+  })
+})
+
 describe('guard', () => {
   beforeEach(() => session.logout())
 

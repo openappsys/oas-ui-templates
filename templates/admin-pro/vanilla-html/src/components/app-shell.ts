@@ -1,15 +1,21 @@
 import { message } from '@oas-ui/ui/feedback/message'
 import { listNotifications, markAllRead, markRead, unreadCount } from '../data/notifications'
 import { matchRoute, parseHash, resolve } from '../router/router'
-import { routes } from '../router/routes'
+import { routes, type RouteGroup } from '../router/routes'
 import { session } from '../store/session'
 
+const GROUP_ORDER: RouteGroup[] = ['总览', '业务', '系统']
+
 function sidebarItems(): string {
-  return JSON.stringify(
-    routes
-      .filter((r) => !r.meta.hidden)
-      .map((r) => ({ label: r.meta.title, value: r.path, icon: r.meta.icon })),
-  )
+  const items = routes
+    .filter((r) => !r.meta.hidden)
+    .map((r) => ({ label: r.meta.title, value: r.path, icon: r.meta.icon, group: r.meta.group }))
+    .sort((a, b) => {
+      const ai = a.group ? GROUP_ORDER.indexOf(a.group) : GROUP_ORDER.length
+      const bi = b.group ? GROUP_ORDER.indexOf(b.group) : GROUP_ORDER.length
+      return ai - bi
+    })
+  return JSON.stringify(items)
 }
 
 const LOGO = `
@@ -36,7 +42,7 @@ function buildCommandItems(): CommandEntry[] {
     .map((r) => ({
       label: r.meta.title,
       value: r.path,
-      group: '页面',
+      group: r.meta.group ?? '页面',
       keywords: [r.meta.title, r.path],
     }))
   const actionItems: CommandEntry[] = [
