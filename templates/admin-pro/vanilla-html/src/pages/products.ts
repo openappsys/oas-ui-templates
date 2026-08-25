@@ -130,10 +130,23 @@ function cellAction(row: ProductRow): HTMLElement {
 const TABLE_COLUMNS = (): TableColumn[] => [
   { key: 'name', title: t('products.th.name') },
   { key: 'category', title: t('products.category'), render: (r) => cellTag(String(r.category)) },
-  { key: 'price', title: t('products.th.price'), align: 'right', render: (r) => cellPrice(Number(r.price)) },
+  {
+    key: 'price',
+    title: t('products.th.price'),
+    align: 'right',
+    render: (r) => cellPrice(Number(r.price)),
+  },
   { key: 'stock', title: t('products.th.stock'), render: (r) => cellStock(Number(r.stock)) },
-  { key: 'status', title: t('products.th.status'), render: (r) => cellStatus(r as unknown as ProductRow) },
-  { key: 'action', title: t('products.th.action'), render: (r) => cellAction(r as unknown as ProductRow) },
+  {
+    key: 'status',
+    title: t('products.th.status'),
+    render: (r) => cellStatus(r as unknown as ProductRow),
+  },
+  {
+    key: 'action',
+    title: t('products.th.action'),
+    render: (r) => cellAction(r as unknown as ProductRow),
+  },
 ]
 
 const FORM_BODY = (): string => `

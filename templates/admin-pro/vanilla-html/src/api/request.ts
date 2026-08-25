@@ -58,7 +58,9 @@ export function createHttp(config: HttpConfig = {}) {
       for (const i of interceptors) i.onRequest?.(ctx)
       const controller = new AbortController()
       const timer = timeout > 0 ? setTimeout(() => controller.abort(), timeout) : undefined
-      const merged = ctx.signal ? AbortSignal.any([ctx.signal, controller.signal]) : controller.signal
+      const merged = ctx.signal
+        ? AbortSignal.any([ctx.signal, controller.signal])
+        : controller.signal
       const fetchImpl = opts.fetchImpl ?? fetch
       try {
         const res = await fetchImpl(ctx.url, {

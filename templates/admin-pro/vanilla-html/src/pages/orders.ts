@@ -183,10 +183,12 @@ export function render(el: HTMLElement): () => void {
   function renderTabs(): void {
     const counts: Record<string, number> = { all: state.rows.length }
     for (const r of state.rows) counts[r.status] = (counts[r.status] ?? 0) + 1
-    tabs.innerHTML = TABS().map(
-      (tItem) =>
-        `<oas-tab-panel label="${tItem.label}" value="${tItem.value}"${counts[tItem.value] ? ` badge="${counts[tItem.value]}"` : ''}></oas-tab-panel>`,
-    ).join('')
+    tabs.innerHTML = TABS()
+      .map(
+        (tItem) =>
+          `<oas-tab-panel label="${tItem.label}" value="${tItem.value}"${counts[tItem.value] ? ` badge="${counts[tItem.value]}"` : ''}></oas-tab-panel>`,
+      )
+      .join('')
     tabs.setAttribute('active', state.status)
   }
 
@@ -305,8 +307,7 @@ export function render(el: HTMLElement): () => void {
     } else {
       actionEl.hidden = true
       noteEl.hidden = false
-      noteEl.textContent =
-        row.status === 'done' ? t('orders.noteDone') : t('orders.noteCancelled')
+      noteEl.textContent = row.status === 'done' ? t('orders.noteDone') : t('orders.noteCancelled')
     }
   }
 
@@ -329,9 +330,7 @@ export function render(el: HTMLElement): () => void {
     }
     const header = t('orders.exportHeader')
     const body = list.map((r) =>
-      [r.id, r.customer, r.amount, statusLabel(r.status), r.items.join(' | '), r.created].join(
-        ',',
-      ),
+      [r.id, r.customer, r.amount, statusLabel(r.status), r.items.join(' | '), r.created].join(','),
     )
     const csv = `\ufeff${[header, ...body].join('\n')}`
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })

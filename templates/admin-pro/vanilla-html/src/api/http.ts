@@ -5,7 +5,7 @@ import { t } from '../i18n'
 function tokenFromSession(): string {
   try {
     const raw = localStorage.getItem('oas-admin.session')
-    return raw ? (JSON.parse(raw) as { token?: string })?.token ?? '' : ''
+    return raw ? ((JSON.parse(raw) as { token?: string })?.token ?? '') : ''
   } catch {
     return ''
   }
@@ -59,6 +59,9 @@ function fakeRoute(url: string, init?: RequestInit): Promise<Response> {
   }
   const envelope: Envelope = { code: status === 200 ? 0 : status, data }
   return Promise.resolve(
-    new Response(JSON.stringify(envelope), { status, headers: { 'Content-Type': 'application/json' } }),
+    new Response(JSON.stringify(envelope), {
+      status,
+      headers: { 'Content-Type': 'application/json' },
+    }),
   )
 }

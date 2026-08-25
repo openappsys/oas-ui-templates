@@ -23,8 +23,16 @@ const TABS = (): Array<{ label: string; value: string }> => [
 ]
 
 const FORM_MODE_OPTIONS = (): Array<{ label: string; value: FormMode; desc: string }> => [
-  { label: t('settings.formMode.dialog'), value: 'dialog', desc: t('settings.formMode.dialogDesc') },
-  { label: t('settings.formMode.drawer'), value: 'drawer', desc: t('settings.formMode.drawerDesc') },
+  {
+    label: t('settings.formMode.dialog'),
+    value: 'dialog',
+    desc: t('settings.formMode.dialogDesc'),
+  },
+  {
+    label: t('settings.formMode.drawer'),
+    value: 'drawer',
+    desc: t('settings.formMode.drawerDesc'),
+  },
   { label: t('settings.formMode.page'), value: 'page', desc: t('settings.formMode.pageDesc') },
 ]
 
@@ -35,7 +43,10 @@ const DENSITY_OPTIONS = (): Array<{ label: string; value: Density }> => [
 ]
 
 const PAGE_SIZE_OPTIONS = (): Array<{ label: string; value: string }> =>
-  [5, 10, 20, 50].map((n) => ({ label: t('settings.pageSizeItem', { count: n }), value: String(n) }))
+  [5, 10, 20, 50].map((n) => ({
+    label: t('settings.pageSizeItem', { count: n }),
+    value: String(n),
+  }))
 
 const NOTIF_ROWS = (): Array<{ key: string; label: string }> => [
   { key: 'orders', label: t('settings.notif.orders') },
@@ -143,9 +154,9 @@ export function render(el: HTMLElement): () => void {
   card.appendChild(general.node)
   card.appendChild(notification.node)
   card.appendChild(appearance.node)
-  tabs.innerHTML = TABS().map(
-    (t) => `<oas-tab-panel label="${t.label}" value="${t.value}"></oas-tab-panel>`,
-  ).join('')
+  tabs.innerHTML = TABS()
+    .map((t) => `<oas-tab-panel label="${t.label}" value="${t.value}"></oas-tab-panel>`)
+    .join('')
   tabs.setAttribute('active', 'general')
 
   function switchPanel(value: string): void {
@@ -160,19 +171,23 @@ export function render(el: HTMLElement): () => void {
       <div class="setting-group-title">${t('settings.general.formModeTitle')}</div>
       <div class="form-hint">${t('settings.general.formModeHint')}</div>
       <div class="radio-group" data-testid="form-mode-group" id="form-mode-group">
-        ${FORM_MODE_OPTIONS().map(
-          (o) =>
-            `<oas-radio name="formMode" value="${o.value}"${readFormMode() === o.value ? ' checked' : ''}><span class="radio-item"><span class="radio-label">${o.label}</span><span class="radio-desc">${o.desc}</span></span></oas-radio>`,
-        ).join('')}
+        ${FORM_MODE_OPTIONS()
+          .map(
+            (o) =>
+              `<oas-radio name="formMode" value="${o.value}"${readFormMode() === o.value ? ' checked' : ''}><span class="radio-item"><span class="radio-label">${o.label}</span><span class="radio-desc">${o.desc}</span></span></oas-radio>`,
+          )
+          .join('')}
       </div>
     </div>
     <div class="setting-group">
       <div class="setting-group-title">${t('settings.general.densityTitle')}</div>
       <div class="radio-group inline" data-testid="density-group" id="density-group">
-        ${DENSITY_OPTIONS().map(
-          (o) =>
-            `<oas-radio name="density" value="${o.value}"${readDensity() === o.value ? ' checked' : ''}>${o.label}</oas-radio>`,
-        ).join('')}
+        ${DENSITY_OPTIONS()
+          .map(
+            (o) =>
+              `<oas-radio name="density" value="${o.value}"${readDensity() === o.value ? ' checked' : ''}>${o.label}</oas-radio>`,
+          )
+          .join('')}
       </div>
     </div>
     <div class="setting-group">
@@ -191,18 +206,24 @@ export function render(el: HTMLElement): () => void {
       <div class="notif-matrix" data-testid="notif-matrix" id="notif-matrix">
         <div class="notif-row notif-head">
           <span>${t('settings.notif.type')}</span>
-          ${NOTIF_CHANNELS().map((c) => `<span class="notif-col">${c.label}</span>`).join('')}
+          ${NOTIF_CHANNELS()
+            .map((c) => `<span class="notif-col">${c.label}</span>`)
+            .join('')}
         </div>
-        ${NOTIF_ROWS().map(
-          (row) => `
+        ${NOTIF_ROWS()
+          .map(
+            (row) => `
           <div class="notif-row">
             <span class="notif-channel">${row.label}</span>
-            ${NOTIF_CHANNELS().map(
-              (c) =>
-                `<span class="notif-col"><oas-switch data-testid="notif-${row.key}-${c.key}" data-key="${row.key}.${c.key}"${readBool(NOTIF_PREFIX + row.key + '.' + c.key, true) ? ' checked' : ''}></oas-switch></span>`,
-            ).join('')}
+            ${NOTIF_CHANNELS()
+              .map(
+                (c) =>
+                  `<span class="notif-col"><oas-switch data-testid="notif-${row.key}-${c.key}" data-key="${row.key}.${c.key}"${readBool(NOTIF_PREFIX + row.key + '.' + c.key, true) ? ' checked' : ''}></oas-switch></span>`,
+              )
+              .join('')}
           </div>`,
-        ).join('')}
+          )
+          .join('')}
       </div>
     </div>`)
 

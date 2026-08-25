@@ -297,10 +297,7 @@ export function render(el: HTMLElement): () => void {
     permsInput.setAttribute('value', node?.perms ?? '')
     pathInput.setAttribute('value', node?.path ?? '')
     syncMenuType()
-    drawer.setAttribute(
-      'title',
-      node ? t('menus.editMenu', { title: node.title }) : t('menus.new'),
-    )
+    drawer.setAttribute('title', node ? t('menus.editMenu', { title: node.title }) : t('menus.new'))
   }
 
   function openForm(node: MenuTree | null, parentOverride?: MenuTree): void {

@@ -104,10 +104,12 @@ export function render(el: HTMLElement): () => void {
             <div class="form-field">
               <label class="form-label">${t('roles.form.dataScope')}</label>
               <div class="radio-group" id="rf-scope">
-                ${DATA_SCOPE_OPTIONS().map(
-                  (o) =>
-                    `<oas-radio name="dataScope" value="${o.value}"><span class="radio-item"><span class="radio-label">${o.label}</span><span class="radio-desc">${o.desc}</span></span></oas-radio>`,
-                ).join('')}
+                ${DATA_SCOPE_OPTIONS()
+                  .map(
+                    (o) =>
+                      `<oas-radio name="dataScope" value="${o.value}"><span class="radio-item"><span class="radio-label">${o.label}</span><span class="radio-desc">${o.desc}</span></span></oas-radio>`,
+                  )
+                  .join('')}
               </div>
             </div>
             <div class="form-field" id="rf-custom" hidden>

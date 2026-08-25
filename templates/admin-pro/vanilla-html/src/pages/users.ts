@@ -128,7 +128,10 @@ export function render(el: HTMLElement): () => void {
               <oas-input data-testid="field-name" name="name" placeholder="${t('users.name')}"></oas-input>
               <oas-input data-testid="field-email" name="email" placeholder="${t('users.email')}"></oas-input>
               <oas-select data-testid="field-role" name="roleId" options="[]"></oas-select>
-              <oas-select data-testid="field-status" name="status" options='${JSON.stringify([{ label: statusLabel('active'), value: 'active' }, { label: statusLabel('disabled'), value: 'disabled' }])}'></oas-select>
+              <oas-select data-testid="field-status" name="status" options='${JSON.stringify([
+                { label: statusLabel('active'), value: 'active' },
+                { label: statusLabel('disabled'), value: 'disabled' },
+              ])}'></oas-select>
             </div>
             <div class="form-actions">
               <oas-space justify="end">

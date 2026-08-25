@@ -26,7 +26,12 @@ function sidebarItems(): string {
     .filter((r) => !r.meta.hidden)
     .slice()
     .sort((a, b) => groupOrder(a.meta.group) - groupOrder(b.meta.group))
-    .map((r) => ({ label: t(r.meta.titleKey), value: r.path, icon: r.meta.icon, group: groupLabel(r.meta.group) }))
+    .map((r) => ({
+      label: t(r.meta.titleKey),
+      value: r.path,
+      icon: r.meta.icon,
+      group: groupLabel(r.meta.group),
+    }))
   return JSON.stringify(items)
 }
 
@@ -94,9 +99,19 @@ function buildCommandItems(): CommandEntry[] {
     },
   ]
   const themeItems: CommandEntry[] = [
-    { label: t('cmd.light'), value: 'theme:light', group: t('cmd.themeGroup'), keywords: ['light'] },
+    {
+      label: t('cmd.light'),
+      value: 'theme:light',
+      group: t('cmd.themeGroup'),
+      keywords: ['light'],
+    },
     { label: t('cmd.dark'), value: 'theme:dark', group: t('cmd.themeGroup'), keywords: ['dark'] },
-    { label: t('cmd.system'), value: 'theme:system', group: t('cmd.themeGroup'), keywords: ['system', 'auto'] },
+    {
+      label: t('cmd.system'),
+      value: 'theme:system',
+      group: t('cmd.themeGroup'),
+      keywords: ['system', 'auto'],
+    },
   ]
   const separator: CommandEntry = { label: ' ', value: 'sep', separator: true }
   return [...pageItems, separator, ...actionItems, separator, ...themeItems]

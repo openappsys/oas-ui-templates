@@ -30,8 +30,7 @@ function syncPreviewSelection(el: HTMLElement): void {
 
 export function render(el: HTMLElement): () => void {
   const user = session.user!
-  const roleLabel =
-    user.role === 'admin' ? t('users.role.admin') : t('profile.roleViewer')
+  const roleLabel = user.role === 'admin' ? t('users.role.admin') : t('profile.roleViewer')
 
   el.innerHTML = `
     <div class="page">

@@ -309,10 +309,7 @@ export function render(el: HTMLElement): () => void {
     const pid = node?.parentId ?? parent?.id ?? null
     parentSelect.setAttribute('value', String(pid ?? 0))
     refreshParentOptions(node?.id ?? null)
-    drawer.setAttribute(
-      'title',
-      node ? t('dept.editDept', { name: node.name }) : t('dept.new'),
-    )
+    drawer.setAttribute('title', node ? t('dept.editDept', { name: node.name }) : t('dept.new'))
   }
 
   function openForm(node: DeptNode | null, parent?: DeptTree): void {

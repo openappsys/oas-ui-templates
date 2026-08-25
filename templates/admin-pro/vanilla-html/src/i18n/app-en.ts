@@ -228,14 +228,16 @@ export default {
   'roles.form.name': 'Role Name',
   'roles.form.code': 'Code',
   'roles.placeholder.code': 'e.g. ops_manager',
-  'roles.hint.code': 'Starts with a lowercase letter; may contain digits, underscores, colons and hyphens',
+  'roles.hint.code':
+    'Starts with a lowercase letter; may contain digits, underscores, colons and hyphens',
   'roles.form.dataScope': 'Data Scope',
   'roles.form.customScope': 'Custom data scope (departments)',
   'roles.transfer.source': 'All Departments',
   'roles.transfer.target': 'Selected Departments',
   'roles.rule.name': 'Please enter a role name',
   'roles.rule.code': 'Please enter a role code',
-  'roles.rule.codeFmt': 'The code must start with a lowercase letter and contain only lowercase letters, digits, colons, underscores and hyphens',
+  'roles.rule.codeFmt':
+    'The code must start with a lowercase letter and contain only lowercase letters, digits, colons, underscores and hyphens',
   'roles.notFound': 'That role no longer exists',
   'roles.scope.1': 'All',
   'roles.scope.2': 'Custom',
@@ -368,7 +370,8 @@ export default {
   'settings.notif.email': 'Email',
   'settings.appearance.colorTitle': 'Theme Color',
   'settings.appearance.primaryLabel': 'Brand Primary',
-  'settings.appearance.primaryHint': 'Applies instantly; light and dark themes are saved independently',
+  'settings.appearance.primaryHint':
+    'Applies instantly; light and dark themes are saved independently',
   'settings.appearance.radiusTitle': 'Border Radius',
   'settings.appearance.radiusLabel': 'Control Radius',
   'settings.appearance.radiusHint': '1 ~ 12px',

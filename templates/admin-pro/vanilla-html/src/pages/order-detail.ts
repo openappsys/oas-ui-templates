@@ -61,7 +61,8 @@ function buildTimeline(order: OrderRow): Array<{ time: string; title: string; co
   const idx = FLOW_STEPS.indexOf(order.status)
   if (idx >= 1) nodes.push({ time: addDays(order.created, 1), title: statusLabel('paid') })
   if (idx >= 2) nodes.push({ time: addDays(order.created, 2), title: statusLabel('shipping') })
-  if (idx >= 3) nodes.push({ time: addDays(order.created, 3), title: statusLabel('done'), color: 'green' })
+  if (idx >= 3)
+    nodes.push({ time: addDays(order.created, 3), title: statusLabel('done'), color: 'green' })
   return nodes
 }
 
@@ -157,8 +158,7 @@ export function render(el: HTMLElement): () => void {
     } else {
       action.style.display = 'none'
       note.hidden = false
-      note.textContent =
-        order.status === 'done' ? t('orders.noteDone') : t('orders.noteCancelled')
+      note.textContent = order.status === 'done' ? t('orders.noteDone') : t('orders.noteCancelled')
     }
   }
 
