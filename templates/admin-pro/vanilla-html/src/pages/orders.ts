@@ -313,31 +313,37 @@ export function render(el: HTMLElement): () => void {
     renderTable()
   })
 
-  el.querySelector<HTMLElement>('[data-testid="order-detail-link"]')!.addEventListener('click', () => {
-    if (state.selectedId) sessionStorage.setItem('order-detail-id', state.selectedId)
-  })
+  el.querySelector<HTMLElement>('[data-testid="order-detail-link"]')!.addEventListener(
+    'click',
+    () => {
+      if (state.selectedId) sessionStorage.setItem('order-detail-id', state.selectedId)
+    },
+  )
 
-  el.querySelector<HTMLElement>('[data-testid="order-detail-action"]')!.addEventListener('click', async (e) => {
-    const button = e.currentTarget as HTMLElement
-    const target = button.dataset.target as OrderStatus | undefined
-    if (!target || !state.selectedId) return
-    button.setAttribute('loading', '')
-    const updated = await updateOrderStatus(state.selectedId, target)
-    button.removeAttribute('loading')
-    if (!updated) {
-      message.error('该订单不存在')
-      return
-    }
-    message.success(`已${button.textContent}`)
-    await refresh()
-    const row = state.rows.find((r) => r.id === state.selectedId)
-    if (row) {
-      const tag = el.querySelector<HTMLElement>('#order-detail-tag')!
-      tag.textContent = STATUS_LABEL[row.status]
-      setTagType(tag, row.status)
-      renderAction(row)
-    }
-  })
+  el.querySelector<HTMLElement>('[data-testid="order-detail-action"]')!.addEventListener(
+    'click',
+    async (e) => {
+      const button = e.currentTarget as HTMLElement
+      const target = button.dataset.target as OrderStatus | undefined
+      if (!target || !state.selectedId) return
+      button.setAttribute('loading', '')
+      const updated = await updateOrderStatus(state.selectedId, target)
+      button.removeAttribute('loading')
+      if (!updated) {
+        message.error('该订单不存在')
+        return
+      }
+      message.success(`已${button.textContent}`)
+      await refresh()
+      const row = state.rows.find((r) => r.id === state.selectedId)
+      if (row) {
+        const tag = el.querySelector<HTMLElement>('#order-detail-tag')!
+        tag.textContent = STATUS_LABEL[row.status]
+        setTagType(tag, row.status)
+        renderAction(row)
+      }
+    },
+  )
 
   tbody.addEventListener('click', (e) => {
     const tr = (e.target as HTMLElement).closest<HTMLElement>('tr[data-id]')

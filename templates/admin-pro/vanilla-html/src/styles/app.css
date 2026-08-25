@@ -284,6 +284,9 @@ oas-sider[collapsed] {
   display: flex;
   flex-direction: column;
 }
+#view:has(.form-wizard) {
+  overflow: visible;
+}
 .app-foot {
   flex-shrink: 0;
   padding: var(--oas-space-3) var(--oas-space-4);
@@ -687,6 +690,11 @@ html[data-theme="dark"] {
 
 .mono {
   font-family: var(--app-mono);
+}
+
+html[data-theme="dark"] oas-button[type="primary"]::part(button) {
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
 }
 
 oas-tabs {
@@ -1365,19 +1373,12 @@ oas-sidebar::part(trigger) {
   gap: var(--oas-space-2);
   min-height: var(--oas-control-height-md);
 }
-.switch-text {
-  font-size: var(--oas-font-size-sm);
-  color: var(--oas-color-text-secondary);
-}
 
 .form-total {
   display: flex;
   align-items: baseline;
   justify-content: flex-end;
   gap: var(--oas-space-3);
-  margin-top: var(--oas-space-4);
-  padding-top: var(--oas-space-4);
-  border-top: 1px solid var(--oas-color-border);
   font-size: var(--oas-font-size-sm);
   color: var(--oas-color-text-secondary);
 }
@@ -1412,6 +1413,10 @@ oas-sidebar::part(trigger) {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.form-item-calc {
+  text-align: right;
+  white-space: nowrap;
+}
 
 .form-confirm {
   margin-top: var(--oas-space-4);
@@ -1424,6 +1429,27 @@ oas-sidebar::part(trigger) {
   margin-top: var(--oas-space-4);
   padding-top: var(--oas-space-4);
   border-top: 1px solid var(--oas-color-border);
+}
+
+.form-foot {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-3);
+  margin: var(--oas-space-4) calc(-1 * var(--oas-space-4)) calc(-1 * var(--oas-space-4));
+  padding: var(--oas-space-4);
+  border-top: 1px solid var(--oas-color-border);
+  background: var(--oas-color-bg);
+}
+.form-foot-summary[hidden] {
+  display: none;
+}
+.form-foot .form-actions {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
 }
 
 .order-detail-ph::part(title) {

@@ -30,7 +30,7 @@ const FLOW: Partial<Record<OrderStatus, { label: string; to: OrderStatus }>> = {
 }
 
 function formatMoney(n: number): string {
-  return `¥ ${n.toLocaleString('en-US')}`
+  return `¥${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
 function addDays(dateStr: string, n: number): string {
@@ -128,7 +128,9 @@ export function render(el: HTMLElement): () => void {
     el.querySelector<HTMLElement>('#odb-customer')!.textContent = order.customer
     el.querySelector<HTMLElement>('#odb-amount')!.textContent = formatMoney(order.amount)
     el.querySelector<HTMLElement>('#odb-phone')!.textContent = order.phone ?? '-'
-    el.querySelector<HTMLElement>('#odb-urgent')!.textContent = order.urgent ? '加急配送' : '普通配送'
+    el.querySelector<HTMLElement>('#odb-urgent')!.textContent = order.urgent
+      ? '加急配送'
+      : '普通配送'
     el.querySelector<HTMLElement>('#odb-created')!.textContent = order.created
     el.querySelector<HTMLElement>('#odb-items')!.innerHTML = order.items
       .map((it) => `<oas-tag>${it}</oas-tag>`)
@@ -137,7 +139,9 @@ export function render(el: HTMLElement): () => void {
 
   function renderTimeline(): void {
     if (!order) return
-    timelineWrap.innerHTML = `<oas-timeline data-testid="order-detail-timeline">${buildTimeline(order)
+    timelineWrap.innerHTML = `<oas-timeline data-testid="order-detail-timeline">${buildTimeline(
+      order,
+    )
       .map(
         (n) =>
           `<oas-timeline-item time="${n.time}"${n.color ? ` color="${n.color}"` : ''}>${n.title}</oas-timeline-item>`,

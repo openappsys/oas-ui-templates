@@ -69,6 +69,8 @@ test('admin 从订单详情抽屉跳转订单详情页', async ({ page }) => {
 
   await page.waitForURL('**/#/order-detail')
   await expect(page.getByTestId('order-page-header')).toContainText('SO-')
-  await expect(page.getByTestId('order-detail-timeline').locator('oas-timeline-item')).not.toHaveCount(0)
+  await expect(
+    page.getByTestId('order-detail-timeline').locator('oas-timeline-item'),
+  ).not.toHaveCount(0)
   expect(errors).toEqual([])
 })

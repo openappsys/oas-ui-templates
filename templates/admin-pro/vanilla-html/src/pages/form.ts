@@ -8,7 +8,7 @@ const STEPS = [{ title: '基础信息' }, { title: '商品配置' }, { title: '�
 const PHONE_RE = /^1\d{10}$/
 
 function formatMoney(n: number): string {
-  return `¥ ${n.toLocaleString('en-US')}`
+  return `¥${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
 function today(): string {
@@ -85,7 +85,6 @@ export function render(el: HTMLElement): () => void {
               <label class="form-label">加急配送</label>
               <div class="switch-line">
                 <oas-switch data-testid="form-urgent"></oas-switch>
-                <span class="switch-text" data-testid="form-urgent-text">普通配送</span>
               </div>
             </div>
           </div>
@@ -97,18 +96,22 @@ export function render(el: HTMLElement): () => void {
         <div class="form-step" data-testid="form-step3" data-index="2" hidden>
           <oas-descriptions data-testid="form-summary" column="1"></oas-descriptions>
           <div class="form-items" data-testid="form-items" id="form-items"></div>
-          <div class="form-total">合计金额<span class="num mono" data-testid="form-total" id="form-total"></span></div>
-          <div class="form-confirm">
-            <oas-checkbox data-testid="form-confirm">我已核对信息</oas-checkbox>
-            <div class="form-error" data-testid="form-error-confirm" hidden></div>
-          </div>
         </div>
-        <div class="form-actions">
-          <oas-space justify="end">
-            <oas-button data-testid="form-prev">上一步</oas-button>
-            <oas-button data-testid="form-next" type="primary">下一步</oas-button>
-            <oas-button data-testid="form-submit" type="primary" hidden>提交订单</oas-button>
-          </oas-space>
+        <div class="form-foot">
+          <div class="form-foot-summary" data-testid="form-foot-summary" id="form-foot-summary" hidden>
+            <div class="form-total">合计金额<span class="num mono" data-testid="form-total" id="form-total"></span></div>
+            <div class="form-confirm">
+              <oas-checkbox data-testid="form-confirm">我已核对信息</oas-checkbox>
+              <div class="form-error" data-testid="form-error-confirm" hidden></div>
+            </div>
+          </div>
+          <div class="form-actions">
+            <oas-space justify="end">
+              <oas-button data-testid="form-prev">上一步</oas-button>
+              <oas-button data-testid="form-next" type="primary">下一步</oas-button>
+              <oas-button data-testid="form-submit" type="primary" hidden>提交订单</oas-button>
+            </oas-space>
+          </div>
         </div>
       </oas-card>
     </div>`
@@ -125,10 +128,10 @@ export function render(el: HTMLElement): () => void {
   const productsGroup = el.querySelector<HTMLElement>('[data-testid="form-products"]')!
   const qty = el.querySelector<HTMLElement>('[data-testid="form-qty"]')!
   const urgent = el.querySelector<HTMLElement>('[data-testid="form-urgent"]')!
-  const urgentText = el.querySelector<HTMLElement>('[data-testid="form-urgent-text"]')!
   const datePicker = el.querySelector<HTMLElement>('[data-testid="form-date"]')!
   const confirmCb = el.querySelector<HTMLElement>('[data-testid="form-confirm"]')!
   const totalEl = el.querySelector<HTMLElement>('[data-testid="form-total"]')!
+  const footSummary = el.querySelector<HTMLElement>('[data-testid="form-foot-summary"]')!
   const summary = el.querySelector<HTMLElement>('[data-testid="form-summary"]')!
   const itemsWrap = el.querySelector<HTMLElement>('[data-testid="form-items"]')!
 
@@ -196,7 +199,9 @@ export function render(el: HTMLElement): () => void {
     el.querySelector<HTMLElement>('#sum-phone')!.textContent = state.phone.trim() || '-'
     el.querySelector<HTMLElement>('#sum-note')!.textContent = state.note.trim() || '-'
     el.querySelector<HTMLElement>('#sum-qty')!.textContent = String(state.quantity)
-    el.querySelector<HTMLElement>('#sum-urgent')!.textContent = state.urgent ? '加急配送' : '普通配送'
+    el.querySelector<HTMLElement>('#sum-urgent')!.textContent = state.urgent
+      ? '加急配送'
+      : '普通配送'
     el.querySelector<HTMLElement>('#sum-date')!.textContent = state.expectDate || '-'
 
     itemsWrap.innerHTML = items
@@ -204,8 +209,7 @@ export function render(el: HTMLElement): () => void {
         (p) => `
         <div class="form-item-row">
           <span class="form-item-name">${p.name}</span>
-          <span class="mono">${formatMoney(p.price)} × ${state.quantity}</span>
-          <span class="mono">${formatMoney(p.price * state.quantity)}</span>
+          <span class="form-item-calc mono">${formatMoney(p.price)} × ${state.quantity} = ${formatMoney(p.price * state.quantity)}</span>
         </div>`,
       )
       .join('')
@@ -218,7 +222,7 @@ export function render(el: HTMLElement): () => void {
     productsGroup.innerHTML = state.productsData
       .map(
         (p) => `
-        <oas-checkbox value="${p.id}">${p.name} · ${formatMoney(p.price)}</oas-checkbox>`,
+        <oas-checkbox value="${p.id}">${p.name} · <span class="mono">${formatMoney(p.price)}</span></oas-checkbox>`,
       )
       .join('')
   }
@@ -235,6 +239,7 @@ export function render(el: HTMLElement): () => void {
     prev.style.display = state.step === 0 ? 'none' : ''
     next.style.display = state.step === 2 ? 'none' : ''
     submit.style.display = state.step === 2 ? '' : 'none'
+    footSummary.hidden = state.step !== 2
     stepsEl.setAttribute('current', String(state.step))
     if (state.step === 2) renderSummary()
   }
@@ -263,9 +268,7 @@ export function render(el: HTMLElement): () => void {
       setError('form-error-confirm', '请先勾选「我已核对信息」')
       return
     }
-    const items = state.products
-      .map((id) => productById(id))
-      .filter((p): p is ProductRow => !!p)
+    const items = state.products.map((id) => productById(id)).filter((p): p is ProductRow => !!p)
     if (items.length === 0) {
       message.error('请至少选择一个商品')
       return
@@ -282,7 +285,10 @@ export function render(el: HTMLElement): () => void {
         phone: state.phone.trim(),
         note: state.note.trim() || undefined,
       })
-      sessionStorage.setItem('form-result', JSON.stringify({ status: 'success', orderId: order.id }))
+      sessionStorage.setItem(
+        'form-result',
+        JSON.stringify({ status: 'success', orderId: order.id }),
+      )
       message.success('订单创建成功')
       location.hash = '/result'
     } finally {
@@ -328,7 +334,6 @@ export function render(el: HTMLElement): () => void {
   })
   urgent.addEventListener('oas-change', (e) => {
     state.urgent = (e as CustomEvent<{ checked: boolean }>).detail.checked
-    urgentText.textContent = state.urgent ? '加急配送' : '普通配送'
   })
   datePicker.addEventListener('oas-change', (e) => {
     state.expectDate = (e as CustomEvent<{ value: string }>).detail.value

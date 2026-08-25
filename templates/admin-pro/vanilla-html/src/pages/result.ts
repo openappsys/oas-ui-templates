@@ -1,4 +1,7 @@
+import { destroyAll } from '@oas-ui/ui/feedback/message'
+
 export function render(el: HTMLElement): () => void {
+  destroyAll()
   let success = false
   let orderId = ''
   try {
@@ -38,8 +41,9 @@ export function render(el: HTMLElement): () => void {
   const nav = (path: string): void => {
     location.hash = path
   }
-  el.querySelector<HTMLElement>('[data-testid="result-view-order"]')?.addEventListener('click', () =>
-    nav('/orders'),
+  el.querySelector<HTMLElement>('[data-testid="result-view-order"]')?.addEventListener(
+    'click',
+    () => nav('/orders'),
   )
   el.querySelector<HTMLElement>('[data-testid="result-reset"]')?.addEventListener('click', () =>
     nav('/form'),
