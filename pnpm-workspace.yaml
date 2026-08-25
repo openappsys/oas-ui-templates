@@ -2,8 +2,8 @@ packages:
   - templates/*
   - templates/*/*
 minimumReleaseAgeExclude:
-  - '@oas-ui/core@2.2.2'
-  - '@oas-ui/i18n@2.2.2'
-  - '@oas-ui/icons@2.2.2'
-  - '@oas-ui/theme@2.2.2'
-  - '@oas-ui/ui@2.2.2'
+  - '@oas-ui/core@2.2.2 || 2.2.3'
+  - '@oas-ui/i18n@2.2.2 || 2.2.3'
+  - '@oas-ui/icons@2.2.2 || 2.2.3'
+  - '@oas-ui/theme@2.2.2 || 2.2.3'
+  - '@oas-ui/ui@2.2.2 || 2.2.3'
