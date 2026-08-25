@@ -1384,9 +1384,6 @@ oas-sidebar::part(trigger) {
   .nav-toggle {
     display: inline-flex;
   }
-  .nav-toggle::part(button) {
-    justify-content: flex-start;
-  }
 
   @media (pointer: coarse) {
     .nav-toggle::part(button) {
