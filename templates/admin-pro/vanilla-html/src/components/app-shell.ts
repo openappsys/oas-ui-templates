@@ -17,15 +17,16 @@ function groupLabel(group: RouteGroup | undefined): string {
   return t('nav.group.overview')
 }
 
+function groupOrder(group: RouteGroup | undefined): number {
+  return group ? GROUP_ORDER.indexOf(group) : GROUP_ORDER.length
+}
+
 function sidebarItems(): string {
   const items = routes
     .filter((r) => !r.meta.hidden)
-    .map((r) => ({ label: t(r.meta.titleKey), value: r.path, icon: r.meta.icon, group: r.meta.group }))
-    .sort((a, b) => {
-      const ai = a.group ? GROUP_ORDER.indexOf(a.group) : GROUP_ORDER.length
-      const bi = b.group ? GROUP_ORDER.indexOf(b.group) : GROUP_ORDER.length
-      return ai - bi
-    })
+    .slice()
+    .sort((a, b) => groupOrder(a.meta.group) - groupOrder(b.meta.group))
+    .map((r) => ({ label: t(r.meta.titleKey), value: r.path, icon: r.meta.icon, group: groupLabel(r.meta.group) }))
   return JSON.stringify(items)
 }
 
