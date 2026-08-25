@@ -65,15 +65,18 @@ test('admin 断点切换：500px 汉堡可见，800px 隐藏并恢复侧栏', as
   await expect.poll(() => siderWidth(page)).toBe(200)
 })
 
-test('admin 选中高亮随路由同步：active 属性随路由迁移', async ({ page }) => {
+test('admin 选中高亮随路由同步：aria-current 高亮项随路由迁移', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 })
   await login(page)
 
   await expect(page.locator('#nav')).toHaveAttribute('active', '/dashboard')
+  await expect(page.locator('#nav [aria-current="page"]')).toHaveText('仪表盘')
 
   await page.locator('#nav').getByText('用户管理').click()
   await expect(page.locator('#nav')).toHaveAttribute('active', '/users')
+  await expect(page.locator('#nav [aria-current="page"]')).toHaveText('用户管理')
 
   await page.locator('#nav').getByText('个人中心').click()
   await expect(page.locator('#nav')).toHaveAttribute('active', '/profile')
+  await expect(page.locator('#nav [aria-current="page"]')).toHaveText('个人中心')
 })

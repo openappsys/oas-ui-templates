@@ -1,11 +1,8 @@
 import { message } from '@oas-ui/ui/feedback/message'
-import { iconNames } from '@oas-ui/icons'
 import { listNotifications, markAllRead, markRead, unreadCount } from '../data/notifications'
 import { matchRoute, parseHash, resolve } from '../router/router'
 import { routes } from '../router/routes'
 import { session } from '../store/session'
-
-const KNOWN_ICONS = new Set<string>(iconNames)
 
 function sidebarItems(): string {
   return JSON.stringify(
@@ -142,39 +139,11 @@ export function mountApp(root: HTMLElement): void {
       </div>
     </oas-drawer>`
   const sidebar = root.querySelector<HTMLElement>('#nav')!
-  const sider = root.querySelector<HTMLElement>('oas-sider')!
 
   root.querySelector<HTMLElement>('#nav-toggle')!.addEventListener('click', () => {
     if (sidebar.hasAttribute('drawer-open')) (sidebar as any).closeDrawer()
     else (sidebar as any).openDrawer()
   })
-
-  sidebar.addEventListener('oas-collapse', (e) => {
-    const collapsed = (e as CustomEvent<{ collapsed: boolean }>).detail.collapsed
-    if (collapsed) sider.setAttribute('collapsed', '')
-    else sider.removeAttribute('collapsed')
-  })
-
-  function patchSidebarIcons(): void {
-    sidebar.shadowRoot?.querySelectorAll<HTMLElement>('.icon').forEach((span) => {
-      if (span.childElementCount > 0) return
-      const name = (span.textContent ?? '').trim()
-      if (!name || !KNOWN_ICONS.has(name)) return
-      span.textContent = ''
-      const icon = document.createElement('oas-icon')
-      icon.setAttribute('name', name)
-      icon.setAttribute('size', '16')
-      span.appendChild(icon)
-    })
-  }
-
-  if (sidebar.shadowRoot) {
-    new MutationObserver(patchSidebarIcons).observe(sidebar.shadowRoot, {
-      childList: true,
-      subtree: true,
-    })
-    patchSidebarIcons()
-  }
 
   sidebar.addEventListener('oas-select', (e) => {
     const value = (e as CustomEvent<{ value: string }>).detail.value

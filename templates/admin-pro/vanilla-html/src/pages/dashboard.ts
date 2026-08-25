@@ -235,7 +235,7 @@ export function render(el: HTMLElement): () => void {
     const grid = el.querySelector<HTMLElement>('#stat-grid')!
     grid.innerHTML = STATS.map((s) => {
       const tone = getToneVars(s.tone)
-      const arrow = s.delta >= 0 ? 'arrow-down' : 'arrow-up'
+      const arrow = s.delta >= 0 ? 'arrow-up' : 'arrow-down'
       const deltaCls = s.delta >= 0 ? 'delta-up' : 'delta-down'
       const num = formatNumber(s.value)
       return `

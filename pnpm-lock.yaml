@@ -15,14 +15,14 @@ importers:
   templates/admin-pro/vanilla-html:
     dependencies:
       '@oas-ui/icons':
-        specifier: ^2.2.2
-        version: 2.2.2
+        specifier: ^2.2.3
+        version: 2.2.3
       '@oas-ui/theme':
-        specifier: ^2.2.0
-        version: 2.2.2
+        specifier: ^2.2.3
+        version: 2.2.3
       '@oas-ui/ui':
-        specifier: ^2.2.0
-        version: 2.2.2
+        specifier: ^2.2.3
+        version: 2.2.3
       echarts:
         specifier: ^6.0.0
         version: 6.1.0
@@ -105,20 +105,20 @@ packages:
   '@jridgewell/sourcemap-codec@1.5.5':
     resolution: {integrity: sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og==}
 
-  '@oas-ui/core@2.2.2':
-    resolution: {integrity: sha512-85H5SgpG0iyjt8HFlHR4miTv2t6oDWb9TJ16UeyN4IMcI9vnaqLwdbWlsB85bAoRZXhTcndNrSx5dqrFtVxjNw==}
+  '@oas-ui/core@2.2.3':
+    resolution: {integrity: sha512-LqNMcGUDY5c/6ePYD6jGRykJSxRjSyciG0BhzTUprtfbfWcFe4G4Y0afWGVuUKmgAuK7BpW6ETR7QLmmPK97hQ==}
 
-  '@oas-ui/i18n@2.2.2':
-    resolution: {integrity: sha512-783U4PzuHZRoFK2eBSSWgG704AtSqvX8NTrdxh5Fpar0eCVnjtXbU8CB551CoxSut7m3ed/0yUenJvVgv/2Djg==}
+  '@oas-ui/i18n@2.2.3':
+    resolution: {integrity: sha512-AxK6gVmNK6oPks5n2UeJ5D4IwMVkIIL+siJRlAtdi4zVymEmjy/wjTKbAh2eLcDf06kZRjSS+h4x5zbcZfmFrg==}
 
-  '@oas-ui/icons@2.2.2':
-    resolution: {integrity: sha512-lpbwxbXooXT33Ow3BeGXnYclmKbeG8v6AG95+IC2x44Yyle1p88IqlQJ701pSiC+Mu8R2peKCjyx9PIkGD4/DQ==}
+  '@oas-ui/icons@2.2.3':
+    resolution: {integrity: sha512-LQ8MnywxB1eSGuiXIOVdKn/QJbzyxaI1oV/pqVs+3GrKS349lY2+VZf/Y3/mEwC2UORHzo5sC56Z8I8I14H0NA==}
 
-  '@oas-ui/theme@2.2.2':
-    resolution: {integrity: sha512-rK+aNCeAHIpguzuMvX9lxL05ndSP9SwLFyf57fQdfP3tFIPpcxiV/iFD1ejOU6gyf7ULHv85oRx4QW4JoUBKfg==}
+  '@oas-ui/theme@2.2.3':
+    resolution: {integrity: sha512-PKcfYEH98hXaK8p2uQoGvrvvKpQaBqN+tPk/QOuayrpUKR+KD29+xgUvMPgG81vQSJfxDDXCUdKAY7xozdEYKw==}
 
-  '@oas-ui/ui@2.2.2':
-    resolution: {integrity: sha512-0g3ArMHwONrUICnKlzNbGEww8rVwNYJwKe6+eTJxdtlcynApagnJYYPROCIukqJO3PJLyxgns935vx7oqdhzjA==}
+  '@oas-ui/ui@2.2.3':
+    resolution: {integrity: sha512-iUNLBytxdY6IVhIeRhCJi7/iSFolFkp0qEGwTCOZmJA0be0hy5aPtSCrb5KfAn9ecFA6V24rHwNCMQy+CG5lXg==}
 
   '@oxc-project/types@0.146.0':
     resolution: {integrity: sha512-XC0QsnnhVe7sLIWmYmdPw7x5P0h4W8vUU3Nv1ySgWXtvCz8NizoAEpGXA0sOYoJQV2Rl13LgURAHQ5cI5ILCSA==}
@@ -757,21 +757,21 @@ snapshots:
 
   '@jridgewell/sourcemap-codec@1.5.5': {}
 
-  '@oas-ui/core@2.2.2': {}
+  '@oas-ui/core@2.2.3': {}
 
-  '@oas-ui/i18n@2.2.2':
+  '@oas-ui/i18n@2.2.3':
     dependencies:
-      '@oas-ui/core': 2.2.2
+      '@oas-ui/core': 2.2.3
 
-  '@oas-ui/icons@2.2.2': {}
+  '@oas-ui/icons@2.2.3': {}
 
-  '@oas-ui/theme@2.2.2': {}
+  '@oas-ui/theme@2.2.3': {}
 
-  '@oas-ui/ui@2.2.2':
+  '@oas-ui/ui@2.2.3':
     dependencies:
-      '@oas-ui/core': 2.2.2
-      '@oas-ui/i18n': 2.2.2
-      '@oas-ui/icons': 2.2.2
+      '@oas-ui/core': 2.2.3
+      '@oas-ui/i18n': 2.2.3
+      '@oas-ui/icons': 2.2.3
 
   '@oxc-project/types@0.146.0': {}
 
