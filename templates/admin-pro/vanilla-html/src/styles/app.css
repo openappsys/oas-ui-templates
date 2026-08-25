@@ -78,9 +78,13 @@ body {
   display: inline-flex;
   align-items: center;
   gap: var(--oas-space-2);
+  cursor: pointer;
 }
 .global-search oas-input {
   width: 280px;
+}
+.global-search:hover oas-input::part(input) {
+  border-color: var(--oas-color-primary);
 }
 .kbd-hint {
   font-family: var(--app-mono);
@@ -145,6 +149,82 @@ html[data-theme="dark"] .theme-dot::before {
     );
   box-shadow: none;
   border: none;
+}
+
+.icon-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  color: var(--oas-color-text-primary);
+}
+.icon-btn:hover {
+  background: var(--oas-color-bg-hover);
+}
+.icon-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+}
+
+#notif-toggle {
+  --oas-control-height-md: 28px;
+}
+
+.fullscreen-btn .fs-compress {
+  display: none;
+}
+.fullscreen-btn.is-fullscreen .fs-compress {
+  display: inline-flex;
+}
+.fullscreen-btn.is-fullscreen .fs-expand {
+  display: none;
+}
+
+.notif-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--oas-space-2);
+}
+.notif-item {
+  cursor: pointer;
+}
+.notif-item:hover {
+  background: var(--oas-color-bg-hover);
+}
+.notif-item.is-unread::part(title)::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--oas-color-primary);
+  margin-inline-end: var(--oas-space-2);
+  vertical-align: 1px;
+}
+.notif-desc {
+  display: block;
+  margin-top: var(--oas-space-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.notif-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--oas-space-2);
+}
+.notif-time {
+  font-family: var(--app-mono);
+  font-size: var(--oas-font-size-xs);
+  color: var(--oas-color-text-secondary);
+  white-space: nowrap;
 }
 
 oas-sider {
@@ -899,6 +979,9 @@ oas-sidebar::part(trigger) {
     overflow: hidden;
   }
   .global-search {
+    display: none;
+  }
+  .fullscreen-btn {
     display: none;
   }
   .oas-logo-word {
