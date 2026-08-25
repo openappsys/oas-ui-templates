@@ -47,14 +47,16 @@ oas-layout::part(content) {
 
 oas-sider {
   position: relative;
+  width: 200px;
   height: calc(100vh - 56px);
-  padding-block: 0;
+  padding: 0;
   overflow: hidden;
 }
 oas-sidebar {
   --oas-control-height-lg: 32px;
   position: absolute;
   inset: 0;
+  width: 100%;
   height: auto;
 }
 oas-sidebar::part(root) {
@@ -65,7 +67,7 @@ oas-sidebar::part(panel) {
 }
 
 oas-sidebar::part(toggle) {
-  margin: 0 8px 10px;
+  margin: 0;
 }
 
 .app-header {
@@ -295,14 +297,13 @@ html[data-theme="dark"] .theme-dot::before {
 }
 
 oas-sider {
-  height: 100%;
-  --oas-sidebar-width: 168px;
   transition:
     width var(--oas-transition-base, 180ms) var(--oas-ease-out, cubic-bezier(0.2, 0, 0.2, 1)),
     padding var(--oas-transition-base, 180ms) var(--oas-ease-out, cubic-bezier(0.2, 0, 0.2, 1));
 }
 oas-sider[collapsed] {
   padding: 0;
+  width: 64px;
 }
 
 .content-col {
