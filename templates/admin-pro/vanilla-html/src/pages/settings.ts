@@ -87,7 +87,10 @@ function readColor(): string {
 const DENSITY_PAD: Record<Density, string> = { compact: '6px', default: '12px', large: '16px' }
 
 function applyDensity(): void {
-  document.documentElement.style.setProperty('--oas-table-cell-padding-block', DENSITY_PAD[readDensity()])
+  document.documentElement.style.setProperty(
+    '--oas-table-cell-padding-block',
+    DENSITY_PAD[readDensity()],
+  )
 }
 
 export function applySettings(): void {
