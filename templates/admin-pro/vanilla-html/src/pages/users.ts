@@ -1,4 +1,5 @@
 import { message } from '@oas-ui/ui/feedback/message'
+import { t } from '../i18n'
 import { createUser, listUsers, removeUser, updateUser } from '../data/users'
 import type { UserRow, UserRole, UserStatus } from '../data/users'
 import { listRoles, treeMenus } from '../data/system'
@@ -6,24 +7,43 @@ import type { MenuTree, RoleRow } from '../data/system'
 import { session } from '../store/session'
 
 const PAGE_SIZE = 5
-const ROLE_LABEL: Record<UserRole, string> = { admin: '管理员', editor: '编辑', viewer: '访客' }
-const STATUS_LABEL: Record<UserStatus, string> = { active: '启用', disabled: '禁用' }
 const ALLOWED: Record<UserRole, string[]> = {
   admin: ['user:list', 'user:add', 'user:edit', 'user:delete'],
   editor: ['user:list', 'user:add', 'user:edit'],
   viewer: ['user:list'],
 }
 
-const COLUMNS =
-  '[{"key":"id","title":"ID","width":"60px"},{"key":"name","title":"姓名"},{"key":"email","title":"邮箱"},{"key":"role","title":"角色"},{"key":"status","title":"状态"},{"key":"created","title":"创建日期","sortable":true}]'
+function roleLabel(role: UserRole): string {
+  return t(`users.role.${role}`)
+}
 
-const RULES =
-  '{"name":[{"required":true,"message":"请输入姓名"}],"email":[{"required":true,"message":"请输入邮箱"},{"pattern":"^\\\\S+@\\\\S+$","message":"邮箱格式不正确"}]}'
+function statusLabel(status: UserStatus): string {
+  return t(`users.status.${status}`)
+}
 
-const STATUS_OPTIONS = [
-  { label: '全部状态', value: '' },
-  { label: '启用', value: 'active' },
-  { label: '禁用', value: 'disabled' },
+const COLUMNS = () =>
+  JSON.stringify([
+    { key: 'id', title: 'ID', width: '60px' },
+    { key: 'name', title: t('users.name') },
+    { key: 'email', title: t('users.email') },
+    { key: 'role', title: t('users.role') },
+    { key: 'status', title: t('users.status') },
+    { key: 'created', title: t('users.created'), sortable: true },
+  ])
+
+const RULES = () =>
+  JSON.stringify({
+    name: [{ required: true, message: t('users.rule.name') }],
+    email: [
+      { required: true, message: t('users.rule.email') },
+      { pattern: '^\\S+@\\S+$', message: t('users.rule.emailFmt') },
+    ],
+  })
+
+const STATUS_OPTIONS = () => [
+  { label: t('users.allStatus'), value: '' },
+  { label: statusLabel('active'), value: 'active' },
+  { label: statusLabel('disabled'), value: 'disabled' },
 ]
 
 interface PageState {
@@ -78,23 +98,23 @@ export function render(el: HTMLElement): () => void {
     <div class="page">
       <div class="page-head">
         <div>
-          <h1 class="page-title">用户管理</h1>
-          <p class="page-subtitle">管理系统成员与权限</p>
+          <h1 class="page-title">${t('users.title')}</h1>
+          <p class="page-subtitle">${t('users.subtitle')}</p>
         </div>
-        <oas-button data-testid="user-create" type="primary" icon="plus">新建用户</oas-button>
+        <oas-button data-testid="user-create" type="primary" icon="plus">${t('users.new')}</oas-button>
       </div>
-      <oas-card class="list-card" title="用户列表">
+      <oas-card class="list-card" title="${t('users.list')}">
         <div class="users-toolbar" slot="extra">
-          <oas-input data-testid="user-search" placeholder="搜索姓名 / 邮箱" clearable prefix-icon="search"></oas-input>
-          <oas-select data-testid="role-filter" placeholder="角色" options="[]" value=""></oas-select>
-          <oas-select data-testid="status-filter" placeholder="状态" options='${JSON.stringify(STATUS_OPTIONS)}' value=""></oas-select>
-          <oas-button id="users-refresh" icon="refresh" title="刷新"></oas-button>
+          <oas-input data-testid="user-search" placeholder="${t('users.search')}" clearable prefix-icon="search"></oas-input>
+          <oas-select data-testid="role-filter" placeholder="${t('users.role')}" options="[]" value=""></oas-select>
+          <oas-select data-testid="status-filter" placeholder="${t('users.status')}" options='${JSON.stringify(STATUS_OPTIONS())}' value=""></oas-select>
+          <oas-button id="users-refresh" icon="refresh" title="${t('common.refresh')}"></oas-button>
         </div>
         <div class="table-wrap" id="table-wrap">
-          <oas-table data-testid="users-table" row-key="id" columns='${COLUMNS}' data="[]"></oas-table>
+          <oas-table data-testid="users-table" row-key="id" columns='${COLUMNS()}' data="[]"></oas-table>
           <div class="empty-overlay" id="empty-overlay" hidden>
-            <oas-empty description="未找到匹配用户"></oas-empty>
-            <oas-button id="clear-filters" type="primary">清除筛选</oas-button>
+            <oas-empty description="${t('users.empty')}"></oas-empty>
+            <oas-button id="clear-filters" type="primary">${t('common.clearFilter')}</oas-button>
           </div>
         </div>
         <oas-pagination data-testid="users-pager" total="0" page-size="${PAGE_SIZE}" current="1" show-total></oas-pagination>
@@ -102,18 +122,18 @@ export function render(el: HTMLElement): () => void {
 
       <oas-modal data-testid="user-form-modal" no-footer>
         <div class="modal-body">
-          <h2 id="form-title">新建用户</h2>
-          <oas-form id="user-form" rules='${RULES}'>
+          <h2 id="form-title">${t('users.new')}</h2>
+          <oas-form id="user-form" rules='${RULES()}'>
             <div class="form-grid">
-              <oas-input data-testid="field-name" name="name" placeholder="姓名"></oas-input>
-              <oas-input data-testid="field-email" name="email" placeholder="邮箱"></oas-input>
+              <oas-input data-testid="field-name" name="name" placeholder="${t('users.name')}"></oas-input>
+              <oas-input data-testid="field-email" name="email" placeholder="${t('users.email')}"></oas-input>
               <oas-select data-testid="field-role" name="roleId" options="[]"></oas-select>
-              <oas-select data-testid="field-status" name="status" options='[{"label":"启用","value":"active"},{"label":"禁用","value":"disabled"}]'></oas-select>
+              <oas-select data-testid="field-status" name="status" options='${JSON.stringify([{ label: statusLabel('active'), value: 'active' }, { label: statusLabel('disabled'), value: 'disabled' }])}'></oas-select>
             </div>
             <div class="form-actions">
               <oas-space justify="end">
-                <oas-button data-testid="form-cancel">取消</oas-button>
-                <oas-button data-testid="form-save" type="primary">保存</oas-button>
+                <oas-button data-testid="form-cancel">${t('common.cancel')}</oas-button>
+                <oas-button data-testid="form-save" type="primary">${t('common.save')}</oas-button>
               </oas-space>
             </div>
           </oas-form>
@@ -131,12 +151,12 @@ export function render(el: HTMLElement): () => void {
           </div>
           <oas-descriptions id="detail-desc" column="1"></oas-descriptions>
           <oas-divider></oas-divider>
-          <div class="detail-perms-title form-label">权限标识</div>
+          <div class="detail-perms-title form-label">${t('users.perm')}</div>
           <div id="detail-perms-list" class="detail-perms-list"></div>
           <oas-space justify="end">
-            <oas-button data-testid="detail-edit" type="primary">编辑</oas-button>
-            <oas-popconfirm title="确认删除该用户？" id="delete-popconfirm">
-              <oas-button data-testid="detail-delete" type="danger">删除</oas-button>
+            <oas-button data-testid="detail-edit" type="primary">${t('common.edit')}</oas-button>
+            <oas-popconfirm title="${t('users.confirmDelete')}" id="delete-popconfirm">
+              <oas-button data-testid="detail-delete" type="danger">${t('common.delete')}</oas-button>
             </oas-popconfirm>
           </oas-space>
         </div>
@@ -158,7 +178,7 @@ export function render(el: HTMLElement): () => void {
 
   if (!canMutate()) {
     createBtn.setAttribute('disabled', '')
-    createBtn.setAttribute('title', '无权限')
+    createBtn.setAttribute('title', t('common.noPerm'))
     createBtn.setAttribute('aria-disabled', 'true')
   }
 
@@ -167,7 +187,7 @@ export function render(el: HTMLElement): () => void {
       const r = state.roleMap.get(target.roleId)
       if (r) return r.name
     }
-    return ROLE_LABEL[target.role]
+    return roleLabel(target.role)
   }
 
   function toDisplay(row: UserRow) {
@@ -176,7 +196,7 @@ export function render(el: HTMLElement): () => void {
       name: row.name,
       email: row.email,
       role: roleName(row),
-      status: STATUS_LABEL[row.status],
+      status: statusLabel(row.status),
       created: row.created,
     }
   }
@@ -234,7 +254,7 @@ export function render(el: HTMLElement): () => void {
     roleFilter.setAttribute(
       'options',
       JSON.stringify([
-        { label: '全部角色', value: '' },
+        { label: t('users.allRole'), value: '' },
         ...roles.map((r) => ({ label: r.name, value: String(r.id) })),
       ]),
     )
@@ -271,8 +291,8 @@ export function render(el: HTMLElement): () => void {
       row?.status ?? 'active',
     )
     el.querySelector<HTMLElement>('#form-title')!.textContent = row
-      ? `编辑用户 #${row.id}`
-      : '新建用户'
+      ? t('users.editUser').replace('#{id}', String(row.id))
+      : t('users.new')
   }
 
   function userPerms(): string[] {
@@ -288,7 +308,7 @@ export function render(el: HTMLElement): () => void {
     const listEl = el.querySelector<HTMLElement>('#detail-perms-list')!
     const perms = userPerms()
     if (perms.length === 0) {
-      listEl.innerHTML = '<oas-tag type="default">无</oas-tag>'
+      listEl.innerHTML = '<oas-tag type="default">' + t('users.nonePerm') + '</oas-tag>'
       return
     }
     const allowed = new Set(ALLOWED[role])
@@ -333,11 +353,11 @@ export function render(el: HTMLElement): () => void {
     const desc = el.querySelector<HTMLElement>('#detail-desc')!
     desc.innerHTML = `
       <oas-descriptions-item label="ID"><span id="detail-id"></span></oas-descriptions-item>
-      <oas-descriptions-item label="姓名"><span id="detail-name2"></span></oas-descriptions-item>
-      <oas-descriptions-item label="邮箱"><span id="detail-email"></span></oas-descriptions-item>
-      <oas-descriptions-item label="角色"><span id="detail-role"></span></oas-descriptions-item>
-      <oas-descriptions-item label="状态"><oas-tag id="detail-status-tag"></oas-tag></oas-descriptions-item>
-      <oas-descriptions-item label="创建日期"><span id="detail-created"></span></oas-descriptions-item>`
+      <oas-descriptions-item label="${t('users.name')}"><span id="detail-name2"></span></oas-descriptions-item>
+      <oas-descriptions-item label="${t('users.email')}"><span id="detail-email"></span></oas-descriptions-item>
+      <oas-descriptions-item label="${t('users.role')}"><span id="detail-role"></span></oas-descriptions-item>
+      <oas-descriptions-item label="${t('users.status')}"><oas-tag id="detail-status-tag"></oas-tag></oas-descriptions-item>
+      <oas-descriptions-item label="${t('users.created')}"><span id="detail-created"></span></oas-descriptions-item>`
     const text = (sel: string, v: string) => {
       desc.querySelector<HTMLElement>(sel)!.textContent = v
     }
@@ -346,14 +366,14 @@ export function render(el: HTMLElement): () => void {
     text('#detail-email', target.email)
     text('#detail-role', roleName(target))
     const statusTag = desc.querySelector<HTMLElement>('#detail-status-tag')!
-    statusTag.textContent = STATUS_LABEL[target.status]
+    statusTag.textContent = statusLabel(target.status)
     statusTag.setAttribute('type', tagTypeForStatus(target.status))
     text('#detail-created', target.created)
     renderPerms(target.role)
     const delBtn = el.querySelector<HTMLElement>('[data-testid="detail-delete"]')!
     if (!canMutate()) {
       delBtn.setAttribute('disabled', '')
-      delBtn.setAttribute('title', '无权限')
+      delBtn.setAttribute('title', t('common.noPerm'))
     } else {
       delBtn.removeAttribute('disabled')
       delBtn.removeAttribute('title')
@@ -373,13 +393,13 @@ export function render(el: HTMLElement): () => void {
   el.querySelector<HTMLElement>('#delete-popconfirm')!.addEventListener('oas-ok', async () => {
     if (state.editingId == null) return
     if (!canMutate()) {
-      message.error('无权限')
+      message.error(t('common.noPerm'))
       return
     }
     await removeUser(state.editingId)
     state.editingId = null
     closeModal(detailModal)
-    message.success('已删除')
+    message.success(t('common.deleted'))
     void refresh()
   })
 
@@ -411,7 +431,7 @@ export function render(el: HTMLElement): () => void {
           roleId,
           status: values.status || 'active',
         })
-        message.success('已创建')
+        message.success(t('common.created'))
       } else {
         const updated = await updateUser(state.editingId, {
           name: values.name,
@@ -421,9 +441,9 @@ export function render(el: HTMLElement): () => void {
           status: values.status,
         })
         if (!updated) {
-          message.error('该用户已不存在')
+          message.error(t('users.notFound'))
         } else {
-          message.success('已保存')
+          message.success(t('common.saved'))
         }
       }
       closeModal(formModal)

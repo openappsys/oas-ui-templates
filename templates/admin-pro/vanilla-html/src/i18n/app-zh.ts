@@ -76,6 +76,7 @@ export default {
   'users.created': '创建日期',
   'users.editUser': '编辑用户 #{id}',
   'users.confirmDelete': '确认删除该用户？',
+  'users.notFound': '该用户已不存在',
   'users.perm': '权限标识',
   'users.nonePerm': '无',
   'users.role.admin': '管理员',

@@ -76,6 +76,7 @@ export default {
   'users.created': 'Created At',
   'users.editUser': 'Edit user #{id}',
   'users.confirmDelete': 'Delete this user?',
+  'users.notFound': 'That user no longer exists',
   'users.perm': 'Permissions',
   'users.nonePerm': 'None',
   'users.role.admin': 'Admin',
