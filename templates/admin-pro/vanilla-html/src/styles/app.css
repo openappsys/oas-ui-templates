@@ -38,6 +38,7 @@ body {
   align-items: center;
   gap: var(--oas-space-3);
   padding: 0 var(--oas-space-4);
+  padding-left: calc(var(--oas-space-4) + var(--oas-space-3) + var(--oas-space-2));
   height: 56px;
   border-bottom: 1px solid var(--oas-color-border);
 }
