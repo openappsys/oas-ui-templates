@@ -1,16 +1,15 @@
 import { message } from '@oas-ui/ui/feedback/message'
+import { t } from '../i18n'
 import { listOrders, updateOrderStatus } from '../data/orders'
 import type { OrderRow, OrderStatus } from '../data/orders'
 import { session } from '../store/session'
 
 const PAGE_SIZE = 8
-const STATUS_LABEL: Record<OrderStatus, string> = {
-  pending: '待支付',
-  paid: '已支付',
-  shipping: '配送中',
-  done: '已完成',
-  cancelled: '已取消',
+
+function statusLabel(status: OrderStatus): string {
+  return t(`orders.status.${status}`)
 }
+
 const STATUS_TAG: Record<OrderStatus, string> = {
   pending: 'warning',
   paid: 'primary',
@@ -18,18 +17,23 @@ const STATUS_TAG: Record<OrderStatus, string> = {
   done: 'success',
   cancelled: 'danger',
 }
-const TABS: Array<{ label: string; value: 'all' | OrderStatus }> = [
-  { label: '全部', value: 'all' },
-  { label: '待支付', value: 'pending' },
-  { label: '已支付', value: 'paid' },
-  { label: '配送中', value: 'shipping' },
-  { label: '已完成', value: 'done' },
-  { label: '已取消', value: 'cancelled' },
+const TABS = (): Array<{ label: string; value: 'all' | OrderStatus }> => [
+  { label: t('orders.tabAll'), value: 'all' },
+  { label: statusLabel('pending'), value: 'pending' },
+  { label: statusLabel('paid'), value: 'paid' },
+  { label: statusLabel('shipping'), value: 'shipping' },
+  { label: statusLabel('done'), value: 'done' },
+  { label: statusLabel('cancelled'), value: 'cancelled' },
 ]
-const FLOW: Partial<Record<OrderStatus, { label: string; to: OrderStatus }>> = {
-  pending: { label: '标记已支付', to: 'paid' },
-  paid: { label: '开始配送', to: 'shipping' },
-  shipping: { label: '确认完成', to: 'done' },
+const FLOW_TO: Partial<Record<OrderStatus, OrderStatus>> = {
+  pending: 'paid',
+  paid: 'shipping',
+  shipping: 'done',
+}
+
+function flowFor(status: OrderStatus): { label: string; to: OrderStatus } | undefined {
+  const to = FLOW_TO[status]
+  return to ? { label: t(`orders.flow.${status}`), to } : undefined
 }
 
 interface PageState {
@@ -45,8 +49,11 @@ function formatMoney(n: number): string {
 }
 
 function itemSummary(items: string[]): string {
-  if (items.length <= 2) return items.join('、')
-  return `${items.slice(0, 2).join('、')} 等${items.length}项`
+  if (items.length <= 2) return items.join(t('orders.itemJoin'))
+  return t('orders.itemSummary', {
+    names: items.slice(0, 2).join(t('orders.itemJoin')),
+    total: items.length,
+  })
 }
 
 function tagMarkup(status: OrderStatus): string {
@@ -96,49 +103,49 @@ export function render(el: HTMLElement): () => void {
     <div class="page">
       <div class="page-head">
         <div>
-          <h1 class="page-title">订单管理</h1>
-          <p class="page-subtitle">跟踪订单状态与销售情况</p>
+          <h1 class="page-title">${t('nav.orders')}</h1>
+          <p class="page-subtitle">${t('orders.subtitle')}</p>
         </div>
-        <oas-button data-testid="orders-export" type="primary" icon="download">导出 CSV</oas-button>
+        <oas-button data-testid="orders-export" type="primary" icon="download">${t('orders.exportCsv')}</oas-button>
       </div>
       <div id="orders-scope" class="orders-scope" hidden>
         <oas-icon size="16" name="info"></oas-icon>
-        <span data-testid="orders-scope-text">数据权限：仅本人</span>
+        <span data-testid="orders-scope-text">${t('orders.scopeOnlySelf')}</span>
       </div>
       <div class="orders-stats" id="orders-stats"></div>
-      <oas-card class="list-card" title="订单列表">
+      <oas-card class="list-card" title="${t('orders.listTitle')}">
         <div class="orders-toolbar" slot="extra">
-          <oas-input data-testid="orders-search" placeholder="搜索客户名称" clearable prefix-icon="search"></oas-input>
+          <oas-input data-testid="orders-search" placeholder="${t('orders.search')}" clearable prefix-icon="search"></oas-input>
         </div>
         <oas-tabs data-testid="orders-tabs" id="orders-tabs"></oas-tabs>
         <div class="table-wrap" id="orders-table-wrap">
           <table class="orders-table" data-testid="orders-list">
             <thead>
               <tr>
-                <th>订单号</th>
-                <th>客户</th>
-                <th>商品</th>
-                <th class="num">金额</th>
-                <th>状态</th>
-                <th>创建日期</th>
+                <th>${t('orders.th.no')}</th>
+                <th>${t('orders.th.customer')}</th>
+                <th>${t('orders.th.items')}</th>
+                <th class="num">${t('orders.th.amount')}</th>
+                <th>${t('orders.th.status')}</th>
+                <th>${t('orders.th.created')}</th>
               </tr>
             </thead>
             <tbody id="orders-tbody"></tbody>
           </table>
           <div class="empty-overlay" id="orders-empty" hidden>
-            <oas-empty description="未找到匹配订单"></oas-empty>
-            <oas-button id="orders-clear" type="primary">清除筛选</oas-button>
+            <oas-empty description="${t('orders.empty')}"></oas-empty>
+            <oas-button id="orders-clear" type="primary">${t('common.clearFilter')}</oas-button>
           </div>
         </div>
         <oas-pagination data-testid="orders-pager" total="0" page-size="${PAGE_SIZE}" current="1" show-total></oas-pagination>
       </oas-card>
 
-      <oas-drawer data-testid="order-drawer" title="订单详情" placement="right" size="medium" no-footer>
+      <oas-drawer data-testid="order-drawer" title="${t('orders.detailTitle')}" placement="right" size="medium" no-footer>
         <div class="order-detail">
           <div class="order-detail-head">
             <div>
               <div class="order-detail-no mono" id="order-detail-no"></div>
-              <div class="order-detail-sub">订单详情</div>
+              <div class="order-detail-sub">${t('orders.detailTitle')}</div>
             </div>
             <oas-tag data-testid="order-detail-tag" id="order-detail-tag"></oas-tag>
           </div>
@@ -146,7 +153,7 @@ export function render(el: HTMLElement): () => void {
           <div class="order-detail-foot">
             <div class="order-detail-foot-row">
               <oas-button data-testid="order-detail-action" id="order-detail-action" type="primary" hidden></oas-button>
-              <a class="link-btn" data-testid="order-detail-link" href="#/order-detail">查看完整详情 →</a>
+              <a class="link-btn" data-testid="order-detail-link" href="#/order-detail">${t('orders.fullDetail')}</a>
             </div>
             <div class="order-detail-note" id="order-detail-note" hidden></div>
           </div>
@@ -176,9 +183,9 @@ export function render(el: HTMLElement): () => void {
   function renderTabs(): void {
     const counts: Record<string, number> = { all: state.rows.length }
     for (const r of state.rows) counts[r.status] = (counts[r.status] ?? 0) + 1
-    tabs.innerHTML = TABS.map(
-      (t) =>
-        `<oas-tab-panel label="${t.label}" value="${t.value}"${counts[t.value] ? ` badge="${counts[t.value]}"` : ''}></oas-tab-panel>`,
+    tabs.innerHTML = TABS().map(
+      (tItem) =>
+        `<oas-tab-panel label="${tItem.label}" value="${tItem.value}"${counts[tItem.value] ? ` badge="${counts[tItem.value]}"` : ''}></oas-tab-panel>`,
     ).join('')
     tabs.setAttribute('active', state.status)
   }
@@ -214,9 +221,9 @@ export function render(el: HTMLElement): () => void {
         <tr data-id="${r.id}">
           <td class="mono">${r.id}</td>
           <td>${r.customer}</td>
-          <td class="items-cell" title="${r.items.join('、')}">${itemSummary(r.items)}</td>
+          <td class="items-cell" title="${r.items.join(t('orders.itemJoin'))}">${itemSummary(r.items)}</td>
           <td class="amount-cell mono">${formatMoney(r.amount)}</td>
-          <td><oas-tag ${tagMarkup(r.status)}>${STATUS_LABEL[r.status]}</oas-tag></td>
+          <td><oas-tag ${tagMarkup(r.status)}>${statusLabel(r.status)}</oas-tag></td>
           <td class="mono">${r.created}</td>
         </tr>`,
       )
@@ -236,17 +243,17 @@ export function render(el: HTMLElement): () => void {
       : 0
     stats.innerHTML = `
       <oas-card class="stat-card">
-        <div class="stat-label">待处理订单</div>
+        <div class="stat-label">${t('orders.stat.pending')}</div>
         <div class="stat-value mono">${pending}</div>
-        <div class="stat-foot">待支付 + 已支付</div>
+        <div class="stat-foot">${t('orders.stat.pendingHint')}</div>
       </oas-card>
       <oas-card class="stat-card">
-        <div class="stat-label">本月销售额</div>
+        <div class="stat-label">${t('orders.stat.monthSales')}</div>
         <div class="stat-value mono">${formatMoney(monthSales)}</div>
-        <div class="stat-foot">按创建日期统计</div>
+        <div class="stat-foot">${t('orders.stat.monthHint')}</div>
       </oas-card>
       <oas-card class="stat-card">
-        <div class="stat-label">完成率</div>
+        <div class="stat-label">${t('orders.stat.doneRate')}</div>
         <div class="stat-value mono">${doneRate}%</div>
         <oas-progress class="stat-progress" percent="${doneRate}" show-text="false"></oas-progress>
       </oas-card>`
@@ -272,11 +279,11 @@ export function render(el: HTMLElement): () => void {
   function fillDesc(row: OrderRow): void {
     const desc = el.querySelector<HTMLElement>('#order-detail-desc')!
     desc.innerHTML = `
-      <oas-descriptions-item label="客户"><span id="od-customer"></span></oas-descriptions-item>
-      <oas-descriptions-item label="创建人"><span id="od-creator"></span></oas-descriptions-item>
-      <oas-descriptions-item label="金额"><span id="od-amount" class="mono"></span></oas-descriptions-item>
-      <oas-descriptions-item label="创建日期"><span id="od-created" class="mono"></span></oas-descriptions-item>
-      <oas-descriptions-item label="商品列表"><span id="od-items"></span></oas-descriptions-item>`
+      <oas-descriptions-item label="${t('orders.th.customer')}"><span id="od-customer"></span></oas-descriptions-item>
+      <oas-descriptions-item label="${t('orders.dl.creator')}"><span id="od-creator"></span></oas-descriptions-item>
+      <oas-descriptions-item label="${t('orders.th.amount')}"><span id="od-amount" class="mono"></span></oas-descriptions-item>
+      <oas-descriptions-item label="${t('orders.th.created')}"><span id="od-created" class="mono"></span></oas-descriptions-item>
+      <oas-descriptions-item label="${t('orders.dl.items')}"><span id="od-items"></span></oas-descriptions-item>`
     desc.querySelector<HTMLElement>('#od-customer')!.textContent = row.customer
     desc.querySelector<HTMLElement>('#od-creator')!.textContent = row.creator
     desc.querySelector<HTMLElement>('#od-amount')!.textContent = formatMoney(row.amount)
@@ -287,7 +294,7 @@ export function render(el: HTMLElement): () => void {
   }
 
   function renderAction(row: OrderRow): void {
-    const action = FLOW[row.status]
+    const action = flowFor(row.status)
     const actionEl = el.querySelector<HTMLElement>('#order-detail-action')!
     const noteEl = el.querySelector<HTMLElement>('#order-detail-note')!
     if (action) {
@@ -298,7 +305,8 @@ export function render(el: HTMLElement): () => void {
     } else {
       actionEl.hidden = true
       noteEl.hidden = false
-      noteEl.textContent = row.status === 'done' ? '订单已完成，无需后续操作' : '订单已取消'
+      noteEl.textContent =
+        row.status === 'done' ? t('orders.noteDone') : t('orders.noteCancelled')
     }
   }
 
@@ -306,7 +314,7 @@ export function render(el: HTMLElement): () => void {
     state.selectedId = row.id
     el.querySelector<HTMLElement>('#order-detail-no')!.textContent = row.id
     const tag = el.querySelector<HTMLElement>('#order-detail-tag')!
-    tag.textContent = STATUS_LABEL[row.status]
+    tag.textContent = statusLabel(row.status)
     setTagType(tag, row.status)
     fillDesc(row)
     renderAction(row)
@@ -316,12 +324,12 @@ export function render(el: HTMLElement): () => void {
   el.querySelector<HTMLElement>('[data-testid="orders-export"]')!.addEventListener('click', () => {
     const list = filtered()
     if (list.length === 0) {
-      message.info('没有可导出的订单')
+      message.info(t('orders.noExportable'))
       return
     }
-    const header = '订单号,客户,金额,状态,商品,创建日期'
+    const header = t('orders.exportHeader')
     const body = list.map((r) =>
-      [r.id, r.customer, r.amount, STATUS_LABEL[r.status], r.items.join(' | '), r.created].join(
+      [r.id, r.customer, r.amount, statusLabel(r.status), r.items.join(' | '), r.created].join(
         ',',
       ),
     )
@@ -335,7 +343,7 @@ export function render(el: HTMLElement): () => void {
     a.click()
     document.body.removeChild(a)
     setTimeout(() => URL.revokeObjectURL(url), 1000)
-    message.success(`已导出 ${list.length} 条订单`)
+    message.success(t('orders.exported', { count: list.length }))
   })
 
   el.querySelector<HTMLElement>('#orders-clear')!.addEventListener('click', () => {
@@ -364,15 +372,15 @@ export function render(el: HTMLElement): () => void {
       const updated = await updateOrderStatus(state.selectedId, target)
       button.removeAttribute('loading')
       if (!updated) {
-        message.error('该订单不存在')
+        message.error(t('orders.notFound'))
         return
       }
-      message.success(`已${button.textContent}`)
+      message.success(t('orders.flowApplied', { action: button.textContent }))
       await refresh()
       const row = state.rows.find((r) => r.id === state.selectedId)
       if (row) {
         const tag = el.querySelector<HTMLElement>('#order-detail-tag')!
-        tag.textContent = STATUS_LABEL[row.status]
+        tag.textContent = statusLabel(row.status)
         setTagType(tag, row.status)
         renderAction(row)
       }

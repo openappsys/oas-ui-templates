@@ -9,6 +9,7 @@ import {
 import { CanvasRenderer } from 'echarts/renderers'
 import type { EChartsOption } from 'echarts'
 import { message } from '@oas-ui/ui/feedback/message'
+import { t, currentLocale } from '../i18n'
 import { session } from '../store/session'
 import { listProducts } from '../data/products'
 
@@ -40,7 +41,7 @@ const STATS = [
     testid: 'stat-visits',
     icon: 'eye',
     tone: 'blue',
-    label: '今日访问',
+    labelKey: 'dashboard.stat.visits',
     value: 12480,
     delta: 12.4,
   },
@@ -48,7 +49,7 @@ const STATS = [
     testid: undefined,
     icon: 'user',
     tone: 'green',
-    label: '新增用户',
+    labelKey: 'dashboard.stat.users',
     value: 328,
     delta: 8.2,
   },
@@ -56,7 +57,7 @@ const STATS = [
     testid: undefined,
     icon: 'arrow-up',
     tone: 'violet',
-    label: '订单量',
+    labelKey: 'dashboard.stat.orders',
     value: 1926,
     delta: 3.1,
   },
@@ -64,7 +65,7 @@ const STATS = [
     testid: undefined,
     icon: 'clock',
     tone: 'orange',
-    label: '转化率',
+    labelKey: 'dashboard.stat.conversion',
     value: 4.6,
     suffix: '%',
     delta: -0.4,
@@ -78,10 +79,10 @@ const PIE_DATA = [
   { value: 9, name: '已取消' },
 ]
 
-const SEGMENTED_OPTIONS = [
-  { label: '7日', value: '7' },
-  { label: '14日', value: '14' },
-  { label: '30日', value: '30' },
+const SEGMENTED_OPTIONS = (): Array<{ label: string; value: string }> => [
+  { label: t('dashboard.rangeDays', { days: '7' }), value: '7' },
+  { label: t('dashboard.rangeDays', { days: '14' }), value: '14' },
+  { label: t('dashboard.rangeDays', { days: '30' }), value: '30' },
 ]
 
 function isDark(): boolean {
@@ -90,7 +91,8 @@ function isDark(): boolean {
 
 function todayLabel(): string {
   const d = new Date()
-  return new Intl.DateTimeFormat('zh-CN', {
+  const locale = currentLocale() === 'en' ? 'en-US' : 'zh-CN'
+  return new Intl.DateTimeFormat(locale, {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -133,7 +135,7 @@ function makeTrend(days: number): number[] {
 }
 
 function makeTrendLabels(days: number): string[] {
-  return Array.from({ length: days }, (_, i) => `${i + 1}日`)
+  return Array.from({ length: days }, (_, i) => t('dashboard.rangeDays', { days: i + 1 }))
 }
 
 function formatNumber(n: number): string {
@@ -158,55 +160,60 @@ export function render(el: HTMLElement): () => void {
   const name = user?.name ?? ''
   const isAdmin = user?.role === 'admin'
   const quickActions = [
-    { href: '#/form', icon: 'plus', label: '创建订单' },
-    ...(isAdmin ? [{ href: '#/products', icon: 'edit', label: '新建商品' }] : []),
-    { href: '#/orders', icon: 'calendar', label: '订单管理' },
-    ...(isAdmin ? [{ href: '#/users', icon: 'user', label: '用户管理' }] : []),
+    { href: '#/form', icon: 'plus', label: t('nav.createOrder') },
+    ...(isAdmin ? [{ href: '#/products', icon: 'edit', label: t('products.newProduct') }] : []),
+    { href: '#/orders', icon: 'calendar', label: t('nav.orders') },
+    ...(isAdmin ? [{ href: '#/users', icon: 'user', label: t('nav.users') }] : []),
   ]
 
   el.innerHTML = `
     <div class="page">
       <div class="page-head">
         <div>
-          <h1 class="page-title">仪表盘</h1>
-          <p class="page-subtitle">欢迎回来，${name} · 今天是 ${todayLabel()}</p>
+          <h1 class="page-title">${t('nav.dashboard')}</h1>
+          <p class="page-subtitle">${t('dashboard.welcome', { name, date: todayLabel() })}</p>
         </div>
         <oas-space>
-          <oas-button id="dash-refresh" icon="refresh">刷新</oas-button>
-          <oas-button id="dash-export" icon="download">导出</oas-button>
+          <oas-button id="dash-refresh" icon="refresh">${t('common.refresh')}</oas-button>
+          <oas-button id="dash-export" icon="download">${t('dashboard.export')}</oas-button>
         </oas-space>
       </div>
       <div class="stat-grid" id="stat-grid">
         ${Array.from({ length: 4 }, () => `<oas-card class="stat-card stat-card--skeleton"><oas-skeleton active rows="3"></oas-skeleton></oas-card>`).join('')}
       </div>
       <div class="chart-grid">
-        <oas-card title="访问趋势">
-          <oas-segmented id="trend-range" slot="extra" options='${JSON.stringify(SEGMENTED_OPTIONS)}' value="7"></oas-segmented>
+        <oas-card title="${t('dashboard.trendTitle')}">
+          <oas-segmented id="trend-range" slot="extra" options='${JSON.stringify(SEGMENTED_OPTIONS())}' value="7"></oas-segmented>
           <div id="chart-trend" class="chart"></div>
         </oas-card>
-        <oas-card title="订单构成">
+        <oas-card title="${t('dashboard.ordersTitle')}">
           <div id="chart-orders" class="chart"></div>
         </oas-card>
       </div>
       <div class="bottom-grid">
-        <oas-card title="最近订单">
+        <oas-card title="${t('dashboard.recentOrders')}">
           <button id="orders-view-all" class="link-btn" slot="extra">
-            查看全部 <oas-icon name="chevron-right" size="12"></oas-icon>
+            ${t('dashboard.viewAll')} <oas-icon name="chevron-right" size="12"></oas-icon>
           </button>
           <oas-table
             data-testid="orders-table"
             row-key="id"
-            columns='[{"key":"id","title":"订单号"},{"key":"customer","title":"客户"},{"key":"amount","title":"金额"},{"key":"status","title":"状态"}]'
+            columns='${JSON.stringify([
+              { key: 'id', title: t('orders.th.no') },
+              { key: 'customer', title: t('orders.th.customer') },
+              { key: 'amount', title: t('orders.th.amount') },
+              { key: 'status', title: t('orders.th.status') },
+            ])}'
             data="[]"
           ></oas-table>
         </oas-card>
-        <oas-card title="热销商品 Top5">
+        <oas-card title="${t('dashboard.topProducts')}">
           <a class="link-btn" href="#/products" slot="extra">
-            查看全部 <oas-icon name="chevron-right" size="12"></oas-icon>
+            ${t('dashboard.viewAll')} <oas-icon name="chevron-right" size="12"></oas-icon>
           </a>
           <div id="top5-list" data-testid="top5-list" class="top5-list"></div>
         </oas-card>
-        <oas-card class="quick-card" title="快捷操作">
+        <oas-card class="quick-card" title="${t('dashboard.quickActions')}">
           <div class="quick-actions" data-testid="quick-actions">
             ${quickActions
               .map(
@@ -217,7 +224,7 @@ export function render(el: HTMLElement): () => void {
               )
               .join('')}
           </div>
-          <div class="quick-foot">Web Components 驱动 · 零框架运行时</div>
+          <div class="quick-foot">${t('dashboard.techNote')}</div>
         </oas-card>
       </div>
     </div>`
@@ -245,12 +252,12 @@ export function render(el: HTMLElement): () => void {
               <oas-icon name="${s.icon}" size="16"></oas-icon>
             </div>
             <div class="stat-body">
-              <div class="stat-label">${s.label}</div>
+              <div class="stat-label">${t(s.labelKey)}</div>
               <div class="stat-value mono">${num}${s.suffix ?? ''}</div>
               <div class="stat-delta">
                 <oas-icon name="${arrow}" size="12" class="${deltaCls}"></oas-icon>
                 <span class="${deltaCls}">${s.delta > 0 ? '+' : ''}${s.delta}%</span>
-                <span class="stat-delta-label">较昨日</span>
+                <span class="stat-delta-label">${t('dashboard.vsYesterday')}</span>
               </div>
             </div>
           </div>
@@ -261,7 +268,7 @@ export function render(el: HTMLElement): () => void {
   function renderTop5(rows: Array<{ name: string; category: string; sold: number }>): void {
     const list = el.querySelector<HTMLElement>('#top5-list')!
     if (rows.length === 0) {
-      list.innerHTML = `<oas-empty description="暂无热销数据"></oas-empty>`
+      list.innerHTML = `<oas-empty description="${t('dashboard.noTop5')}"></oas-empty>`
       return
     }
     const maxSold = rows[0].sold
@@ -383,7 +390,7 @@ export function render(el: HTMLElement): () => void {
             left: 'center',
             top: '54%',
             style: {
-              text: '订单',
+              text: t('dashboard.ordersLabel'),
               fontSize: 12,
               fill: textSecondary,
               textAlign: 'center',
@@ -421,15 +428,15 @@ export function render(el: HTMLElement): () => void {
 
   el.querySelector<HTMLElement>('#dash-refresh')!.addEventListener('click', () => {
     draw()
-    message.success('已刷新')
+    message.success(t('dashboard.refreshed'))
   })
 
   el.querySelector<HTMLElement>('#dash-export')!.addEventListener('click', () => {
-    message.info('演示环境未接入导出')
+    message.info(t('dashboard.demoExport'))
   })
 
   el.querySelector<HTMLElement>('#orders-view-all')!.addEventListener('click', () => {
-    message.info('演示环境未接入全部订单')
+    message.info(t('dashboard.demoOrders'))
   })
 
   el.querySelector<HTMLElement>('#trend-range')!.addEventListener('oas-change', (e) => {

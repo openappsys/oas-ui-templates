@@ -1,11 +1,13 @@
 import { message } from '@oas-ui/ui/feedback/message'
+import { t, currentLocale } from '../i18n'
 import { routes } from '../router/routes'
 import { resolve } from '../router/router'
 import { session } from '../store/session'
 
 function formatLoginAt(n: number | null): string {
   if (!n) return '-'
-  return new Intl.DateTimeFormat('zh-CN', {
+  const locale = currentLocale() === 'en' ? 'en-US' : 'zh-CN'
+  return new Intl.DateTimeFormat(locale, {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -28,11 +30,12 @@ function syncPreviewSelection(el: HTMLElement): void {
 
 export function render(el: HTMLElement): () => void {
   const user = session.user!
-  const roleLabel = user.role === 'admin' ? '管理员' : '访客（只读）'
+  const roleLabel =
+    user.role === 'admin' ? t('users.role.admin') : t('profile.roleViewer')
 
   el.innerHTML = `
     <div class="page">
-      <h1 class="page-title">个人中心</h1>
+      <h1 class="page-title">${t('nav.profile')}</h1>
       <div class="profile-layout">
         <oas-card class="profile-left">
           <div class="profile-avatar-wrap">
@@ -42,31 +45,31 @@ export function render(el: HTMLElement): () => void {
           </div>
           <oas-divider></oas-divider>
           <div class="profile-logout-wrap">
-            <oas-button id="profile-logout" type="danger" variant="text">退出登录</oas-button>
+            <oas-button id="profile-logout" type="danger" variant="text">${t('header.logout')}</oas-button>
           </div>
         </oas-card>
-        <oas-card class="profile-right" title="账户信息">
+        <oas-card class="profile-right" title="${t('profile.accountInfo')}">
           <oas-descriptions column="2">
-            <oas-descriptions-item label="用户名"><span id="profile-name2"></span></oas-descriptions-item>
-            <oas-descriptions-item label="角色"><span id="profile-role2"></span></oas-descriptions-item>
-            <oas-descriptions-item label="登录时间"><span id="profile-login-at"></span></oas-descriptions-item>
-            <oas-descriptions-item label="数据版本"><span>演示数据 v1</span></oas-descriptions-item>
+            <oas-descriptions-item label="${t('profile.username')}"><span id="profile-name2"></span></oas-descriptions-item>
+            <oas-descriptions-item label="${t('profile.role')}"><span id="profile-role2"></span></oas-descriptions-item>
+            <oas-descriptions-item label="${t('profile.loginAt')}"><span id="profile-login-at"></span></oas-descriptions-item>
+            <oas-descriptions-item label="${t('profile.dataVersion')}"><span>${t('profile.demoData')}</span></oas-descriptions-item>
           </oas-descriptions>
         </oas-card>
       </div>
-      <oas-card class="profile-theme" title="外观">
+      <oas-card class="profile-theme" title="${t('profile.appearance')}">
         <div class="theme-previews">
-          <button class="theme-preview is-light" data-theme="light" aria-label="浅色主题">
+          <button class="theme-preview is-light" data-theme="light" aria-label="${t('profile.theme.light')}">
             <span class="preview-mini light-mini"></span>
-            <span class="preview-label">浅色</span>
+            <span class="preview-label">${t('cmd.light')}</span>
           </button>
-          <button class="theme-preview is-dark" data-theme="dark" aria-label="深色主题">
+          <button class="theme-preview is-dark" data-theme="dark" aria-label="${t('profile.theme.dark')}">
             <span class="preview-mini dark-mini"></span>
-            <span class="preview-label">深色</span>
+            <span class="preview-label">${t('cmd.dark')}</span>
           </button>
-          <button class="theme-preview is-system" data-theme="system" aria-label="跟随系统">
+          <button class="theme-preview is-system" data-theme="system" aria-label="${t('profile.theme.system')}">
             <span class="preview-mini system-mini"></span>
-            <span class="preview-label">跟随系统</span>
+            <span class="preview-label">${t('cmd.system')}</span>
           </button>
         </div>
       </oas-card>
@@ -86,7 +89,7 @@ export function render(el: HTMLElement): () => void {
   function applyTheme(next: string): void {
     if (next === 'system') {
       delete document.documentElement.dataset.theme
-      message.info('跟随系统已开启（演示）')
+      message.info(t('profile.systemThemeMsg'))
     } else {
       document.documentElement.dataset.theme = next
     }
@@ -103,7 +106,7 @@ export function render(el: HTMLElement): () => void {
 
   el.querySelector('#profile-logout')!.addEventListener('click', () => {
     session.logout()
-    message.info('已退出登录')
+    message.info(t('header.loggedOut'))
     location.hash = routes[0].path
     void resolve()
   })

@@ -1,9 +1,14 @@
 import { message } from '@oas-ui/ui/feedback/message'
+import { t } from '../i18n'
 import { createOrder } from '../data/orders'
 import { listProducts } from '../data/products'
 import type { ProductRow } from '../data/products'
 
-const STEPS = [{ title: '基础信息' }, { title: '商品配置' }, { title: '确认提交' }]
+const STEPS = (): Array<{ title: string }> => [
+  { title: t('form.step.basic') },
+  { title: t('form.step.products') },
+  { title: t('form.step.confirm') },
+]
 
 const PHONE_RE = /^1\d{10}$/
 
@@ -46,50 +51,50 @@ export function render(el: HTMLElement): () => void {
     <div class="page form-wizard">
       <div class="page-head">
         <div>
-          <h1 class="page-title">创建订单</h1>
-          <p class="page-subtitle">三步向导创建一条新订单</p>
+          <h1 class="page-title">${t('nav.createOrder')}</h1>
+          <p class="page-subtitle">${t('form.subtitle')}</p>
         </div>
       </div>
       <oas-card>
-        <oas-steps data-testid="form-steps" id="form-steps" steps='${JSON.stringify(STEPS)}' current="0" clickable></oas-steps>
+        <oas-steps data-testid="form-steps" id="form-steps" steps='${JSON.stringify(STEPS())}' current="0" clickable></oas-steps>
         <div class="form-step" data-testid="form-step1" data-index="0">
           <div class="form-field">
-            <label class="form-label">客户名称<span class="req">*</span></label>
-            <oas-input data-testid="form-customer" placeholder="请输入客户名称" clearable></oas-input>
+            <label class="form-label">${t('form.label.customer')}<span class="req">*</span></label>
+            <oas-input data-testid="form-customer" placeholder="${t('form.rule.customer')}" clearable></oas-input>
             <div class="form-error" data-testid="form-error-customer" hidden></div>
           </div>
           <div class="form-field">
-            <label class="form-label">联系电话<span class="req">*</span></label>
-            <oas-input data-testid="form-phone" placeholder="请输入手机号" clearable></oas-input>
+            <label class="form-label">${t('form.label.phone')}<span class="req">*</span></label>
+            <oas-input data-testid="form-phone" placeholder="${t('form.rule.phone')}" clearable></oas-input>
             <div class="form-error" data-testid="form-error-phone" hidden></div>
           </div>
           <div class="form-field">
-            <label class="form-label">备注</label>
-            <oas-textarea data-testid="form-note" rows="3" placeholder="选填"></oas-textarea>
+            <label class="form-label">${t('form.label.note')}</label>
+            <oas-textarea data-testid="form-note" rows="3" placeholder="${t('form.placeholder.note')}"></oas-textarea>
           </div>
         </div>
         <div class="form-step" data-testid="form-step2" data-index="1" hidden>
           <div class="form-field">
-            <label class="form-label">商品选择<span class="req">*</span></label>
+            <label class="form-label">${t('form.label.products')}<span class="req">*</span></label>
             <oas-checkbox-group data-testid="form-products" id="form-products" value="[]">
-              <span slot="label">请选择商品</span>
+              <span slot="label">${t('form.placeholder.products')}</span>
             </oas-checkbox-group>
             <div class="form-error" data-testid="form-error-products" hidden></div>
           </div>
           <div class="form-grid">
             <div class="form-field">
-              <label class="form-label">数量</label>
+              <label class="form-label">${t('form.label.qty')}</label>
               <oas-input-number data-testid="form-qty" min="1" precision="0" value="1"></oas-input-number>
             </div>
             <div class="form-field">
-              <label class="form-label">加急配送</label>
+              <label class="form-label">${t('form.label.urgent')}</label>
               <div class="switch-line">
                 <oas-switch data-testid="form-urgent"></oas-switch>
               </div>
             </div>
           </div>
           <div class="form-field">
-            <label class="form-label">期望日期</label>
+            <label class="form-label">${t('form.label.expectDate')}</label>
             <oas-date-picker data-testid="form-date"></oas-date-picker>
           </div>
         </div>
@@ -99,17 +104,17 @@ export function render(el: HTMLElement): () => void {
         </div>
         <div class="form-foot">
           <div class="form-foot-summary" data-testid="form-foot-summary" id="form-foot-summary" hidden>
-            <div class="form-total">合计金额<span class="num mono" data-testid="form-total" id="form-total"></span></div>
+            <div class="form-total">${t('form.total')}<span class="num mono" data-testid="form-total" id="form-total"></span></div>
             <div class="form-confirm">
-              <oas-checkbox data-testid="form-confirm">我已核对信息</oas-checkbox>
+              <oas-checkbox data-testid="form-confirm">${t('form.confirm')}</oas-checkbox>
               <div class="form-error" data-testid="form-error-confirm" hidden></div>
             </div>
           </div>
           <div class="form-actions">
             <oas-space justify="end">
-              <oas-button data-testid="form-prev">上一步</oas-button>
-              <oas-button data-testid="form-next" type="primary">下一步</oas-button>
-              <oas-button data-testid="form-submit" type="primary" hidden>提交订单</oas-button>
+              <oas-button data-testid="form-prev">${t('form.prev')}</oas-button>
+              <oas-button data-testid="form-next" type="primary">${t('form.next')}</oas-button>
+              <oas-button data-testid="form-submit" type="primary" hidden>${t('form.submit')}</oas-button>
             </oas-space>
           </div>
         </div>
@@ -159,27 +164,27 @@ export function render(el: HTMLElement): () => void {
     let ok = true
     if (n === 0) {
       if (!state.customer.trim()) {
-        setError('form-error-customer', '请输入客户名称')
+        setError('form-error-customer', t('form.rule.customer'))
         customer.setAttribute('aria-invalid', 'true')
         ok = false
       }
       if (!state.phone.trim()) {
-        setError('form-error-phone', '请输入手机号')
+        setError('form-error-phone', t('form.rule.phone'))
         phone.setAttribute('aria-invalid', 'true')
         ok = false
       } else if (!PHONE_RE.test(state.phone.trim())) {
-        setError('form-error-phone', '请输入正确的手机号')
+        setError('form-error-phone', t('form.rule.phoneInvalid'))
         phone.setAttribute('aria-invalid', 'true')
         ok = false
       }
     } else if (n === 1) {
       if (state.products.length === 0) {
-        setError('form-error-products', '请至少选择一个商品')
+        setError('form-error-products', t('form.rule.productsRequired'))
         productsGroup.setAttribute('aria-invalid', 'true')
         ok = false
       }
       if (!(state.quantity >= 1)) {
-        setError('form-error-products', '数量需不小于 1')
+        setError('form-error-products', t('form.rule.qty'))
         ok = false
       }
     }
@@ -189,19 +194,19 @@ export function render(el: HTMLElement): () => void {
   function renderSummary(): void {
     const items = state.products.map((id) => productById(id)).filter((p): p is ProductRow => !!p)
     summary.innerHTML = `
-      <oas-descriptions-item label="客户"><span id="sum-customer"></span></oas-descriptions-item>
-      <oas-descriptions-item label="电话"><span id="sum-phone" class="mono"></span></oas-descriptions-item>
-      <oas-descriptions-item label="备注"><span id="sum-note"></span></oas-descriptions-item>
-      <oas-descriptions-item label="数量"><span id="sum-qty" class="mono"></span></oas-descriptions-item>
-      <oas-descriptions-item label="加急"><span id="sum-urgent"></span></oas-descriptions-item>
-      <oas-descriptions-item label="期望日期"><span id="sum-date" class="mono"></span></oas-descriptions-item>`
+      <oas-descriptions-item label="${t('form.summary.customer')}"><span id="sum-customer"></span></oas-descriptions-item>
+      <oas-descriptions-item label="${t('form.summary.phone')}"><span id="sum-phone" class="mono"></span></oas-descriptions-item>
+      <oas-descriptions-item label="${t('form.label.note')}"><span id="sum-note"></span></oas-descriptions-item>
+      <oas-descriptions-item label="${t('form.label.qty')}"><span id="sum-qty" class="mono"></span></oas-descriptions-item>
+      <oas-descriptions-item label="${t('form.summary.urgent')}"><span id="sum-urgent"></span></oas-descriptions-item>
+      <oas-descriptions-item label="${t('form.label.expectDate')}"><span id="sum-date" class="mono"></span></oas-descriptions-item>`
     el.querySelector<HTMLElement>('#sum-customer')!.textContent = state.customer.trim() || '-'
     el.querySelector<HTMLElement>('#sum-phone')!.textContent = state.phone.trim() || '-'
     el.querySelector<HTMLElement>('#sum-note')!.textContent = state.note.trim() || '-'
     el.querySelector<HTMLElement>('#sum-qty')!.textContent = String(state.quantity)
     el.querySelector<HTMLElement>('#sum-urgent')!.textContent = state.urgent
-      ? '加急配送'
-      : '普通配送'
+      ? t('form.label.urgent')
+      : t('form.summary.normalDelivery')
     el.querySelector<HTMLElement>('#sum-date')!.textContent = state.expectDate || '-'
 
     itemsWrap.innerHTML = items
@@ -265,12 +270,12 @@ export function render(el: HTMLElement): () => void {
   async function submitOrder(): Promise<void> {
     clearErrors()
     if (!state.confirmed) {
-      setError('form-error-confirm', '请先勾选「我已核对信息」')
+      setError('form-error-confirm', t('form.rule.confirm'))
       return
     }
     const items = state.products.map((id) => productById(id)).filter((p): p is ProductRow => !!p)
     if (items.length === 0) {
-      message.error('请至少选择一个商品')
+      message.error(t('form.rule.productsRequired'))
       return
     }
     const amount = items.reduce((sum, p) => sum + p.price, 0) * state.quantity
@@ -289,7 +294,7 @@ export function render(el: HTMLElement): () => void {
         'form-result',
         JSON.stringify({ status: 'success', orderId: order.id }),
       )
-      message.success('订单创建成功')
+      message.success(t('form.created'))
       location.hash = '/result'
     } finally {
       submit.removeAttribute('loading')

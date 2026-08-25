@@ -1,5 +1,6 @@
 import { message } from '@oas-ui/ui/feedback/message'
 import type { OASTable, TableColumn } from '@oas-ui/ui/data/table'
+import { t } from '../i18n'
 import {
   createProduct,
   listProducts,
@@ -26,10 +27,13 @@ const CATEGORY_OPTIONS = [
   { label: '家居', value: '家居' },
   { label: '食品', value: '食品' },
 ]
-const FILTER_OPTIONS = [{ label: '全部分类', value: '' }, ...CATEGORY_OPTIONS]
-const VIEW_OPTIONS = [
-  { label: '卡片', value: 'cards' },
-  { label: '列表', value: 'table' },
+const FILTER_OPTIONS = (): Array<{ label: string; value: string }> => [
+  { label: t('products.allCategories'), value: '' },
+  ...CATEGORY_OPTIONS,
+]
+const VIEW_OPTIONS = (): Array<{ label: string; value: string }> => [
+  { label: t('products.viewCards'), value: 'cards' },
+  { label: t('products.viewTable'), value: 'table' },
 ]
 const DENSITY_PAD: Record<Density, string> = {
   compact: '6px',
@@ -100,7 +104,7 @@ function cellPrice(price: number): HTMLElement {
 function cellStock(stock: number): HTMLElement {
   const span = document.createElement('span')
   span.className = `product-stock is-${stockLevel(stock)}`
-  span.textContent = `库存 ${stock}`
+  span.textContent = t('products.stock', { n: stock })
   return span
 }
 
@@ -119,50 +123,50 @@ function cellAction(row: ProductRow): HTMLElement {
   btn.setAttribute('data-id', String(row.id))
   btn.setAttribute('size', 'small')
   btn.setAttribute('icon', 'edit')
-  btn.setAttribute('aria-label', '编辑')
+  btn.setAttribute('aria-label', t('common.edit'))
   return btn
 }
 
-const TABLE_COLUMNS: TableColumn[] = [
-  { key: 'name', title: '名称' },
-  { key: 'category', title: '分类', render: (r) => cellTag(String(r.category)) },
-  { key: 'price', title: '价格', align: 'right', render: (r) => cellPrice(Number(r.price)) },
-  { key: 'stock', title: '库存', render: (r) => cellStock(Number(r.stock)) },
-  { key: 'status', title: '状态', render: (r) => cellStatus(r as unknown as ProductRow) },
-  { key: 'action', title: '操作', render: (r) => cellAction(r as unknown as ProductRow) },
+const TABLE_COLUMNS = (): TableColumn[] => [
+  { key: 'name', title: t('products.th.name') },
+  { key: 'category', title: t('products.category'), render: (r) => cellTag(String(r.category)) },
+  { key: 'price', title: t('products.th.price'), align: 'right', render: (r) => cellPrice(Number(r.price)) },
+  { key: 'stock', title: t('products.th.stock'), render: (r) => cellStock(Number(r.stock)) },
+  { key: 'status', title: t('products.th.status'), render: (r) => cellStatus(r as unknown as ProductRow) },
+  { key: 'action', title: t('products.th.action'), render: (r) => cellAction(r as unknown as ProductRow) },
 ]
 
-const FORM_BODY = `
-  <oas-form id="product-form" rules='{"name":[{"required":true,"message":"请输入商品名称"}]}'>
+const FORM_BODY = (): string => `
+  <oas-form id="product-form" rules='${JSON.stringify({ name: [{ required: true, message: t('products.rule.name') }] })}'>
     <div class="product-form">
       <div class="form-field">
-        <label class="form-label">商品名称</label>
-        <oas-input data-testid="pf-name" name="name" placeholder="请输入名称"></oas-input>
+        <label class="form-label">${t('products.form.name')}</label>
+        <oas-input data-testid="pf-name" name="name" placeholder="${t('products.form.namePlaceholder')}"></oas-input>
       </div>
       <div class="form-field">
-        <label class="form-label">分类</label>
+        <label class="form-label">${t('products.category')}</label>
         <oas-select data-testid="pf-category" name="category" options='${JSON.stringify(CATEGORY_OPTIONS)}' value="数码"></oas-select>
       </div>
       <div class="form-field">
-        <label class="form-label">价格</label>
+        <label class="form-label">${t('products.th.price')}</label>
         <oas-input-number data-testid="pf-price" name="price" min="0.01" precision="2" placeholder="0.00"></oas-input-number>
       </div>
       <div class="form-field">
-        <label class="form-label">库存</label>
+        <label class="form-label">${t('products.th.stock')}</label>
         <oas-input-number data-testid="pf-stock" name="stock" min="0" placeholder="0"></oas-input-number>
       </div>
       <div class="form-field">
-        <label class="form-label">上架日期</label>
-        <oas-date-picker data-testid="pf-date" placeholder="选择日期"></oas-date-picker>
+        <label class="form-label">${t('products.form.listedDate')}</label>
+        <oas-date-picker data-testid="pf-date" placeholder="${t('products.form.datePlaceholder')}"></oas-date-picker>
       </div>
       <div class="form-field">
-        <label class="form-label">封面</label>
+        <label class="form-label">${t('products.form.cover')}</label>
         <oas-upload data-testid="pf-cover" accept="image/*" list-type="picture"></oas-upload>
       </div>
       <div class="form-actions">
         <oas-space justify="end">
-          <oas-button data-testid="pf-cancel">取消</oas-button>
-          <oas-button data-testid="pf-save" type="primary">保存</oas-button>
+          <oas-button data-testid="pf-cancel">${t('common.cancel')}</oas-button>
+          <oas-button data-testid="pf-save" type="primary">${t('common.save')}</oas-button>
         </oas-space>
       </div>
     </div>
@@ -184,30 +188,30 @@ export function render(el: HTMLElement): () => void {
 
   const surfaceMarkup =
     state.formMode === 'dialog'
-      ? `<oas-modal data-testid="product-dialog" id="product-surface" no-footer><div class="modal-body"><h2 id="form-title">新建商品</h2>${FORM_BODY}</div></oas-modal>`
+      ? `<oas-modal data-testid="product-dialog" id="product-surface" no-footer><div class="modal-body"><h2 id="form-title">${t('products.newProduct')}</h2>${FORM_BODY()}</div></oas-modal>`
       : state.formMode === 'drawer'
-        ? `<oas-drawer data-testid="product-drawer" id="product-surface" title="新建商品" placement="right" size="medium" no-footer>${FORM_BODY}</oas-drawer>`
+        ? `<oas-drawer data-testid="product-drawer" id="product-surface" title="${t('products.newProduct')}" placement="right" size="medium" no-footer>${FORM_BODY()}</oas-drawer>`
         : ''
 
   el.innerHTML = `
     <div class="page products-page">
       <div class="page-head">
         <div>
-          <h1 class="page-title">商品管理</h1>
-          <p class="page-subtitle">维护商品资料与上下架状态</p>
+          <h1 class="page-title">${t('nav.products')}</h1>
+          <p class="page-subtitle">${t('products.subtitle')}</p>
         </div>
-        <oas-button data-testid="product-create" type="primary" icon="plus">新建商品</oas-button>
+        <oas-button data-testid="product-create" type="primary" icon="plus">${t('products.newProduct')}</oas-button>
       </div>
       <div class="products-toolbar">
-        <oas-input data-testid="product-search" placeholder="搜索商品名称" clearable prefix-icon="search"></oas-input>
-        <oas-select data-testid="product-category" placeholder="分类" options='${JSON.stringify(FILTER_OPTIONS)}' value=""></oas-select>
-        <oas-segmented data-testid="product-view" class="products-view-toggle" options='${JSON.stringify(VIEW_OPTIONS)}' value="${state.view}"></oas-segmented>
+        <oas-input data-testid="product-search" placeholder="${t('products.search')}" clearable prefix-icon="search"></oas-input>
+        <oas-select data-testid="product-category" placeholder="${t('products.category')}" options='${JSON.stringify(FILTER_OPTIONS())}' value=""></oas-select>
+        <oas-segmented data-testid="product-view" class="products-view-toggle" options='${JSON.stringify(VIEW_OPTIONS())}' value="${state.view}"></oas-segmented>
       </div>
       <div class="product-grid" data-testid="product-grid"${state.view === 'table' ? ' hidden' : ''}></div>
       <div class="table-wrap products-table-wrap"${state.view === 'cards' ? ' hidden' : ''}>
         <oas-table data-testid="product-table" row-key="id"></oas-table>
         <div class="product-list-empty" data-testid="product-empty" hidden>
-          <oas-empty description="未找到匹配商品"></oas-empty>
+          <oas-empty description="${t('products.empty')}"></oas-empty>
         </div>
       </div>
       <oas-pagination data-testid="product-pager" hidden total="0" page-size="${state.pageSize}" current="1" show-total></oas-pagination>
@@ -228,7 +232,7 @@ export function render(el: HTMLElement): () => void {
   const datePicker = el.querySelector<HTMLElement>('[data-testid="pf-date"]')
   const upload = el.querySelector<HTMLElement>('[data-testid="pf-cover"]')
 
-  if (table) table.columns = TABLE_COLUMNS
+  if (table) table.columns = TABLE_COLUMNS()
 
   function filtered(): ProductRow[] {
     const kw = state.keyword.trim().toLowerCase()
@@ -242,7 +246,7 @@ export function render(el: HTMLElement): () => void {
   function renderCards(): void {
     const list = filtered()
     if (list.length === 0) {
-      grid.innerHTML = `<oas-empty description="未找到匹配商品"></oas-empty>`
+      grid.innerHTML = `<oas-empty description="${t('products.empty')}"></oas-empty>`
       return
     }
     grid.innerHTML = list
@@ -255,15 +259,15 @@ export function render(el: HTMLElement): () => void {
           </div>
           <div class="product-price mono">${formatMoney(r.price)}</div>
           <div class="product-meta">
-            <span class="product-stock is-${stockLevel(r.stock)}">库存 ${r.stock}</span>
+            <span class="product-stock is-${stockLevel(r.stock)}">${t('products.stock', { n: r.stock })}</span>
             <span class="product-date mono">${r.created}</span>
           </div>
           <div class="product-card-foot">
             <div class="product-status">
               <oas-switch data-testid="product-switch" data-id="${r.id}"${r.status === 'on' ? ' checked' : ''}></oas-switch>
-              <span class="product-status-label">${r.status === 'on' ? '已上架' : '已下架'}</span>
+              <span class="product-status-label">${r.status === 'on' ? t('products.status.on') : t('products.status.off')}</span>
             </div>
-            <oas-button class="product-edit" size="small" icon="edit" data-testid="product-edit" data-id="${r.id}" aria-label="编辑"></oas-button>
+            <oas-button class="product-edit" size="small" icon="edit" data-testid="product-edit" data-id="${r.id}" aria-label="${t('common.edit')}"></oas-button>
           </div>
         </oas-card>`,
       )
@@ -318,8 +322,15 @@ export function render(el: HTMLElement): () => void {
     if (datePicker) datePicker.setAttribute('value', row?.created ?? today())
     if (upload) (upload as unknown as { files: unknown[] }).files = []
     const titleEl = el.querySelector<HTMLElement>('#form-title')
-    if (titleEl) titleEl.textContent = row ? `编辑商品 #${row.id}` : '新建商品'
-    else if (surface) surface.setAttribute('title', row ? `编辑商品 #${row.id}` : '新建商品')
+    if (titleEl)
+      titleEl.textContent = row
+        ? t('products.editItem').replace('#{id}', String(row.id))
+        : t('products.newProduct')
+    else if (surface)
+      surface.setAttribute(
+        'title',
+        row ? t('products.editItem').replace('#{id}', String(row.id)) : t('products.newProduct'),
+      )
   }
 
   function openForm(row: ProductRow | null): void {
@@ -359,10 +370,10 @@ export function render(el: HTMLElement): () => void {
     if (!id) return
     const updated = await toggleProductStatus(id)
     if (!updated) {
-      message.error('该商品不存在')
+      message.error(t('products.notFound'))
       return
     }
-    message.success(updated.status === 'on' ? '已上架' : '已下架')
+    message.success(updated.status === 'on' ? t('products.status.on') : t('products.status.off'))
     void refresh()
   })
 
@@ -381,10 +392,10 @@ export function render(el: HTMLElement): () => void {
     if (!id) return
     const updated = await toggleProductStatus(id)
     if (!updated) {
-      message.error('该商品不存在')
+      message.error(t('products.notFound'))
       return
     }
-    message.success(updated.status === 'on' ? '已上架' : '已下架')
+    message.success(updated.status === 'on' ? t('products.status.on') : t('products.status.off'))
     void refresh()
   })
 
@@ -413,7 +424,7 @@ export function render(el: HTMLElement): () => void {
     ).detail.values
     const price = Number(values.price)
     if (!(price > 0)) {
-      message.error('价格需大于 0')
+      message.error(t('products.priceError'))
       return
     }
     saving = true
@@ -430,10 +441,10 @@ export function render(el: HTMLElement): () => void {
       }
       if (state.editingId == null) {
         await createProduct(payload)
-        message.success('已创建')
+        message.success(t('common.created'))
       } else {
         await updateProduct(state.editingId, payload)
-        message.success('已保存')
+        message.success(t('common.saved'))
       }
       surface?.removeAttribute('visible')
       void refresh()
