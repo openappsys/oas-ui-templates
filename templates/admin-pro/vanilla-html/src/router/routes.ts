@@ -71,7 +71,7 @@ export const routes: Route[] = [
   },
   {
     path: '/system/dept',
-    meta: { title: '部门管理', icon: 'more', roles: ['admin'], group: '系统' },
+    meta: { title: '部门管理', icon: 'organization', roles: ['admin'], group: '系统' },
     load: () => import('../pages/dept'),
   },
   {

@@ -62,14 +62,14 @@
 }
 .dict-items-table th {
   text-align: left;
-  padding: var(--oas-space-3) var(--oas-space-4);
+  padding: var(--oas-table-cell-padding-block, var(--oas-space-3)) var(--oas-space-4);
   background: var(--oas-color-bg-hover);
   font-weight: 500;
   border-bottom: 1px solid var(--oas-color-border);
   white-space: nowrap;
 }
 .dict-items-table td {
-  padding: var(--oas-space-3) var(--oas-space-4);
+  padding: var(--oas-table-cell-padding-block, var(--oas-space-3)) var(--oas-space-4);
   border-bottom: 1px solid var(--oas-color-border);
   color: var(--oas-color-text-primary);
 }
