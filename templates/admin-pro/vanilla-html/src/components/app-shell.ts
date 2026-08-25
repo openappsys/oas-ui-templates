@@ -28,6 +28,7 @@ interface CommandEntry {
   value: string
   group?: string
   keywords?: string[]
+  separator?: boolean
 }
 
 function buildCommandItems(): CommandEntry[] {
@@ -67,7 +68,8 @@ function buildCommandItems(): CommandEntry[] {
       keywords: ['跟随系统', '系统', 'system', 'auto'],
     },
   ]
-  return [...pageItems, ...actionItems, ...themeItems]
+  const separator: CommandEntry = { label: ' ', value: 'sep', separator: true }
+  return [...pageItems, separator, ...actionItems, separator, ...themeItems]
 }
 
 function applyTheme(next: string): void {
@@ -108,7 +110,7 @@ export function mountApp(root: HTMLElement): void {
           <oas-icon size="18" class="fs-compress">${COMPRESS_ICON}</oas-icon>
         </button>
         <button id="theme-toggle" class="theme-dot" type="button" title="切换主题" aria-label="切换主题"></button>
-        <oas-badge id="notif-badge" value="0" size="small">
+        <oas-badge id="notif-badge" value="0" size="small" offset="-2,2">
           <oas-button id="notif-toggle" class="icon-btn" type="text" title="通知" aria-label="通知">
             <oas-icon size="18">${BELL_ICON}</oas-icon>
           </oas-button>
@@ -128,10 +130,12 @@ export function mountApp(root: HTMLElement): void {
     </oas-layout>
     <oas-command id="command" hotkey="false"></oas-command>
     <oas-drawer id="notif-drawer" title="通知" placement="right" size="medium" no-footer>
-      <div class="notif-toolbar">
-        <button id="notif-readall" class="link-btn" type="button">全部已读</button>
+      <div class="notif-content">
+        <div id="notif-list" class="notif-list"></div>
+        <div class="notif-foot">
+          <button id="notif-readall" class="link-btn" type="button">全部已读</button>
+        </div>
       </div>
-      <div id="notif-list" class="notif-list"></div>
     </oas-drawer>`
   const sidebar = root.querySelector<HTMLElement>('#nav')!
   const sider = root.querySelector<HTMLElement>('oas-sider')!
@@ -263,7 +267,7 @@ export function mountApp(root: HTMLElement): void {
   const badge = root.querySelector<HTMLElement>('#notif-badge')!
   const notifToggle = root.querySelector<HTMLElement>('#notif-toggle')!
   const notifList = root.querySelector<HTMLElement>('#notif-list')!
-  const notifReadall = root.querySelector<HTMLElement>('#notif-readall')!
+  const notifReadall = root.querySelector<HTMLButtonElement>('#notif-readall')!
 
   function syncBadge(): void {
     badge.setAttribute('value', String(unreadCount()))
@@ -278,6 +282,9 @@ export function mountApp(root: HTMLElement): void {
       )
       .join('')
     notifList.innerHTML = `<oas-list split>${html}</oas-list>`
+    const allRead = unreadCount() === 0
+    notifReadall.disabled = allRead
+    notifReadall.textContent = allRead ? '已全部已读' : '全部已读'
     syncBadge()
   }
 
