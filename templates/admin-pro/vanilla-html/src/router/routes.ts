@@ -61,7 +61,7 @@ export const routes: Route[] = [
   },
   {
     path: '/system/roles',
-    meta: { title: '角色管理', icon: 'user', roles: ['admin'], group: '系统' },
+    meta: { title: '角色管理', icon: 'star-filled', roles: ['admin'], group: '系统' },
     load: () => import('../pages/roles'),
   },
   {
@@ -71,12 +71,12 @@ export const routes: Route[] = [
   },
   {
     path: '/system/dept',
-    meta: { title: '部门管理', icon: 'user', roles: ['admin'], group: '系统' },
+    meta: { title: '部门管理', icon: 'more', roles: ['admin'], group: '系统' },
     load: () => import('../pages/dept'),
   },
   {
     path: '/system/dict',
-    meta: { title: '字典管理', icon: 'edit', roles: ['admin'], group: '系统' },
+    meta: { title: '字典管理', icon: 'search', roles: ['admin'], group: '系统' },
     load: () => import('../pages/dict'),
   },
   {
