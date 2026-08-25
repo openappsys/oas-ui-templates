@@ -10,6 +10,7 @@ import { CanvasRenderer } from 'echarts/renderers'
 import type { EChartsOption } from 'echarts'
 import { message } from '@oas-ui/ui/feedback/message'
 import { session } from '../store/session'
+import { listProducts } from '../data/products'
 
 echarts.use([
   LineChart,
@@ -170,6 +171,12 @@ export function render(el: HTMLElement): () => void {
             data="[]"
           ></oas-table>
         </oas-card>
+        <oas-card title="热销商品 Top5">
+          <a class="link-btn" href="#/products" slot="extra">
+            查看全部 <oas-icon name="chevron-right" size="12"></oas-icon>
+          </a>
+          <div id="top5-list" data-testid="top5-list" class="top5-list"></div>
+        </oas-card>
         <oas-card title="为什么零框架？">
           <div class="showcase">
             <div class="showcase-point">
@@ -227,6 +234,44 @@ export function render(el: HTMLElement): () => void {
           </div>
         </oas-card>`
     }).join('')
+  }
+
+  function renderTop5(rows: Array<{ name: string; category: string; sold: number }>): void {
+    const list = el.querySelector<HTMLElement>('#top5-list')!
+    if (rows.length === 0) {
+      list.innerHTML = `<oas-empty description="暂无热销数据"></oas-empty>`
+      return
+    }
+    const maxSold = rows[0].sold
+    list.innerHTML = rows
+      .map((p, i) => {
+        const pct = Math.round((p.sold / maxSold) * 100)
+        return `
+          <div class="top5-row">
+            <span class="top5-rank rank-${i + 1}">${i + 1}</span>
+            <div class="top5-main">
+              <div class="top5-line">
+                <span class="top5-name" title="${p.name}">${p.name}</span>
+                <oas-tag class="top5-tag">${p.category}</oas-tag>
+              </div>
+              <div class="top5-line top5-foot">
+                <oas-progress class="top5-bar" percent="${pct}" show-text="false"></oas-progress>
+                <span class="top5-sold mono">${p.sold}</span>
+              </div>
+            </div>
+          </div>`
+      })
+      .join('')
+  }
+
+  async function loadTop5(): Promise<void> {
+    const products = await listProducts()
+    const top = products
+      .filter((p) => p.sold != null)
+      .sort((a, b) => b.sold! - a.sold!)
+      .slice(0, 5)
+      .map((p) => ({ name: p.name, category: p.category, sold: p.sold! }))
+    renderTop5(top)
   }
 
   function draw(): void {
@@ -344,6 +389,7 @@ export function render(el: HTMLElement): () => void {
   }, 300)
 
   draw()
+  void loadTop5()
 
   window.addEventListener('resize', onResize)
   document.addEventListener('themechange', draw)

@@ -1,3 +1,5 @@
+import { persist, restore } from './store'
+
 export type OrderStatus = 'pending' | 'paid' | 'shipping' | 'done' | 'cancelled'
 
 export interface OrderRow {
@@ -55,7 +57,8 @@ function seed(): OrderRow[] {
   }))
 }
 
-const rows: OrderRow[] = seed()
+const KEY = 'oas-admin.orders.v1'
+const rows: OrderRow[] = restore(KEY, seed)
 let seq = 10001 + rows.length - 1
 
 function delay<T>(value: T, ms = 100): Promise<T> {
@@ -78,6 +81,7 @@ export function createOrder(data: Omit<OrderRow, 'id' | 'created'>): Promise<Ord
     created: today(),
   }
   rows.unshift(row)
+  persist(KEY, rows)
   return delay(row)
 }
 
@@ -85,6 +89,7 @@ export function updateOrderStatus(id: string, status: OrderStatus): Promise<Orde
   const i = rows.findIndex((r) => r.id === id)
   if (i === -1) return delay(null)
   rows[i] = { ...rows[i], status }
+  persist(KEY, rows)
   return delay(rows[i])
 }
 
@@ -92,4 +97,5 @@ export function resetOrders(): void {
   rows.length = 0
   rows.push(...seed())
   seq = 10001 + rows.length - 1
+  localStorage.removeItem(KEY)
 }

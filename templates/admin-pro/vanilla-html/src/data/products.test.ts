@@ -91,4 +91,13 @@ describe('products 数据源', () => {
     expect(stockLevel(21)).toBe('ok')
     expect(stockLevel(120)).toBe('ok')
   })
+
+  it('种子商品带销量 sold 落在 45~120 且最大值为 120', async () => {
+    const rows = await listProducts()
+    const sold = rows.map((r) => r.sold!).sort((a, b) => b - a)
+    expect(sold.length).toBe(8)
+    expect(sold[0]).toBe(120)
+    expect(sold[sold.length - 1]).toBe(45)
+    expect(sold.every((n) => n >= 45 && n <= 120)).toBe(true)
+  })
 })

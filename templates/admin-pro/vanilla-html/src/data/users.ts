@@ -1,3 +1,5 @@
+import { persist, restore } from './store'
+
 export type UserRole = 'admin' | 'editor' | 'viewer'
 export type UserStatus = 'active' | 'disabled'
 
@@ -31,7 +33,8 @@ function seed(): UserRow[] {
   }))
 }
 
-const rows: UserRow[] = seed()
+const KEY = 'oas-admin.users.v1'
+const rows: UserRow[] = restore(KEY, seed)
 let seq = rows.length
 
 function delay<T>(value: T, ms = 100): Promise<T> {
@@ -49,6 +52,7 @@ export function createUser(data: Omit<UserRow, 'id' | 'created'>): Promise<UserR
     created: new Date().toISOString().slice(0, 10),
   }
   rows.unshift(row)
+  persist(KEY, rows)
   return delay(row)
 }
 
@@ -59,6 +63,7 @@ export function updateUser(
   const i = rows.findIndex((r) => r.id === id)
   if (i === -1) return delay(null)
   rows[i] = { ...rows[i], ...data }
+  persist(KEY, rows)
   return delay(rows[i])
 }
 
@@ -66,6 +71,7 @@ export function removeUser(id: number): Promise<boolean> {
   const i = rows.findIndex((r) => r.id === id)
   if (i === -1) return delay(false)
   rows.splice(i, 1)
+  persist(KEY, rows)
   return delay(true)
 }
 
@@ -73,4 +79,5 @@ export function resetUsers(): void {
   rows.length = 0
   rows.push(...seed())
   seq = rows.length
+  localStorage.removeItem(KEY)
 }

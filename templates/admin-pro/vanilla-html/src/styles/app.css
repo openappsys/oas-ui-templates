@@ -776,8 +776,99 @@ oas-tabs {
 
 .bottom-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: 2fr 1fr 1fr;
   gap: var(--oas-space-3);
+}
+
+.top5-list {
+  display: flex;
+  flex-direction: column;
+}
+.top5-row {
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-2);
+  padding: var(--oas-space-2) 0;
+  border-bottom: 1px solid var(--oas-color-border);
+}
+.top5-row:last-child {
+  border-bottom: none;
+}
+.top5-rank {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-family: var(--app-mono);
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--oas-color-bg-hover);
+  color: var(--oas-color-text-secondary);
+}
+.top5-rank.rank-1 {
+  background: var(--oas-color-primary);
+  color: var(--oas-color-text-on-primary);
+}
+.top5-rank.rank-2 {
+  background: var(--oas-color-success);
+  color: var(--oas-color-text-on-primary);
+}
+.top5-rank.rank-3 {
+  background: var(--oas-color-warning);
+  color: var(--oas-color-text-on-primary);
+}
+.top5-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-2);
+}
+.top5-line {
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-2);
+  min-width: 0;
+}
+.top5-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--oas-font-size-sm);
+  color: var(--oas-color-text-primary);
+}
+.top5-tag::part(tag) {
+  background: var(--oas-color-bg-hover);
+  border-color: transparent;
+  color: var(--oas-color-text-secondary);
+}
+.top5-bar {
+  flex: 1;
+  min-width: 0;
+}
+.top5-bar::part(track) {
+  height: 6px;
+}
+.top5-bar::part(bar) {
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--oas-color-primary) 62%, transparent),
+    var(--oas-color-primary)
+  );
+}
+.top5-sold {
+  flex-shrink: 0;
+  min-width: 30px;
+  text-align: right;
+  font-size: var(--oas-font-size-sm);
+  font-weight: 600;
+  color: var(--oas-color-text-primary);
 }
 
 .showcase {
