@@ -7,6 +7,9 @@ export interface OrderRow {
   status: OrderStatus
   items: string[]
   created: string
+  urgent?: boolean
+  phone?: string
+  note?: string
 }
 
 function iso(d: Date): string {
@@ -46,6 +49,9 @@ function seed(): OrderRow[] {
     status,
     items,
     created,
+    urgent: i % 3 === 0,
+    phone: `138${String(10000000 + i * 123456).slice(-8)}`,
+    note: i % 4 === 0 ? '请在工作日配送' : undefined,
   }))
 }
 
@@ -58,6 +64,11 @@ function delay<T>(value: T, ms = 100): Promise<T> {
 
 export function listOrders(): Promise<OrderRow[]> {
   return delay([...rows])
+}
+
+export function getOrder(id: string): Promise<OrderRow | null> {
+  const row = rows.find((r) => r.id === id)
+  return delay(row ? { ...row } : null)
 }
 
 export function createOrder(data: Omit<OrderRow, 'id' | 'created'>): Promise<OrderRow> {

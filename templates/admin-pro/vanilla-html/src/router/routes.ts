@@ -2,6 +2,7 @@ export interface RouteMeta {
   title: string
   icon: string
   roles?: string[]
+  hidden?: boolean
 }
 
 export interface PageModule {
@@ -39,6 +40,21 @@ export const routes: Route[] = [
     path: '/profile',
     meta: { title: '个人中心', icon: 'gear' },
     load: () => import('../pages/profile'),
+  },
+  {
+    path: '/form',
+    meta: { title: '创建订单', icon: 'plus' },
+    load: () => import('../pages/form'),
+  },
+  {
+    path: '/order-detail',
+    meta: { title: '订单详情', icon: 'calendar', hidden: true },
+    load: () => import('../pages/order-detail'),
+  },
+  {
+    path: '/result',
+    meta: { title: '结果', icon: 'check', hidden: true },
+    load: () => import('../pages/result'),
   },
 ]
 

@@ -121,7 +121,10 @@ export function render(el: HTMLElement): () => void {
           </div>
           <oas-descriptions id="order-detail-desc" column="1"></oas-descriptions>
           <div class="order-detail-foot">
-            <oas-button data-testid="order-detail-action" id="order-detail-action" type="primary" hidden></oas-button>
+            <div class="order-detail-foot-row">
+              <oas-button data-testid="order-detail-action" id="order-detail-action" type="primary" hidden></oas-button>
+              <a class="link-btn" data-testid="order-detail-link" href="#/order-detail">查看完整详情 →</a>
+            </div>
             <div class="order-detail-note" id="order-detail-note" hidden></div>
           </div>
         </div>
@@ -310,7 +313,11 @@ export function render(el: HTMLElement): () => void {
     renderTable()
   })
 
-  el.querySelector<HTMLElement>('#order-detail-action')!.addEventListener('click', async (e) => {
+  el.querySelector<HTMLElement>('[data-testid="order-detail-link"]')!.addEventListener('click', () => {
+    if (state.selectedId) sessionStorage.setItem('order-detail-id', state.selectedId)
+  })
+
+  el.querySelector<HTMLElement>('[data-testid="order-detail-action"]')!.addEventListener('click', async (e) => {
     const button = e.currentTarget as HTMLElement
     const target = button.dataset.target as OrderStatus | undefined
     if (!target || !state.selectedId) return

@@ -9,7 +9,9 @@ const KNOWN_ICONS = new Set<string>(iconNames)
 
 function sidebarItems(): string {
   return JSON.stringify(
-    routes.map((r) => ({ label: r.meta.title, value: r.path, icon: r.meta.icon })),
+    routes
+      .filter((r) => !r.meta.hidden)
+      .map((r) => ({ label: r.meta.title, value: r.path, icon: r.meta.icon })),
   )
 }
 
@@ -32,12 +34,14 @@ interface CommandEntry {
 }
 
 function buildCommandItems(): CommandEntry[] {
-  const pageItems = routes.map((r) => ({
-    label: r.meta.title,
-    value: r.path,
-    group: '页面',
-    keywords: [r.meta.title, r.path],
-  }))
+  const pageItems = routes
+    .filter((r) => !r.meta.hidden)
+    .map((r) => ({
+      label: r.meta.title,
+      value: r.path,
+      group: '页面',
+      keywords: [r.meta.title, r.path],
+    }))
   const actionItems: CommandEntry[] = [
     {
       label: '切换主题',

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { createOrder, listOrders, resetOrders, updateOrderStatus } from './orders'
+import { createOrder, getOrder, listOrders, resetOrders, updateOrderStatus } from './orders'
 import type { OrderStatus } from './orders'
 
 const VALID: OrderStatus[] = ['pending', 'paid', 'shipping', 'done', 'cancelled']
@@ -37,6 +37,38 @@ describe('orders 数据源', () => {
       expect(r.created).toMatch(/^\d{4}-\d{2}-\d{2}$/)
       expect(r.customer.length).toBeGreaterThan(0)
     }
+  })
+
+  it('种子订单带合法手机号与加急标记', async () => {
+    const rows = await listOrders()
+    for (const r of rows) {
+      expect(r.phone).toMatch(/^1\d{10}$/)
+      expect(typeof r.urgent).toBe('boolean')
+    }
+  })
+
+  it('getOrder 返回命中行，id 不存在返回 null', async () => {
+    const rows = await listOrders()
+    const target = rows[0]
+    const hit = await getOrder(target.id)
+    expect(hit?.id).toBe(target.id)
+    expect(hit?.customer).toBe(target.customer)
+    expect(await getOrder('SO-99999')).toBeNull()
+  })
+
+  it('createOrder 保留加急/电话/备注字段', async () => {
+    const row = await createOrder({
+      customer: '加急客户',
+      amount: 3200,
+      status: 'pending',
+      items: ['机械键盘'],
+      urgent: true,
+      phone: '13800001111',
+      note: '尽快发货',
+    })
+    expect(row.urgent).toBe(true)
+    expect(row.phone).toBe('13800001111')
+    expect(row.note).toBe('尽快发货')
   })
 
   it('createOrder 头插新行并生成 SO- id/created', async () => {
