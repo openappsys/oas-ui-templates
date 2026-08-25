@@ -1,6 +1,7 @@
 import { hasAccess, session } from '../store/session'
 import { matchRoute, routes } from './routes'
 import type { PageModule } from './routes'
+import { t } from '../i18n'
 
 export type GuardResult =
   | { ok: true; path: string }
@@ -30,16 +31,15 @@ function clearDispose(): void {
   dispose = undefined
 }
 
-const NOTICE_DESC: Record<string, string> = {
-  '404': '你访问的页面不存在或已被移除。',
-  '403': '当前账号没有权限访问该页面。',
-  '500': '页面加载出现异常，请稍后重试。',
+function notice(code: '404' | '403' | '500'): { title: string; desc: string } {
+  if (code === '404') return { title: t('common.404.title'), desc: t('common.404.desc') }
+  if (code === '403') return { title: t('common.403.title'), desc: t('common.403.desc') }
+  return { title: t('common.500.title'), desc: t('common.500.desc') }
 }
 
-function renderNotice(el: HTMLElement, code: string, text: string): void {
-  const title = `${code} ${text}`
-  const desc = NOTICE_DESC[code] ?? ''
-  el.innerHTML = `<div class="page notice"><div class="notice-code">${code}</div><h1 class="notice-title">${title}</h1><p class="notice-desc">${desc}</p><oas-button type="primary" data-action="home">返回首页</oas-button></div>`
+function renderNotice(el: HTMLElement, code: '404' | '403' | '500'): void {
+  const info = notice(code)
+  el.innerHTML = `<div class="page notice"><div class="notice-code">${code}</div><h1 class="notice-title">${info.title}</h1><p class="notice-desc">${info.desc}</p><oas-button type="primary" data-action="home">${t('common.home')}</oas-button></div>`
   el.querySelector('[data-action="home"]')?.addEventListener('click', () => {
     location.hash = routes[0].path
   })
@@ -47,7 +47,7 @@ function renderNotice(el: HTMLElement, code: string, text: string): void {
 
 function runResolve(): void {
   resolve().catch(() => {
-    if (view && view.innerHTML === '') renderNotice(view, '500', '页面加载失败')
+    if (view && view.innerHTML === '') renderNotice(view, '500')
   })
 }
 
@@ -70,9 +70,9 @@ export async function resolve(): Promise<void> {
       if (token !== epoch) return
       dispose = mod.render(view)
     } else if (g.reason === 'not-found') {
-      renderNotice(view, '404', '页面不存在')
+      renderNotice(view, '404')
     } else {
-      renderNotice(view, '403', '无权访问该页面')
+      renderNotice(view, '403')
     }
     return
   }
@@ -80,5 +80,5 @@ export async function resolve(): Promise<void> {
   const mod: PageModule = await route.load()
   if (token !== epoch) return
   dispose = mod.render(view)
-  document.title = `${route.meta.title} · OAS Admin`
+  document.title = `${t(route.meta.titleKey)} · ${t('app.fullname')}`
 }
