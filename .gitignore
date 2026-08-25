@@ -1,4 +1,5 @@
 .idea/
+.worktrees/
 *.un~
 node_modules/
 dist/
