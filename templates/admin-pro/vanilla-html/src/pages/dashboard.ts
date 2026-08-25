@@ -102,6 +102,28 @@ function readTokenColor(name: string): string {
   return val || '#999'
 }
 
+function parseHex(hex: string): [number, number, number] {
+  const h = hex.replace('#', '')
+  const full =
+    h.length === 3
+      ? h
+          .split('')
+          .map((c) => c + c)
+          .join('')
+      : h
+  const n = parseInt(full, 16)
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+}
+
+function mixHex(a: string, b: string, ratio: number): string {
+  const [ar, ag, ab] = parseHex(a)
+  const [br, bg, bb] = parseHex(b)
+  const r = Math.round(ar + (br - ar) * ratio)
+  const g = Math.round(ag + (bg - ag) * ratio)
+  const l = Math.round(ab + (bb - ab) * ratio)
+  return `#${[r, g, l].map((v) => v.toString(16).padStart(2, '0')).join('')}`
+}
+
 function makeTrend(days: number): number[] {
   return Array.from({ length: days }, (_, i) => {
     const base = TREND[i % TREND.length]
@@ -134,6 +156,13 @@ function getToneVars(tone: string): { bg: string; icon: string } {
 export function render(el: HTMLElement): () => void {
   const user = session.user
   const name = user?.name ?? ''
+  const isAdmin = user?.role === 'admin'
+  const quickActions = [
+    { href: '#/form', icon: 'plus', label: '创建订单' },
+    ...(isAdmin ? [{ href: '#/products', icon: 'edit', label: '新建商品' }] : []),
+    { href: '#/orders', icon: 'calendar', label: '订单管理' },
+    ...(isAdmin ? [{ href: '#/users', icon: 'user', label: '用户管理' }] : []),
+  ]
 
   el.innerHTML = `
     <div class="page">
@@ -177,25 +206,18 @@ export function render(el: HTMLElement): () => void {
           </a>
           <div id="top5-list" data-testid="top5-list" class="top5-list"></div>
         </oas-card>
-        <oas-card title="为什么零框架？">
-          <div class="showcase">
-            <div class="showcase-point">
-              <oas-icon class="showcase-icon success-icon" name="check-circle" size="16"></oas-icon>
-              <span>零框架运行时 · 一套组件到处运行</span>
-            </div>
-            <div class="showcase-point">
-              <oas-icon class="showcase-icon success-icon" name="check-circle" size="16"></oas-icon>
-              <span>浏览器原生标准 · 不是某代框架</span>
-            </div>
-            <div class="showcase-point">
-              <oas-icon class="showcase-icon success-icon" name="check-circle" size="16"></oas-icon>
-              <span>Shadow DOM 样式隔离 · 不怕样式污染</span>
-            </div>
-            <div class="showcase-code"><code>&lt;oas-table data="…"&gt;&lt;/oas-table&gt;</code></div>
-            <a class="link-btn" href="https://oas-ui.dev" target="_blank" rel="noopener noreferrer">
-              了解 OAS-UI <oas-icon name="external-link" size="12"></oas-icon>
-            </a>
+        <oas-card class="quick-card" title="快捷操作">
+          <div class="quick-actions" data-testid="quick-actions">
+            ${quickActions
+              .map(
+                (a) => `<a class="quick-action" href="${a.href}">
+                  <oas-icon name="${a.icon}" size="16"></oas-icon>
+                  <span>${a.label}</span>
+                </a>`,
+              )
+              .join('')}
           </div>
+          <div class="quick-foot">Web Components 驱动 · 零框架运行时</div>
         </oas-card>
       </div>
     </div>`
@@ -283,6 +305,9 @@ export function render(el: HTMLElement): () => void {
     const textSecondary = readTokenColor('--oas-color-text-secondary')
     const border = readTokenColor('--oas-color-border')
     const textPrimary = readTokenColor('--oas-color-text-primary')
+    const bg = readTokenColor('--oas-color-bg')
+    const dark = isDark()
+    const pieSuccess = dark ? mixHex(success, bg, 0.3) : success
 
     const trend = el.querySelector<HTMLDivElement>('#chart-trend')
     if (trend) {
@@ -339,7 +364,7 @@ export function render(el: HTMLElement): () => void {
           itemGap: 8,
           textStyle: { color: textSecondary },
         },
-        color: [success, primary, warning, danger],
+        color: [pieSuccess, primary, warning, danger],
         graphic: [
           {
             type: 'text',
