@@ -101,6 +101,7 @@ export function mountApp(root: HTMLElement): void {
           <oas-icon name="menu" size="18"></oas-icon>
         </oas-button>
         ${LOGO}
+        <span class="spacer"></span>
         <div class="global-search">
           <oas-input id="global-search" placeholder="搜索页面…" prefix-icon="search" readonly></oas-input>
           <span class="kbd-hint">/</span>

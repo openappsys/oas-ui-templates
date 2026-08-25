@@ -81,7 +81,8 @@ body {
   cursor: pointer;
 }
 .global-search oas-input {
-  width: 280px;
+  width: 100%;
+  max-width: 400px;
 }
 .global-search:hover oas-input::part(input) {
   border-color: var(--oas-color-primary);
