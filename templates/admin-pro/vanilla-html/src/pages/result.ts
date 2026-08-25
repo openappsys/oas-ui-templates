@@ -1,4 +1,5 @@
 import { destroyAll } from '@oas-ui/ui/feedback/message'
+import { t } from '../i18n'
 
 export function render(el: HTMLElement): () => void {
   destroyAll()
@@ -21,18 +22,18 @@ export function render(el: HTMLElement): () => void {
 
   if (success) {
     el.innerHTML = `${wrap}
-      <oas-result data-testid="form-result" status="success" title="创建成功" description="订单号 ${orderId}">
+      <oas-result data-testid="form-result" status="success" title="${t('result.success.title')}" description="${t('result.success.desc', { orderId })}">
         <div slot="extra" class="result-actions">
-          <oas-button data-testid="result-view-order" type="primary">查看订单</oas-button>
-          <oas-button data-testid="result-reset">再建一单</oas-button>
+          <oas-button data-testid="result-view-order" type="primary">${t('result.viewOrder')}</oas-button>
+          <oas-button data-testid="result-reset">${t('result.createAnother')}</oas-button>
         </div>
       </oas-result>
     ${close}`
   } else {
     el.innerHTML = `${wrap}
-      <oas-result data-testid="form-result" status="error" title="演示失败态" description="提交未成功，请返回表单重试">
+      <oas-result data-testid="form-result" status="error" title="${t('result.error.title')}" description="${t('result.error.desc')}">
         <div slot="extra" class="result-actions">
-          <oas-button data-testid="result-back-form" type="primary">返回表单</oas-button>
+          <oas-button data-testid="result-back-form" type="primary">${t('result.backForm')}</oas-button>
         </div>
       </oas-result>
     ${close}`

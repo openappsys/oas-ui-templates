@@ -1,7 +1,11 @@
 import { message } from '@oas-ui/ui/feedback/message'
+import { t } from '../i18n'
 import { createDept, listDepts, removeDept, treeDepts, updateDept } from '../data/system'
 import type { DeptNode, DeptTree } from '../data/system'
 import '../styles/pages/dept.css'
+
+const RULES = (): string =>
+  JSON.stringify({ name: [{ required: true, message: t('dept.rule.name') }] })
 
 interface DeptTreeNode {
   key: string
@@ -92,7 +96,7 @@ function buildParentOptions(
     excluded.add(excludeId)
     filtered = nodes.map((n) => prune(n, excluded)).filter((n): n is DeptTree => n !== null)
   }
-  return [{ value: '0', label: '顶级', children: toOpt(filtered) }]
+  return [{ value: '0', label: t('dept.option.top'), children: toOpt(filtered) }]
 }
 
 function prune(node: DeptTree, excluded: Set<number>): DeptTree | null {
@@ -116,13 +120,13 @@ export function render(el: HTMLElement): () => void {
     <div class="page">
       <div class="page-head">
         <div>
-          <h1 class="page-title">部门管理</h1>
-          <p class="page-subtitle">维护组织架构与部门树</p>
+          <h1 class="page-title">${t('nav.dept')}</h1>
+          <p class="page-subtitle">${t('dept.subtitle')}</p>
         </div>
-        <oas-button data-testid="dept-create" type="primary" icon="plus">新建部门</oas-button>
+        <oas-button data-testid="dept-create" type="primary" icon="plus">${t('dept.new')}</oas-button>
       </div>
       <div class="dept-layout">
-        <oas-card class="dept-tree-card" title="部门树">
+        <oas-card class="dept-tree-card" title="${t('dept.treeTitle')}">
           <oas-tree data-testid="dept-tree" id="dept-tree" data="[]" expanded="">
             <template slot="node">
               <span class="tree-node-label">
@@ -132,30 +136,30 @@ export function render(el: HTMLElement): () => void {
             </template>
           </oas-tree>
         </oas-card>
-        <oas-card class="dept-detail-card" title="部门详情">
+        <oas-card class="dept-detail-card" title="${t('dept.detailTitle')}">
           <div id="dept-detail" class="dept-detail"></div>
         </oas-card>
       </div>
 
-      <oas-drawer data-testid="dept-form-drawer" id="dept-form-drawer" title="新建部门" placement="right" size="medium" no-footer>
-        <oas-form id="dept-form" rules='{"name":[{"required":true,"message":"请输入部门名称"}]}'>
+      <oas-drawer data-testid="dept-form-drawer" id="dept-form-drawer" title="${t('dept.new')}" placement="right" size="medium" no-footer>
+        <oas-form id="dept-form" rules='${RULES()}'>
           <div class="dept-form-body">
             <div class="form-field">
-              <label class="form-label">部门名称 <span class="req">*</span></label>
-              <oas-input data-testid="df-name" name="name" placeholder="请输入部门名称"></oas-input>
+              <label class="form-label">${t('dept.form.name')} <span class="req">*</span></label>
+              <oas-input data-testid="df-name" name="name" placeholder="${t('dept.rule.name')}"></oas-input>
             </div>
             <div class="form-field">
-              <label class="form-label">上级部门</label>
-              <oas-tree-select data-testid="df-parent" id="df-parent" placeholder="顶级部门" options="[]" value="0"></oas-tree-select>
+              <label class="form-label">${t('dept.form.parent')}</label>
+              <oas-tree-select data-testid="df-parent" id="df-parent" placeholder="${t('dept.placeholder.top')}" options="[]" value="0"></oas-tree-select>
             </div>
             <div class="form-field">
-              <label class="form-label">成员数</label>
+              <label class="form-label">${t('dept.form.members')}</label>
               <oas-input-number data-testid="df-members" name="members" min="0" placeholder="0"></oas-input-number>
             </div>
             <div class="form-actions">
               <oas-space justify="end">
-                <oas-button data-testid="df-cancel">取消</oas-button>
-                <oas-button data-testid="df-save" type="primary">保存</oas-button>
+                <oas-button data-testid="df-cancel">${t('common.cancel')}</oas-button>
+                <oas-button data-testid="df-save" type="primary">${t('common.save')}</oas-button>
               </oas-space>
             </div>
           </div>
@@ -184,7 +188,7 @@ export function render(el: HTMLElement): () => void {
     const children = node.children ?? []
     if (children.length === 0) {
       detailEl.querySelector<HTMLElement>('#dept-sub')!.innerHTML =
-        `<div class="sub-dept-empty">暂无子部门</div>`
+        `<div class="sub-dept-empty">${t('dept.empty.noChildren')}</div>`
       return
     }
     const tbody = detailEl.querySelector<HTMLElement>('#dept-sub-body')!
@@ -194,9 +198,9 @@ export function render(el: HTMLElement): () => void {
           <td>${c.name}</td>
           <td class="num-cell mono">${c.members}</td>
           <td class="action-cell">
-            <oas-button size="small" type="text" data-edit="${c.id}">编辑</oas-button>
-            <oas-popconfirm title="确认删除该部门？" data-del="${c.id}">
-              <oas-button size="small" type="danger">删除</oas-button>
+            <oas-button size="small" type="text" data-edit="${c.id}">${t('common.edit')}</oas-button>
+            <oas-popconfirm title="${t('dept.confirmDelete')}" data-del="${c.id}">
+              <oas-button size="small" type="danger">${t('common.delete')}</oas-button>
             </oas-popconfirm>
           </td>
         </tr>`,
@@ -223,32 +227,32 @@ export function render(el: HTMLElement): () => void {
   function renderDetail(): void {
     const node = state.selectedId == null ? null : findNode(state.tree, state.selectedId)
     if (!node) {
-      detailEl.innerHTML = `<oas-empty description="请选择左侧部门节点"></oas-empty>`
+      detailEl.innerHTML = `<oas-empty description="${t('dept.empty.selectNode')}"></oas-empty>`
       return
     }
     detailEl.innerHTML = `
       <div class="dept-detail-head">
         <div class="dept-detail-title">${node.name}</div>
-        <oas-tag type="primary" data-testid="dept-detail-members">${node.members} 人</oas-tag>
+        <oas-tag type="primary" data-testid="dept-detail-members">${t('dept.memberCount', { n: node.members })}</oas-tag>
       </div>
       <oas-descriptions column="1">
-        <oas-descriptions-item label="部门 ID"><span class="mono">${node.id}</span></oas-descriptions-item>
-        <oas-descriptions-item label="上级部门"><span class="mono">${node.parentId == null ? '—' : node.parentId}</span></oas-descriptions-item>
-        <oas-descriptions-item label="子部门数"><span class="mono">${(node.children ?? []).length}</span></oas-descriptions-item>
+        <oas-descriptions-item label="${t('dept.detail.id')}"><span class="mono">${node.id}</span></oas-descriptions-item>
+        <oas-descriptions-item label="${t('dept.form.parent')}"><span class="mono">${node.parentId == null ? '—' : node.parentId}</span></oas-descriptions-item>
+        <oas-descriptions-item label="${t('dept.detail.childCount')}"><span class="mono">${(node.children ?? []).length}</span></oas-descriptions-item>
       </oas-descriptions>
       <div class="dept-detail-actions">
-        <oas-button data-md-action="edit" type="primary">编辑</oas-button>
-        <oas-button data-md-action="child">新增子部门</oas-button>
-        <oas-popconfirm title="确认删除该部门？" id="md-del-pop">
-          <oas-button data-md-action="delete" type="danger">删除</oas-button>
+        <oas-button data-md-action="edit" type="primary">${t('common.edit')}</oas-button>
+        <oas-button data-md-action="child">${t('dept.addChild')}</oas-button>
+        <oas-popconfirm title="${t('dept.confirmDelete')}" id="md-del-pop">
+          <oas-button data-md-action="delete" type="danger">${t('common.delete')}</oas-button>
         </oas-popconfirm>
       </div>
       <div class="dept-detail-sub">
-        <div class="dept-detail-sub-title">子部门</div>
+        <div class="dept-detail-sub-title">${t('dept.subTitle')}</div>
         <div id="dept-sub">
           <table class="sub-dept-table" data-testid="dept-sub-table">
             <thead>
-              <tr><th>名称</th><th class="num">成员数</th><th>操作</th></tr>
+              <tr><th>${t('dept.th.name')}</th><th class="num">${t('dept.th.members')}</th><th>${t('dept.th.action')}</th></tr>
             </thead>
             <tbody id="dept-sub-body"></tbody>
           </table>
@@ -269,19 +273,19 @@ export function render(el: HTMLElement): () => void {
   async function doDelete(id: number): Promise<void> {
     const node = findNode(state.tree, id)
     if (!node) {
-      message.error('该部门已不存在')
+      message.error(t('dept.notFound'))
       return
     }
     if ((node.children ?? []).length > 0) {
-      message.error('存在子部门，请先删除子级')
+      message.error(t('dept.hasChildren'))
       return
     }
     const ok = await removeDept(id)
     if (!ok) {
-      message.error('该部门已不存在')
+      message.error(t('dept.notFound'))
       return
     }
-    message.success('已删除')
+    message.success(t('common.deleted'))
     state.selectedId = null
     void refresh()
   }
@@ -305,7 +309,10 @@ export function render(el: HTMLElement): () => void {
     const pid = node?.parentId ?? parent?.id ?? null
     parentSelect.setAttribute('value', String(pid ?? 0))
     refreshParentOptions(node?.id ?? null)
-    drawer.setAttribute('title', node ? `编辑部门：${node.name}` : '新建部门')
+    drawer.setAttribute(
+      'title',
+      node ? t('dept.editDept', { name: node.name }) : t('dept.new'),
+    )
   }
 
   function openForm(node: DeptNode | null, parent?: DeptTree): void {
@@ -360,16 +367,16 @@ export function render(el: HTMLElement): () => void {
       const parentId = parentRaw === '0' ? null : Number(parentRaw)
       const members = Number(values.members) || 0
       if (state.editingId != null && parentId === state.editingId) {
-        message.error('上级部门不能选择自身')
+        message.error(t('dept.err.parentSelf'))
         return
       }
       if (state.editingId == null) {
         await createDept({ name, parentId, members })
-        message.success('已创建')
+        message.success(t('common.created'))
       } else {
         const updated = await updateDept(state.editingId, { name, parentId, members })
-        if (!updated) message.error('该部门已不存在')
-        else message.success('已保存')
+        if (!updated) message.error(t('dept.notFound'))
+        else message.success(t('common.saved'))
       }
       drawer.removeAttribute('visible')
       void refresh()

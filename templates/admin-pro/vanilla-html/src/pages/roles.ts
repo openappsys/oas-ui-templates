@@ -1,13 +1,10 @@
 import { message } from '@oas-ui/ui/feedback/message'
+import { t } from '../i18n'
 import { createRole, listRoles, removeRole, treeDepts, updateRole } from '../data/system'
 import type { DataScope, DeptTree, RoleRow } from '../data/system'
 
-const DATA_SCOPE_LABEL: Record<DataScope, string> = {
-  1: '全部',
-  2: '自定义',
-  3: '本部门',
-  4: '本部门及以下',
-  5: '仅本人',
+function dataScopeLabel(scope: DataScope): string {
+  return t(`roles.scope.${scope}`)
 }
 
 const DATA_SCOPE_TAG: Record<DataScope, string> = {
@@ -18,16 +15,22 @@ const DATA_SCOPE_TAG: Record<DataScope, string> = {
   5: 'default',
 }
 
-const DATA_SCOPE_OPTIONS: Array<{ value: DataScope; label: string; desc: string }> = [
-  { value: 1, label: '全部数据', desc: '可访问系统内全部数据' },
-  { value: 2, label: '自定义数据', desc: '手动勾选可见的部门数据' },
-  { value: 3, label: '本部门数据', desc: '仅本部门成员的数据' },
-  { value: 4, label: '本部门及以下', desc: '本部门及所有子部门的数据' },
-  { value: 5, label: '仅本人数据', desc: '仅本人创建的数据' },
+const DATA_SCOPE_OPTIONS = (): Array<{ value: DataScope; label: string; desc: string }> => [
+  { value: 1, label: t('roles.scopeOpt.1'), desc: t('roles.scopeDesc.1') },
+  { value: 2, label: t('roles.scopeOpt.2'), desc: t('roles.scopeDesc.2') },
+  { value: 3, label: t('roles.scopeOpt.3'), desc: t('roles.scopeDesc.3') },
+  { value: 4, label: t('roles.scopeOpt.4'), desc: t('roles.scopeDesc.4') },
+  { value: 5, label: t('roles.scopeOpt.5'), desc: t('roles.scopeDesc.5') },
 ]
 
-const RULES =
-  '{"name":[{"required":true,"message":"请输入角色名"}],"code":[{"required":true,"message":"请输入角色标识"},{"pattern":"^[a-z][a-z0-9:_-]*$","message":"标识需以小写字母开头，仅含小写字母/数字/冒号/下划线/连字符"}]}'
+const RULES = (): string =>
+  JSON.stringify({
+    name: [{ required: true, message: t('roles.rule.name') }],
+    code: [
+      { required: true, message: t('roles.rule.code') },
+      { pattern: '^[a-z][a-z0-9:_-]*$', message: t('roles.rule.codeFmt') },
+    ],
+  })
 
 interface PageState {
   roles: RoleRow[]
@@ -63,22 +66,22 @@ export function render(el: HTMLElement): () => void {
     <div class="page">
       <div class="page-head">
         <div>
-          <h1 class="page-title">角色管理</h1>
-          <p class="page-subtitle">维护角色及其数据权限范围</p>
+          <h1 class="page-title">${t('nav.roles')}</h1>
+          <p class="page-subtitle">${t('roles.subtitle')}</p>
         </div>
-        <oas-button data-testid="role-create" type="primary" icon="plus">新建角色</oas-button>
+        <oas-button data-testid="role-create" type="primary" icon="plus">${t('roles.new')}</oas-button>
       </div>
-      <oas-card class="list-card" title="角色列表">
+      <oas-card class="list-card" title="${t('roles.list')}">
         <div class="table-wrap" id="roles-wrap">
           <table class="roles-table" data-testid="roles-table">
             <thead>
               <tr>
-                <th>角色名</th>
-                <th>标识</th>
-                <th>数据范围</th>
-                <th class="num">用户数</th>
-                <th>创建日期</th>
-                <th>操作</th>
+                <th>${t('roles.th.name')}</th>
+                <th>${t('roles.th.code')}</th>
+                <th>${t('roles.th.dataScope')}</th>
+                <th class="num">${t('roles.th.userCount')}</th>
+                <th>${t('roles.th.created')}</th>
+                <th>${t('roles.th.action')}</th>
               </tr>
             </thead>
             <tbody id="roles-body"></tbody>
@@ -86,35 +89,35 @@ export function render(el: HTMLElement): () => void {
         </div>
       </oas-card>
 
-      <oas-drawer data-testid="role-form-drawer" id="role-form-drawer" title="新建角色" placement="right" size="medium" no-footer>
-        <oas-form id="role-form" rules='${RULES}'>
+      <oas-drawer data-testid="role-form-drawer" id="role-form-drawer" title="${t('roles.new')}" placement="right" size="medium" no-footer>
+        <oas-form id="role-form" rules='${RULES()}'>
           <div class="role-form-body">
             <div class="form-field">
-              <label class="form-label">角色名 <span class="req">*</span></label>
-              <oas-input data-testid="rf-name" name="name" placeholder="请输入角色名"></oas-input>
+              <label class="form-label">${t('roles.form.name')} <span class="req">*</span></label>
+              <oas-input data-testid="rf-name" name="name" placeholder="${t('roles.rule.name')}"></oas-input>
             </div>
             <div class="form-field">
-              <label class="form-label">标识 <span class="req">*</span></label>
-              <oas-input data-testid="rf-code" name="code" placeholder="如 ops_manager"></oas-input>
-              <div class="form-hint">小写字母开头，可含数字、下划线、冒号、连字符</div>
+              <label class="form-label">${t('roles.form.code')} <span class="req">*</span></label>
+              <oas-input data-testid="rf-code" name="code" placeholder="${t('roles.placeholder.code')}"></oas-input>
+              <div class="form-hint">${t('roles.hint.code')}</div>
             </div>
             <div class="form-field">
-              <label class="form-label">数据范围</label>
+              <label class="form-label">${t('roles.form.dataScope')}</label>
               <div class="radio-group" id="rf-scope">
-                ${DATA_SCOPE_OPTIONS.map(
+                ${DATA_SCOPE_OPTIONS().map(
                   (o) =>
                     `<oas-radio name="dataScope" value="${o.value}"><span class="radio-item"><span class="radio-label">${o.label}</span><span class="radio-desc">${o.desc}</span></span></oas-radio>`,
                 ).join('')}
               </div>
             </div>
             <div class="form-field" id="rf-custom" hidden>
-              <label class="form-label">自定义数据范围（部门）</label>
-              <oas-transfer data-testid="rf-transfer" id="rf-transfer" source-title="全部部门" target-title="已选部门" searchable data="[]" value="[]"></oas-transfer>
+              <label class="form-label">${t('roles.form.customScope')}</label>
+              <oas-transfer data-testid="rf-transfer" id="rf-transfer" source-title="${t('roles.transfer.source')}" target-title="${t('roles.transfer.target')}" searchable data="[]" value="[]"></oas-transfer>
             </div>
             <div class="form-actions">
               <oas-space justify="end">
-                <oas-button data-testid="rf-cancel">取消</oas-button>
-                <oas-button data-testid="rf-save" type="primary">保存</oas-button>
+                <oas-button data-testid="rf-cancel">${t('common.cancel')}</oas-button>
+                <oas-button data-testid="rf-save" type="primary">${t('common.save')}</oas-button>
               </oas-space>
             </div>
           </div>
@@ -144,7 +147,10 @@ export function render(el: HTMLElement): () => void {
     setRadioChecked(state.dataScope)
     transfer.setAttribute('value', JSON.stringify(state.deptIds.map(String)))
     customField.hidden = state.dataScope !== 2
-    drawer.setAttribute('title', row ? `编辑角色 #${row.id}` : '新建角色')
+    drawer.setAttribute(
+      'title',
+      row ? t('roles.editRole').replace('#{id}', String(row.id)) : t('roles.new'),
+    )
   }
 
   function openForm(row: RoleRow | null): void {
@@ -155,7 +161,7 @@ export function render(el: HTMLElement): () => void {
 
   function renderTable(): void {
     if (state.roles.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="6" class="roles-empty"><oas-empty description="暂无角色"></oas-empty></td></tr>`
+      tbody.innerHTML = `<tr><td colspan="6" class="roles-empty"><oas-empty description="${t('roles.empty')}"></oas-empty></td></tr>`
       return
     }
     tbody.innerHTML = state.roles
@@ -163,13 +169,13 @@ export function render(el: HTMLElement): () => void {
         (r) => `<tr data-id="${r.id}">
           <td class="name-cell">${r.name}</td>
           <td><span class="mono code-cell">${r.code}</span></td>
-          <td><oas-tag type="${DATA_SCOPE_TAG[r.dataScope]}">${DATA_SCOPE_LABEL[r.dataScope]}</oas-tag></td>
+          <td><oas-tag type="${DATA_SCOPE_TAG[r.dataScope]}">${dataScopeLabel(r.dataScope)}</oas-tag></td>
           <td class="num-cell mono">${r.userCount}</td>
           <td><span class="mono date-cell">${r.created}</span></td>
           <td class="action-cell">
-            <oas-button size="small" type="text" data-edit="${r.id}">编辑</oas-button>
-            <oas-popconfirm title="确认删除该角色？" data-del="${r.id}">
-              <oas-button size="small" type="danger">删除</oas-button>
+            <oas-button size="small" type="text" data-edit="${r.id}">${t('common.edit')}</oas-button>
+            <oas-popconfirm title="${t('roles.confirmDelete')}" data-del="${r.id}">
+              <oas-button size="small" type="danger">${t('common.delete')}</oas-button>
             </oas-popconfirm>
           </td>
         </tr>`,
@@ -186,8 +192,8 @@ export function render(el: HTMLElement): () => void {
       pc.addEventListener('oas-ok', () => {
         const id = Number(pc.getAttribute('data-del'))
         void removeRole(id).then((ok) => {
-          if (!ok) message.error('该角色已不存在')
-          else message.success('已删除')
+          if (!ok) message.error(t('roles.notFound'))
+          else message.success(t('common.deleted'))
           void refresh()
         })
       })
@@ -246,7 +252,7 @@ export function render(el: HTMLElement): () => void {
       const deptIds = state.dataScope === 2 ? state.deptIds : []
       if (state.editingId == null) {
         await createRole({ name, code, dataScope: state.dataScope, deptIds, userCount: 0 })
-        message.success('已创建')
+        message.success(t('common.created'))
       } else {
         const updated = await updateRole(state.editingId, {
           name,
@@ -254,8 +260,8 @@ export function render(el: HTMLElement): () => void {
           dataScope: state.dataScope,
           deptIds,
         })
-        if (!updated) message.error('该角色已不存在')
-        else message.success('已保存')
+        if (!updated) message.error(t('roles.notFound'))
+        else message.success(t('common.saved'))
       }
       drawer.removeAttribute('visible')
       void refresh()

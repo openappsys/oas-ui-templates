@@ -1,11 +1,17 @@
 import { message } from '@oas-ui/ui/feedback/message'
+import { t } from '../i18n'
 import { treeMenus } from '../data/system'
 import type { MenuTree, MenuType } from '../data/system'
 
 const TYPE_TAG: Record<MenuType, string> = { M: 'default', C: 'primary', F: 'warning' }
 const TYPE_ICON: Record<MenuType, string> = { M: 'more', C: 'menu', F: 'edit' }
-const TYPE_LABEL: Record<MenuType, string> = { M: '目录', C: '菜单', F: '按钮' }
+function typeLabel(type: MenuType): string {
+  return t(`menus.type.${type}`)
+}
 const PERM_RE = /^[a-z][a-z0-9:]+(:[a-z0-9]+)?$/
+
+const RULES = (): string =>
+  JSON.stringify({ name: [{ required: true, message: t('menus.rule.name') }] })
 
 interface PageState {
   tree: MenuTree[]
@@ -103,51 +109,51 @@ export function render(el: HTMLElement): () => void {
     <div class="page">
       <div class="page-head">
         <div>
-          <h1 class="page-title">权限管理</h1>
-          <p class="page-subtitle">维护菜单结构与权限标识</p>
+          <h1 class="page-title">${t('nav.menus')}</h1>
+          <p class="page-subtitle">${t('menus.subtitle')}</p>
         </div>
-        <oas-button data-testid="menu-create" type="primary" icon="plus">新增菜单</oas-button>
+        <oas-button data-testid="menu-create" type="primary" icon="plus">${t('menus.new')}</oas-button>
       </div>
       <div class="menu-layout">
-        <oas-card class="menu-tree-card" title="权限树">
+        <oas-card class="menu-tree-card" title="${t('menus.treeTitle')}">
           <oas-tree data-testid="menu-tree" id="menu-tree" data="[]" expanded="" selected=""></oas-tree>
         </oas-card>
-        <oas-card class="menu-detail-card" title="菜单详情">
+        <oas-card class="menu-detail-card" title="${t('menus.detailTitle')}">
           <div id="menu-detail" class="menu-detail"></div>
         </oas-card>
       </div>
 
-      <oas-drawer data-testid="menu-form-drawer" id="menu-form-drawer" title="新增菜单" placement="right" size="medium" no-footer>
-        <oas-form id="menu-form" rules='{"name":[{"required":true,"message":"请输入菜单名称"}]}'>
+      <oas-drawer data-testid="menu-form-drawer" id="menu-form-drawer" title="${t('menus.new')}" placement="right" size="medium" no-footer>
+        <oas-form id="menu-form" rules='${RULES()}'>
           <div class="menu-form-body">
             <div class="form-field">
-              <label class="form-label">菜单名称 <span class="req">*</span></label>
-              <oas-input data-testid="mf-name" name="name" placeholder="请输入菜单名称"></oas-input>
+              <label class="form-label">${t('menus.form.name')} <span class="req">*</span></label>
+              <oas-input data-testid="mf-name" name="name" placeholder="${t('menus.rule.name')}"></oas-input>
             </div>
             <div class="form-field">
-              <label class="form-label">类型</label>
+              <label class="form-label">${t('menus.form.type')}</label>
               <div class="radio-group inline" id="mf-type">
-                <oas-radio name="menuType" value="M"><span class="radio-label">${TYPE_LABEL.M}</span></oas-radio>
-                <oas-radio name="menuType" value="C"><span class="radio-label">${TYPE_LABEL.C}</span></oas-radio>
-                <oas-radio name="menuType" value="F"><span class="radio-label">${TYPE_LABEL.F}</span></oas-radio>
+                <oas-radio name="menuType" value="M"><span class="radio-label">${typeLabel('M')}</span></oas-radio>
+                <oas-radio name="menuType" value="C"><span class="radio-label">${typeLabel('C')}</span></oas-radio>
+                <oas-radio name="menuType" value="F"><span class="radio-label">${typeLabel('F')}</span></oas-radio>
               </div>
             </div>
             <div class="form-field">
-              <label class="form-label">上级菜单</label>
-              <oas-tree-select data-testid="mf-parent" id="mf-parent" placeholder="顶级菜单" options="[]" value="0"></oas-tree-select>
+              <label class="form-label">${t('menus.form.parent')}</label>
+              <oas-tree-select data-testid="mf-parent" id="mf-parent" placeholder="${t('menus.placeholder.top')}" options="[]" value="0"></oas-tree-select>
             </div>
             <div class="form-field">
-              <label class="form-label">权限标识 <span class="form-hint-inline" id="mf-perms-hint"></span></label>
-              <oas-input data-testid="mf-perms" name="perms" placeholder="如 system:user:add"></oas-input>
+              <label class="form-label">${t('menus.form.perms')} <span class="form-hint-inline" id="mf-perms-hint"></span></label>
+              <oas-input data-testid="mf-perms" name="perms" placeholder="${t('menus.placeholder.perms')}"></oas-input>
             </div>
             <div class="form-field">
-              <label class="form-label">路由路径 <span class="req" id="mf-path-req"></span></label>
-              <oas-input data-testid="mf-path" name="path" placeholder="如 /system/users"></oas-input>
+              <label class="form-label">${t('menus.form.path')} <span class="req" id="mf-path-req"></span></label>
+              <oas-input data-testid="mf-path" name="path" placeholder="${t('menus.placeholder.path')}"></oas-input>
             </div>
             <div class="form-actions">
               <oas-space justify="end">
-                <oas-button data-testid="mf-cancel">取消</oas-button>
-                <oas-button data-testid="mf-save" type="primary">保存</oas-button>
+                <oas-button data-testid="mf-cancel">${t('common.cancel')}</oas-button>
+                <oas-button data-testid="mf-save" type="primary">${t('common.save')}</oas-button>
               </oas-space>
             </div>
           </div>
@@ -189,7 +195,7 @@ export function render(el: HTMLElement): () => void {
       }))
     parentSelect.setAttribute(
       'options',
-      JSON.stringify([{ value: '0', label: '顶级', children: toOpt(state.tree) }]),
+      JSON.stringify([{ value: '0', label: t('menus.option.top'), children: toOpt(state.tree) }]),
     )
     parentSelect.setAttribute('expanded', JSON.stringify(expandKeys()))
   }
@@ -210,25 +216,25 @@ export function render(el: HTMLElement): () => void {
   function renderDetail(): void {
     const node = state.selectedId == null ? null : findNode(state.tree, state.selectedId)
     if (!node) {
-      detailEl.innerHTML = `<oas-empty description="请选择左侧菜单节点"></oas-empty>`
+      detailEl.innerHTML = `<oas-empty description="${t('menus.empty.selectNode')}"></oas-empty>`
       return
     }
     detailEl.innerHTML = `
       <div class="menu-detail-head">
         <div class="menu-detail-title">${node.title}</div>
-        <oas-tag type="${TYPE_TAG[node.type]}">${TYPE_LABEL[node.type]}</oas-tag>
+        <oas-tag type="${TYPE_TAG[node.type]}">${typeLabel(node.type)}</oas-tag>
       </div>
       <oas-descriptions column="1">
-        <oas-descriptions-item label="类型"><span class="mono">${node.type}</span></oas-descriptions-item>
-        <oas-descriptions-item label="权限标识"><span class="mono" data-testid="menu-detail-perms">${node.perms ?? '—'}</span></oas-descriptions-item>
-        <oas-descriptions-item label="路由路径"><span class="mono">${node.path ?? '—'}</span></oas-descriptions-item>
-        <oas-descriptions-item label="子级数"><span class="mono">${(node.children ?? []).length}</span></oas-descriptions-item>
+        <oas-descriptions-item label="${t('menus.form.type')}"><span class="mono">${node.type}</span></oas-descriptions-item>
+        <oas-descriptions-item label="${t('menus.form.perms')}"><span class="mono" data-testid="menu-detail-perms">${node.perms ?? '—'}</span></oas-descriptions-item>
+        <oas-descriptions-item label="${t('menus.form.path')}"><span class="mono">${node.path ?? '—'}</span></oas-descriptions-item>
+        <oas-descriptions-item label="${t('menus.detail.childCount')}"><span class="mono">${(node.children ?? []).length}</span></oas-descriptions-item>
       </oas-descriptions>
       <div class="menu-detail-actions">
-        <oas-button data-md-action="edit" type="primary">编辑</oas-button>
-        <oas-button data-md-action="child">新增子级</oas-button>
-        <oas-popconfirm title="确认删除该菜单？" id="md-del-pop">
-          <oas-button data-md-action="delete" type="danger">删除</oas-button>
+        <oas-button data-md-action="edit" type="primary">${t('common.edit')}</oas-button>
+        <oas-button data-md-action="child">${t('menus.addChild')}</oas-button>
+        <oas-popconfirm title="${t('menus.confirmDelete')}" id="md-del-pop">
+          <oas-button data-md-action="delete" type="danger">${t('common.delete')}</oas-button>
         </oas-popconfirm>
       </div>`
     detailEl
@@ -243,11 +249,11 @@ export function render(el: HTMLElement): () => void {
       })
     detailEl.querySelector<HTMLElement>('#md-del-pop')!.addEventListener('oas-ok', () => {
       if ((node.children ?? []).length > 0) {
-        message.error('存在子菜单，请先删除子级')
+        message.error(t('menus.hasChildren'))
         return
       }
       removeNode(state.tree, node.id)
-      message.success('已删除')
+      message.success(t('common.deleted'))
       state.selectedId = null
       renderTree()
       renderDetail()
@@ -263,7 +269,7 @@ export function render(el: HTMLElement): () => void {
 
   function syncMenuType(): void {
     if (state.formType === 'C') {
-      permsHint.textContent = '自动 模块:list'
+      permsHint.textContent = t('menus.hint.autoPerms')
       pathReq.textContent = '*'
       const cur = permsInput.getAttribute('value') ?? ''
       if (!cur) {
@@ -271,10 +277,10 @@ export function render(el: HTMLElement): () => void {
         if (auto) permsInput.setAttribute('value', auto)
       }
     } else if (state.formType === 'M') {
-      permsHint.textContent = '目录无权限标识'
+      permsHint.textContent = t('menus.hint.noPermForDir')
       pathReq.textContent = ''
     } else {
-      permsHint.textContent = '必填'
+      permsHint.textContent = t('menus.hint.required')
       pathReq.textContent = ''
     }
   }
@@ -291,7 +297,10 @@ export function render(el: HTMLElement): () => void {
     permsInput.setAttribute('value', node?.perms ?? '')
     pathInput.setAttribute('value', node?.path ?? '')
     syncMenuType()
-    drawer.setAttribute('title', node ? `编辑菜单：${node.title}` : '新增菜单')
+    drawer.setAttribute(
+      'title',
+      node ? t('menus.editMenu', { title: node.title }) : t('menus.new'),
+    )
   }
 
   function openForm(node: MenuTree | null, parentOverride?: MenuTree): void {
@@ -374,16 +383,16 @@ export function render(el: HTMLElement): () => void {
 
     if (type === 'F') {
       if (!perms) {
-        message.error('按钮类型需填写权限标识')
+        message.error(t('menus.err.permRequired'))
         return
       }
       if (!PERM_RE.test(perms)) {
-        message.error('权限标识格式不正确')
+        message.error(t('menus.err.permFormat'))
         return
       }
     } else if (type === 'C') {
       if (!path) {
-        message.error('菜单类型需填写路由路径')
+        message.error(t('menus.err.pathRequired'))
         return
       }
     }
@@ -391,7 +400,7 @@ export function render(el: HTMLElement): () => void {
     if (state.editingId != null && parentId != null) {
       const desc = descendants(state.tree, state.editingId)
       if (parentId === state.editingId || desc.has(parentId)) {
-        message.error('上级菜单不能选择自身或其子级')
+        message.error(t('menus.err.parentInvalid'))
         return
       }
     }
@@ -401,7 +410,7 @@ export function render(el: HTMLElement): () => void {
     if (state.editingId != null) {
       const node = findNode(state.tree, state.editingId)
       if (!node) {
-        message.error('该菜单已不存在')
+        message.error(t('menus.notFound'))
         return
       }
       const oldParent = parentOf(state.tree, node.id)
@@ -413,7 +422,7 @@ export function render(el: HTMLElement): () => void {
         removeNode(state.tree, node.id)
         insertChild(state.tree, parentId, node)
       }
-      message.success('已保存')
+      message.success(t('common.saved'))
     } else {
       const newNode: MenuTree = {
         id: nextId(),
@@ -426,7 +435,7 @@ export function render(el: HTMLElement): () => void {
       }
       insertChild(state.tree, parentId, newNode)
       state.selectedId = newNode.id
-      message.success('已创建')
+      message.success(t('common.created'))
     }
     drawer.removeAttribute('visible')
     buildParentOptions()
