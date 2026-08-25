@@ -84,12 +84,19 @@ function readColor(): string {
   return live || DEFAULT_COLOR
 }
 
+const DENSITY_PAD: Record<Density, string> = { compact: '6px', default: '12px', large: '16px' }
+
+function applyDensity(): void {
+  document.documentElement.style.setProperty('--oas-table-cell-padding-block', DENSITY_PAD[readDensity()])
+}
+
 export function applySettings(): void {
   const theme = currentTheme()
   const color = localStorage.getItem(`${THEME_PREFIX}${theme}`)
   if (color) document.documentElement.style.setProperty('--oas-color-primary', color)
   const radius = localStorage.getItem(RADIUS_KEY)
   if (radius) document.documentElement.style.setProperty('--oas-radius-md', `${radius}px`)
+  applyDensity()
 }
 
 export function render(el: HTMLElement): () => void {
@@ -246,6 +253,7 @@ export function render(el: HTMLElement): () => void {
     const v = radio.getAttribute('value')
     if (!v) return
     localStorage.setItem(DENSITY_KEY, v)
+    applyDensity()
     message.success('已保存')
   })
 

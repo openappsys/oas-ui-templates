@@ -229,7 +229,6 @@ export function render(el: HTMLElement): () => void {
   const upload = el.querySelector<HTMLElement>('[data-testid="pf-cover"]')
 
   if (table) table.columns = TABLE_COLUMNS
-  if (table) table.style.setProperty('--oas-table-cell-padding-block', DENSITY_PAD[state.density])
 
   function filtered(): ProductRow[] {
     const kw = state.keyword.trim().toLowerCase()
