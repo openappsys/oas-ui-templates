@@ -2,14 +2,10 @@ import '../styles/pages/logs.css'
 import '@oas-ui/ui/data/virtual-list'
 import '@oas-ui/ui/navigation/anchor'
 import { message } from '@oas-ui/ui/feedback/message'
+import { t } from '../i18n'
 import { listLogs, type LogEntry, type LogLevel } from '../data/logs'
 
-const LEVEL_OPTIONS = [
-  { label: '全部级别', value: 'all' },
-  { label: '信息', value: 'info' },
-  { label: '告警', value: 'warn' },
-  { label: '错误', value: 'error' },
-]
+const LEVEL_VALUES: Array<LogLevel | 'all'> = ['all', 'info', 'warn', 'error']
 
 const LEVEL_TAG: Record<LogLevel, string> = {
   info: 'default',
@@ -17,12 +13,12 @@ const LEVEL_TAG: Record<LogLevel, string> = {
   error: 'danger',
 }
 
-const LEVEL_LABEL: Record<LogLevel | 'all', string> = {
-  all: '全部级别',
-  info: '信息',
-  warn: '告警',
-  error: '错误',
+function levelLabel(level: LogLevel | 'all'): string {
+  return t(`logs.level.${level}`)
 }
+
+const LEVEL_OPTIONS = (): Array<{ label: string; value: LogLevel | 'all' }> =>
+  LEVEL_VALUES.map((v) => ({ label: levelLabel(v), value: v }))
 
 const ITEM_HEIGHT = 44
 
@@ -52,9 +48,9 @@ function dateKey(t: string): string {
 function anchorLabel(d: string): string {
   const today = iso(new Date())
   const yesterday = iso(new Date(Date.now() - 86400000))
-  if (d === today) return '今天'
-  if (d === yesterday) return '昨天'
-  return `${d.slice(5, 7)}月${d.slice(8, 10)}日`
+  if (d === today) return t('logs.anchor.today')
+  if (d === yesterday) return t('logs.anchor.yesterday')
+  return t('logs.anchor.date', { month: d.slice(5, 7), day: d.slice(8, 10) })
 }
 
 interface DateGroup {
@@ -90,31 +86,31 @@ export function render(el: HTMLElement): () => void {
     <div class="page">
       <div class="page-head">
         <div>
-          <h1 class="page-title">日志中心</h1>
-          <p class="page-subtitle">系统操作日志查询与审计</p>
+          <h1 class="page-title">${t('nav.logs')}</h1>
+          <p class="page-subtitle">${t('logs.subtitle')}</p>
         </div>
       </div>
       <div class="logs-stats" id="logs-stats"></div>
-      <oas-card class="logs-card" title="操作日志">
+      <oas-card class="logs-card" title="${t('logs.cardTitle')}">
         <div class="logs-toolbar" slot="extra">
-          <oas-select data-testid="logs-level" placeholder="级别" clearable value="all"></oas-select>
-          <oas-input data-testid="logs-keyword" placeholder="关键词" clearable prefix-icon="search"></oas-input>
-          <oas-date-picker data-testid="logs-date" type="daterange" placeholder="日期范围"></oas-date-picker>
-          <oas-button data-testid="logs-export" type="primary" icon="download">导出</oas-button>
+          <oas-select data-testid="logs-level" placeholder="${t('logs.toolbar.level')}" clearable value="all"></oas-select>
+          <oas-input data-testid="logs-keyword" placeholder="${t('logs.toolbar.keyword')}" clearable prefix-icon="search"></oas-input>
+          <oas-date-picker data-testid="logs-date" type="daterange" placeholder="${t('logs.toolbar.dateRange')}"></oas-date-picker>
+          <oas-button data-testid="logs-export" type="primary" icon="download">${t('logs.export')}</oas-button>
         </div>
         <div class="logs-main">
           <div class="logs-list-wrap">
             <div class="logs-header">
-              <span class="logs-h-time">时间</span>
-              <span class="logs-h-level">级别</span>
-              <span class="logs-h-operator">操作人</span>
-              <span class="logs-h-action">动作</span>
-              <span class="logs-h-ip">IP</span>
+              <span class="logs-h-time">${t('logs.th.time')}</span>
+              <span class="logs-h-level">${t('logs.th.level')}</span>
+              <span class="logs-h-operator">${t('logs.th.operator')}</span>
+              <span class="logs-h-action">${t('logs.th.action')}</span>
+              <span class="logs-h-ip">${t('logs.th.ip')}</span>
             </div>
             <div class="logs-list-body">
               <oas-virtual-list data-testid="logs-list" id="logs-list" height="480" item-height="${ITEM_HEIGHT}" buffer="8"></oas-virtual-list>
               <div class="logs-empty" id="logs-empty" hidden>
-                <oas-empty description="未找到匹配日志"></oas-empty>
+                <oas-empty description="${t('logs.empty')}"></oas-empty>
               </div>
             </div>
           </div>
@@ -123,7 +119,7 @@ export function render(el: HTMLElement): () => void {
           </div>
         </div>
       </oas-card>
-      <oas-modal data-testid="logs-detail" id="logs-detail" title="日志详情" no-footer>
+      <oas-modal data-testid="logs-detail" id="logs-detail" title="${t('logs.detailTitle')}" no-footer>
         <div class="logs-detail-body" id="logs-detail-body"></div>
       </oas-modal>
     </div>`
@@ -189,19 +185,19 @@ export function render(el: HTMLElement): () => void {
     const warnCount = state.rows.filter((r) => r.level === 'warn').length
     stats.innerHTML = `
       <oas-card class="stat-card">
-        <div class="stat-label">今日新增</div>
+        <div class="stat-label">${t('logs.stat.today')}</div>
         <div class="stat-value mono">${todayCount}</div>
         <div class="stat-foot">${today}</div>
       </oas-card>
       <oas-card class="stat-card">
-        <div class="stat-label">错误数</div>
+        <div class="stat-label">${t('logs.stat.errors')}</div>
         <div class="stat-value mono" style="color:var(--oas-color-danger)">${errorCount}</div>
-        <div class="stat-foot">error 级别</div>
+        <div class="stat-foot">${t('logs.stat.errorLevel')}</div>
       </oas-card>
       <oas-card class="stat-card">
-        <div class="stat-label">告警数</div>
+        <div class="stat-label">${t('logs.stat.warns')}</div>
         <div class="stat-value mono" style="color:var(--oas-color-warning)">${warnCount}</div>
-        <div class="stat-foot">warn 级别</div>
+        <div class="stat-foot">${t('logs.stat.warnLevel')}</div>
       </oas-card>`
   }
 
@@ -246,12 +242,12 @@ export function render(el: HTMLElement): () => void {
     state.selected = row
     detailBody.innerHTML = `
       <oas-descriptions column="1">
-        <oas-descriptions-item label="ID"><span class="mono">${row.id}</span></oas-descriptions-item>
-        <oas-descriptions-item label="时间"><span class="mono">${row.time}</span></oas-descriptions-item>
-        <oas-descriptions-item label="级别"><oas-tag type="${LEVEL_TAG[row.level]}">${LEVEL_LABEL[row.level]}</oas-tag></oas-descriptions-item>
-        <oas-descriptions-item label="操作人">${row.operator}</oas-descriptions-item>
-        <oas-descriptions-item label="动作">${row.action}</oas-descriptions-item>
-        <oas-descriptions-item label="IP"><span class="mono">${row.IP}</span></oas-descriptions-item>
+        <oas-descriptions-item label="${t('logs.dl.id')}"><span class="mono">${row.id}</span></oas-descriptions-item>
+        <oas-descriptions-item label="${t('logs.th.time')}"><span class="mono">${row.time}</span></oas-descriptions-item>
+        <oas-descriptions-item label="${t('logs.th.level')}"><oas-tag type="${LEVEL_TAG[row.level]}">${levelLabel(row.level)}</oas-tag></oas-descriptions-item>
+        <oas-descriptions-item label="${t('logs.th.operator')}">${row.operator}</oas-descriptions-item>
+        <oas-descriptions-item label="${t('logs.th.action')}">${row.action}</oas-descriptions-item>
+        <oas-descriptions-item label="${t('logs.th.ip')}"><span class="mono">${row.IP}</span></oas-descriptions-item>
       </oas-descriptions>`
     detailModal.setAttribute('visible', '')
   }
@@ -270,7 +266,7 @@ export function render(el: HTMLElement): () => void {
     resetScroll()
   }
 
-  levelSelect.setAttribute('options', JSON.stringify(LEVEL_OPTIONS))
+  levelSelect.setAttribute('options', JSON.stringify(LEVEL_OPTIONS()))
   levelSelect.setAttribute('value', 'all')
   levelSelect.addEventListener('oas-change', (e) => {
     const value = (e as CustomEvent<{ value: string }>).detail.value
@@ -299,12 +295,12 @@ export function render(el: HTMLElement): () => void {
 
   exportBtn.addEventListener('click', () => {
     if (state.filtered.length === 0) {
-      message.info('没有可导出的日志')
+      message.info(t('logs.noExportable'))
       return
     }
-    const header = '时间,级别,操作人,动作,IP'
+    const header = t('logs.exportHeader')
     const body = state.filtered.map((r) =>
-      [r.time, LEVEL_LABEL[r.level], r.operator, r.action, r.IP].join(','),
+      [r.time, levelLabel(r.level), r.operator, r.action, r.IP].join(','),
     )
     const csv = `\ufeff${[header, ...body].join('\n')}`
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
@@ -316,7 +312,7 @@ export function render(el: HTMLElement): () => void {
     a.click()
     document.body.removeChild(a)
     setTimeout(() => URL.revokeObjectURL(url), 1000)
-    message.success(`已导出 ${state.filtered.length} 条日志`)
+    message.success(t('logs.exported', { count: state.filtered.length }))
   })
 
   vlist.addEventListener('oas-item', (e) => {
@@ -324,7 +320,7 @@ export function render(el: HTMLElement): () => void {
     const row = item
     element.querySelector<HTMLElement>('[data-col="time"]')!.textContent = formatTime(row.time)
     const tag = element.querySelector('oas-tag')!
-    tag.textContent = LEVEL_LABEL[row.level]
+    tag.textContent = levelLabel(row.level)
     tag.setAttribute('type', LEVEL_TAG[row.level])
     element.querySelector<HTMLElement>('[data-col="operator"]')!.textContent = row.operator
     element.querySelector<HTMLElement>('[data-col="action"]')!.textContent = row.action

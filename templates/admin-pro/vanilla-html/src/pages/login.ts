@@ -1,6 +1,7 @@
 import { session } from '../store/session'
 import { resolve } from '../router/router'
 import { routes } from '../router/routes'
+import { t } from '../i18n'
 
 type LoginStyle = 'split' | 'glass'
 
@@ -23,17 +24,17 @@ const LOGO_LIGHT = `
 function formBlock(): string {
   return `
     <div class="login-head">${LOGO_LIGHT}</div>
-    <h2 class="login-title">欢迎回来</h2>
-    <p class="login-sub">使用演示账号登录（无需密码）</p>
-    <oas-form id="login-form" rules='{"name":[{"required":true,"message":"请输入用户名"}]}'>
+    <h2 class="login-title">${t('login.welcome')}</h2>
+    <p class="login-sub">${t('login.subtitle')}</p>
+    <oas-form id="login-form" rules='${JSON.stringify({ name: [{ required: true, message: t('login.rule.name') }] })}'>
       <div class="login-fields">
-        <oas-input data-testid="login-name" name="name" placeholder="用户名（任意）"></oas-input>
-        <oas-select data-testid="login-role" name="role" value="admin" options='[{"label":"管理员","value":"admin"},{"label":"访客（只读）","value":"viewer"}]'></oas-select>
-        <oas-button data-testid="login-submit" type="primary" block>登录 <oas-icon name="arrow-right" size="14"></oas-icon></oas-button>
+        <oas-input data-testid="login-name" name="name" placeholder="${t('login.namePlaceholder')}"></oas-input>
+        <oas-select data-testid="login-role" name="role" value="admin" options='[{"label":"${t('users.role.admin')}","value":"admin"},{"label":"${t('profile.roleViewer')}","value":"viewer"}]'></oas-select>
+        <oas-button data-testid="login-submit" type="primary" block>${t('login.submit')} <oas-icon name="arrow-right" size="14"></oas-icon></oas-button>
       </div>
     </oas-form>
     <div class="login-divider"></div>
-    <p class="login-tip">演示模版 · 任意用户名即可进入</p>`
+    <p class="login-tip">${t('login.tip')}</p>`
 }
 
 function splitTemplate(): string {
@@ -42,20 +43,20 @@ function splitTemplate(): string {
       <div class="login-brand">
         <div class="login-brand-main">
           ${LOGO_LIGHT}
-          <h1>一套组件，到处运行</h1>
-          <p>零框架运行时 · 浏览器原生 Web Components</p>
+          <h1>${t('login.slogan')}</h1>
+          <p>${t('login.sloganSub')}</p>
           <div class="brand-stats">
-            <div class="brand-stat"><span class="num">117</span><span class="label">组件库组件</span></div>
-            <div class="brand-stat"><span class="num">22KB</span><span class="label">按钮链体积</span></div>
-            <div class="brand-stat"><span class="num">0</span><span class="label">框架运行时依赖</span></div>
+            <div class="brand-stat"><span class="num">117</span><span class="label">${t('login.statComponents')}</span></div>
+            <div class="brand-stat"><span class="num">22KB</span><span class="label">${t('login.statBundle')}</span></div>
+            <div class="brand-stat"><span class="num">0</span><span class="label">${t('login.statFrameworks')}</span></div>
           </div>
         </div>
-        <pre class="brand-code">&lt;oas-button type="primary"&gt;保存&lt;/oas-button&gt;</pre>
+        <pre class="brand-code">&lt;oas-button type="primary"&gt;${t('common.save')}&lt;/oas-button&gt;</pre>
       </div>
       <div class="login-panel">
         <div class="login-card">
           ${formBlock()}
-          <button class="link-btn login-alt" type="button" data-style="glass">切换玻璃版</button>
+          <button class="link-btn login-alt" type="button" data-style="glass">${t('login.switchGlass')}</button>
         </div>
       </div>
     </div>`
@@ -68,8 +69,8 @@ function glassTemplate(): string {
         ${formBlock()}
       </div>
       <div class="glass-foot">
-        <p class="glass-slogan">框架无关 · Web Components UI</p>
-        <button class="link-btn link-btn-light" type="button" data-style="split">切换分屏版</button>
+        <p class="glass-slogan">${t('login.glassSlogan')}</p>
+        <button class="link-btn link-btn-light" type="button" data-style="split">${t('login.switchSplit')}</button>
       </div>
     </div>`
 }

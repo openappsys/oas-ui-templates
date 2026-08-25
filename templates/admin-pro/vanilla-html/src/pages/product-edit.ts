@@ -1,4 +1,5 @@
 import { message } from '@oas-ui/ui/feedback/message'
+import { t } from '../i18n'
 import { createProduct, getProduct, updateProduct } from '../data/products'
 import type { ProductCategory, ProductRow } from '../data/products'
 import '../styles/pages/products.css'
@@ -22,44 +23,44 @@ export function render(el: HTMLElement): () => void {
 
   el.innerHTML = `
     <div class="page product-edit-page">
-      <oas-page-header data-testid="pe-page-header" title="${id ? '编辑商品' : '新建商品'}">
+      <oas-page-header data-testid="pe-page-header" title="${id ? t('products.editItem').replace('#{id}', String(id)) : t('products.newProduct')}">
         <div slot="extra" class="ph-extra">
-          <a class="link-btn" href="#/products" data-testid="pe-back">返回列表</a>
+          <a class="link-btn" href="#/products" data-testid="pe-back">${t('orderDetail.backList')}</a>
         </div>
       </oas-page-header>
       <oas-card>
-        <oas-form id="product-form" rules='{"name":[{"required":true,"message":"请输入商品名称"}]}'>
+        <oas-form id="product-form" rules='${JSON.stringify({ name: [{ required: true, message: t('products.rule.name') }] })}'>
           <div class="product-form">
             <div class="form-field">
-              <label class="form-label">商品名称<span class="req">*</span></label>
-              <oas-input data-testid="pf-name" name="name" placeholder="请输入名称"></oas-input>
+              <label class="form-label">${t('products.form.name')}<span class="req">*</span></label>
+              <oas-input data-testid="pf-name" name="name" placeholder="${t('products.form.namePlaceholder')}"></oas-input>
             </div>
             <div class="form-field">
-              <label class="form-label">分类</label>
+              <label class="form-label">${t('products.category')}</label>
               <oas-select data-testid="pf-category" name="category" options='${JSON.stringify(CATEGORY_OPTIONS)}' value="数码"></oas-select>
             </div>
             <div class="form-grid">
               <div class="form-field">
-                <label class="form-label">价格</label>
+                <label class="form-label">${t('products.th.price')}</label>
                 <oas-input-number data-testid="pf-price" name="price" min="0.01" precision="2" placeholder="0.00"></oas-input-number>
               </div>
               <div class="form-field">
-                <label class="form-label">库存</label>
+                <label class="form-label">${t('products.th.stock')}</label>
                 <oas-input-number data-testid="pf-stock" name="stock" min="0" placeholder="0"></oas-input-number>
               </div>
             </div>
             <div class="form-field">
-              <label class="form-label">上架日期</label>
-              <oas-date-picker data-testid="pf-date" placeholder="选择日期"></oas-date-picker>
+              <label class="form-label">${t('products.form.listedDate')}</label>
+              <oas-date-picker data-testid="pf-date" placeholder="${t('products.form.datePlaceholder')}"></oas-date-picker>
             </div>
             <div class="form-field">
-              <label class="form-label">封面</label>
+              <label class="form-label">${t('products.form.cover')}</label>
               <oas-upload data-testid="pf-cover" accept="image/*" list-type="picture"></oas-upload>
             </div>
             <div class="form-actions">
               <oas-space justify="end">
-                <oas-button data-testid="pe-cancel">取消</oas-button>
-                <oas-button data-testid="pe-save" type="primary">保存</oas-button>
+                <oas-button data-testid="pe-cancel">${t('common.cancel')}</oas-button>
+                <oas-button data-testid="pe-save" type="primary">${t('common.save')}</oas-button>
               </oas-space>
             </div>
           </div>
@@ -92,7 +93,7 @@ export function render(el: HTMLElement): () => void {
     if (id && Number.isFinite(id)) {
       editing = await getProduct(id)
       if (editing) fillForm(editing)
-      else message.error('该商品不存在')
+      else message.error(t('products.notFound'))
     } else {
       datePicker.setAttribute('value', today())
     }
@@ -115,7 +116,7 @@ export function render(el: HTMLElement): () => void {
     ).detail.values
     const price = Number(values.price)
     if (!(price > 0)) {
-      message.error('价格需大于 0')
+      message.error(t('products.priceError'))
       return
     }
     saving = true
@@ -130,11 +131,11 @@ export function render(el: HTMLElement): () => void {
       }
       if (editing) {
         const updated = await updateProduct(editing.id, payload)
-        if (!updated) message.error('该商品已不存在')
-        else message.success('已保存')
+        if (!updated) message.error(t('products.notFound'))
+        else message.success(t('common.saved'))
       } else {
         await createProduct(payload)
-        message.success('已创建')
+        message.success(t('common.created'))
       }
       location.hash = '/products'
     } finally {
