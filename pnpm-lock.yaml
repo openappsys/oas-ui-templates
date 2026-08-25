@@ -14,6 +14,9 @@ importers:
 
   templates/admin-pro/vanilla-html:
     dependencies:
+      '@oas-ui/i18n':
+        specifier: ^2.2.4
+        version: 2.2.4
       '@oas-ui/icons':
         specifier: ^2.2.4
         version: 2.2.4

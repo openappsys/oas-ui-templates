@@ -12,6 +12,7 @@
     "size": "node scripts/size.mjs"
   },
   "dependencies": {
+    "@oas-ui/i18n": "^2.2.4",
     "@oas-ui/icons": "^2.2.4",
     "@oas-ui/theme": "^2.2.4",
     "@oas-ui/ui": "^2.2.4",
