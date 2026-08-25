@@ -52,7 +52,7 @@ oas-sider {
   overflow: hidden;
 }
 oas-sidebar {
-  --oas-control-height-lg: 34px;
+  --oas-control-height-lg: 32px;
   position: absolute;
   inset: 0;
   height: auto;
