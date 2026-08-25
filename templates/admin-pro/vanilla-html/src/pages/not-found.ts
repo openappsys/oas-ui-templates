@@ -5,7 +5,7 @@ export function render(el: HTMLElement): () => void {
     el.innerHTML = `
       <div class="page center-page">
         <oas-result status="warning" title="${t('common.404.title')}" description="${t('common.404.desc')}">
-          <oas-space>
+          <oas-space slot="extra">
             <oas-button type="primary" data-action="home">${t('common.home')}</oas-button>
           </oas-space>
         </oas-result>
