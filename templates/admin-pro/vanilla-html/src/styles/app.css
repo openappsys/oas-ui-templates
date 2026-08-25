@@ -1385,8 +1385,13 @@ oas-sidebar::part(trigger) {
     display: inline-flex;
   }
   .nav-toggle::part(button) {
-    min-height: 44px;
     justify-content: flex-start;
+  }
+
+  @media (pointer: coarse) {
+    .nav-toggle::part(button) {
+      min-height: 44px;
+    }
   }
   oas-sider,
   oas-sider[collapsed] {
