@@ -63,6 +63,10 @@ oas-sidebar::part(panel) {
   min-height: 0;
 }
 
+oas-sidebar::part(toggle) {
+  margin: 0 8px 10px;
+}
+
 .app-header {
   display: flex;
   align-items: center;
