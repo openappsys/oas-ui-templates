@@ -13,12 +13,17 @@ on:
     types: [oas-ui-release]
 
 jobs:
-  vanilla:
-    name: admin-pro/vanilla-html
+  ci:
+    strategy:
+      fail-fast: false
+      matrix:
+        template:
+          - { name: admin-pro/vanilla-html, workdir: templates/admin-pro/vanilla-html, size: 'true', e2e: 'true' }
+    name: ${{ matrix.template.name }}
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: templates/admin-pro/vanilla-html
+        working-directory: ${{ matrix.template.workdir }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -31,8 +36,11 @@ jobs:
       - run: pnpm test
       - run: pnpm build
       - run: pnpm size
+        if: matrix.template.size == 'true'
       - run: pnpm exec playwright install --with-deps chromium
+        if: matrix.template.e2e == 'true'
       - run: pnpm test:e2e
+        if: matrix.template.e2e == 'true'
       - name: 提醒升级依赖（schedule/dispatch 才有意义）
-        if: github.event_name == 'schedule' || github.event_name == 'repository_dispatch'
+        if: (github.event_name == 'schedule' || github.event_name == 'repository_dispatch') && matrix.template.e2e == 'true'
         run: pnpm update @oas-ui/ui @oas-ui/theme && pnpm install --no-frozen-lockfile && pnpm test && pnpm build && pnpm size && pnpm test:e2e
