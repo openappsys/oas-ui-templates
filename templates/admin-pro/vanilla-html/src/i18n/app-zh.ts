@@ -61,6 +61,7 @@ export default {
   'common.created': '已创建',
   'common.saved': '已保存',
   'common.deleted': '已删除',
+  'common.networkError': '网络请求失败，请稍后重试',
   'users.title': '用户管理',
   'users.subtitle': '管理系统成员与权限',
   'users.list': '用户列表',

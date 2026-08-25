@@ -61,6 +61,7 @@ export default {
   'common.created': 'Created',
   'common.saved': 'Saved',
   'common.deleted': 'Deleted',
+  'common.networkError': 'Network request failed, please try again later.',
   'users.title': 'Users',
   'users.subtitle': 'Manage members and permissions',
   'users.list': 'User List',
