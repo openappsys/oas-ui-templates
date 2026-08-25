@@ -9,6 +9,13 @@ describe('users 数据源', () => {
     expect(rows.length).toBeGreaterThanOrEqual(8)
     expect(rows[0]).toHaveProperty('id')
     expect(rows[0]).toHaveProperty('name')
+    expect(rows[0]).toHaveProperty('roleId')
+  })
+
+  it('种子用户 roleId 关联系统角色', async () => {
+    const rows = await listUsers()
+    expect(rows.find((r) => r.name === '张伟')?.roleId).toBe(1)
+    expect(rows.find((r) => r.name === '李娜')?.roleId).toBe(4)
   })
 
   it('createUser 头插新行并生成 id/created', async () => {
@@ -17,20 +24,24 @@ describe('users 数据源', () => {
       name: '新人',
       email: 'new@example.com',
       role: 'editor',
+      roleId: 2,
       status: 'active',
     })
     expect(row.id).toBeGreaterThan(0)
+    expect(row.roleId).toBe(2)
     expect(row.created).toMatch(/^\d{4}-\d{2}-\d{2}$/)
     const after = await listUsers()
     expect(after.length).toBe(before + 1)
     expect(after[0].name).toBe('新人')
+    expect(after[0].roleId).toBe(2)
   })
 
   it('updateUser 修改命中行，id 不存在返回 null', async () => {
     const rows = await listUsers()
     const target = rows[rows.length - 1]
-    const updated = await updateUser(target.id, { name: '改名' })
+    const updated = await updateUser(target.id, { name: '改名', roleId: 3 })
     expect(updated?.name).toBe('改名')
+    expect(updated?.roleId).toBe(3)
     expect(await updateUser(99999, { name: 'x' })).toBeNull()
   })
 

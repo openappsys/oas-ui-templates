@@ -56,6 +56,10 @@ export function listProducts(): Promise<ProductRow[]> {
   return delay([...rows])
 }
 
+export function getProduct(id: number): Promise<ProductRow | null> {
+  return delay(rows.find((r) => r.id === id) ?? null)
+}
+
 export function createProduct(data: Omit<ProductRow, 'id' | 'created'>): Promise<ProductRow> {
   const row: ProductRow = {
     ...data,

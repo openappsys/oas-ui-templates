@@ -1,23 +1,24 @@
 import { message } from '@oas-ui/ui/feedback/message'
 import { createUser, listUsers, removeUser, updateUser } from '../data/users'
 import type { UserRow, UserRole, UserStatus } from '../data/users'
+import { listRoles, treeMenus } from '../data/system'
+import type { MenuTree, RoleRow } from '../data/system'
+import { session } from '../store/session'
 
 const PAGE_SIZE = 5
 const ROLE_LABEL: Record<UserRole, string> = { admin: '管理员', editor: '编辑', viewer: '访客' }
 const STATUS_LABEL: Record<UserStatus, string> = { active: '启用', disabled: '禁用' }
+const ALLOWED: Record<UserRole, string[]> = {
+  admin: ['user:list', 'user:add', 'user:edit', 'user:delete'],
+  editor: ['user:list', 'user:add', 'user:edit'],
+  viewer: ['user:list'],
+}
 
 const COLUMNS =
   '[{"key":"id","title":"ID","width":"60px"},{"key":"name","title":"姓名"},{"key":"email","title":"邮箱"},{"key":"role","title":"角色"},{"key":"status","title":"状态"},{"key":"created","title":"创建日期","sortable":true}]'
 
 const RULES =
   '{"name":[{"required":true,"message":"请输入姓名"}],"email":[{"required":true,"message":"请输入邮箱"},{"pattern":"^\\\\S+@\\\\S+$","message":"邮箱格式不正确"}]}'
-
-const ROLE_OPTIONS = [
-  { label: '全部角色', value: '' },
-  { label: '管理员', value: 'admin' },
-  { label: '编辑', value: 'editor' },
-  { label: '访客', value: 'viewer' },
-]
 
 const STATUS_OPTIONS = [
   { label: '全部状态', value: '' },
@@ -27,16 +28,44 @@ const STATUS_OPTIONS = [
 
 interface PageState {
   rows: UserRow[]
+  roles: RoleRow[]
+  roleMap: Map<number, RoleRow>
+  menuTree: MenuTree[]
   keyword: string
   page: number
   editingId: number | null
-  roleFilter: UserRole | ''
+  roleFilter: number | ''
   statusFilter: UserStatus | ''
+}
+
+function findMenu(nodes: MenuTree[], title: string): MenuTree | null {
+  for (const n of nodes) {
+    if (n.title === title && n.type === 'C') return n
+    if (n.children?.length) {
+      const f = findMenu(n.children, title)
+      if (f) return f
+    }
+  }
+  return null
+}
+
+function roleEnumFor(roleRow: RoleRow | undefined): UserRole {
+  if (!roleRow) return 'viewer'
+  if (roleRow.code === 'super_admin') return 'admin'
+  if (roleRow.code === 'viewer') return 'viewer'
+  return 'editor'
+}
+
+function canMutate(): boolean {
+  return session.user?.role !== 'viewer'
 }
 
 export function render(el: HTMLElement): () => void {
   const state: PageState = {
     rows: [],
+    roles: [],
+    roleMap: new Map(),
+    menuTree: [],
     keyword: '',
     page: 1,
     editingId: null,
@@ -57,7 +86,7 @@ export function render(el: HTMLElement): () => void {
       <oas-card class="list-card" title="用户列表">
         <div class="users-toolbar" slot="extra">
           <oas-input data-testid="user-search" placeholder="搜索姓名 / 邮箱" clearable prefix-icon="search"></oas-input>
-          <oas-select data-testid="role-filter" placeholder="角色" options='${JSON.stringify(ROLE_OPTIONS)}' value=""></oas-select>
+          <oas-select data-testid="role-filter" placeholder="角色" options="[]" value=""></oas-select>
           <oas-select data-testid="status-filter" placeholder="状态" options='${JSON.stringify(STATUS_OPTIONS)}' value=""></oas-select>
           <oas-button id="users-refresh" icon="refresh" title="刷新"></oas-button>
         </div>
@@ -78,7 +107,7 @@ export function render(el: HTMLElement): () => void {
             <div class="form-grid">
               <oas-input data-testid="field-name" name="name" placeholder="姓名"></oas-input>
               <oas-input data-testid="field-email" name="email" placeholder="邮箱"></oas-input>
-              <oas-select data-testid="field-role" name="role" options='[{"label":"管理员","value":"admin"},{"label":"编辑","value":"editor"},{"label":"访客","value":"viewer"}]'></oas-select>
+              <oas-select data-testid="field-role" name="roleId" options="[]"></oas-select>
               <oas-select data-testid="field-status" name="status" options='[{"label":"启用","value":"active"},{"label":"禁用","value":"disabled"}]'></oas-select>
             </div>
             <div class="form-actions">
@@ -101,6 +130,9 @@ export function render(el: HTMLElement): () => void {
             </div>
           </div>
           <oas-descriptions id="detail-desc" column="1"></oas-descriptions>
+          <oas-divider></oas-divider>
+          <div class="detail-perms-title form-label">权限标识</div>
+          <div id="detail-perms-list" class="detail-perms-list"></div>
           <oas-space justify="end">
             <oas-button data-testid="detail-edit" type="primary">编辑</oas-button>
             <oas-popconfirm title="确认删除该用户？" id="delete-popconfirm">
@@ -121,13 +153,29 @@ export function render(el: HTMLElement): () => void {
   const form = el.querySelector<HTMLElement>('#user-form')!
   const tableWrap = el.querySelector<HTMLElement>('#table-wrap')!
   const emptyOverlay = el.querySelector<HTMLElement>('#empty-overlay')!
+  const fieldRole = el.querySelector<HTMLElement>('[data-testid="field-role"]')!
+  const createBtn = el.querySelector<HTMLElement>('[data-testid="user-create"]')!
+
+  if (!canMutate()) {
+    createBtn.setAttribute('disabled', '')
+    createBtn.setAttribute('title', '无权限')
+    createBtn.setAttribute('aria-disabled', 'true')
+  }
+
+  function roleName(target: UserRow): string {
+    if (target.roleId != null) {
+      const r = state.roleMap.get(target.roleId)
+      if (r) return r.name
+    }
+    return ROLE_LABEL[target.role]
+  }
 
   function toDisplay(row: UserRow) {
     return {
       id: row.id,
       name: row.name,
       email: row.email,
-      role: ROLE_LABEL[row.role],
+      role: roleName(row),
       status: STATUS_LABEL[row.status],
       created: row.created,
     }
@@ -138,7 +186,7 @@ export function render(el: HTMLElement): () => void {
     return state.rows.filter((r) => {
       if (kw && !(r.name.toLowerCase().includes(kw) || r.email.toLowerCase().includes(kw)))
         return false
-      if (state.roleFilter && r.role !== state.roleFilter) return false
+      if (state.roleFilter !== '' && r.roleId !== state.roleFilter) return false
       if (state.statusFilter && r.status !== state.statusFilter) return false
       return true
     })
@@ -178,7 +226,22 @@ export function render(el: HTMLElement): () => void {
 
   async function refresh(): Promise<void> {
     table.setAttribute('loading', '')
-    state.rows = await listUsers()
+    const [rows, roles, menuTree] = await Promise.all([listUsers(), listRoles(), treeMenus()])
+    state.rows = rows
+    state.roles = roles
+    state.roleMap = new Map(roles.map((r) => [r.id, r]))
+    state.menuTree = menuTree
+    roleFilter.setAttribute(
+      'options',
+      JSON.stringify([
+        { label: '全部角色', value: '' },
+        ...roles.map((r) => ({ label: r.name, value: String(r.id) })),
+      ]),
+    )
+    fieldRole.setAttribute(
+      'options',
+      JSON.stringify(roles.map((r) => ({ label: r.name, value: String(r.id) }))),
+    )
     table.removeAttribute('loading')
     renderTable()
   }
@@ -199,9 +262,9 @@ export function render(el: HTMLElement): () => void {
       'value',
       row?.email ?? '',
     )
-    el.querySelector<HTMLElement>('[data-testid="field-role"]')!.setAttribute(
+    fieldRole.setAttribute(
       'value',
-      row?.role ?? 'viewer',
+      row?.roleId != null ? String(row.roleId) : String(state.roles[0]?.id ?? ''),
     )
     el.querySelector<HTMLElement>('[data-testid="field-status"]')!.setAttribute(
       'value',
@@ -210,6 +273,31 @@ export function render(el: HTMLElement): () => void {
     el.querySelector<HTMLElement>('#form-title')!.textContent = row
       ? `编辑用户 #${row.id}`
       : '新建用户'
+  }
+
+  function userPerms(): string[] {
+    const node = findMenu(state.menuTree, '用户管理')
+    if (!node) return []
+    return (node.children ?? [])
+      .filter((c) => c.type === 'F')
+      .map((c) => c.perms ?? '')
+      .filter(Boolean)
+  }
+
+  function renderPerms(role: UserRole): void {
+    const listEl = el.querySelector<HTMLElement>('#detail-perms-list')!
+    const perms = userPerms()
+    if (perms.length === 0) {
+      listEl.innerHTML = '<oas-tag type="default">无</oas-tag>'
+      return
+    }
+    const allowed = new Set(ALLOWED[role])
+    listEl.innerHTML = perms
+      .map(
+        (p) =>
+          `<oas-tag class="mono" type="${allowed.has(p) ? 'success' : 'default'}">${p}</oas-tag>`,
+      )
+      .join('')
   }
 
   function tagTypeForStatus(status: UserStatus): string {
@@ -222,7 +310,8 @@ export function render(el: HTMLElement): () => void {
     return 'default'
   }
 
-  el.querySelector('[data-testid="user-create"]')!.addEventListener('click', () => {
+  createBtn.addEventListener('click', () => {
+    if (!canMutate()) return
     state.editingId = null
     fillForm(null)
     openModal(formModal)
@@ -236,8 +325,11 @@ export function render(el: HTMLElement): () => void {
     el.querySelector<HTMLElement>('#detail-avatar-text')!.textContent = target.name.charAt(0)
     el.querySelector<HTMLElement>('#detail-name')!.textContent = target.name
     const roleTag = el.querySelector<HTMLElement>('#detail-role-tag')!
-    roleTag.textContent = ROLE_LABEL[target.role]
-    roleTag.setAttribute('type', tagTypeForRole(target.role))
+    roleTag.textContent = roleName(target)
+    roleTag.setAttribute(
+      'type',
+      target.roleId != null ? roleTagType(target) : tagTypeForRole(target.role),
+    )
     const desc = el.querySelector<HTMLElement>('#detail-desc')!
     desc.innerHTML = `
       <oas-descriptions-item label="ID"><span id="detail-id"></span></oas-descriptions-item>
@@ -252,11 +344,20 @@ export function render(el: HTMLElement): () => void {
     text('#detail-id', String(target.id))
     text('#detail-name2', target.name)
     text('#detail-email', target.email)
-    text('#detail-role', ROLE_LABEL[target.role])
+    text('#detail-role', roleName(target))
     const statusTag = desc.querySelector<HTMLElement>('#detail-status-tag')!
     statusTag.textContent = STATUS_LABEL[target.status]
     statusTag.setAttribute('type', tagTypeForStatus(target.status))
     text('#detail-created', target.created)
+    renderPerms(target.role)
+    const delBtn = el.querySelector<HTMLElement>('[data-testid="detail-delete"]')!
+    if (!canMutate()) {
+      delBtn.setAttribute('disabled', '')
+      delBtn.setAttribute('title', '无权限')
+    } else {
+      delBtn.removeAttribute('disabled')
+      delBtn.removeAttribute('title')
+    }
     state.editingId = target.id
     openModal(detailModal)
   })
@@ -271,6 +372,10 @@ export function render(el: HTMLElement): () => void {
 
   el.querySelector<HTMLElement>('#delete-popconfirm')!.addEventListener('oas-ok', async () => {
     if (state.editingId == null) return
+    if (!canMutate()) {
+      message.error('无权限')
+      return
+    }
     await removeUser(state.editingId)
     state.editingId = null
     closeModal(detailModal)
@@ -292,14 +397,18 @@ export function render(el: HTMLElement): () => void {
     try {
       const values = (
         e as CustomEvent<{
-          values: { name: string; email: string; role: UserRole; status: UserStatus }
+          values: { name: string; email: string; roleId: string; status: UserStatus }
         }>
       ).detail.values
+      const roleId = values.roleId ? Number(values.roleId) : null
+      const roleRow = roleId != null ? state.roleMap.get(roleId) : undefined
+      const role = roleEnumFor(roleRow)
       if (state.editingId == null) {
         await createUser({
           name: values.name,
           email: values.email,
-          role: values.role || 'viewer',
+          role,
+          roleId,
           status: values.status || 'active',
         })
         message.success('已创建')
@@ -307,7 +416,8 @@ export function render(el: HTMLElement): () => void {
         const updated = await updateUser(state.editingId, {
           name: values.name,
           email: values.email,
-          role: values.role,
+          role,
+          roleId,
           status: values.status,
         })
         if (!updated) {
@@ -335,7 +445,8 @@ export function render(el: HTMLElement): () => void {
   })
 
   roleFilter.addEventListener('oas-change', (e) => {
-    state.roleFilter = (e as CustomEvent<{ value: string }>).detail.value as UserRole | ''
+    const v = (e as CustomEvent<{ value: string }>).detail.value
+    state.roleFilter = v === '' ? '' : Number(v)
     state.page = 1
     renderTable()
   })
@@ -368,4 +479,8 @@ export function render(el: HTMLElement): () => void {
 
   void refresh()
   return () => {}
+}
+
+function roleTagType(target: UserRow): string {
+  return target.roleId === 1 ? 'primary' : target.roleId === 4 ? 'default' : 'warning'
 }

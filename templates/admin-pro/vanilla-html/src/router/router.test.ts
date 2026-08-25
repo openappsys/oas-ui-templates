@@ -58,7 +58,7 @@ describe('guard', () => {
 
   it('viewer 访问受限页 → forbidden', () => {
     session.login('李四', 'viewer')
-    expect(guard('/users')).toEqual({ ok: false, reason: 'forbidden' })
+    expect(guard('/system/roles')).toEqual({ ok: false, reason: 'forbidden' })
   })
 
   it('admin 访问受限页 / 任意角色访问开放页 → ok', () => {

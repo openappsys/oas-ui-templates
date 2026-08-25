@@ -9,6 +9,7 @@ export interface OrderRow {
   status: OrderStatus
   items: string[]
   created: string
+  creator: string
   urgent?: boolean
   phone?: string
   note?: string
@@ -51,6 +52,7 @@ function seed(): OrderRow[] {
     status,
     items,
     created,
+    creator: i % 2 === 0 ? '张伟' : '王芳',
     urgent: i % 3 === 0,
     phone: `138${String(10000000 + i * 123456).slice(-8)}`,
     note: i % 4 === 0 ? '请在工作日配送' : undefined,
@@ -74,11 +76,14 @@ export function getOrder(id: string): Promise<OrderRow | null> {
   return delay(row ? { ...row } : null)
 }
 
-export function createOrder(data: Omit<OrderRow, 'id' | 'created'>): Promise<OrderRow> {
+export function createOrder(
+  data: Omit<OrderRow, 'id' | 'created' | 'creator'> & { creator?: string },
+): Promise<OrderRow> {
   const row: OrderRow = {
     ...data,
     id: `SO-${String(++seq)}`,
     created: today(),
+    creator: data.creator ?? '张伟',
   }
   rows.unshift(row)
   persist(KEY, rows)

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
   createProduct,
+  getProduct,
   listProducts,
   removeProduct,
   resetProducts,
@@ -51,6 +52,14 @@ describe('products 数据源', () => {
     expect(updated?.price).toBe(888)
     expect(updated?.stock).toBe(3)
     expect(await updateProduct(99999, { name: 'x' })).toBeNull()
+  })
+
+  it('getProduct 命中返回实体，未命中返回 null', async () => {
+    const rows = await listProducts()
+    const target = rows[0]
+    const found = await getProduct(target.id)
+    expect(found?.id).toBe(target.id)
+    expect(await getProduct(99999)).toBeNull()
   })
 
   it('toggleProductStatus 翻转 on/off，id 不存在返回 null', async () => {

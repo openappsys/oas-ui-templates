@@ -1,6 +1,7 @@
 import { message } from '@oas-ui/ui/feedback/message'
 import { listOrders, updateOrderStatus } from '../data/orders'
 import type { OrderRow, OrderStatus } from '../data/orders'
+import { session } from '../store/session'
 
 const PAGE_SIZE = 8
 const STATUS_LABEL: Record<OrderStatus, string> = {
@@ -74,6 +75,24 @@ export function render(el: HTMLElement): () => void {
   }
 
   el.innerHTML = `
+    <style>
+      .orders-scope {
+        display: flex;
+        align-items: center;
+        gap: var(--oas-space-2);
+        margin-bottom: var(--oas-space-3);
+        padding: var(--oas-space-3) var(--oas-space-4);
+        border: 1px solid color-mix(in srgb, var(--oas-color-info-text) 30%, transparent);
+        border-radius: var(--oas-radius-md);
+        background: color-mix(in srgb, var(--oas-color-info-text) 10%, transparent);
+        color: var(--oas-color-text-primary);
+        font-size: var(--oas-font-size-sm);
+      }
+      .orders-scope oas-icon {
+        color: var(--oas-color-info-text);
+        flex-shrink: 0;
+      }
+    </style>
     <div class="page">
       <div class="page-head">
         <div>
@@ -81,6 +100,10 @@ export function render(el: HTMLElement): () => void {
           <p class="page-subtitle">跟踪订单状态与销售情况</p>
         </div>
         <oas-button data-testid="orders-export" type="primary" icon="download">导出 CSV</oas-button>
+      </div>
+      <div id="orders-scope" class="orders-scope" hidden>
+        <oas-icon size="16" name="info"></oas-icon>
+        <span data-testid="orders-scope-text">数据权限：仅本人</span>
       </div>
       <div class="orders-stats" id="orders-stats"></div>
       <oas-card class="list-card" title="订单列表">
@@ -139,6 +162,7 @@ export function render(el: HTMLElement): () => void {
   const emptyOverlay = el.querySelector<HTMLElement>('#orders-empty')!
   const stats = el.querySelector<HTMLElement>('#orders-stats')!
   const drawer = el.querySelector<HTMLElement>('[data-testid="order-drawer"]')!
+  const scopeEl = el.querySelector<HTMLElement>('#orders-scope')!
 
   function filtered(): OrderRow[] {
     const kw = state.keyword.trim().toLowerCase()
@@ -230,7 +254,15 @@ export function render(el: HTMLElement): () => void {
 
   async function refresh(): Promise<void> {
     tbody.classList.add('table-loading')
-    state.rows = await listOrders()
+    let rows = await listOrders()
+    const u = session.user
+    if (u?.role === 'viewer') {
+      rows = rows.filter((r) => r.creator === u.name)
+      scopeEl.hidden = false
+    } else {
+      scopeEl.hidden = true
+    }
+    state.rows = rows
     tbody.classList.remove('table-loading')
     renderTabs()
     renderStats()
@@ -241,10 +273,12 @@ export function render(el: HTMLElement): () => void {
     const desc = el.querySelector<HTMLElement>('#order-detail-desc')!
     desc.innerHTML = `
       <oas-descriptions-item label="客户"><span id="od-customer"></span></oas-descriptions-item>
+      <oas-descriptions-item label="创建人"><span id="od-creator"></span></oas-descriptions-item>
       <oas-descriptions-item label="金额"><span id="od-amount" class="mono"></span></oas-descriptions-item>
       <oas-descriptions-item label="创建日期"><span id="od-created" class="mono"></span></oas-descriptions-item>
       <oas-descriptions-item label="商品列表"><span id="od-items"></span></oas-descriptions-item>`
     desc.querySelector<HTMLElement>('#od-customer')!.textContent = row.customer
+    desc.querySelector<HTMLElement>('#od-creator')!.textContent = row.creator
     desc.querySelector<HTMLElement>('#od-amount')!.textContent = formatMoney(row.amount)
     desc.querySelector<HTMLElement>('#od-created')!.textContent = row.created
     desc.querySelector<HTMLElement>('#od-items')!.innerHTML = row.items

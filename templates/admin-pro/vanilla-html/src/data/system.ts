@@ -4,6 +4,7 @@ export interface DeptNode {
   id: number
   name: string
   parentId: number | null
+  members: number
 }
 
 export type MenuType = 'M' | 'C' | 'F'
@@ -37,20 +38,36 @@ export interface MenuTree extends MenuNode {
   children: MenuTree[]
 }
 
+export interface DictType {
+  id: number
+  name: string
+  code: string
+}
+
+export interface DictItem {
+  id: number
+  typeId: number
+  label: string
+  value: string
+  sort: number
+}
+
 const DEPT_KEY = 'oas-admin.depts.v1'
 const MENU_KEY = 'oas-admin.menus.v1'
 const ROLE_KEY = 'oas-admin.roles.v1'
+const DICT_TYPE_KEY = 'oas-admin.dictTypes.v1'
+const DICT_ITEM_KEY = 'oas-admin.dictItems.v1'
 
 function seedDepts(): DeptNode[] {
-  const raw: Array<[string, number | null]> = [
-    ['总公司', null],
-    ['技术部', 1],
-    ['市场部', 1],
-    ['销售部', 1],
-    ['华东区', 4],
-    ['华南区', 4],
+  const raw: Array<[string, number | null, number]> = [
+    ['总公司', null, 8],
+    ['技术部', 1, 3],
+    ['市场部', 1, 2],
+    ['销售部', 1, 3],
+    ['华东区', 4, 2],
+    ['华南区', 4, 1],
   ]
-  return raw.map(([name, parentId], i) => ({ id: i + 1, name, parentId }))
+  return raw.map(([name, parentId, members], i) => ({ id: i + 1, name, parentId, members }))
 }
 
 function seedMenus(): MenuNode[] {
@@ -75,8 +92,8 @@ function seedMenus(): MenuNode[] {
     [7, '系统管理', 'M', null, null, null],
     [71, '权限管理', 'C', 'system:menu:list', '/system/menus', 7],
     [72, '角色管理', 'C', 'system:role:list', '/system/roles', 7],
-    [73, '部门管理', 'C', 'system:dept:list', '/system/depts', 7],
-    [74, '字典管理', 'C', 'system:dict:list', '/system/dicts', 7],
+    [73, '部门管理', 'C', 'system:dept:list', '/system/dept', 7],
+    [74, '字典管理', 'C', 'system:dict:list', '/system/dict', 7],
     [75, '日志中心', 'C', 'system:log:list', '/system/logs', 7],
   ]
   return raw.map(([id, title, type, perms, path, parentId]) => ({
@@ -107,10 +124,43 @@ function seedRoles(): RoleRow[] {
   }))
 }
 
+function seedDictTypes(): DictType[] {
+  return [
+    { id: 1, name: '订单状态', code: 'order_status' },
+    { id: 2, name: '商品分类', code: 'product_category' },
+  ]
+}
+
+function seedDictItems(): DictItem[] {
+  const raw: Array<[number, string, string, number]> = [
+    [1, '待支付', 'pending', 1],
+    [1, '已支付', 'paid', 2],
+    [1, '配送中', 'shipping', 3],
+    [1, '已完成', 'done', 4],
+    [1, '已取消', 'cancelled', 5],
+    [2, '数码', '数码', 1],
+    [2, '服饰', '服饰', 2],
+    [2, '家居', '家居', 3],
+    [2, '食品', '食品', 4],
+  ]
+  return raw.map(([typeId, label, value, sort], i) => ({
+    id: i + 1,
+    typeId,
+    label,
+    value,
+    sort,
+  }))
+}
+
 const depts: DeptNode[] = restore(DEPT_KEY, seedDepts)
 const menus: MenuNode[] = restore(MENU_KEY, seedMenus)
 const roles: RoleRow[] = restore(ROLE_KEY, seedRoles)
+const dictTypes: DictType[] = restore(DICT_TYPE_KEY, seedDictTypes)
+const dictItems: DictItem[] = restore(DICT_ITEM_KEY, seedDictItems)
 let seq = roles.length
+let deptSeq = depts.length
+let typeSeq = dictTypes.length
+let itemSeq = dictItems.length
 
 function delay<T>(value: T, ms = 100): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(value), ms))
@@ -141,6 +191,96 @@ export function listDepts(): Promise<DeptNode[]> {
 
 export function treeDepts(): Promise<DeptTree[]> {
   return delay(nest<DeptNode, DeptTree>(depts, (d) => ({ ...d, children: [] }) as DeptTree))
+}
+
+export function createDept(data: Omit<DeptNode, 'id'>): Promise<DeptNode> {
+  const row: DeptNode = { ...data, id: ++deptSeq }
+  depts.push(row)
+  persist(DEPT_KEY, depts)
+  return delay(row)
+}
+
+export function updateDept(
+  id: number,
+  data: Partial<Omit<DeptNode, 'id'>>,
+): Promise<DeptNode | null> {
+  const i = depts.findIndex((d) => d.id === id)
+  if (i === -1) return delay(null)
+  depts[i] = { ...depts[i], ...data }
+  persist(DEPT_KEY, depts)
+  return delay(depts[i])
+}
+
+export function removeDept(id: number): Promise<boolean> {
+  const i = depts.findIndex((d) => d.id === id)
+  if (i === -1) return delay(false)
+  depts.splice(i, 1)
+  persist(DEPT_KEY, depts)
+  return delay(true)
+}
+
+export function listDictTypes(): Promise<DictType[]> {
+  return delay([...dictTypes])
+}
+
+export function createDictType(data: Omit<DictType, 'id'>): Promise<DictType> {
+  const row: DictType = { ...data, id: ++typeSeq }
+  dictTypes.push(row)
+  persist(DICT_TYPE_KEY, dictTypes)
+  return delay(row)
+}
+
+export function updateDictType(
+  id: number,
+  data: Partial<Omit<DictType, 'id'>>,
+): Promise<DictType | null> {
+  const i = dictTypes.findIndex((t) => t.id === id)
+  if (i === -1) return delay(null)
+  dictTypes[i] = { ...dictTypes[i], ...data }
+  persist(DICT_TYPE_KEY, dictTypes)
+  return delay(dictTypes[i])
+}
+
+export function removeDictType(id: number): Promise<boolean> {
+  const i = dictTypes.findIndex((t) => t.id === id)
+  if (i === -1) return delay(false)
+  dictTypes.splice(i, 1)
+  for (let k = dictItems.length - 1; k >= 0; k--) {
+    if (dictItems[k].typeId === id) dictItems.splice(k, 1)
+  }
+  persist(DICT_TYPE_KEY, dictTypes)
+  persist(DICT_ITEM_KEY, dictItems)
+  return delay(true)
+}
+
+export function listDictItems(typeId: number): Promise<DictItem[]> {
+  return delay(dictItems.filter((d) => d.typeId === typeId))
+}
+
+export function createDictItem(data: Omit<DictItem, 'id'>): Promise<DictItem> {
+  const row: DictItem = { ...data, id: ++itemSeq }
+  dictItems.push(row)
+  persist(DICT_ITEM_KEY, dictItems)
+  return delay(row)
+}
+
+export function updateDictItem(
+  id: number,
+  data: Partial<Omit<DictItem, 'id'>>,
+): Promise<DictItem | null> {
+  const i = dictItems.findIndex((d) => d.id === id)
+  if (i === -1) return delay(null)
+  dictItems[i] = { ...dictItems[i], ...data }
+  persist(DICT_ITEM_KEY, dictItems)
+  return delay(dictItems[i])
+}
+
+export function removeDictItem(id: number): Promise<boolean> {
+  const i = dictItems.findIndex((d) => d.id === id)
+  if (i === -1) return delay(false)
+  dictItems.splice(i, 1)
+  persist(DICT_ITEM_KEY, dictItems)
+  return delay(true)
 }
 
 export function listMenus(): Promise<MenuNode[]> {
@@ -192,8 +332,17 @@ export function resetSystem(): void {
   menus.push(...seedMenus())
   roles.length = 0
   roles.push(...seedRoles())
+  dictTypes.length = 0
+  dictTypes.push(...seedDictTypes())
+  dictItems.length = 0
+  dictItems.push(...seedDictItems())
   seq = roles.length
+  deptSeq = depts.length
+  typeSeq = dictTypes.length
+  itemSeq = dictItems.length
   localStorage.removeItem(DEPT_KEY)
   localStorage.removeItem(MENU_KEY)
   localStorage.removeItem(ROLE_KEY)
+  localStorage.removeItem(DICT_TYPE_KEY)
+  localStorage.removeItem(DICT_ITEM_KEY)
 }

@@ -36,7 +36,7 @@ export const routes: Route[] = [
   },
   {
     path: '/users',
-    meta: { title: '用户管理', icon: 'user', roles: ['admin'], group: '业务' },
+    meta: { title: '用户管理', icon: 'user', roles: ['admin', 'viewer'], group: '业务' },
     load: () => import('../pages/users'),
   },
   {
@@ -68,6 +68,31 @@ export const routes: Route[] = [
     path: '/system/menus',
     meta: { title: '权限管理', icon: 'lock', roles: ['admin'], group: '系统' },
     load: () => import('../pages/menus'),
+  },
+  {
+    path: '/system/dept',
+    meta: { title: '部门管理', icon: 'user', roles: ['admin'], group: '系统' },
+    load: () => import('../pages/dept'),
+  },
+  {
+    path: '/system/dict',
+    meta: { title: '字典管理', icon: 'edit', roles: ['admin'], group: '系统' },
+    load: () => import('../pages/dict'),
+  },
+  {
+    path: '/system/logs',
+    meta: { title: '日志中心', icon: 'clock', roles: ['admin'], group: '系统' },
+    load: () => import('../pages/logs'),
+  },
+  {
+    path: '/settings',
+    meta: { title: '设置中心', icon: 'filter', group: '系统' },
+    load: () => import('../pages/settings'),
+  },
+  {
+    path: '/products/edit',
+    meta: { title: '编辑商品', icon: 'edit', roles: ['admin'], hidden: true },
+    load: () => import('../pages/product-edit'),
   },
 ]
 

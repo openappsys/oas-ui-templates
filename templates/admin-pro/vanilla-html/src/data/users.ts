@@ -8,26 +8,28 @@ export interface UserRow {
   name: string
   email: string
   role: UserRole
+  roleId: number | null
   status: UserStatus
   created: string
 }
 
 function seed(): UserRow[] {
-  const raw: Array<[string, string, UserRole, UserStatus, string]> = [
-    ['张伟', 'zhangwei@example.com', 'admin', 'active', '2026-01-12'],
-    ['王芳', 'wangfang@example.com', 'editor', 'active', '2026-02-03'],
-    ['李娜', 'lina@example.com', 'viewer', 'active', '2026-02-21'],
-    ['刘强', 'liuqiang@example.com', 'editor', 'disabled', '2026-03-05'],
-    ['陈静', 'chenjing@example.com', 'viewer', 'active', '2026-03-18'],
-    ['杨洋', 'yangyang@example.com', 'editor', 'active', '2026-04-02'],
-    ['赵敏', 'zhaomin@example.com', 'viewer', 'active', '2026-04-27'],
-    ['孙磊', 'sunlei@example.com', 'viewer', 'disabled', '2026-05-15'],
+  const raw: Array<[string, string, UserRole, UserStatus, number, string]> = [
+    ['张伟', 'zhangwei@example.com', 'admin', 'active', 1, '2026-01-12'],
+    ['王芳', 'wangfang@example.com', 'editor', 'active', 2, '2026-02-03'],
+    ['李娜', 'lina@example.com', 'viewer', 'active', 4, '2026-02-21'],
+    ['刘强', 'liuqiang@example.com', 'editor', 'disabled', 3, '2026-03-05'],
+    ['陈静', 'chenjing@example.com', 'viewer', 'active', 4, '2026-03-18'],
+    ['杨洋', 'yangyang@example.com', 'editor', 'active', 2, '2026-04-02'],
+    ['赵敏', 'zhaomin@example.com', 'viewer', 'active', 4, '2026-04-27'],
+    ['孙磊', 'sunlei@example.com', 'viewer', 'disabled', 4, '2026-05-15'],
   ]
-  return raw.map(([name, email, role, status, created], i) => ({
+  return raw.map(([name, email, role, status, roleId, created], i) => ({
     id: i + 1,
     name,
     email,
     role,
+    roleId,
     status,
     created,
   }))

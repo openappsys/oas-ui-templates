@@ -1,13 +1,24 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
+  createDept,
+  createDictItem,
+  createDictType,
   createRole,
   listDepts,
+  listDictItems,
+  listDictTypes,
   listMenus,
   listRoles,
+  removeDept,
+  removeDictItem,
+  removeDictType,
   removeRole,
   resetSystem,
   treeDepts,
   treeMenus,
+  updateDept,
+  updateDictItem,
+  updateDictType,
   updateRole,
 } from './system'
 
@@ -88,5 +99,80 @@ describe('system 数据源', () => {
     expect(await removeRole(rows[rows.length - 1].id)).toBe(true)
     expect((await listRoles()).length).toBe(before - 1)
     expect(await removeRole(99999)).toBe(false)
+  })
+
+  it('createDept 生成新 id 并头插/尾插到树', async () => {
+    const before = (await listDepts()).length
+    const row = await createDept({ name: '华东大区', parentId: 1, members: 0 })
+    expect(row.id).toBeGreaterThan(0)
+    expect((await listDepts()).length).toBe(before + 1)
+    const tree = await treeDepts()
+    const root = tree.find((n) => n.id === 1)!
+    expect(root.children.some((c) => c.name === '华东大区')).toBe(true)
+  })
+
+  it('updateDept 修改命中行，id 不存在返回 null', async () => {
+    const updated = await updateDept(2, { name: '研发部' })
+    expect(updated?.name).toBe('研发部')
+    expect(await updateDept(99999, { name: 'x' })).toBeNull()
+  })
+
+  it('removeDept 删除命中行，id 不存在返回 false', async () => {
+    const before = (await listDepts()).length
+    expect(await removeDept(6)).toBe(true)
+    expect((await listDepts()).length).toBe(before - 1)
+    expect(await removeDept(99999)).toBe(false)
+  })
+
+  it('listDictTypes 返回订单状态/商品分类种子', async () => {
+    const rows = await listDictTypes()
+    expect(rows.length).toBe(2)
+    expect(rows[0]).toMatchObject({ name: '订单状态', code: 'order_status' })
+    expect(rows[1]).toMatchObject({ name: '商品分类', code: 'product_category' })
+  })
+
+  it('listDictItems 按类型返回键值项且匹配订单状态', async () => {
+    const items = await listDictItems(1)
+    expect(items).toHaveLength(5)
+    expect(items[0]).toMatchObject({ label: '待支付', value: 'pending', sort: 1 })
+    expect(items[4]).toMatchObject({ label: '已取消', value: 'cancelled', sort: 5 })
+    const cats = await listDictItems(2)
+    expect(cats.map((c) => c.label)).toEqual(['数码', '服饰', '家居', '食品'])
+  })
+
+  it('createDictType 追加新行并生成 id', async () => {
+    const before = (await listDictTypes()).length
+    const row = await createDictType({ name: '订单来源', code: 'order_source' })
+    expect(row.id).toBeGreaterThan(0)
+    expect((await listDictTypes()).length).toBe(before + 1)
+    expect((await listDictTypes()).some((t) => t.name === '订单来源')).toBe(true)
+  })
+
+  it('updateDictType 修改命中行，id 不存在返回 null', async () => {
+    const updated = await updateDictType(2, { name: '商品类目' })
+    expect(updated?.name).toBe('商品类目')
+    expect(await updateDictType(99999, { name: 'x' })).toBeNull()
+  })
+
+  it('removeDictType 删除命中行及其键值项', async () => {
+    const beforeTypes = (await listDictTypes()).length
+    const beforeItems = (await listDictItems(2)).length
+    expect(await removeDictType(2)).toBe(true)
+    expect((await listDictTypes()).length).toBe(beforeTypes - 1)
+    expect((await listDictItems(2)).length).toBe(0)
+    expect(beforeItems).toBe(4)
+    expect(await removeDictType(99999)).toBe(false)
+  })
+
+  it('createDictItem 追加键值项，update/remove 各自生效', async () => {
+    const item = await createDictItem({ typeId: 1, label: '退款中', value: 'refunding', sort: 6 })
+    expect(item.id).toBeGreaterThan(0)
+    expect((await listDictItems(1)).some((d) => d.value === 'refunding')).toBe(true)
+    const updated = await updateDictItem(item.id, { label: '退款处理中' })
+    expect(updated?.label).toBe('退款处理中')
+    expect(await removeDictItem(item.id)).toBe(true)
+    expect((await listDictItems(1)).some((d) => d.value === 'refunding')).toBe(false)
+    expect(await updateDictItem(99999, { label: 'x' })).toBeNull()
+    expect(await removeDictItem(99999)).toBe(false)
   })
 })

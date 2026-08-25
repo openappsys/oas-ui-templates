@@ -1,0 +1,100 @@
+.dept-layout {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: var(--oas-space-3);
+  margin-bottom: var(--oas-space-3);
+}
+.dept-tree-card::part(body) {
+  padding: 0;
+}
+.dept-tree-card oas-tree {
+  padding: var(--oas-space-2);
+}
+.dept-member-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  margin-left: var(--oas-space-2);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--oas-color-primary) 14%, transparent);
+  color: var(--oas-color-primary);
+  font-family: var(--app-mono);
+  font-size: 11px;
+  line-height: 1;
+  vertical-align: middle;
+}
+.dept-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-4);
+}
+.dept-detail-head {
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-2);
+}
+.dept-detail-title {
+  font-size: 16px;
+  font-weight: 650;
+  color: var(--oas-color-text-primary);
+}
+.dept-detail-actions {
+  display: flex;
+  gap: var(--oas-space-2);
+  align-items: center;
+}
+.sub-dept-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--oas-font-size-md);
+}
+.sub-dept-table th {
+  text-align: left;
+  padding: var(--oas-space-2) var(--oas-space-3);
+  background: var(--oas-color-bg-hover);
+  font-weight: 500;
+  border-bottom: 1px solid var(--oas-color-border);
+  white-space: nowrap;
+}
+.sub-dept-table td {
+  padding: var(--oas-space-2) var(--oas-space-3);
+  border-bottom: 1px solid var(--oas-color-border);
+  color: var(--oas-color-text-primary);
+}
+.sub-dept-table tr:last-child td {
+  border-bottom: none;
+}
+.sub-dept-table th.num,
+.sub-dept-table td.num-cell {
+  text-align: right;
+  white-space: nowrap;
+}
+.sub-dept-table td.action-cell {
+  white-space: nowrap;
+}
+.sub-dept-table td.action-cell oas-popconfirm {
+  margin-left: var(--oas-space-2);
+}
+.sub-dept-empty {
+  text-align: center;
+  padding: var(--oas-space-6);
+  color: var(--oas-color-text-secondary);
+  font-size: var(--oas-font-size-sm);
+}
+.dept-form-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-4);
+}
+.dept-form-body oas-tree-select,
+.dept-form-body oas-input-number {
+  width: 100%;
+}
+@media (max-width: 992px) {
+  .dept-layout {
+    grid-template-columns: 1fr;
+  }
+}

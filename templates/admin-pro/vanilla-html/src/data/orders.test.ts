@@ -47,6 +47,32 @@ describe('orders 数据源', () => {
     }
   })
 
+  it('种子订单 creator 一半张伟一半王芳', async () => {
+    const rows = await listOrders()
+    const zw = rows.filter((r) => r.creator === '张伟').length
+    const wf = rows.filter((r) => r.creator === '王芳').length
+    expect(zw).toBe(6)
+    expect(wf).toBe(6)
+  })
+
+  it('createOrder 默认 creator 为张伟', async () => {
+    const row = await createOrder({
+      customer: '新客户',
+      amount: 5200,
+      status: 'pending',
+      items: ['数码相机'],
+    })
+    expect(row.creator).toBe('张伟')
+    const custom = await createOrder({
+      customer: '新客户2',
+      amount: 1000,
+      status: 'paid',
+      items: ['键盘'],
+      creator: '王芳',
+    })
+    expect(custom.creator).toBe('王芳')
+  })
+
   it('getOrder 返回命中行，id 不存在返回 null', async () => {
     const rows = await listOrders()
     const target = rows[0]

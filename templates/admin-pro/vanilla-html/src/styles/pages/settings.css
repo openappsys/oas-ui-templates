@@ -1,0 +1,98 @@
+.settings-page {
+  max-width: 780px;
+}
+.settings-card oas-tabs {
+  margin-bottom: var(--oas-space-4);
+}
+.settings-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-5);
+}
+.settings-panel[hidden] {
+  display: none;
+}
+.setting-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-3);
+  padding-bottom: var(--oas-space-5);
+  border-bottom: 1px solid var(--oas-color-border);
+}
+.setting-group:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.setting-group-title {
+  font-size: var(--oas-font-size-md);
+  font-weight: 600;
+  color: var(--oas-color-text-primary);
+}
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--oas-space-4);
+  flex-wrap: wrap;
+}
+.setting-row .setting-label {
+  font-size: var(--oas-font-size-sm);
+  color: var(--oas-color-text-primary);
+}
+.setting-hint {
+  font-size: var(--oas-font-size-xs);
+  color: var(--oas-color-text-secondary);
+  margin-top: var(--oas-space-1);
+}
+.setting-row > oas-select {
+  width: 160px;
+}
+.radio-group.inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--oas-space-4);
+  align-items: center;
+}
+.notif-matrix {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-1);
+  width: 100%;
+  max-width: 480px;
+}
+.notif-row {
+  display: grid;
+  grid-template-columns: 1fr 120px 120px;
+  align-items: center;
+  gap: var(--oas-space-2);
+  padding: var(--oas-space-2) var(--oas-space-3);
+  border-radius: var(--oas-radius-md);
+}
+.notif-row:not(.notif-head) {
+  background: var(--oas-color-bg-hover);
+}
+.notif-head {
+  color: var(--oas-color-text-secondary);
+  font-size: var(--oas-font-size-xs);
+}
+.notif-channel {
+  font-size: var(--oas-font-size-sm);
+  color: var(--oas-color-text-primary);
+}
+.notif-col {
+  text-align: center;
+}
+.radius-control {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--oas-space-3);
+}
+.radius-control oas-slider {
+  width: 220px;
+}
+.radius-control .mono {
+  min-width: 40px;
+  text-align: right;
+  font-size: var(--oas-font-size-sm);
+  color: var(--oas-color-text-primary);
+}

@@ -56,7 +56,7 @@ test('admin 全链路：用户管理新建/删除', async ({ page }) => {
 test('viewer 访问受限页显示 403', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page, '李四', 'viewer')
-  await page.goto('/#/users')
+  await page.goto('/#/system/roles')
   await expect(page.getByText('无权访问该页面')).toBeVisible()
   expect(errors).toEqual([])
 })
