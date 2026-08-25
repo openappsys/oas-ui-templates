@@ -6,7 +6,7 @@
 
 | 模版 | 技术栈 | 说明 | 单测 | e2e | 状态 |
 | --- | --- | --- | --- | --- | --- |
-| `templates/admin-pro/vanilla-html` | Vite + TypeScript | 后台管理系统（零框架） | ✅ | ✅ | 可用 |
+| `templates/admin-pro/vanilla-html` | Vite + TypeScript | 后台管理系统（零框架 · i18n / 请求层 / 403/404） | ✅ | ✅ | 可用 |
 
 ## 开发
 
@@ -24,5 +24,6 @@ pnpm --filter admin-pro-vanilla test:e2e
 
 ## CI
 
+- 由 `.github/workflows/ci.yml` 的 matrix 驱动：模版列表（`matrix.template`）加一行即接入新模版
 - push / PR：每模版 install + build + test + e2e
 - 每周一 03:00 UTC 定时 + oas-ui 发版 repository_dispatch 触发依赖升级复测（防模版随主库演进腐烂）；仅覆盖 semver 范围内（^2.x）的 minor/patch 升级，主版本升级需人工评估
