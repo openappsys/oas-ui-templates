@@ -97,9 +97,7 @@ export function mountApp(root: HTMLElement): void {
   root.innerHTML = `
     <oas-layout class="app">
       <header class="app-header" slot="header">
-        <oas-button id="nav-toggle" class="nav-toggle" type="text" aria-label="打开菜单">
-          <oas-icon name="menu" size="18"></oas-icon>
-        </oas-button>
+        <oas-button id="nav-toggle" class="nav-toggle" type="text" icon="menu" aria-label="打开菜单"></oas-button>
         ${LOGO}
         <span class="spacer"></span>
         <div class="global-search">

@@ -43,6 +43,12 @@ body {
   border-bottom: 1px solid var(--oas-color-border);
 }
 
+@media (max-width: 768px) {
+  .app-header {
+    padding-left: var(--oas-space-4);
+  }
+}
+
 .oas-logo {
   display: inline-flex;
   align-items: center;
@@ -1377,6 +1383,10 @@ oas-sidebar::part(trigger) {
 @media (max-width: 768px) {
   .nav-toggle {
     display: inline-flex;
+  }
+  .nav-toggle::part(button) {
+    min-height: 44px;
+    justify-content: flex-start;
   }
   oas-sider,
   oas-sider[collapsed] {
