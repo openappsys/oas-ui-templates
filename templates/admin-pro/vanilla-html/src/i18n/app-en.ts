@@ -32,6 +32,8 @@ export default {
   'cmd.dark': 'Dark',
   'cmd.system': 'System',
   'cmd.locale': 'Language',
+  'cmd.switchToZh': 'Switch to Chinese',
+  'cmd.switchToEn': 'Switch to English',
   'header.openMenu': 'Open Menu',
   'header.search': 'Search pages…',
   'header.fullscreen': 'Fullscreen',

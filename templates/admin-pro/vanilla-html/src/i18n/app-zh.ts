@@ -32,6 +32,8 @@ export default {
   'cmd.dark': '深色',
   'cmd.system': '跟随系统',
   'cmd.locale': '切换语言',
+  'cmd.switchToZh': '切换到中文',
+  'cmd.switchToEn': '切换到英文',
   'header.openMenu': '打开菜单',
   'header.search': '搜索页面…',
   'header.fullscreen': '全屏',

@@ -87,7 +87,7 @@ function buildCommandItems(): CommandEntry[] {
       keywords: ['logout'],
     },
     {
-      label: currentLocale() === 'en' ? 'Switch to Chinese' : '切换到中文',
+      label: currentLocale() === 'en' ? t('cmd.switchToZh') : t('cmd.switchToEn'),
       value: 'action:locale',
       group: t('cmd.action'),
       keywords: ['locale', 'language', '语言', '中文', 'english'],
