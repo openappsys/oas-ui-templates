@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { session } from '../store/session'
+import { progress } from '../components/progress'
 import { initRouter, resolve } from './router'
+
+vi.mock('../components/progress', () => ({
+  progress: { start: vi.fn(), done: vi.fn() },
+}))
 
 const {
   loginDispose,
@@ -92,5 +97,23 @@ describe('router runtime', () => {
     location.hash = '#/users'
     await vi.waitFor(() => expect(el.textContent).toContain('页面加载失败'))
     expect(el.textContent).toContain('500')
+    expect(progress.done).toHaveBeenCalled()
+  })
+
+  it('导航时启动并完成进度条', async () => {
+    location.hash = '#/profile'
+    await resolve()
+    expect(progress.start).toHaveBeenCalled()
+    expect(progress.done).toHaveBeenCalled()
+  })
+
+  it('过期 resolve 不调用进度完成', async () => {
+    await new Promise((r) => setTimeout(r, 0))
+    vi.mocked(progress.start).mockClear()
+    vi.mocked(progress.done).mockClear()
+    const p1 = resolve()
+    const p2 = resolve()
+    await Promise.all([p1, p2])
+    expect(progress.done).toHaveBeenCalledTimes(1)
   })
 })

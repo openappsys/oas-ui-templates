@@ -22,6 +22,34 @@ body {
   height: 100%;
 }
 
+.oas-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  z-index: var(--oas-z-message, 1060);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+.oas-progress.is-active {
+  opacity: 1;
+}
+.oas-progress-bar {
+  height: 100%;
+  width: 0;
+  background: var(--oas-color-primary);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--oas-color-primary) 60%, transparent);
+  transition: width 240ms ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .oas-progress,
+  .oas-progress-bar {
+    transition: none;
+  }
+}
+
 .page {
   width: 100%;
   padding: var(--oas-space-4);

@@ -2,6 +2,7 @@ import { hasAccess, session } from '../store/session'
 import { matchRoute, routes } from './routes'
 import type { PageModule } from './routes'
 import { t } from '../i18n'
+import { progress } from '../components/progress'
 
 export type GuardResult =
   | { ok: true; path: string }
@@ -33,6 +34,7 @@ function clearDispose(): void {
 
 function runResolve(): void {
   resolve().catch(() => {
+    progress.done()
     if (view && view.innerHTML === '') location.hash = '/500'
   })
 }
@@ -45,6 +47,7 @@ export function initRouter(el: HTMLElement): void {
 
 export async function resolve(): Promise<void> {
   if (!view) return
+  progress.start()
   const token = ++epoch
   const path = parseHash(location.hash)
   const g = guard(path)
@@ -55,12 +58,15 @@ export async function resolve(): Promise<void> {
       const mod = await import('../pages/login')
       if (token !== epoch) return
       dispose = mod.render(view)
+      progress.done()
       return
     } else if (g.reason === 'not-found') {
-      location.hash = '/not-found'
+      if (parseHash(location.hash) !== '/not-found') location.hash = '/not-found'
+      else progress.done()
       return
     } else {
-      location.hash = '/forbidden'
+      if (parseHash(location.hash) !== '/forbidden') location.hash = '/forbidden'
+      else progress.done()
       return
     }
   }
@@ -69,4 +75,5 @@ export async function resolve(): Promise<void> {
   if (token !== epoch) return
   dispose = mod.render(view)
   document.title = `${t(route.meta.titleKey)} · ${t('app.fullname')}`
+  progress.done()
 }

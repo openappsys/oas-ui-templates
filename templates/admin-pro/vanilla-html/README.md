@@ -2,7 +2,7 @@
 
 基于 [oas-ui](https://oas-ui.dev) Web Components 的后台管理模版：TypeScript + Vite，零框架运行时。
 
-功能：双登录形态（分屏品牌墙 / 玻璃拟态，默认 `?style=split`，可用 `?style=glass` 切换）· 登录（角色：管理员 / 只读访客）· hash 路由权限守卫 · 仪表盘（统计卡 + ECharts + 最近订单 + 热销商品 Top5）· Command 面板（Ctrl+K 新页直达）· 通知中心 · 全屏 · 用户管理（搜索 / 筛选 / 分页 / 弹窗 CRUD / 空态 / popconfirm 删除确认）· 订单管理（tabs 筛选 / 状态流转抽屉 / CSV 导出）· 商品管理（卡片网格 / 上下架开关 / 新建抽屉表单）· 分步表单向导 · 订单详情 · 结果页 · 403/404 结果页 · 基础表单页 · 个人中心（外观三主题卡）· i18n 中英切换（壳层即时生效）· fetch 请求层（拦截器 / 超时 / 本地 `/api/*` mock）· light/dark/system 主题 · 移动端抽屉侧栏 · demo 数据 localStorage 持久化（刷新不丢，清 storage 即重置）。
+功能：双登录形态（分屏品牌墙 / 玻璃拟态，默认 `?style=split`，可用 `?style=glass` 切换）· 登录（角色：管理员 / 只读访客）· hash 路由权限守卫 · 路由切换顶部全局进度条 · 仪表盘（统计卡 + ECharts + 最近订单 + 热销商品 Top5）· Command 面板（Ctrl+K 新页直达）· 通知中心 · 全屏 · 用户管理（搜索 / 筛选 / 分页 / 弹窗 CRUD / 空态 / popconfirm 删除确认）· 订单管理（tabs 筛选 / 状态流转抽屉 / CSV 导出）· 商品管理（卡片网格 / 上下架开关 / 新建抽屉表单）· 分步表单向导 · 订单详情 · 结果页 · 403/404/500 结果页 · 基础表单页 · 个人中心（外观三主题卡）· i18n 中英切换（壳层即时生效）· fetch 请求层（拦截器 / 超时 / 本地 `/api/*` mock）· 侧栏分组（总览 / 业务 / 系统 / 示例）· 侧栏图标主题色着色（`nav-*` 彩色 SVG）· light/dark/system 主题 · 移动端抽屉侧栏 · demo 数据 localStorage 持久化（刷新不丢，清 storage 即重置）。
 
 ## 使用
 
@@ -38,6 +38,8 @@ npx degit <本仓库地址>/templates/admin-pro/vanilla-html my-admin
 - `src/data/users.ts` / `orders.ts` / `products.ts` / `notifications.ts`：内存 mock 数据源（CRUD + 100ms 模拟延迟 + localStorage 持久化）；接真后端时替换
 - `src/components/registry.ts`：组件按需注册清单
 - `src/components/app-shell.ts`：oas-layout 外壳（侧栏 / 顶栏 / 主题切换 / 语言切换 / 用户菜单）
+- `src/components/progress.ts`：路由切换顶部全局进度条（`start()` / `done()`，body 级独立覆盖层，不侵入 oas-layout）
+- `src/components/sidebar-icons.ts`：注册 `nav-*` 彩色侧栏图标（复用 @oas-ui/icons 几何 + 主题色 stroke）
 - `src/pages/`：页面模块，契约 `render(el) => dispose`
 - `scripts/size.mjs`：构建产物 gzip 体积门禁
 
@@ -56,8 +58,14 @@ npx degit <本仓库地址>/templates/admin-pro/vanilla-html my-admin
 
 ## 页面
 
-- `/forbidden`、`/not-found`：权限守卫 / 未知路由落地页（`oas-result` 结果态 + 返回首页）
+- `/forbidden`、`/not-found`、`/500`：权限守卫 / 未知路由 / 加载失败落地页（`oas-result` 结果态 + 返回首页）
 - `/basic-form`：通用卡片表单（input / select / switch / date-picker / upload / textarea + 必填与格式校验）
+
+## 侧栏图标
+
+- 侧栏菜单图标用 `@oas-ui/icons` 的 SVG 几何（非 emoji），`src/components/sidebar-icons.ts` 注册 `nav-*` 名字，path 的 `stroke` 改用主题色变量（`--oas-color-primary` / `--oas-tint-*` / success / warning / danger），**随 light/dark 主题换肤自适应**（见 `src/styles/app.css` 的 `:root` / `html[data-theme="dark"]` 里新增的 `--oas-tint-cyan/orange/green/red`）
+- 路由 `meta.icon` 指向这些 `nav-*` 名字（`src/router/routes.ts`）；active 项仍由 oas-sidebar 组件用主色高亮兜底
+- **临时方案**：当前以「注册自带色 path 的图标名」绕过组件单色限制。待 oas-ui 发版（含 v2.2.4 之后 `be2876b`：os-sidebar `SidebarItem.iconColor` + 接入 `registerIcon` 查表正路）后，改用官方 `iconColor` 项级着色并移除本 hack
 
 ## CI
 
