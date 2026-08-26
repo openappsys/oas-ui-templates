@@ -16,7 +16,7 @@ async function login(page: Page): Promise<void> {
   await expect(page.getByTestId('stat-visits')).toBeVisible()
 }
 
-test('数据看板：渲染统计卡与数字滚动', async ({ page }) => {
+test('数据看板：渲染统计卡、多种图表与进度条', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page)
   await page.goto('#/data-board')
@@ -25,14 +25,9 @@ test('数据看板：渲染统计卡与数字滚动', async ({ page }) => {
   await expect(page.getByTestId('anim-gmv')).toBeVisible()
   await expect(page.getByTestId('stat-users')).toBeVisible()
   await expect(page.getByTestId('stat-conversion')).toBeVisible()
-  expect(errors).toEqual([])
-})
-
-test('数据看板：刷新按钮可点击且不报错', async ({ page }) => {
-  const errors = await noConsoleErrors(page)
-  await login(page)
-  await page.goto('#/data-board')
-  await page.getByRole('button', { name: '刷新' }).click()
-  await expect(page.getByTestId('anim-orders')).toBeVisible()
+  await expect(page.getByTestId('board-progress-order')).toBeVisible()
+  await expect(page.getByTestId('board-progress-revenue')).toBeVisible()
+  await expect(page.getByTestId('board-progress-users')).toBeVisible()
+  await expect(page.locator('oas-chart')).toHaveCount(3)
   expect(errors).toEqual([])
 })
