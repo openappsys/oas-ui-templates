@@ -318,10 +318,16 @@ export function mountApp(root: HTMLElement): void {
     fsToggle.classList.toggle('is-fullscreen', active)
   })
 
+  let lastNotifCount = -1
   function syncBadge(): void {
     const count = unreadCount()
     badge.setAttribute('value', String(count))
     notifToggle.setAttribute('aria-label', t('header.notificationCount', { count }))
+    if (count === lastNotifCount) return
+    lastNotifCount = count
+    badge.classList.remove('is-pop')
+    void badge.offsetWidth
+    badge.classList.add('is-pop')
   }
 
   function renderNotifications(): void {

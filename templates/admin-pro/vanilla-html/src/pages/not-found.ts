@@ -4,6 +4,7 @@ export function render(el: HTMLElement): () => void {
   function draw(): void {
     el.innerHTML = `
       <div class="page notice">
+        <oas-icon class="notice-icon notice-icon--search" name="search" size="28"></oas-icon>
         <div class="notice-code">404</div>
         <h1 class="notice-title">${t('common.404.title')}</h1>
         <p class="notice-desc">${t('common.404.desc')}</p>

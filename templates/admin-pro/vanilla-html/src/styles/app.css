@@ -303,6 +303,26 @@ html[data-theme="dark"] .theme-dot::before {
   white-space: nowrap;
 }
 
+#notif-badge.is-pop::part(badge) {
+  animation: notifBadgePop 300ms var(--oas-ease-out);
+}
+@keyframes notifBadgePop {
+  0% {
+    scale: 0.6;
+  }
+  60% {
+    scale: 1.15;
+  }
+  100% {
+    scale: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #notif-badge.is-pop::part(badge) {
+    animation: none;
+  }
+}
+
 oas-sider {
   transition:
     width var(--oas-transition-base, 180ms) var(--oas-ease-out, cubic-bezier(0.2, 0, 0.2, 1)),
@@ -474,6 +494,27 @@ oas-sider[collapsed] {
   font-size: 13px;
   color: var(--oas-color-text-secondary);
   margin: 0;
+}
+
+.notice-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--oas-radius-lg);
+  background: color-mix(in srgb, var(--notice-icon-color) 10%, transparent);
+  color: var(--notice-icon-color);
+  margin-bottom: var(--oas-space-1);
+}
+.notice-icon--search {
+  --notice-icon-color: var(--oas-color-primary);
+}
+.notice-icon--lock {
+  --notice-icon-color: var(--oas-color-danger);
+}
+.notice-icon--error {
+  --notice-icon-color: var(--oas-color-warning);
 }
 
 .stat-card,
