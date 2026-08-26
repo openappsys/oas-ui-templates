@@ -392,6 +392,8 @@ export default {
   'settings.general.formModeTitle': 'Form Display Mode',
   'settings.general.formModeHint': 'Applies to input forms such as products',
   'settings.general.densityTitle': 'Table Density',
+  'settings.tabsLayout.horizontal': 'Horizontal',
+  'settings.tabsLayout.vertical': 'Vertical',
   'settings.general.fontSizeTitle': 'Font Size',
   'settings.general.pageSizeLabel': 'Page Size',
   'settings.general.pageSizeHint': 'Rows shown per page in list views',

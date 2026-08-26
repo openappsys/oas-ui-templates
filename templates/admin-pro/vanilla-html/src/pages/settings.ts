@@ -82,10 +82,19 @@ const NOTIF_CHANNELS = (): Array<{ key: string; label: string }> => [
   { key: 'email', label: t('settings.notif.email') },
 ]
 
+const TAB_LAYOUT_OPTIONS = (): Array<{ label: string; value: string }> => [
+  { label: t('settings.tabsLayout.horizontal'), value: 'horizontal' },
+  { label: t('settings.tabsLayout.vertical'), value: 'vertical' },
+]
+
 export function render(el: HTMLElement): () => void {
+  const tabsLayoutKey = 'oas-admin.settings.tabs-layout'
+  const readTabLayout = (): 'horizontal' | 'vertical' =>
+    localStorage.getItem(tabsLayoutKey) === 'vertical' ? 'vertical' : 'horizontal'
   const tabs = document.createElement('oas-tabs')
   tabs.setAttribute('data-testid', 'settings-tabs')
   tabs.setAttribute('id', 'settings-tabs')
+  if (readTabLayout() === 'vertical') tabs.classList.add('oas-tabs--vertical')
 
   function panel(value: string): { node: HTMLDivElement; set: (html: string) => void } {
     const node = document.createElement('div')
@@ -112,6 +121,7 @@ export function render(el: HTMLElement): () => void {
           <h1 class="page-title">${t('nav.settings')}</h1>
           <p class="page-subtitle">${t('settings.subtitle')}</p>
         </div>
+        <oas-segmented id="settings-tabs-layout" data-testid="settings-tabs-layout" value="${readTabLayout()}" options='${JSON.stringify(TAB_LAYOUT_OPTIONS())}'></oas-segmented>
       </div>
       <oas-card class="settings-card" title="${t('settings.cardTitle')}"></oas-card>
     </div>`
@@ -125,6 +135,15 @@ export function render(el: HTMLElement): () => void {
     .map((t) => `<oas-tab-panel label="${t.label}" value="${t.value}"></oas-tab-panel>`)
     .join('')
   tabs.setAttribute('active', 'general')
+
+  const tabsLayout = el.querySelector<HTMLElement>('#settings-tabs-layout')!
+  tabsLayout.addEventListener('oas-change', (e) => {
+    const v = (e as CustomEvent<{ value: string }>).detail.value
+    if (v !== 'vertical' && v !== 'horizontal') return
+    localStorage.setItem(tabsLayoutKey, v)
+    tabs.classList.toggle('oas-tabs--vertical', v === 'vertical')
+    message.success(t('common.saved'))
+  })
 
   function switchPanel(value: string): void {
     ;[general, notification, appearance].forEach((p) => {

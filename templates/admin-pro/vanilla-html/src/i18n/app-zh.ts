@@ -390,6 +390,8 @@ export default {
   'settings.general.formModeTitle': '表单呈现方式',
   'settings.general.formModeHint': '作用于商品等需要录入的表单',
   'settings.general.densityTitle': '表格密度',
+  'settings.tabsLayout.horizontal': '横排',
+  'settings.tabsLayout.vertical': '竖排',
   'settings.general.fontSizeTitle': '字体大小',
   'settings.general.pageSizeLabel': '每页条数',
   'settings.general.pageSizeHint': '列表视图每页显示行数',
