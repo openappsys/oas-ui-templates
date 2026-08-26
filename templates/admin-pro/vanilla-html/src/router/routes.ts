@@ -82,6 +82,7 @@ export const routes: Route[] = [
       icon: 'gear',
       iconColor: 'var(--oas-color-primary)',
       hidden: true,
+      group: 'nav.output',
     },
     load: () => import('../pages/profile'),
   },
