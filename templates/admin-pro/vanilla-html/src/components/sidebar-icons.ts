@@ -54,6 +54,10 @@ export function registerSidebarIcons(): void {
     BLUE,
   )
   registry['nav-dept'] = colorize(ORG_PATH, CYAN)
+  registry['nav-category'] = colorize(
+    '<rect x="3" y="3" width="4.5" height="4.5" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="8.5" y="3" width="4.5" height="4.5" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="3" y="8.5" width="4.5" height="4.5" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="8.5" y="8.5" width="4.5" height="4.5" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/>',
+    VIOLET,
+  )
   registry['nav-dict'] = colorize(
     '<circle cx="7" cy="7" r="3.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M9.6 9.6 L13 13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>',
     GREEN,

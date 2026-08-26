@@ -87,6 +87,11 @@ export const routes: Route[] = [
     load: () => import('../pages/dept'),
   },
   {
+    path: '/system/category',
+    meta: { titleKey: 'nav.category', icon: 'nav-category', roles: ['admin'], group: 'nav.system' },
+    load: () => import('../pages/category'),
+  },
+  {
     path: '/system/dict',
     meta: { titleKey: 'nav.dict', icon: 'nav-dict', roles: ['admin'], group: 'nav.system' },
     load: () => import('../pages/dict'),

@@ -1,6 +1,7 @@
 import { message } from '@oas-ui/ui/feedback/message'
 import type { OASTable, TableColumn } from '@oas-ui/ui/data/table'
 import { t } from '../i18n'
+import { listCategories } from '../data/categories'
 import {
   createProduct,
   listProducts,
@@ -8,7 +9,7 @@ import {
   toggleProductStatus,
   updateProduct,
 } from '../data/products'
-import type { ProductCategory, ProductRow } from '../data/products'
+import type { ProductRow } from '../data/products'
 import '../styles/pages/products.css'
 
 const VIEW_KEY = 'oas-admin.products-view'
@@ -21,15 +22,11 @@ type ViewMode = 'cards' | 'table'
 type FormMode = 'dialog' | 'drawer' | 'page'
 type Density = 'compact' | 'default' | 'large'
 
-const CATEGORY_OPTIONS = [
-  { label: '数码', value: '数码' },
-  { label: '服饰', value: '服饰' },
-  { label: '家居', value: '家居' },
-  { label: '食品', value: '食品' },
-]
-const FILTER_OPTIONS = (): Array<{ label: string; value: string }> => [
+type Option = { label: string; value: string }
+
+const FILTER_OPTIONS = (categories: Option[]): Option[] => [
   { label: t('products.allCategories'), value: '' },
-  ...CATEGORY_OPTIONS,
+  ...categories,
 ]
 const VIEW_OPTIONS = (): Array<{ label: string; value: string }> => [
   { label: t('products.viewCards'), value: 'cards' },
@@ -43,8 +40,9 @@ const DENSITY_PAD: Record<Density, string> = {
 
 interface PageState {
   rows: ProductRow[]
+  categories: Option[]
   keyword: string
-  category: ProductCategory | ''
+  category: string
   editingId: number | null
   page: number
   view: ViewMode
@@ -158,7 +156,7 @@ const FORM_BODY = (): string => `
       </div>
       <div class="form-field">
         <label class="form-label">${t('products.category')}</label>
-        <oas-select data-testid="pf-category" name="category" options='${JSON.stringify(CATEGORY_OPTIONS)}' value="数码"></oas-select>
+        <oas-select data-testid="pf-category" name="category"></oas-select>
       </div>
       <div class="form-field">
         <label class="form-label">${t('products.th.price')}</label>
@@ -188,6 +186,7 @@ const FORM_BODY = (): string => `
 export function render(el: HTMLElement): () => void {
   const state: PageState = {
     rows: [],
+    categories: [],
     keyword: '',
     category: '',
     editingId: null,
@@ -217,7 +216,7 @@ export function render(el: HTMLElement): () => void {
       </div>
       <div class="products-toolbar">
         <oas-input data-testid="product-search" placeholder="${t('products.search')}" clearable prefix-icon="search"></oas-input>
-        <oas-select data-testid="product-category" placeholder="${t('products.category')}" options='${JSON.stringify(FILTER_OPTIONS())}' value=""></oas-select>
+        <oas-select data-testid="product-category" placeholder="${t('products.category')}" options='${JSON.stringify(FILTER_OPTIONS([]))}' value=""></oas-select>
         <oas-segmented data-testid="product-view" class="products-view-toggle" options='${JSON.stringify(VIEW_OPTIONS())}' value="${state.view}"></oas-segmented>
       </div>
       <div class="product-grid" data-testid="product-grid"${state.view === 'table' ? ' hidden' : ''}></div>
@@ -318,11 +317,26 @@ export function render(el: HTMLElement): () => void {
     }
   }
 
+  function resolveCategory(value?: string): string {
+    if (value && state.categories.some((c) => c.value === value)) return value
+    return state.categories[0]?.value ?? ''
+  }
+
+  function applyCategoryOptions(): void {
+    category.setAttribute('options', JSON.stringify(FILTER_OPTIONS(state.categories)))
+    const formCat = el.querySelector<HTMLElement>('[data-testid="pf-category"]')
+    if (formCat) formCat.setAttribute('options', JSON.stringify(state.categories))
+    if (state.category && !state.categories.some((c) => c.value === state.category)) {
+      state.category = ''
+      category.setAttribute('value', '')
+    }
+  }
+
   function fillForm(row: ProductRow | null): void {
     el.querySelector<HTMLElement>('[data-testid="pf-name"]')!.setAttribute('value', row?.name ?? '')
     el.querySelector<HTMLElement>('[data-testid="pf-category"]')!.setAttribute(
       'value',
-      row?.category ?? '数码',
+      resolveCategory(row?.category),
     )
     el.querySelector<HTMLElement>('[data-testid="pf-price"]')!.setAttribute(
       'value',
@@ -359,7 +373,10 @@ export function render(el: HTMLElement): () => void {
   }
 
   async function refresh(): Promise<void> {
-    state.rows = await listProducts()
+    const [rows, cats] = await Promise.all([listProducts(), listCategories()])
+    state.rows = rows
+    state.categories = cats.map((c) => ({ label: c.name, value: c.name }))
+    applyCategoryOptions()
     renderList()
   }
 
@@ -432,7 +449,7 @@ export function render(el: HTMLElement): () => void {
     if (saving) return
     const values = (
       e as CustomEvent<{
-        values: { name: string; category: ProductCategory; price: string; stock: string }
+        values: { name: string; category: string; price: string; stock: string }
       }>
     ).detail.values
     const price = Number(values.price)
@@ -446,7 +463,7 @@ export function render(el: HTMLElement): () => void {
         state.editingId != null ? state.rows.find((r) => r.id === state.editingId) : null
       const payload = {
         name: values.name,
-        category: values.category || '数码',
+        category: values.category || resolveCategory(),
         price,
         stock: Number(values.stock) || 0,
         status: editing?.status ?? 'on',
@@ -478,7 +495,7 @@ export function render(el: HTMLElement): () => void {
   })
 
   category.addEventListener('oas-change', (e) => {
-    state.category = (e as CustomEvent<{ value: string }>).detail.value as ProductCategory | ''
+    state.category = (e as CustomEvent<{ value: string }>).detail.value
     state.page = 1
     renderList()
   })

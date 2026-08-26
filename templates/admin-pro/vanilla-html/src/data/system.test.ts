@@ -124,11 +124,10 @@ describe('system 数据源', () => {
     expect(await removeDept(99999)).toBe(false)
   })
 
-  it('listDictTypes 返回订单状态/商品分类种子', async () => {
+  it('listDictTypes 返回订单状态种子', async () => {
     const rows = await listDictTypes()
-    expect(rows.length).toBe(2)
+    expect(rows.length).toBe(1)
     expect(rows[0]).toMatchObject({ name: '订单状态', code: 'order_status' })
-    expect(rows[1]).toMatchObject({ name: '商品分类', code: 'product_category' })
   })
 
   it('listDictItems 按类型返回键值项且匹配订单状态', async () => {
@@ -136,8 +135,6 @@ describe('system 数据源', () => {
     expect(items).toHaveLength(5)
     expect(items[0]).toMatchObject({ label: '待支付', value: 'pending', sort: 1 })
     expect(items[4]).toMatchObject({ label: '已取消', value: 'cancelled', sort: 5 })
-    const cats = await listDictItems(2)
-    expect(cats.map((c) => c.label)).toEqual(['数码', '服饰', '家居', '食品'])
   })
 
   it('createDictType 追加新行并生成 id', async () => {
@@ -149,18 +146,18 @@ describe('system 数据源', () => {
   })
 
   it('updateDictType 修改命中行，id 不存在返回 null', async () => {
-    const updated = await updateDictType(2, { name: '商品类目' })
-    expect(updated?.name).toBe('商品类目')
+    const updated = await updateDictType(1, { name: '订单类目' })
+    expect(updated?.name).toBe('订单类目')
     expect(await updateDictType(99999, { name: 'x' })).toBeNull()
   })
 
   it('removeDictType 删除命中行及其键值项', async () => {
     const beforeTypes = (await listDictTypes()).length
-    const beforeItems = (await listDictItems(2)).length
-    expect(await removeDictType(2)).toBe(true)
+    const beforeItems = (await listDictItems(1)).length
+    expect(await removeDictType(1)).toBe(true)
     expect((await listDictTypes()).length).toBe(beforeTypes - 1)
-    expect((await listDictItems(2)).length).toBe(0)
-    expect(beforeItems).toBe(4)
+    expect((await listDictItems(1)).length).toBe(0)
+    expect(beforeItems).toBe(5)
     expect(await removeDictType(99999)).toBe(false)
   })
 

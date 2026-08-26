@@ -1,6 +1,6 @@
 import { persist, restore } from './store'
 
-export type ProductCategory = '数码' | '服饰' | '家居' | '食品'
+export type ProductCategory = string
 export type ProductStatus = 'on' | 'off'
 export type StockLevel = 'ok' | 'low' | 'critical'
 

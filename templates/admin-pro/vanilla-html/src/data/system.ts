@@ -125,10 +125,7 @@ function seedRoles(): RoleRow[] {
 }
 
 function seedDictTypes(): DictType[] {
-  return [
-    { id: 1, name: '订单状态', code: 'order_status' },
-    { id: 2, name: '商品分类', code: 'product_category' },
-  ]
+  return [{ id: 1, name: '订单状态', code: 'order_status' }]
 }
 
 function seedDictItems(): DictItem[] {
@@ -138,10 +135,6 @@ function seedDictItems(): DictItem[] {
     [1, '配送中', 'shipping', 3],
     [1, '已完成', 'done', 4],
     [1, '已取消', 'cancelled', 5],
-    [2, '数码', '数码', 1],
-    [2, '服饰', '服饰', 2],
-    [2, '家居', '家居', 3],
-    [2, '食品', '食品', 4],
   ]
   return raw.map(([typeId, label, value, sort], i) => ({
     id: i + 1,

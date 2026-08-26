@@ -48,15 +48,31 @@ test('admin 字典管理：切换类型 + 新建键值', async ({ page }) => {
   await expect(page.getByTestId('dict-type-list')).toContainText('订单状态')
   await expect(page.getByTestId('dict-items-table')).toContainText('待支付')
 
-  await page.getByTestId('dict-type-list').getByText('商品分类').click()
-  await expect(page.getByTestId('dict-items-table')).toContainText('数码')
-
   await page.getByTestId('dict-item-create').click()
   await expect(page.getByTestId('dict-item-modal')).toHaveAttribute('visible', '')
   await page.getByTestId('dif-label').locator('input').fill('预售')
   await page.getByTestId('dif-value').locator('input').fill('presale')
   await page.getByTestId('dif-save').click()
   await expect(page.getByTestId('dict-items-table')).toContainText('预售')
+  expect(errors).toEqual([])
+})
+
+test('admin 商品分类：新建分类入表 + 商品页下拉同步', async ({ page }) => {
+  const errors = await noConsoleErrors(page)
+  await login(page, '张伟', 'admin')
+  await page.goto('/#/system/category')
+  await expect(page.getByTestId('category-table')).toContainText('数码')
+
+  await page.getByTestId('category-create').click()
+  await expect(page.getByTestId('category-modal')).toHaveAttribute('visible', '')
+  await page.getByTestId('cf-name').locator('input').fill('图书')
+  await page.getByTestId('cf-code').locator('input').fill('book')
+  await page.getByTestId('cf-save').click()
+  await expect(page.getByTestId('category-table')).toContainText('图书')
+
+  await page.goto('/#/products')
+  await page.getByTestId('product-category').click()
+  await expect(page.getByTestId('product-category')).toContainText('图书')
   expect(errors).toEqual([])
 })
 

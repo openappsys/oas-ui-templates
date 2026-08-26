@@ -1968,3 +1968,11 @@ oas-sidebar[collapsed]::part(group) {
     min-width: 640px;
   }
 }
+
+.category-search {
+  width: 280px;
+  max-width: 100%;
+}
+.category-search::part(input) {
+  height: 32px;
+}

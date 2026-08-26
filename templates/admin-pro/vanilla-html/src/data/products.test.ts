@@ -9,9 +9,9 @@ import {
   toggleProductStatus,
   updateProduct,
 } from './products'
-import type { ProductCategory, ProductStatus } from './products'
+import type { ProductStatus } from './products'
 
-const CATEGORIES: ProductCategory[] = ['数码', '服饰', '家居', '食品']
+const CATEGORIES: string[] = ['数码', '服饰', '家居', '食品']
 const STATUSES: ProductStatus[] = ['on', 'off']
 
 describe('products 数据源', () => {

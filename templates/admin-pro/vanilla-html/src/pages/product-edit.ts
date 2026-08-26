@@ -1,15 +1,9 @@
 import { message } from '@oas-ui/ui/feedback/message'
 import { t } from '../i18n'
+import { listCategories } from '../data/categories'
 import { createProduct, getProduct, updateProduct } from '../data/products'
-import type { ProductCategory, ProductRow } from '../data/products'
+import type { ProductRow } from '../data/products'
 import '../styles/pages/products.css'
-
-const CATEGORY_OPTIONS = [
-  { label: '数码', value: '数码' },
-  { label: '服饰', value: '服饰' },
-  { label: '家居', value: '家居' },
-  { label: '食品', value: '食品' },
-]
 
 function today(): string {
   return new Date().toISOString().slice(0, 10)
@@ -37,7 +31,7 @@ export function render(el: HTMLElement): () => void {
             </div>
             <div class="form-field">
               <label class="form-label">${t('products.category')}</label>
-              <oas-select data-testid="pf-category" name="category" options='${JSON.stringify(CATEGORY_OPTIONS)}' value="数码"></oas-select>
+              <oas-select data-testid="pf-category" name="category"></oas-select>
             </div>
             <div class="form-grid">
               <div class="form-field">
@@ -71,12 +65,16 @@ export function render(el: HTMLElement): () => void {
   const form = el.querySelector<HTMLElement>('#product-form')!
   const datePicker = el.querySelector<HTMLElement>('[data-testid="pf-date"]')!
   const upload = el.querySelector<HTMLElement>('[data-testid="pf-cover"]')!
+  const catSel = el.querySelector<HTMLElement>('[data-testid="pf-category"]')!
+  let categoryOptions: Array<{ label: string; value: string }> = []
 
   function fillForm(row: ProductRow): void {
     el.querySelector<HTMLElement>('[data-testid="pf-name"]')!.setAttribute('value', row.name)
-    el.querySelector<HTMLElement>('[data-testid="pf-category"]')!.setAttribute(
+    catSel.setAttribute(
       'value',
-      row.category,
+      categoryOptions.some((c) => c.value === row.category)
+        ? row.category
+        : (categoryOptions[0]?.value ?? ''),
     )
     el.querySelector<HTMLElement>('[data-testid="pf-price"]')!.setAttribute(
       'value',
@@ -90,11 +88,15 @@ export function render(el: HTMLElement): () => void {
   }
 
   async function init(): Promise<void> {
+    const cats = await listCategories()
+    categoryOptions = cats.map((c) => ({ label: c.name, value: c.name }))
+    catSel.setAttribute('options', JSON.stringify(categoryOptions))
     if (id && Number.isFinite(id)) {
       editing = await getProduct(id)
       if (editing) fillForm(editing)
       else message.error(t('products.notFound'))
     } else {
+      catSel.setAttribute('value', categoryOptions[0]?.value ?? '')
       datePicker.setAttribute('value', today())
     }
   }
@@ -111,7 +113,7 @@ export function render(el: HTMLElement): () => void {
     if (saving) return
     const values = (
       e as CustomEvent<{
-        values: { name: string; category: ProductCategory; price: string; stock: string }
+        values: { name: string; category: string; price: string; stock: string }
       }>
     ).detail.values
     const price = Number(values.price)
@@ -123,7 +125,7 @@ export function render(el: HTMLElement): () => void {
     try {
       const payload = {
         name: values.name,
-        category: values.category || '数码',
+        category: values.category || categoryOptions[0]?.value || '',
         price,
         stock: Number(values.stock) || 0,
         status: editing?.status ?? 'on',
