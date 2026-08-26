@@ -66,12 +66,22 @@ export const routes: Route[] = [
     load: () => import('../pages/users'),
   },
   {
+    path: '/data-board',
+    meta: {
+      titleKey: 'nav.dataBoard',
+      icon: 'eye',
+      iconColor: 'var(--oas-color-primary)',
+      group: 'nav.output',
+    },
+    load: () => import('../pages/data-board'),
+  },
+  {
     path: '/profile',
     meta: {
       titleKey: 'nav.profile',
       icon: 'gear',
       iconColor: 'var(--oas-color-primary)',
-      group: 'nav.output',
+      hidden: true,
     },
     load: () => import('../pages/profile'),
   },
@@ -231,16 +241,6 @@ export const routes: Route[] = [
       group: 'nav.demo',
     },
     load: () => import('../pages/advanced-form'),
-  },
-  {
-    path: '/data-board',
-    meta: {
-      titleKey: 'nav.dataBoard',
-      icon: 'eye',
-      iconColor: 'var(--oas-color-primary)',
-      group: 'nav.demo',
-    },
-    load: () => import('../pages/data-board'),
   },
 ]
 
