@@ -346,12 +346,21 @@ export function mountApp(root: HTMLElement): void {
     const route = matchRoute(path)
     const home = routes[0]
     const rootLabel = t('nav.root')
-    const items =
-      route === undefined || route.path === home.path
-        ? [{ label: rootLabel }, { label: t(home.meta.titleKey) }]
-        : [{ label: rootLabel, href: `#${home.path}` }, { label: t(route.meta.titleKey) }]
+    let items: Array<{ label: string; href?: string }>
+    if (route === undefined || route.path === home.path) {
+      items = [{ label: rootLabel }, { label: t(home.meta.titleKey) }]
+    } else {
+      items = [{ label: rootLabel, href: `#${home.path}` }]
+      const parentPath = route.meta.parent
+      const parent = parentPath ? matchRoute(parentPath) : undefined
+      if (parent) {
+        items.push({ label: t(parent.meta.titleKey), href: `#${parentPath}` })
+      }
+      items.push({ label: t(route.meta.titleKey) })
+    }
     crumbs.setAttribute('items', JSON.stringify(items))
-    sidebar.setAttribute('active', route === undefined ? '' : route.path)
+    const activePath = route === undefined ? '' : (route.meta.parent ?? route.path)
+    sidebar.setAttribute('active', activePath)
   }
 
   window.addEventListener('hashchange', syncNav)

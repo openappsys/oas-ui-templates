@@ -6,6 +6,8 @@ export interface RouteMeta {
   roles?: string[]
   hidden?: boolean
   group?: RouteGroup
+  /** 面包屑父级路由 path（用于隐藏的详情/结果页显示层级） */
+  parent?: string
 }
 
 export interface PageModule {
@@ -56,12 +58,12 @@ export const routes: Route[] = [
   },
   {
     path: '/order-detail',
-    meta: { titleKey: 'nav.orderDetail', icon: 'calendar', hidden: true },
+    meta: { titleKey: 'nav.orderDetail', icon: 'calendar', hidden: true, parent: '/orders' },
     load: () => import('../pages/order-detail'),
   },
   {
     path: '/result',
-    meta: { titleKey: 'nav.result', icon: 'check', hidden: true },
+    meta: { titleKey: 'nav.result', icon: 'check', hidden: true, parent: '/form' },
     load: () => import('../pages/result'),
   },
   {
@@ -96,7 +98,13 @@ export const routes: Route[] = [
   },
   {
     path: '/products/edit',
-    meta: { titleKey: 'nav.products', icon: 'edit', roles: ['admin'], hidden: true },
+    meta: {
+      titleKey: 'nav.products',
+      icon: 'edit',
+      roles: ['admin'],
+      hidden: true,
+      parent: '/products',
+    },
     load: () => import('../pages/product-edit'),
   },
   {
