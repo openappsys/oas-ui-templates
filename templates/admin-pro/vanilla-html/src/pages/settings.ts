@@ -95,9 +95,9 @@ export function render(el: HTMLElement): () => void {
   tabs.setAttribute('data-testid', 'settings-tabs')
   tabs.setAttribute('id', 'settings-tabs')
   function setTabsLayout(layout: 'horizontal' | 'vertical'): void {
-    tabs.classList.toggle('oas-tabs--vertical', layout === 'vertical')
-    // 竖排 = 左 tab + 右内容（oas-tabs 用 --vertical + --left 组合实现真正的左右布局）
-    tabs.classList.toggle('oas-tabs--left', layout === 'vertical')
+    // 用 oas-tabs 官方 tab-position（top/left/right）驱动 tab 位置布局——组件自动切换 internal class（vertical/left/right）
+    if (layout === 'vertical') tabs.setAttribute('tab-position', 'left')
+    else tabs.removeAttribute('tab-position')
   }
   setTabsLayout(readTabLayout())
 
