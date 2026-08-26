@@ -41,8 +41,8 @@ function sidebarItems(): string {
 
 function userMenuItems(): string {
   return JSON.stringify([
-    { label: t('header.profile'), value: '/profile' },
-    { label: t('header.logout'), value: 'logout' },
+    { label: t('header.profile'), value: '/profile', kind: 'action' },
+    { label: t('header.logout'), value: 'logout', kind: 'action', danger: true },
   ])
 }
 
@@ -235,8 +235,6 @@ export function mountApp(root: HTMLElement): void {
 
   userMenu.addEventListener('oas-select', (e) => {
     const value = (e as CustomEvent<{ value: string }>).detail.value
-    // 用户菜单是导航/动作型（个人中心/退出），不该有持久勾选项——选中后清除 value 避免残留高亮
-    userMenu.removeAttribute('value')
     if (value === 'logout') {
       session.logout()
       message.info(t('header.loggedOut'))
