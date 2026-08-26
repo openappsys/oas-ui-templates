@@ -126,3 +126,72 @@ test('viewer 可访问设置中心（不限角色）', async ({ page }) => {
   await expect(page.getByTestId('settings-tabs')).toBeVisible()
   expect(errors).toEqual([])
 })
+
+async function openProductsTable(page: Page): Promise<void> {
+  await page.locator('#nav').getByText('商品管理').click()
+  await expect(page.getByTestId('product-view')).toBeVisible()
+  if ((await page.getByTestId('product-view').getAttribute('value')) !== 'table') {
+    await page.getByTestId('product-view').getByText('列表').click()
+  }
+  await expect(page.getByTestId('product-table')).toBeVisible()
+}
+
+test('admin 商品管理：表格多选批量删除', async ({ page }) => {
+  const errors = await noConsoleErrors(page)
+  await login(page, '张伟', 'admin')
+  await openProductsTable(page)
+  const table = page.getByTestId('product-table')
+
+  await table.locator('tr[data-key="1"] input[type="checkbox"]').check()
+  await table.locator('tr[data-key="2"] input[type="checkbox"]').check()
+  await expect(page.getByTestId('product-batch-bar')).toContainText('已选 2 项')
+  await expect(page.getByTestId('product-batch-delete')).toBeEnabled()
+
+  await page.getByTestId('product-batch-delete').click()
+  await expect(
+    page.locator('[data-testid="product-batch-del-pop"][open] [part="ok"]'),
+  ).toBeVisible()
+  await page.locator('[data-testid="product-batch-del-pop"][open] [part="ok"]').click()
+  await expect(table).not.toContainText('无线降噪耳机')
+  await expect(table).not.toContainText('智能手表')
+  await expect(page.getByTestId('product-batch-bar')).toBeHidden()
+  expect(errors).toEqual([])
+})
+
+test('admin 商品管理：批量上架/下架翻转选中项', async ({ page }) => {
+  const errors = await noConsoleErrors(page)
+  await login(page, '张伟', 'admin')
+  await openProductsTable(page)
+  const table = page.getByTestId('product-table')
+
+  await table.locator('tr[data-key="4"] input[type="checkbox"]').check()
+  await page.getByTestId('product-batch-list').click()
+  await expect(table.locator('tr[data-key="4"] oas-switch')).toHaveAttribute('checked', '')
+
+  await table.locator('tr[data-key="1"] input[type="checkbox"]').check()
+  await page.getByTestId('product-batch-unlist').click()
+  await expect(table.locator('tr[data-key="1"] oas-switch')).not.toHaveAttribute('checked')
+  expect(errors).toEqual([])
+})
+
+test('admin 商品管理：列设置显隐列并持久化', async ({ page }) => {
+  const errors = await noConsoleErrors(page)
+  await login(page, '张伟', 'admin')
+  await openProductsTable(page)
+  const table = page.getByTestId('product-table')
+
+  await page.getByTestId('product-columns').click()
+  await expect(page.getByTestId('product-columns-modal')).toHaveAttribute('visible', '')
+  await page.getByTestId('product-columns-price').locator('input').uncheck()
+  await expect(table.locator('th[data-key="price"]')).toHaveCount(0)
+  await expect(table).not.toContainText('价格')
+  await page.getByTestId('product-columns-close').click()
+  expect(await page.evaluate(() => localStorage.getItem('oas-admin.products.columns'))).toBe(
+    JSON.stringify(['name', 'category', 'stock', 'status', 'action']),
+  )
+
+  await page.reload()
+  await openProductsTable(page)
+  await expect(page.getByTestId('product-table').locator('th[data-key="price"]')).toHaveCount(0)
+  expect(errors).toEqual([])
+})

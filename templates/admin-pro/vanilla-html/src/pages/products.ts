@@ -5,11 +5,20 @@ import { listCategories } from '../data/categories'
 import {
   createProduct,
   listProducts,
+  removeProduct,
   stockLevel,
   toggleProductStatus,
   updateProduct,
 } from '../data/products'
 import type { ProductRow } from '../data/products'
+import { session } from '../store/session'
+import {
+  PRODUCT_COLUMN_KEYS,
+  PRODUCT_COLUMN_MANDATORY,
+  readProductColumns,
+  writeProductColumns,
+} from './product-columns'
+import type { ProductColumnKey } from './product-columns'
 import '../styles/pages/products.css'
 
 const VIEW_KEY = 'oas-admin.products-view'
@@ -49,6 +58,8 @@ interface PageState {
   formMode: FormMode
   density: Density
   pageSize: number
+  selected: number[]
+  columnKeys: ProductColumnKey[]
 }
 
 function readView(): ViewMode {
@@ -125,6 +136,10 @@ function cellAction(row: ProductRow): HTMLElement {
   return btn
 }
 
+function canMutate(): boolean {
+  return session.user?.role !== 'viewer'
+}
+
 const TABLE_COLUMNS = (): TableColumn[] => [
   { key: 'name', title: t('products.th.name') },
   { key: 'category', title: t('products.category'), render: (r) => cellTag(String(r.category)) },
@@ -195,6 +210,8 @@ export function render(el: HTMLElement): () => void {
     formMode: readFormMode(),
     density: readDensity(),
     pageSize: readPageSize(),
+    selected: [],
+    columnKeys: readProductColumns(),
   }
   let saving = false
 
@@ -204,6 +221,17 @@ export function render(el: HTMLElement): () => void {
       : state.formMode === 'drawer'
         ? `<oas-drawer data-testid="product-drawer" id="product-surface" title="${t('products.newProduct')}" placement="right" size="medium" no-footer>${FORM_BODY()}</oas-drawer>`
         : ''
+
+  const columnsMarkup = `
+    <oas-modal data-testid="product-columns-modal" id="product-columns-modal" title="${t('products.columns.title')}" no-footer>
+      <div class="product-columns-list" data-testid="product-columns-list"></div>
+      <div class="form-actions">
+        <oas-space justify="end">
+          <oas-button data-testid="product-columns-reset">${t('products.columns.reset')}</oas-button>
+          <oas-button data-testid="product-columns-close" type="primary">${t('common.save')}</oas-button>
+        </oas-space>
+      </div>
+    </oas-modal>`
 
   el.innerHTML = `
     <div class="page products-page">
@@ -218,16 +246,28 @@ export function render(el: HTMLElement): () => void {
         <oas-input data-testid="product-search" placeholder="${t('products.search')}" clearable prefix-icon="search"></oas-input>
         <oas-select data-testid="product-category" placeholder="${t('products.category')}" options='${JSON.stringify(FILTER_OPTIONS([]))}' value=""></oas-select>
         <oas-segmented data-testid="product-view" class="products-view-toggle" options='${JSON.stringify(VIEW_OPTIONS())}' value="${state.view}"></oas-segmented>
+        <oas-button data-testid="product-columns" class="products-columns-btn" icon="gear">${t('products.columns.title')}</oas-button>
+      </div>
+      <div class="product-batch-bar" data-testid="product-batch-bar" hidden>
+        <span class="product-batch-count" data-testid="product-batch-count"></span>
+        <oas-space class="product-batch-actions" justify="end">
+          <oas-button data-testid="product-batch-unlist" size="small">${t('products.batch.unlist')}</oas-button>
+          <oas-button data-testid="product-batch-list" size="small">${t('products.batch.list')}</oas-button>
+          <oas-popconfirm data-testid="product-batch-del-pop" id="product-batch-del-pop" title="">
+            <oas-button data-testid="product-batch-delete" size="small" type="danger">${t('products.batch.delete')}</oas-button>
+          </oas-popconfirm>
+        </oas-space>
       </div>
       <div class="product-grid" data-testid="product-grid"${state.view === 'table' ? ' hidden' : ''}></div>
       <div class="table-wrap products-table-wrap"${state.view === 'cards' ? ' hidden' : ''}>
-        <oas-table data-testid="product-table" row-key="id"></oas-table>
+        <oas-table data-testid="product-table" row-key="id" checkable stripe></oas-table>
         <div class="product-list-empty" data-testid="product-empty" hidden>
           <oas-empty description="${t('products.empty')}"></oas-empty>
         </div>
       </div>
       <oas-pagination data-testid="product-pager" hidden total="0" page-size="${state.pageSize}" current="1" show-total></oas-pagination>
       ${surfaceMarkup}
+      ${columnsMarkup}
     </div>`
 
   const grid = el.querySelector<HTMLElement>('[data-testid="product-grid"]')!
@@ -239,12 +279,55 @@ export function render(el: HTMLElement): () => void {
   const pager = el.querySelector<HTMLElement>('[data-testid="product-pager"]')!
   const empty = el.querySelector<HTMLElement>('[data-testid="product-empty"]')!
   const createBtn = el.querySelector<HTMLElement>('[data-testid="product-create"]')!
+  const batchBar = el.querySelector<HTMLElement>('[data-testid="product-batch-bar"]')!
+  const batchCount = el.querySelector<HTMLElement>('[data-testid="product-batch-count"]')!
+  const batchDelPop = el.querySelector<HTMLElement>('[data-testid="product-batch-del-pop"]')!
+  const columnsBtn = el.querySelector<HTMLElement>('[data-testid="product-columns"]')!
+  const columnsModal = el.querySelector<HTMLElement>('[data-testid="product-columns-modal"]')!
   const surface = el.querySelector<HTMLElement>('#product-surface')
   const form = el.querySelector<HTMLElement>('#product-form')
   const datePicker = el.querySelector<HTMLElement>('[data-testid="pf-date"]')
   const upload = el.querySelector<HTMLElement>('[data-testid="pf-cover"]')
 
-  if (table) table.columns = TABLE_COLUMNS()
+  function renderColumns(): void {
+    const visible = new Set(state.columnKeys)
+    table.columns = TABLE_COLUMNS().filter((c) => visible.has(c.key as ProductColumnKey))
+  }
+
+  function updateBatchBar(): void {
+    const n = state.selected.length
+    batchCount.textContent = n > 0 ? t('products.batch.selected', { count: n }) : ''
+    batchDelPop.setAttribute('title', t('products.batch.confirmDelete', { count: n }))
+    batchBar.hidden = state.view !== 'table' || n === 0
+    const enabled = canMutate() && n > 0
+    for (const key of ['product-batch-list', 'product-batch-unlist', 'product-batch-delete']) {
+      const btn = el.querySelector<HTMLElement>(`[data-testid="${key}"]`)!
+      if (enabled) btn.removeAttribute('disabled')
+      else btn.setAttribute('disabled', '')
+    }
+  }
+
+  function clearSelection(): void {
+    state.selected = []
+    table.removeAttribute('selected')
+    updateBatchBar()
+  }
+
+  function renderColumnList(): void {
+    const list = el.querySelector<HTMLElement>('[data-testid="product-columns-list"]')!
+    list.innerHTML = PRODUCT_COLUMN_KEYS.map((key) => {
+      const title = key === 'category' ? t('products.category') : t(`products.th.${key}`)
+      const mandatory = PRODUCT_COLUMN_MANDATORY.includes(key)
+      const checked = mandatory || state.columnKeys.includes(key)
+      return `<label class="product-column-check">
+        <oas-checkbox data-testid="product-columns-${key}" value="${key}"${checked ? ' checked' : ''}${mandatory ? ' disabled' : ''}>${title}</oas-checkbox>
+      </label>`
+    }).join('')
+  }
+
+  renderColumns()
+  renderColumnList()
+  updateBatchBar()
 
   function filtered(): ProductRow[] {
     const kw = state.keyword.trim().toLowerCase()
@@ -382,6 +465,81 @@ export function render(el: HTMLElement): () => void {
 
   createBtn.addEventListener('click', () => openForm(null))
 
+  table.addEventListener('oas-check', (e) => {
+    const keys = (e as CustomEvent<{ keys: string[] }>).detail.keys
+    state.selected = keys.map(Number).filter((n) => Number.isFinite(n))
+    updateBatchBar()
+  })
+
+  async function batchStatus(target: 'on' | 'off'): Promise<void> {
+    if (!canMutate()) {
+      message.error(t('common.noPerm'))
+      return
+    }
+    let changed = 0
+    for (const id of state.selected) {
+      const row = state.rows.find((r) => r.id === id)
+      if (!row || row.status === target) continue
+      if (await toggleProductStatus(id)) changed++
+    }
+    clearSelection()
+    message.success(t('products.batch.statusDone', { count: changed }))
+    void refresh()
+  }
+
+  el.querySelector<HTMLElement>('[data-testid="product-batch-list"]')!.addEventListener(
+    'click',
+    () => void batchStatus('on'),
+  )
+  el.querySelector<HTMLElement>('[data-testid="product-batch-unlist"]')!.addEventListener(
+    'click',
+    () => void batchStatus('off'),
+  )
+  batchDelPop.addEventListener('oas-ok', async () => {
+    if (!canMutate()) {
+      message.error(t('common.noPerm'))
+      return
+    }
+    let removed = 0
+    for (const id of state.selected) {
+      if (await removeProduct(id)) removed++
+    }
+    clearSelection()
+    message.success(t('products.batch.deleted', { count: removed }))
+    void refresh()
+  })
+
+  columnsBtn.addEventListener('click', () => {
+    renderColumnList()
+    columnsModal.setAttribute('visible', '')
+  })
+  el.querySelector<HTMLElement>('[data-testid="product-columns-close"]')!.addEventListener(
+    'click',
+    () => columnsModal.removeAttribute('visible'),
+  )
+  el.querySelector<HTMLElement>('[data-testid="product-columns-reset"]')!.addEventListener(
+    'click',
+    () => {
+      state.columnKeys = [...PRODUCT_COLUMN_KEYS]
+      writeProductColumns(state.columnKeys)
+      renderColumnList()
+      renderColumns()
+    },
+  )
+  columnsModal.addEventListener('oas-change', (e) => {
+    const detail = (e as CustomEvent<{ checked: boolean; value: string }>).detail
+    if (!detail) return
+    const key = detail.value as ProductColumnKey
+    if (!PRODUCT_COLUMN_KEYS.includes(key) || PRODUCT_COLUMN_MANDATORY.includes(key)) return
+    if (detail.checked) {
+      if (!state.columnKeys.includes(key)) state.columnKeys.push(key)
+    } else {
+      state.columnKeys = state.columnKeys.filter((k) => k !== key)
+    }
+    writeProductColumns(state.columnKeys)
+    renderColumns()
+  })
+
   viewSeg.addEventListener('oas-change', (e) => {
     const v = (e as CustomEvent<{ value: string }>).detail.value as ViewMode
     if (v === state.view) return
@@ -391,6 +549,7 @@ export function render(el: HTMLElement): () => void {
     grid.hidden = v !== 'cards'
     tableWrap.hidden = v !== 'table'
     pager.hidden = v !== 'table'
+    updateBatchBar()
     renderList()
   })
 
