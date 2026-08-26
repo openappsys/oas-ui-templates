@@ -381,31 +381,6 @@ oas-sider[collapsed] {
   outline: none;
   box-shadow: var(--oas-focus-ring);
 }
-.tabs-close-all {
-  appearance: none;
-  align-self: center;
-  flex-shrink: 0;
-  border: none;
-  background: none;
-  padding: var(--oas-space-1) var(--oas-space-2);
-  border-radius: var(--oas-radius-sm);
-  font: inherit;
-  font-size: var(--oas-font-size-xs);
-  color: var(--oas-color-text-secondary);
-  cursor: pointer;
-  white-space: nowrap;
-}
-.tabs-close-all:hover {
-  color: var(--oas-color-primary);
-  background: var(--oas-color-bg-hover);
-}
-.tabs-close-all:focus-visible {
-  outline: none;
-  box-shadow: var(--oas-focus-ring);
-}
-.tabs-close-all[hidden] {
-  display: none;
-}
 .crumbs-bar {
   flex-shrink: 0;
   height: 40px;

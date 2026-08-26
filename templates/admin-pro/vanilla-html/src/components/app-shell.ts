@@ -2,7 +2,7 @@ import { message } from '@oas-ui/ui/feedback/message'
 import { listNotifications, markAllRead, markRead, unreadCount } from '../data/notifications'
 import { matchRoute, parseHash, resolve } from '../router/router'
 import { routes, type RouteGroup } from '../router/routes'
-import { HOME_PATH, closeAll, closeKeys, closeTab, visit } from '../router/tabs'
+import { HOME_PATH, closeKeys, closeTab, visit } from '../router/tabs'
 import type { TabsView } from '../router/tabs'
 import { session } from '../store/session'
 import { currentLocale, onLocaleChange, setLocale, t } from '../i18n'
@@ -178,7 +178,6 @@ export function mountApp(root: HTMLElement): void {
       <div slot="content" class="content-col">
         <div class="tabs-bar">
           <oas-tabs id="page-tabs" data-testid="page-tabs" type="card" hide-content context-menu></oas-tabs>
-          <button id="page-tabs-close-all" class="tabs-close-all" type="button" hidden>${t('tabs.closeAll')}</button>
         </div>
         <div class="crumbs-bar"><oas-breadcrumb id="crumbs"></oas-breadcrumb></div>
         <main id="view"></main>
@@ -212,8 +211,7 @@ export function mountApp(root: HTMLElement): void {
   const notifList = root.querySelector<HTMLElement>('#notif-list')!
   const notifReadall = root.querySelector<HTMLButtonElement>('#notif-readall')!
   const pageTabs = root.querySelector<HTMLElement>('#page-tabs')!
-  const closeAllBtn = root.querySelector<HTMLButtonElement>('#page-tabs-close-all')!
-
+  
   navToggle.addEventListener('click', () => {
     if (sidebar.hasAttribute('drawer-open')) (sidebar as any).closeDrawer()
     else (sidebar as any).openDrawer()
@@ -413,8 +411,6 @@ export function mountApp(root: HTMLElement): void {
       pageTabs.innerHTML = html
     }
     pageTabs.setAttribute('active', tabsView.active ?? '')
-    closeAllBtn.textContent = t('tabs.closeAll')
-    closeAllBtn.hidden = tabsView.keys.length <= 1
   }
 
   function syncTabs(): void {
@@ -491,13 +487,6 @@ export function mountApp(root: HTMLElement): void {
     },
     true,
   )
-
-  closeAllBtn.addEventListener('click', () => {
-    const res = closeAll(tabsView)
-    tabsView = res.view
-    renderTabs()
-    if (res.navigateTo) location.hash = res.navigateTo
-  })
 
   window.addEventListener('hashchange', syncTabs)
   syncTabs()
