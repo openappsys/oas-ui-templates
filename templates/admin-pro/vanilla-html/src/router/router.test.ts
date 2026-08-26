@@ -36,7 +36,7 @@ describe('routes 分组约束', () => {
   it('现有可见路由均分配分组', () => {
     const visible = routes.filter((r) => !r.meta.hidden)
     for (const r of visible) {
-      expect(['nav.output', 'nav.business', 'nav.system']).toContain(r.meta.group)
+      expect(['nav.output', 'nav.business', 'nav.system', 'nav.demo']).toContain(r.meta.group)
     }
     expect(matchRoute('/dashboard')?.meta.group).toBe('nav.output')
     expect(matchRoute('/orders')?.meta.group).toBe('nav.business')

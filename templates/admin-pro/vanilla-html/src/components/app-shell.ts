@@ -5,11 +5,12 @@ import { routes, type RouteGroup } from '../router/routes'
 import { session } from '../store/session'
 import { currentLocale, onLocaleChange, setLocale, t } from '../i18n'
 
-const GROUP_ORDER: RouteGroup[] = ['nav.output', 'nav.business', 'nav.system']
+const GROUP_ORDER: RouteGroup[] = ['nav.output', 'nav.business', 'nav.system', 'nav.demo']
 const GROUP_KEYS: Record<RouteGroup, string> = {
   'nav.output': 'nav.group.overview',
   'nav.business': 'nav.group.business',
   'nav.system': 'nav.group.system',
+  'nav.demo': 'nav.group.demo',
 }
 
 function groupLabel(group: RouteGroup | undefined): string {

@@ -1,4 +1,4 @@
-export type RouteGroup = 'nav.output' | 'nav.business' | 'nav.system'
+export type RouteGroup = 'nav.output' | 'nav.business' | 'nav.system' | 'nav.demo'
 
 export interface RouteMeta {
   titleKey: string
@@ -109,17 +109,22 @@ export const routes: Route[] = [
   },
   {
     path: '/forbidden',
-    meta: { titleKey: 'nav.forbidden', icon: 'ban', hidden: true },
+    meta: { titleKey: 'nav.forbidden', icon: 'error', group: 'nav.demo' },
     load: () => import('../pages/forbidden'),
   },
   {
     path: '/not-found',
-    meta: { titleKey: 'nav.notFound', icon: 'search', hidden: true },
+    meta: { titleKey: 'nav.notFound', icon: 'search', group: 'nav.demo' },
     load: () => import('../pages/not-found'),
   },
   {
+    path: '/500',
+    meta: { titleKey: 'nav.serverError', icon: 'warning', group: 'nav.demo' },
+    load: () => import('../pages/server-error'),
+  },
+  {
     path: '/basic-form',
-    meta: { titleKey: 'nav.basicForm', icon: 'plus', group: 'nav.business' },
+    meta: { titleKey: 'nav.basicForm', icon: 'plus', group: 'nav.demo' },
     load: () => import('../pages/basic-form'),
   },
 ]
