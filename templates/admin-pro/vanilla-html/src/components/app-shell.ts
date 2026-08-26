@@ -50,7 +50,7 @@ const LANG_ITEMS = '[{"label":"简体中文","value":"zh-CN"},{"label":"English"
 const LOGO = `
   <span class="oas-logo">
     <span class="oas-logo-badge">OAS</span>
-    <span class="oas-logo-word">OAS Admin</span>
+    <span class="oas-logo-word">OAS Admin Pro</span>
   </span>`
 
 const EXPAND_ICON = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 5V3.5A1.5 1.5 0 0 1 3.5 2H5"/><path d="M11 2h1.5A1.5 1.5 0 0 1 14 3.5V5"/><path d="M14 11v1.5a1.5 1.5 0 0 1-1.5 1.5H11"/><path d="M5 14H3.5A1.5 1.5 0 0 1 2 12.5V11"/></svg>`

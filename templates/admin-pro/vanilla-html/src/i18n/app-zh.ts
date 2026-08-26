@@ -1,6 +1,6 @@
 export default {
-  'app.fullname': 'OAS Admin',
-  'app.footer': '© 2026 OAS Admin · Web Components 驱动 · 零框架运行时',
+  'app.fullname': 'OAS Admin Pro',
+  'app.footer': '© 2026 OAS Admin Pro · Web Components 驱动 · 零框架运行时',
   'nav.root': '应用',
   'nav.dashboard': '仪表盘',
   'nav.group.overview': '总览',

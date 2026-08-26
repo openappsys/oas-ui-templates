@@ -18,7 +18,7 @@ function switchStyle(next: LoginStyle): void {
 const LOGO_LIGHT = `
   <span class="oas-logo oas-logo-light">
     <span class="oas-logo-badge">OAS</span>
-    <span class="oas-logo-word">OAS Admin</span>
+    <span class="oas-logo-word">OAS Admin Pro</span>
   </span>`
 
 function formBlock(): string {

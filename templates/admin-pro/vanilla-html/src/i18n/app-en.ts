@@ -1,6 +1,6 @@
 export default {
-  'app.fullname': 'OAS Admin',
-  'app.footer': '© 2026 OAS Admin · Web Components · zero-framework runtime',
+  'app.fullname': 'OAS Admin Pro',
+  'app.footer': '© 2026 OAS Admin Pro · Web Components · zero-framework runtime',
   'nav.root': 'App',
   'nav.dashboard': 'Dashboard',
   'nav.group.overview': 'Overview',
