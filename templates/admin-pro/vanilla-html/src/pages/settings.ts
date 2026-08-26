@@ -116,8 +116,6 @@ export function render(el: HTMLElement): () => void {
   const general = panel('general')
   const notification = panel('notification')
   const appearance = panel('appearance')
-  notification.node.hidden = true
-  appearance.node.hidden = true
 
   el.innerHTML = `
     <div class="page settings-page">
@@ -133,13 +131,21 @@ export function render(el: HTMLElement): () => void {
 
   const card = el.querySelector<HTMLElement>('.settings-card')!
   card.appendChild(tabs)
-  card.appendChild(general.node)
-  card.appendChild(notification.node)
-  card.appendChild(appearance.node)
-  tabs.innerHTML = TABS()
-    .map((t) => `<oas-tab-panel label="${t.label}" value="${t.value}"></oas-tab-panel>`)
-    .join('')
+  // 标准 oas-tabs 结构：内容作为 oas-tab-panel 子元素（slot 投射），oas-tabs 自动管理 tab 头部 + 面板显隐 + 位置（left/right）
+  const defs = [
+    { value: 'general', node: general.node, titleKey: 'settings.tab.general' },
+    { value: 'notification', node: notification.node, titleKey: 'settings.tab.notification' },
+    { value: 'appearance', node: appearance.node, titleKey: 'settings.tab.appearance' },
+  ]
+  for (const d of defs) {
+    const tabPanel = document.createElement('oas-tab-panel')
+    tabPanel.setAttribute('label', t(d.titleKey))
+    tabPanel.setAttribute('value', d.value)
+    tabPanel.appendChild(d.node)
+    tabs.appendChild(tabPanel)
+  }
   tabs.setAttribute('active', 'general')
+  setTabsLayout(readTabLayout())
 
   const tabsLayout = el.querySelector<HTMLElement>('#settings-tabs-layout')!
   tabsLayout.addEventListener('oas-change', (e) => {
@@ -149,13 +155,6 @@ export function render(el: HTMLElement): () => void {
     setTabsLayout(v)
     message.success(t('common.saved'))
   })
-
-  function switchPanel(value: string): void {
-    ;[general, notification, appearance].forEach((p) => {
-      p.node.hidden = p.node.dataset.panel !== value
-    })
-    tabs.setAttribute('active', value)
-  }
 
   general.set(`
     <div class="setting-group">
@@ -352,12 +351,7 @@ export function render(el: HTMLElement): () => void {
     else document.documentElement.style.removeProperty('--oas-color-primary')
   }
 
-  tabs.addEventListener('oas-change', (e) => {
-    switchPanel((e as CustomEvent<{ value: string }>).detail.value)
-  })
-
   document.addEventListener('themechange', onThemeChange)
-  switchPanel('general')
 
   return () => {
     document.removeEventListener('themechange', onThemeChange)
