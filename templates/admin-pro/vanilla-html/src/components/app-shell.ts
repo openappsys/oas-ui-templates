@@ -155,7 +155,7 @@ export function mountApp(root: HTMLElement): void {
           <oas-icon size="18" class="fs-compress">${COMPRESS_ICON}</oas-icon>
         </button>
         <button id="theme-toggle" class="theme-dot" type="button" title="${t('header.theme')}" aria-label="${t('header.theme')}"></button>
-        <oas-dropdown id="lang-menu" placement="bottom" value="${currentLocale()}" items='${LANG_ITEMS}'>
+        <oas-dropdown id="lang-menu" placement="bottom" arrow-point-at-center value="${currentLocale()}" items='${LANG_ITEMS}'>
           <oas-button id="lang-toggle" class="icon-btn" type="text" title="${t('cmd.locale')}" aria-label="${t('cmd.locale')}">
             <oas-icon size="18">${GLOBE_ICON}</oas-icon>
           </oas-button>
@@ -165,7 +165,7 @@ export function mountApp(root: HTMLElement): void {
             <oas-icon size="18">${BELL_ICON}</oas-icon>
           </oas-button>
         </oas-badge>
-        <oas-dropdown id="user-menu" placement="bottom" items='${userMenuItems()}'>
+        <oas-dropdown id="user-menu" placement="bottom" arrow-point-at-center items='${userMenuItems()}'>
           <oas-avatar id="user-avatar" size="28"></oas-avatar>
         </oas-dropdown>
       </header>
