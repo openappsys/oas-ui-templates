@@ -46,6 +46,16 @@ export function closeTab(prev: TabsView, closed: string): TabsCloseResult {
   return { view: { keys, active: next }, navigateTo: next }
 }
 
+/** 批量关闭：keys 保留 HOME_PATH（不可关），active 被关则导航到最靠近的存活项 */
+export function closeKeys(prev: TabsView, closed: string[]): TabsCloseResult {
+  const set = new Set(closed.filter((k) => k !== HOME_PATH))
+  if (set.size === 0) return { view: prev, navigateTo: null }
+  const keys = prev.keys.filter((k) => !set.has(k))
+  if (!set.has(prev.active ?? '')) return { view: { keys, active: prev.active }, navigateTo: null }
+  const next = prev.keys.find((k) => k !== HOME_PATH && !set.has(k)) ?? HOME_PATH
+  return { view: { keys, active: next }, navigateTo: next }
+}
+
 export function closeAll(prev: TabsView): TabsCloseResult {
   const navigateTo = prev.active === HOME_PATH ? null : HOME_PATH
   return { view: { keys: [HOME_PATH], active: HOME_PATH }, navigateTo }

@@ -2,7 +2,7 @@ import { message } from '@oas-ui/ui/feedback/message'
 import { listNotifications, markAllRead, markRead, unreadCount } from '../data/notifications'
 import { matchRoute, parseHash, resolve } from '../router/router'
 import { routes, type RouteGroup } from '../router/routes'
-import { HOME_PATH, closeAll, closeTab, visit } from '../router/tabs'
+import { HOME_PATH, closeAll, closeKeys, closeTab, visit } from '../router/tabs'
 import type { TabsView } from '../router/tabs'
 import { session } from '../store/session'
 import { currentLocale, onLocaleChange, setLocale, t } from '../i18n'
@@ -176,7 +176,7 @@ export function mountApp(root: HTMLElement): void {
       </oas-sider>
       <div slot="content" class="content-col">
         <div class="tabs-bar">
-          <oas-tabs id="page-tabs" data-testid="page-tabs" type="card" hide-content></oas-tabs>
+          <oas-tabs id="page-tabs" data-testid="page-tabs" type="card" hide-content context-menu></oas-tabs>
           <button id="page-tabs-close-all" class="tabs-close-all" type="button" hidden>${t('tabs.closeAll')}</button>
         </div>
         <div class="crumbs-bar"><oas-breadcrumb id="crumbs"></oas-breadcrumb></div>
@@ -376,6 +376,8 @@ export function mountApp(root: HTMLElement): void {
   syncNav()
 
   let tabsView: TabsView = { keys: [], active: null }
+  const closeBatch = new Set<string>()
+  let closeBatchFlush: ReturnType<typeof queueMicrotask> | undefined
 
   function tabPanelHtml(key: string): string {
     const route = matchRoute(key)
@@ -420,6 +422,26 @@ export function mountApp(root: HTMLElement): void {
   pageTabs.addEventListener('oas-change', (e) => {
     const value = (e as CustomEvent<{ value: string }>).detail.value
     if (value && location.hash !== `#${value}`) location.hash = value
+  })
+
+  pageTabs.addEventListener('oas-close', (e) => {
+    const { key } = (e as CustomEvent<{ key: string }>).detail
+    if (!key) return
+    closeBatch.add(key)
+    if (closeBatchFlush !== undefined) return
+    closeBatchFlush = queueMicrotask(() => {
+      closeBatchFlush = undefined
+      const keys = [...closeBatch]
+      closeBatch.clear()
+      const res = closeKeys(tabsView, keys)
+      tabsView = res.view
+      renderTabs()
+      if (res.navigateTo) location.hash = res.navigateTo
+    })
+  })
+
+  pageTabs.addEventListener('oas-add', () => {
+    location.hash = routes[0].path
   })
 
   pageTabs.addEventListener(

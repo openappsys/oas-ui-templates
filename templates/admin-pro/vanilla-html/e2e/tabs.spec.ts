@@ -83,3 +83,37 @@ test('admin 仪表盘页签固定不可关闭', async ({ page }) => {
   await expect(tab(page, '仪表盘').locator('[data-ptab-close]')).toHaveCount(0)
   expect(errors).toEqual([])
 })
+
+test('admin 右键页签弹批量关闭菜单：关闭其他', async ({ page }) => {
+  const errors = await noConsoleErrors(page)
+  await login(page)
+  await page.locator('#nav').getByText('订单管理').click()
+  await page.locator('#nav').getByText('用户管理').click()
+  await expect(tabs(page).locator('[role="tab"]')).toHaveCount(3)
+
+  await tab(page, '用户管理').click({ button: 'right' })
+  const menu = tabs(page).locator('[part="context-menu"]')
+  await expect(menu).toBeVisible()
+  await menu.getByText('关闭其他').click()
+
+  await expect(tabs(page).locator('[role="tab"]')).toHaveCount(2)
+  await expect(tabs(page)).toHaveAttribute('active', '/users')
+  expect(errors).toEqual([])
+})
+
+test('admin 右键页签：关闭全部清空并回首页', async ({ page }) => {
+  const errors = await noConsoleErrors(page)
+  await login(page)
+  await page.locator('#nav').getByText('订单管理').click()
+  await page.locator('#nav').getByText('用户管理').click()
+
+  await tab(page, '用户管理').click({ button: 'right' })
+  const menu = tabs(page).locator('[part="context-menu"]')
+  await expect(menu).toBeVisible()
+  await menu.getByText('关闭全部').click()
+
+  await expect(tabs(page).locator('[role="tab"]')).toHaveCount(1)
+  await expect(page).toHaveURL(/#\/dashboard/)
+  await expect(tabs(page)).toHaveAttribute('active', '/dashboard')
+  expect(errors).toEqual([])
+})

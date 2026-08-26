@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { HOME_PATH, closeAll, closeTab, tabKeyOf, visit } from './tabs'
+import { HOME_PATH, closeAll, closeKeys, closeTab, tabKeyOf, visit } from './tabs'
 import type { TabsView } from './tabs'
 import { matchRoute } from './routes'
 
@@ -110,5 +110,41 @@ describe('closeAll', () => {
   it('已在首页时无导航', () => {
     const prev = view([home, '/orders'], home)
     expect(closeAll(prev)).toEqual({ view: view([home], home), navigateTo: null })
+  })
+})
+
+describe('closeKeys', () => {
+  it('空集合为无操作', () => {
+    const prev = view([home, '/orders'], '/orders')
+    expect(closeKeys(prev, [])).toEqual({ view: prev, navigateTo: null })
+  })
+
+  it('只含首页时为无操作（首页不可关）', () => {
+    const prev = view([home, '/orders'], '/orders')
+    expect(closeKeys(prev, [home])).toEqual({ view: prev, navigateTo: null })
+  })
+
+  it('关闭非当前多个页签不导航', () => {
+    const prev = view([home, '/orders', '/users', '/profile'], '/users')
+    expect(closeKeys(prev, ['/orders', '/profile'])).toEqual({
+      view: view([home, '/users'], '/users'),
+      navigateTo: null,
+    })
+  })
+
+  it('关闭含当前页签的多项，导航到存活项', () => {
+    const prev = view([home, '/orders', '/users', '/profile'], '/users')
+    expect(closeKeys(prev, ['/orders', '/users'])).toEqual({
+      view: view([home, '/profile'], '/profile'),
+      navigateTo: '/profile',
+    })
+  })
+
+  it('关闭所有非首页页签回到首页', () => {
+    const prev = view([home, '/orders', '/users'], '/users')
+    expect(closeKeys(prev, ['/orders', '/users'])).toEqual({
+      view: view([home], home),
+      navigateTo: home,
+    })
   })
 })
