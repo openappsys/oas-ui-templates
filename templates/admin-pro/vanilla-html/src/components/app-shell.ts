@@ -211,7 +211,7 @@ export function mountApp(root: HTMLElement): void {
   const notifList = root.querySelector<HTMLElement>('#notif-list')!
   const notifReadall = root.querySelector<HTMLButtonElement>('#notif-readall')!
   const pageTabs = root.querySelector<HTMLElement>('#page-tabs')!
-  
+
   navToggle.addEventListener('click', () => {
     if (sidebar.hasAttribute('drawer-open')) (sidebar as any).closeDrawer()
     else (sidebar as any).openDrawer()

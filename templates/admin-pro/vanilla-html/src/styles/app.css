@@ -905,8 +905,8 @@ html[data-theme="dark"] oas-button[type="primary"]::part(button) {
 }
 
 oas-tabs {
-  --oas-color-danger: var(--oas-color-bg-hover);
-  --oas-color-text-on-danger: var(--oas-color-text-secondary);
+  --oas-tabs-badge-bg: var(--oas-color-bg-hover);
+  --oas-tabs-badge-color: var(--oas-color-text-secondary);
 }
 
 .page-head {
