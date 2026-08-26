@@ -216,7 +216,7 @@ export const routes: Route[] = [
     path: '/basic-form',
     meta: {
       titleKey: 'nav.basicForm',
-      icon: 'plus',
+      icon: 'copy',
       iconColor: 'var(--oas-color-success)',
       group: 'nav.demo',
     },

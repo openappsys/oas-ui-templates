@@ -51,18 +51,18 @@ test('设置中心：主题色按明暗主题独立存储并联动生效', async
     el.setAttribute('value', '#7c3aed')
     el.dispatchEvent(new CustomEvent('oas-change', { detail: { value: '#7c3aed' }, bubbles: true }))
   })
-  expect(
-    await page.evaluate(() => localStorage.getItem('oas-admin.settings.theme.light')),
-  ).toBe('#7c3aed')
+  expect(await page.evaluate(() => localStorage.getItem('oas-admin.settings.theme.light'))).toBe(
+    '#7c3aed',
+  )
 
   // 切到深色：dark 未设置，light 存储保留（独立存储，互不覆盖）
   await page.locator('html').evaluate(() => {
     document.documentElement.dataset.theme = 'dark'
     document.dispatchEvent(new Event('themechange'))
   })
-  expect(
-    await page.evaluate(() => localStorage.getItem('oas-admin.settings.theme.light')),
-  ).toBe('#7c3aed')
+  expect(await page.evaluate(() => localStorage.getItem('oas-admin.settings.theme.light'))).toBe(
+    '#7c3aed',
+  )
   expect(
     await page.evaluate(() => localStorage.getItem('oas-admin.settings.theme.dark')),
   ).toBeNull()
