@@ -2,7 +2,7 @@
 
 基于 [oas-ui](https://oas-ui.dev) Web Components 的后台管理模版：TypeScript + Vite，零框架运行时。
 
-功能：双登录形态（分屏品牌墙 / 玻璃拟态，默认 `?style=split`，可用 `?style=glass` 切换）· 登录（角色：管理员 / 只读访客）· hash 路由权限守卫 · 路由切换顶部全局进度条 · 仪表盘（统计卡 + oas-chart 图表 + 最近订单 + 热销商品 Top5）· Command 面板（Ctrl+K 新页直达）· 通知中心 · 全屏 · 用户管理（搜索 / 筛选 / 分页 / 弹窗 CRUD / 空态 / popconfirm 删除确认）· 订单管理（tabs 筛选 / 状态流转抽屉 / CSV 导出）· 商品管理（卡片网格 / 上下架开关 / 新建抽屉表单）· 分步表单向导 · 订单详情 · 结果页 · 403/404/500 结果页 · 基础表单页 · 个人中心（外观三主题卡）· i18n 中英切换（壳层即时生效）· fetch 请求层（拦截器 / 超时 / 本地 `/api/*` mock）· 侧栏分组（总览 / 业务 / 系统 / 示例）· 侧栏图标主题色着色（`nav-*` 彩色 SVG）· light/dark/system 主题 · 移动端抽屉侧栏 · demo 数据 localStorage 持久化（刷新不丢，清 storage 即重置）。
+功能：双登录形态（分屏品牌墙 / 玻璃拟态，默认 `?style=split`，可用 `?style=glass` 切换）· 登录（角色：管理员 / 只读访客）· hash 路由权限守卫 · 路由切换顶部全局进度条 · 仪表盘（统计卡 + oas-chart 图表 + 最近订单 + 热销商品 Top5）· 多页签导航（顶栏多开页面 + 右键批量关闭菜单）· Command 面板（Ctrl+K 新页直达）· 通知中心 · 全屏 · 用户管理（搜索 / 筛选 / 分页 / 弹窗 CRUD / 空态 / popconfirm 删除确认）· 订单管理（tabs 筛选 / 状态流转抽屉 / CSV 导出）· 商品管理（卡片网格 / 上下架开关 / 新建抽屉表单）· 分步表单向导 · 订单详情 · 结果页 · 403/404/500 结果页 · 基础表单页 · 个人中心（外观三主题卡）· i18n 中英切换（壳层即时生效）· fetch 请求层（拦截器 / 超时 / 本地 `/api/*` mock）· 侧栏分组（总览 / 业务 / 系统 / 示例）· 侧栏图标主题色着色（`nav-*` 彩色 SVG）· light/dark/system 主题 · 移动端抽屉侧栏 · demo 数据 localStorage 持久化（刷新不丢，清 storage 即重置）。
 
 ## 使用
 
@@ -30,6 +30,7 @@ npx degit <本仓库地址>/templates/admin-pro/vanilla-html my-admin
 ## 结构
 
 - `src/router/`：hash 路由 + 权限守卫（纯函数，可单测）
+- `src/router/tabs.ts`：多页签状态纯函数（`visit`/`closeTab`/`closeKeys`/`closeAll`/`tabKeyOf`，隐藏路由归属父级、首页固定不可关）
 - `src/store/session.ts`：模拟会话（localStorage 持久化）；接真后端时替换此文件
 - `src/i18n/`：应用词条（zh/en）与 locale 切换/订阅；词条合并到 @oas-ui/i18n 内置词条之上
 - `src/api/`：fetch 请求层（拦截器 / 超时 / query）+ auth 信封解析 + 本地 `/api/*` mock
@@ -54,12 +55,19 @@ npx degit <本仓库地址>/templates/admin-pro/vanilla-html my-admin
 - `src/api/request.ts`：`createHttp` 工厂 — baseURL / 超时 / 拦截器（onRequest / onResponse / onError）/ query 参数拼装 / AbortSignal 合并
 - `src/api/http.ts`：`http` 单例（baseURL `/api`、8s 超时、注入 Authorization、网络错误 toast）；`enableFakeFetch()` 把 `/api/*` 请求降级到本地 mock
 - `src/api/auth.ts`：业务 API 示例 — 解析 `{ code, data, message }` 信封，`code !== 0` 抛错
-- 接真后端：去掉 main.ts 里的 `enableFakeFetch()`，把 `http` 的 baseURL 指向真实网关即可
+- 接真后端：见 [`docs/backend-integration.md`](docs/backend-integration.md)（关 fakeFetch / 换 baseURL / 替换 data 层）
 
 ## 页面
 
 - `/forbidden`、`/not-found`、`/500`：权限守卫 / 未知路由 / 加载失败落地页（`oas-result` 结果态 + 返回首页）
 - `/basic-form`：通用卡片表单（input / select / switch / date-picker / upload / textarea + 必填与格式校验）
+
+## 多页签
+
+- 顶栏下方页签栏（`<oas-tabs type="card" hide-content context-menu>`，`src/components/app-shell.ts`）：已访问页面各一页签，点击切换、关闭按钮、「关闭全部」；仪表盘固定底位不可关
+- 状态纯函数在 `src/router/tabs.ts`（`visit` 去重 + 自动补首页、`closeKeys` 批量关闭、`tabKeyOf` 隐藏路由归属父级）——纯函数可单测
+- **右键页签**：复用 oas-tabs 的 `context-menu` —— 新建 / 关闭 / 关闭其他 / 关闭左侧所有 / 关闭右侧所有 / 关闭全部（`oas-close` 批量派发经 `queueMicrotask` 攒批由 `closeKeys` 处理）；词条用 @oas-ui/i18n 内置 `tabs.ctxClose*` 系列
+- 隐藏路由（`meta.hidden`：明细/结果/编辑页）不新增独立页签，归到 `meta.parent`（如 `/order-detail` → `/orders`）
 
 ## 侧栏图标
 
