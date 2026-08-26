@@ -222,6 +222,16 @@ export const routes: Route[] = [
     },
     load: () => import('../pages/basic-form'),
   },
+  {
+    path: '/advanced-form',
+    meta: {
+      titleKey: 'nav.advancedForm',
+      icon: 'menu',
+      iconColor: 'var(--oas-tint-cyan)',
+      group: 'nav.demo',
+    },
+    load: () => import('../pages/advanced-form'),
+  },
 ]
 
 export function matchRoute(path: string): Route | undefined {
