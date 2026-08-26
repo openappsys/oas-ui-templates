@@ -84,6 +84,8 @@ test('设置中心：通用页切换表单呈现方式写入 localStorage', asyn
   expect(await page.evaluate(() => localStorage.getItem('oas-admin.settings.table-density'))).toBe(
     'compact',
   )
+  await page.getByTestId('font-size-group').getByText('特大').click()
+  expect(await page.evaluate(() => localStorage.getItem('oas-admin.settings.font-size'))).toBe('xl')
   expect(errors).toEqual([])
 })
 

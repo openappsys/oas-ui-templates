@@ -11,6 +11,9 @@ body {
   margin: 0;
   height: 100%;
 }
+html {
+  zoom: var(--app-font-scale, 1);
+}
 body {
   font-family:
     system-ui, -apple-system, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;

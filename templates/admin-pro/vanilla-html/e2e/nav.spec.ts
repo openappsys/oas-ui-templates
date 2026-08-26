@@ -33,6 +33,20 @@ test('admin 桌面侧栏折叠收窄到 64px，再展开恢复 200px', async ({ 
   await expect.poll(() => siderWidth(page)).toBe(200)
 })
 
+test('admin 折叠态菜单项 hover 显示 tooltip 提示（组件原生）', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await login(page)
+
+  await page.locator('#nav [part="toggle"]').click()
+  await expect(page.locator('oas-sider')).toHaveAttribute('collapsed', '')
+
+  const item = page.locator('#nav [part="item"]').first()
+  await item.hover()
+  const tip = page.locator('#nav oas-tooltip [part="tip"]').first()
+  await expect(tip).toBeVisible()
+  await expect(tip).toContainText('仪表盘')
+})
+
 test('admin 移动端抽屉开合：汉堡打开、遮罩关闭、Esc 关闭', async ({ page }) => {
   await page.setViewportSize({ width: 500, height: 800 })
   await login(page)

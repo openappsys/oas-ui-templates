@@ -54,6 +54,18 @@ test('admin 全链路：用户管理新建/删除', async ({ page }) => {
   expect(errors).toEqual([])
 })
 
+test('admin 操作列：用户行编辑按钮打开回填表单', async ({ page }) => {
+  const errors = await noConsoleErrors(page)
+  await login(page, '张伟', 'admin')
+  await page.locator('#nav').getByText('用户管理').click()
+  await expect(page.getByTestId('users-table')).toContainText('张伟')
+
+  await page.getByTestId('user-row-edit').first().click()
+  await expect(page.getByTestId('user-form-modal')).toHaveAttribute('visible', '')
+  await expect(page.getByTestId('field-name').locator('input')).toHaveValue('张伟')
+  expect(errors).toEqual([])
+})
+
 test('viewer 访问受限页显示 403', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page, '李四', 'viewer')

@@ -2,6 +2,7 @@ export const FORM_MODE_KEY = 'oas-admin.form-mode'
 export const DENSITY_KEY = 'oas-admin.settings.table-density'
 export const PAGE_SIZE_KEY = 'oas-admin.settings.page-size'
 export const RADIUS_KEY = 'oas-admin.settings.radius'
+export const FONT_SIZE_KEY = 'oas-admin.settings.font-size'
 export const THEME_PREFIX = 'oas-admin.settings.theme.'
 export const NOTIF_PREFIX = 'oas-admin.settings.notif.'
 export const DEFAULT_COLOR = '#0b6cff'
@@ -9,10 +10,24 @@ export const DEFAULT_RADIUS = 6
 
 export type FormMode = 'dialog' | 'drawer' | 'page'
 export type Density = 'compact' | 'default' | 'large'
+export type FontSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
+
+export const FONT_SIZE_OPTIONS: Array<{ value: FontSize; scale: number }> = [
+  { value: 'xs', scale: 0.875 },
+  { value: 'sm', scale: 0.9375 },
+  { value: 'md', scale: 1 },
+  { value: 'lg', scale: 1.0625 },
+  { value: 'xl', scale: 1.125 },
+]
 
 export function readFormMode(): FormMode {
   const v = localStorage.getItem(FORM_MODE_KEY)
   return v === 'dialog' || v === 'page' ? v : 'drawer'
+}
+
+export function readFontSize(): FontSize {
+  const v = localStorage.getItem(FONT_SIZE_KEY)
+  return v === 'xs' || v === 'sm' || v === 'lg' || v === 'xl' ? v : 'md'
 }
 
 export function readDensity(): Density {
@@ -58,6 +73,12 @@ export function applyDensity(): void {
   )
 }
 
+export function applyFontSize(): void {
+  const size = readFontSize()
+  const scale = FONT_SIZE_OPTIONS.find((o) => o.value === size)?.scale ?? 1
+  document.documentElement.style.setProperty('--app-font-scale', String(scale))
+}
+
 export function applySettings(): void {
   const theme = currentTheme()
   const color = localStorage.getItem(`${THEME_PREFIX}${theme}`)
@@ -65,4 +86,5 @@ export function applySettings(): void {
   const radius = localStorage.getItem(RADIUS_KEY)
   if (radius) document.documentElement.style.setProperty('--oas-radius-md', `${radius}px`)
   applyDensity()
+  applyFontSize()
 }

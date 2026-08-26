@@ -7,22 +7,38 @@ import {
   DEFAULT_COLOR,
   DEFAULT_RADIUS,
   DENSITY_KEY,
+  FONT_SIZE_KEY,
+  FONT_SIZE_OPTIONS,
   FORM_MODE_KEY,
   NOTIF_PREFIX,
   PAGE_SIZE_KEY,
   RADIUS_KEY,
   THEME_PREFIX,
   type Density,
+  type FontSize,
   type FormMode,
   applyDensity,
+  applyFontSize,
   currentTheme,
   readBool,
   readColor,
   readDensity,
+  readFontSize,
   readFormMode,
   readPageSize,
   readRadius,
 } from '../settings-init'
+
+const FONT_SIZE_MAP: Record<FontSize, string> = {
+  xs: 'settings.fontSize.xs',
+  sm: 'settings.fontSize.sm',
+  md: 'settings.fontSize.md',
+  lg: 'settings.fontSize.lg',
+  xl: 'settings.fontSize.xl',
+}
+
+const FONT_SIZE_ITEMS = (): Array<{ label: string; value: FontSize }> =>
+  FONT_SIZE_OPTIONS.map((o) => ({ label: t(FONT_SIZE_MAP[o.value]), value: o.value }))
 
 const TABS = (): Array<{ label: string; value: string }> => [
   { label: t('settings.tab.general'), value: 'general' },
@@ -142,6 +158,17 @@ export function render(el: HTMLElement): () => void {
       </div>
     </div>
     <div class="setting-group">
+      <div class="setting-group-title">${t('settings.general.fontSizeTitle')}</div>
+      <div class="radio-group inline" data-testid="font-size-group" id="font-size-group">
+        ${FONT_SIZE_ITEMS()
+          .map(
+            (o) =>
+              `<oas-radio name="fontSize" value="${o.value}"${readFontSize() === o.value ? ' checked' : ''}>${o.label}</oas-radio>`,
+          )
+          .join('')}
+      </div>
+    </div>
+    <div class="setting-group">
       <div class="setting-row">
         <div>
           <div class="setting-label">${t('settings.general.pageSizeLabel')}</div>
@@ -208,6 +235,7 @@ export function render(el: HTMLElement): () => void {
 
   const formModeGroup = general.node.querySelector<HTMLElement>('#form-mode-group')!
   const densityGroup = general.node.querySelector<HTMLElement>('#density-group')!
+  const fontSizeGroup = general.node.querySelector<HTMLElement>('#font-size-group')!
   const pageSize = general.node.querySelector<HTMLElement>('[data-testid="page-size"]')!
   const notifMatrix = notification.node.querySelector<HTMLElement>('#notif-matrix')!
   const colorPicker = appearance.node.querySelector<HTMLElement>('#appearance-color')!
@@ -231,6 +259,16 @@ export function render(el: HTMLElement): () => void {
     if (!v) return
     localStorage.setItem(DENSITY_KEY, v)
     applyDensity()
+    message.success(t('common.saved'))
+  })
+
+  fontSizeGroup.addEventListener('oas-change', (e) => {
+    const radio = e.composedPath()[0] as HTMLElement
+    if (!radio.hasAttribute('checked')) return
+    const v = radio.getAttribute('value') as FontSize
+    if (!v) return
+    localStorage.setItem(FONT_SIZE_KEY, v)
+    applyFontSize()
     message.success(t('common.saved'))
   })
 

@@ -1,4 +1,5 @@
 import { message } from '@oas-ui/ui/feedback/message'
+import type { OASTable, TableColumn } from '@oas-ui/ui/data/table'
 import { t } from '../i18n'
 import { createUser, listUsers, removeUser, updateUser } from '../data/users'
 import type { UserRow, UserRole, UserStatus } from '../data/users'
@@ -21,15 +22,38 @@ function statusLabel(status: UserStatus): string {
   return t(`users.status.${status}`)
 }
 
-const COLUMNS = () =>
-  JSON.stringify([
-    { key: 'id', title: 'ID', width: '60px' },
-    { key: 'name', title: t('users.name') },
-    { key: 'email', title: t('users.email') },
-    { key: 'role', title: t('users.role') },
-    { key: 'status', title: t('users.status') },
-    { key: 'created', title: t('users.created'), sortable: true },
-  ])
+function cellAction(row: UserRow): HTMLElement {
+  const edit = document.createElement('oas-button')
+  edit.className = 'user-row-edit'
+  edit.setAttribute('data-testid', 'user-row-edit')
+  edit.setAttribute('data-id', String(row.id))
+  edit.setAttribute('size', 'small')
+  edit.setAttribute('icon', 'edit')
+  edit.setAttribute('aria-label', t('common.edit'))
+  return edit
+}
+
+function fromPath(path: EventTarget[], selector: string): HTMLElement | null {
+  for (const item of path) {
+    if (item instanceof HTMLElement && item.matches(selector)) return item
+  }
+  return null
+}
+
+const COLUMNS = (): TableColumn[] => [
+  { key: 'id', title: 'ID', width: '60px' },
+  { key: 'name', title: t('users.name') },
+  { key: 'email', title: t('users.email') },
+  { key: 'role', title: t('users.role') },
+  { key: 'status', title: t('users.status') },
+  { key: 'created', title: t('users.created'), sortable: true },
+  {
+    key: 'action',
+    title: t('users.th.action'),
+    width: '80px',
+    render: (r) => cellAction(r as unknown as UserRow),
+  },
+]
 
 const RULES = () =>
   JSON.stringify({
@@ -111,7 +135,7 @@ export function render(el: HTMLElement): () => void {
           <oas-button id="users-refresh" icon="refresh" title="${t('common.refresh')}"></oas-button>
         </div>
         <div class="table-wrap" id="table-wrap">
-          <oas-table data-testid="users-table" row-key="id" columns='${COLUMNS()}' data="[]"></oas-table>
+          <oas-table data-testid="users-table" row-key="id" data="[]"></oas-table>
           <div class="empty-overlay" id="empty-overlay" hidden>
             <oas-empty description="${t('users.empty')}"></oas-empty>
             <oas-button id="clear-filters" type="primary">${t('common.clearFilter')}</oas-button>
@@ -166,7 +190,8 @@ export function render(el: HTMLElement): () => void {
       </oas-modal>
     </div>`
 
-  const table = el.querySelector<HTMLElement>('[data-testid="users-table"]')!
+  const table = el.querySelector<OASTable>('[data-testid="users-table"]')!
+  table.columns = COLUMNS()
   const pager = el.querySelector<HTMLElement>('[data-testid="users-pager"]')!
   const search = el.querySelector<HTMLElement>('[data-testid="user-search"]')!
   const roleFilter = el.querySelector<HTMLElement>('[data-testid="role-filter"]')!
@@ -337,6 +362,21 @@ export function render(el: HTMLElement): () => void {
     if (!canMutate()) return
     state.editingId = null
     fillForm(null)
+    openModal(formModal)
+  })
+
+  table.addEventListener('click', (e) => {
+    const btn = fromPath(e.composedPath(), '.user-row-edit')
+    if (!btn) return
+    const id = Number(btn.getAttribute('data-id'))
+    const row = state.rows.find((r) => r.id === id)
+    if (!row) return
+    if (!canMutate()) {
+      message.error(t('common.noPerm'))
+      return
+    }
+    state.editingId = id
+    fillForm(row)
     openModal(formModal)
   })
 
