@@ -54,6 +54,32 @@ test('admin 仪表盘热销 Top5 卡可见且首行销量最大', async ({ page 
   expect(errors).toEqual([])
 })
 
+test('admin 仪表盘 oas-chart 图表渲染（area 趋势 + donut 环形 + 图例）', async ({ page }) => {
+  const errors = await noConsoleErrors(page)
+  await login(page, '张伟', 'admin')
+  const trend = page.locator('#chart-trend')
+  await expect(trend.locator('svg .area-path')).toHaveCount(1)
+  await expect(trend.locator('svg .line-path')).toHaveCount(1)
+  await expect(trend.locator('svg .dot')).toHaveCount(7)
+  const donut = page.locator('#chart-orders')
+  await expect(donut.locator('svg .slice')).toHaveCount(4)
+  await expect(page.getByTestId('donut-legend').locator('.donut-legend-item')).toHaveCount(4)
+  await expect(page.getByTestId('donut-legend')).toContainText('1,926')
+  expect(errors).toEqual([])
+})
+
+test('admin 仪表盘趋势图 7/14/30 天切换更新数据点', async ({ page }) => {
+  const errors = await noConsoleErrors(page)
+  await login(page, '张伟', 'admin')
+  const trend = page.locator('#chart-trend')
+  await expect(trend.locator('svg .dot')).toHaveCount(7)
+  await page.locator('#trend-range').getByText('14日').click()
+  await expect(trend.locator('svg .dot')).toHaveCount(14)
+  await page.locator('#trend-range').getByText('30日').click()
+  await expect(trend.locator('svg .dot')).toHaveCount(30)
+  expect(errors).toEqual([])
+})
+
 test('admin Command 面板 Ctrl+K 输「订单」Enter 直达 /orders', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page, '张伟', 'admin')

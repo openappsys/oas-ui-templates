@@ -507,8 +507,51 @@ oas-sider[collapsed] {
 }
 
 .chart {
-  height: 280px;
   width: 100%;
+}
+
+.donut-legend {
+  margin-top: var(--oas-space-2);
+}
+
+.donut-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: var(--oas-space-1);
+  color: var(--oas-color-text-primary);
+  font-weight: 600;
+  margin-bottom: var(--oas-space-1);
+}
+
+.donut-total .mono {
+  font-size: var(--oas-font-size-lg);
+}
+
+.donut-legend-items {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--oas-space-1) var(--oas-space-4);
+  font-size: var(--oas-font-size-sm);
+  color: var(--oas-color-text-secondary);
+}
+
+.donut-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--oas-space-1);
+}
+
+.donut-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--dot);
+}
+
+.donut-legend-pct {
+  color: var(--oas-color-text-primary);
 }
 
 .table-toolbar {

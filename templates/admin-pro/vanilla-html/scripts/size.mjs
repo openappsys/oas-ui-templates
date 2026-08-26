@@ -4,7 +4,7 @@ import { gzipSync } from 'node:zlib'
 
 const BUDGETS = {
   entry: 152600,
-  dashboard: 256000,
+  dashboard: 20480,
   total: 410700,
 }
 

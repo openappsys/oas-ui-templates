@@ -1,32 +1,10 @@
-import * as echarts from 'echarts/core'
-import { LineChart, PieChart } from 'echarts/charts'
-import {
-  GridComponent,
-  TooltipComponent,
-  LegendComponent,
-  GraphicComponent,
-} from 'echarts/components'
-import { CanvasRenderer } from 'echarts/renderers'
-import type { EChartsOption } from 'echarts'
+import type { OASChart } from '@oas-ui/ui/data/chart'
 import { message } from '@oas-ui/ui/feedback/message'
 import { t, currentLocale } from '../i18n'
 import { session } from '../store/session'
 import { listProducts } from '../data/products'
 
-echarts.use([
-  LineChart,
-  PieChart,
-  GridComponent,
-  TooltipComponent,
-  LegendComponent,
-  GraphicComponent,
-  CanvasRenderer,
-])
-
 const TREND = [820, 932, 901, 1290, 1330, 1520, 1680]
-
-const ORDERS = [120, 200, 150, 180, 220, 170, 210]
-const DAYS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
 
 const RECENT_ORDERS = [
   { id: 'SO-10086', customer: '华信科技', amount: '¥ 12,800', status: '已完成' },
@@ -73,21 +51,26 @@ const STATS = [
 ]
 
 const PIE_DATA = [
-  { value: 42, name: '已完成' },
-  { value: 31, name: '配送中' },
-  { value: 18, name: '待支付' },
-  { value: 9, name: '已取消' },
+  { key: 'orders.status.done', value: 42 },
+  { key: 'orders.status.shipping', value: 31 },
+  { key: 'orders.status.pending', value: 18 },
+  { key: 'orders.status.cancelled', value: 9 },
 ]
+
+const DONUT_COLORS = [
+  'var(--oas-color-success)',
+  'var(--oas-color-primary)',
+  'var(--oas-color-warning)',
+  'var(--oas-color-danger)',
+]
+
+const TOTAL_ORDERS = 1926
 
 const SEGMENTED_OPTIONS = (): Array<{ label: string; value: string }> => [
   { label: t('dashboard.rangeDays', { days: '7' }), value: '7' },
   { label: t('dashboard.rangeDays', { days: '14' }), value: '14' },
   { label: t('dashboard.rangeDays', { days: '30' }), value: '30' },
 ]
-
-function isDark(): boolean {
-  return document.documentElement.dataset.theme === 'dark'
-}
 
 function todayLabel(): string {
   const d = new Date()
@@ -97,33 +80,6 @@ function todayLabel(): string {
     month: 'long',
     day: 'numeric',
   }).format(d)
-}
-
-function readTokenColor(name: string): string {
-  const val = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
-  return val || '#999'
-}
-
-function parseHex(hex: string): [number, number, number] {
-  const h = hex.replace('#', '')
-  const full =
-    h.length === 3
-      ? h
-          .split('')
-          .map((c) => c + c)
-          .join('')
-      : h
-  const n = parseInt(full, 16)
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
-}
-
-function mixHex(a: string, b: string, ratio: number): string {
-  const [ar, ag, ab] = parseHex(a)
-  const [br, bg, bb] = parseHex(b)
-  const r = Math.round(ar + (br - ar) * ratio)
-  const g = Math.round(ag + (bg - ag) * ratio)
-  const l = Math.round(ab + (bb - ab) * ratio)
-  return `#${[r, g, l].map((v) => v.toString(16).padStart(2, '0')).join('')}`
 }
 
 function makeTrend(days: number): number[] {
@@ -155,6 +111,17 @@ function getToneVars(tone: string): { bg: string; icon: string } {
   return { bg: 'var(--oas-color-warning)', icon: 'var(--oas-color-warning)' }
 }
 
+function donutLegendHtml(): string {
+  const items = PIE_DATA.map((p, i) => {
+    const pct = Math.round((p.value / 100) * 100)
+    return `<span class="donut-legend-item" style="--dot:${DONUT_COLORS[i]}"><i class="donut-dot"></i><span>${t(p.key)}</span><span class="donut-legend-pct mono">${pct}%</span></span>`
+  }).join('')
+  return `<div class="donut-legend" data-testid="donut-legend">
+    <div class="donut-total"><span class="mono">${formatNumber(TOTAL_ORDERS)}</span><span>${t('dashboard.ordersLabel')}</span></div>
+    <div class="donut-legend-items">${items}</div>
+  </div>`
+}
+
 export function render(el: HTMLElement): () => void {
   const user = session.user
   const name = user?.name ?? ''
@@ -184,10 +151,11 @@ export function render(el: HTMLElement): () => void {
       <div class="chart-grid">
         <oas-card title="${t('dashboard.trendTitle')}">
           <oas-segmented id="trend-range" slot="extra" options='${JSON.stringify(SEGMENTED_OPTIONS())}' value="7"></oas-segmented>
-          <div id="chart-trend" class="chart"></div>
+          <oas-chart id="chart-trend" class="chart" type="area" options='{"smooth":true}' aria-label="${t('dashboard.trendTitle')}"></oas-chart>
         </oas-card>
         <oas-card title="${t('dashboard.ordersTitle')}">
-          <div id="chart-orders" class="chart"></div>
+          <oas-chart id="chart-orders" class="chart" type="donut" options='${JSON.stringify({ colors: DONUT_COLORS })}' aria-label="${t('dashboard.ordersTitle')}"></oas-chart>
+          ${donutLegendHtml()}
         </oas-card>
       </div>
       <div class="bottom-grid">
@@ -236,7 +204,6 @@ export function render(el: HTMLElement): () => void {
 
   let skeletonTimer: ReturnType<typeof setTimeout> | null = null
   let currentRange = '7'
-  const charts: Array<echarts.ECharts> = []
 
   function fillStats(): void {
     const grid = el.querySelector<HTMLElement>('#stat-grid')!
@@ -303,116 +270,20 @@ export function render(el: HTMLElement): () => void {
     renderTop5(top)
   }
 
-  function draw(): void {
-    for (const c of charts.splice(0)) c.dispose()
-    const primary = readTokenColor('--oas-color-primary')
-    const success = readTokenColor('--oas-color-success')
-    const warning = readTokenColor('--oas-color-warning')
-    const danger = readTokenColor('--oas-color-danger')
-    const textSecondary = readTokenColor('--oas-color-text-secondary')
-    const border = readTokenColor('--oas-color-border')
-    const textPrimary = readTokenColor('--oas-color-text-primary')
-    const bg = readTokenColor('--oas-color-bg')
-    const dark = isDark()
-    const pieSuccess = dark ? mixHex(success, bg, 0.3) : success
-
-    const trend = el.querySelector<HTMLDivElement>('#chart-trend')
-    if (trend) {
-      const days = Number(currentRange)
-      const data = makeTrend(days)
-      const labels = makeTrendLabels(days)
-      const c = echarts.init(trend)
-      c.setOption({
-        darkMode: isDark(),
-        tooltip: { trigger: 'axis' },
-        grid: { left: 40, right: 16, top: 20, bottom: 24 },
-        xAxis: {
-          type: 'category',
-          data: labels,
-          axisLine: { lineStyle: { color: border } },
-          axisLabel: { color: textSecondary },
-          splitLine: { show: false },
-        },
-        yAxis: {
-          type: 'value',
-          axisLine: { show: false },
-          axisLabel: { color: textSecondary },
-          splitLine: { lineStyle: { color: border } },
-        },
-        series: [
-          {
-            type: 'line',
-            data,
-            smooth: true,
-            symbol: 'none',
-            lineStyle: { width: 2, color: primary },
-            areaStyle: {
-              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                { offset: 0, color: `${primary}33` },
-                { offset: 1, color: `${primary}05` },
-              ]),
-            },
-          },
-        ],
-      } as EChartsOption)
-      charts.push(c)
-    }
-
-    const orders = el.querySelector<HTMLDivElement>('#chart-orders')
-    if (orders) {
-      const c = echarts.init(orders)
-      c.setOption({
-        darkMode: isDark(),
-        tooltip: { trigger: 'item', formatter: '{b}: {d}%' },
-        legend: {
-          bottom: 0,
-          left: 'center',
-          width: '90%',
-          itemGap: 8,
-          textStyle: { color: textSecondary },
-        },
-        color: [pieSuccess, primary, warning, danger],
-        graphic: [
-          {
-            type: 'text',
-            left: 'center',
-            top: '42%',
-            style: {
-              text: '1,926',
-              fontSize: 20,
-              fontWeight: 700,
-              fill: textPrimary,
-              textAlign: 'center',
-            },
-          },
-          {
-            type: 'text',
-            left: 'center',
-            top: '54%',
-            style: {
-              text: t('dashboard.ordersLabel'),
-              fontSize: 12,
-              fill: textSecondary,
-              textAlign: 'center',
-            },
-          },
-        ],
-        series: [
-          {
-            type: 'pie',
-            radius: ['45%', '70%'],
-            center: ['50%', '45%'],
-            label: { show: false },
-            data: PIE_DATA,
-          },
-        ],
-      } as EChartsOption)
-      charts.push(c)
+  function setTrendData(): void {
+    const chart = el.querySelector<OASChart>('#chart-trend')
+    if (!chart) return
+    const days = Number(currentRange)
+    chart.data = {
+      labels: makeTrendLabels(days),
+      series: [{ name: t('dashboard.stat.visits'), data: makeTrend(days) }],
     }
   }
 
-  function onResize(): void {
-    for (const c of charts) c.resize()
+  function setDonutData(): void {
+    const chart = el.querySelector<OASChart>('#chart-orders')
+    if (!chart) return
+    chart.data = PIE_DATA.map((p) => ({ label: t(p.key), value: p.value }))
   }
 
   skeletonTimer = setTimeout(() => {
@@ -420,14 +291,12 @@ export function render(el: HTMLElement): () => void {
     fillStats()
   }, 300)
 
-  draw()
+  setTrendData()
+  setDonutData()
   void loadTop5()
 
-  window.addEventListener('resize', onResize)
-  document.addEventListener('themechange', draw)
-
   el.querySelector<HTMLElement>('#dash-refresh')!.addEventListener('click', () => {
-    draw()
+    setTrendData()
     message.success(t('dashboard.refreshed'))
   })
 
@@ -441,13 +310,10 @@ export function render(el: HTMLElement): () => void {
 
   el.querySelector<HTMLElement>('#trend-range')!.addEventListener('oas-change', (e) => {
     currentRange = (e as CustomEvent<{ value: string }>).detail.value
-    draw()
+    setTrendData()
   })
 
   return () => {
     if (skeletonTimer) clearTimeout(skeletonTimer)
-    window.removeEventListener('resize', onResize)
-    document.removeEventListener('themechange', draw)
-    for (const c of charts.splice(0)) c.dispose()
   }
 }
