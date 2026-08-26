@@ -96,5 +96,5 @@ npx degit <本仓库地址>/templates/admin-pro/vanilla-html my-admin
 
 ## Roadmap
 
-- 更细的错误边界：页面渲染异常按页隔离（目前整页兜底 500），异常不连带拖垮其余已渲染内容
-- 错误上报钩子：`onError` 上报接口（接监控 / Sentry 示例），串联路由加载失败、页面渲染抛错、请求层 `onError` 拦截
+- 移动端专项：触摸目标 / hover 依赖降级 / 浮层视口适配 / 安全区（当前桌面优先，需系统性移动审计）
+- 页面渲染错误边界已实现（`src/error.ts` 上报 + router 按页 `renderPageError` 重试）；错误上报接口 `reportError` / `setErrorReporter` 已提供，接监控时替换 reporter 即可
