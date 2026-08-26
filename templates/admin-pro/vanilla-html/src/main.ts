@@ -5,7 +5,7 @@ import { initI18n } from './i18n'
 import { enableFakeFetch } from './api/http'
 import { mountApp } from './components/app-shell'
 import { initRouter } from './router/router'
-import { applySettings } from './pages/settings'
+import { applySettings } from './settings-init'
 
 const registry = iconRegistry as unknown as Record<string, string>
 registry['organization'] =

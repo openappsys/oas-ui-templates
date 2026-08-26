@@ -3,18 +3,26 @@ import '@oas-ui/ui/form/color-picker'
 import '@oas-ui/ui/form/slider'
 import { message } from '@oas-ui/ui/feedback/message'
 import { t } from '../i18n'
-
-const FORM_MODE_KEY = 'oas-admin.form-mode'
-const DENSITY_KEY = 'oas-admin.settings.table-density'
-const PAGE_SIZE_KEY = 'oas-admin.settings.page-size'
-const RADIUS_KEY = 'oas-admin.settings.radius'
-const THEME_PREFIX = 'oas-admin.settings.theme.'
-const NOTIF_PREFIX = 'oas-admin.settings.notif.'
-const DEFAULT_COLOR = '#0b6cff'
-const DEFAULT_RADIUS = 6
-
-type FormMode = 'dialog' | 'drawer' | 'page'
-type Density = 'compact' | 'default' | 'large'
+import {
+  DEFAULT_COLOR,
+  DEFAULT_RADIUS,
+  DENSITY_KEY,
+  FORM_MODE_KEY,
+  NOTIF_PREFIX,
+  PAGE_SIZE_KEY,
+  RADIUS_KEY,
+  THEME_PREFIX,
+  type Density,
+  type FormMode,
+  applyDensity,
+  currentTheme,
+  readBool,
+  readColor,
+  readDensity,
+  readFormMode,
+  readPageSize,
+  readRadius,
+} from '../settings-init'
 
 const TABS = (): Array<{ label: string; value: string }> => [
   { label: t('settings.tab.general'), value: 'general' },
@@ -57,63 +65,6 @@ const NOTIF_CHANNELS = (): Array<{ key: string; label: string }> => [
   { key: 'inapp', label: t('settings.notif.inapp') },
   { key: 'email', label: t('settings.notif.email') },
 ]
-
-function readFormMode(): FormMode {
-  const v = localStorage.getItem(FORM_MODE_KEY)
-  return v === 'dialog' || v === 'page' ? v : 'drawer'
-}
-
-function readDensity(): Density {
-  const v = localStorage.getItem(DENSITY_KEY)
-  return v === 'compact' || v === 'large' ? v : 'default'
-}
-
-function readPageSize(): string {
-  return localStorage.getItem(PAGE_SIZE_KEY) ?? '5'
-}
-
-function readRadius(): number {
-  const n = Number(localStorage.getItem(RADIUS_KEY))
-  return Number.isFinite(n) && n > 0 ? n : DEFAULT_RADIUS
-}
-
-function readBool(key: string, fallback: boolean): boolean {
-  const v = localStorage.getItem(key)
-  if (v === 'true') return true
-  if (v === 'false') return false
-  return fallback
-}
-
-function currentTheme(): 'light' | 'dark' {
-  return document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light'
-}
-
-function readColor(): string {
-  const stored = localStorage.getItem(`${THEME_PREFIX}${currentTheme()}`)
-  if (stored) return stored
-  const live = getComputedStyle(document.documentElement)
-    .getPropertyValue('--oas-color-primary')
-    .trim()
-  return live || DEFAULT_COLOR
-}
-
-const DENSITY_PAD: Record<Density, string> = { compact: '6px', default: '12px', large: '16px' }
-
-function applyDensity(): void {
-  document.documentElement.style.setProperty(
-    '--oas-table-cell-padding-block',
-    DENSITY_PAD[readDensity()],
-  )
-}
-
-export function applySettings(): void {
-  const theme = currentTheme()
-  const color = localStorage.getItem(`${THEME_PREFIX}${theme}`)
-  if (color) document.documentElement.style.setProperty('--oas-color-primary', color)
-  const radius = localStorage.getItem(RADIUS_KEY)
-  if (radius) document.documentElement.style.setProperty('--oas-radius-md', `${radius}px`)
-  applyDensity()
-}
 
 export function render(el: HTMLElement): () => void {
   const tabs = document.createElement('oas-tabs')

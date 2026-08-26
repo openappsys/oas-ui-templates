@@ -33,6 +33,7 @@ npx degit <本仓库地址>/templates/admin-pro/vanilla-html my-admin
 - `src/store/session.ts`：模拟会话（localStorage 持久化）；接真后端时替换此文件
 - `src/i18n/`：应用词条（zh/en）与 locale 切换/订阅；词条合并到 @oas-ui/i18n 内置词条之上
 - `src/api/`：fetch 请求层（拦截器 / 超时 / query）+ auth 信封解析 + 本地 `/api/*` mock
+- `src/settings-init.ts`：设置持久化 key / reader 与启动时 `applySettings()`（主题色 / 圆角 / 表格密度）——渲染页与启动逻辑共享，避免静态导入拖入设置页 chunk
 - `src/data/store.ts`：localStorage 持久化小工具（persist / restore，坏 JSON 回退种子）
 - `src/data/users.ts` / `orders.ts` / `products.ts` / `notifications.ts`：内存 mock 数据源（CRUD + 100ms 模拟延迟 + localStorage 持久化）；接真后端时替换
 - `src/components/registry.ts`：组件按需注册清单
@@ -65,11 +66,12 @@ npx degit <本仓库地址>/templates/admin-pro/vanilla-html my-admin
 
 ## 已知边界
 
+- 页面 chunk 加载失败（`import()` reject / 渲染抛错）时整页兜底为 500 结果态（`src/router/router.ts` 的 `runResolve`），不会部分渲染
 - demo 数据 localStorage 持久化，清除 storage（或 `resetXxx`）即重置；接真后端时替换 data 层
 - 侧栏激活高亮由组件内部点击自管理；程序化改 hash（登录后跳转）不保证高亮同步
 - 登录形态默认分屏品牌墙（`?style=split`），可通过 `?style=glass` 切换为玻璃拟态
 
 ## Roadmap
 
-- 500 错误页（页面加载失败兜底）
-- 更细的错误边界与错误上报
+- 更细的错误边界：页面渲染异常按页隔离（目前整页兜底 500），异常不连带拖垮其余已渲染内容
+- 错误上报钩子：`onError` 上报接口（接监控 / Sentry 示例），串联路由加载失败、页面渲染抛错、请求层 `onError` 拦截
