@@ -33,7 +33,12 @@ export const routes: Route[] = [
   },
   {
     path: '/products',
-    meta: { titleKey: 'nav.products', icon: 'nav-products', roles: ['admin'], group: 'nav.business' },
+    meta: {
+      titleKey: 'nav.products',
+      icon: 'nav-products',
+      roles: ['admin'],
+      group: 'nav.business',
+    },
     load: () => import('../pages/products'),
   },
   {
