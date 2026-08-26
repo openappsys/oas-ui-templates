@@ -44,6 +44,8 @@ export default {
   'header.fullscreen': '全屏',
   'header.theme': '切换主题',
   'header.notification': '通知',
+  'header.notificationCount': '通知，{count} 条未读',
+  'header.userMenu': '用户菜单',
   'header.profile': '个人中心',
   'header.logout': '退出登录',
   'header.allRead': '全部已读',

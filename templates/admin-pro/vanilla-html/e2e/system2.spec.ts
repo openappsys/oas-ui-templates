@@ -76,6 +76,70 @@ test('admin 商品分类：新建分类入表 + 商品页下拉同步', async ({
   expect(errors).toEqual([])
 })
 
+test('admin 商品分类：搜索按名称/编码过滤行', async ({ page }) => {
+  const errors = await noConsoleErrors(page)
+  await login(page, '张伟', 'admin')
+  await page.goto('/#/system/category')
+  await expect(page.getByTestId('category-table').locator('tbody tr')).toHaveCount(4)
+
+  await page.getByTestId('category-search').locator('input').fill('数码')
+  await expect(page.getByTestId('category-table').locator('tbody tr')).toHaveCount(1)
+  await expect(page.getByTestId('category-table')).toContainText('数码')
+
+  await page.getByTestId('category-search').locator('input').fill('apparel')
+  await expect(page.getByTestId('category-table').locator('tbody tr')).toHaveCount(1)
+  await expect(page.getByTestId('category-table')).toContainText('服饰')
+
+  await page.getByTestId('category-search').locator('input').fill('')
+  await expect(page.getByTestId('category-table').locator('tbody tr')).toHaveCount(4)
+  expect(errors).toEqual([])
+})
+
+test('admin 商品分类：编辑回填 + 必填校验 + 改名校验生效', async ({ page }) => {
+  const errors = await noConsoleErrors(page)
+  await login(page, '张伟', 'admin')
+  await page.goto('/#/system/category')
+  await expect(page.getByTestId('category-table')).toContainText('数码')
+
+  await page
+    .getByTestId('category-row')
+    .filter({ hasText: '数码' })
+    .getByTestId('category-edit')
+    .click()
+  await expect(page.getByTestId('category-modal')).toHaveAttribute('visible', '')
+  await expect(page.locator('#category-modal-title')).toHaveText('编辑分类')
+  await expect(page.getByTestId('cf-name').locator('input')).toHaveValue('数码')
+  await expect(page.getByTestId('cf-code').locator('input')).toHaveValue('digital')
+
+  await page.getByTestId('cf-name').locator('input').fill('')
+  await page.getByTestId('cf-save').click()
+  await expect(page.locator('.error-text')).toContainText('请输入分类名称')
+
+  await page.getByTestId('cf-name').locator('input').fill('影音')
+  await page.getByTestId('cf-save').click()
+  await expect(page.getByTestId('category-table')).toContainText('影音')
+  await expect(page.getByTestId('category-table')).not.toContainText('数码')
+  expect(errors).toEqual([])
+})
+
+test('admin 商品分类：删除需 popconfirm 确认后移除行', async ({ page }) => {
+  const errors = await noConsoleErrors(page)
+  await login(page, '张伟', 'admin')
+  await page.goto('/#/system/category')
+  await expect(page.getByTestId('category-table')).toContainText('食品')
+
+  await page
+    .getByTestId('category-row')
+    .filter({ hasText: '食品' })
+    .getByTestId('category-delete')
+    .click()
+  await expect(page.locator('oas-popconfirm[open] [part="ok"]')).toBeVisible()
+  await page.locator('oas-popconfirm[open] [part="ok"]').click()
+  await expect(page.getByTestId('category-table')).not.toContainText('食品')
+  await expect(page.getByTestId('category-table').locator('tbody tr')).toHaveCount(3)
+  expect(errors).toEqual([])
+})
+
 test('admin 用户管理：角色列取角色名 + 详情权限标识', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page, '张伟', 'admin')

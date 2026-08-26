@@ -73,6 +73,30 @@ describe('router runtime', () => {
     expect(document.title).toContain('个人中心')
   })
 
+  it('首次渲染不加 page-enter，路由切换触发并在动画结束后移除', async () => {
+    dashRender.mockImplementation((target: HTMLElement) => {
+      target.innerHTML = '<div>dashboard</div>'
+      return dashDispose
+    })
+    profileRender.mockImplementation((target: HTMLElement) => {
+      target.innerHTML = '<div>profile</div>'
+      return profileDispose
+    })
+    el.innerHTML = ''
+    location.hash = '#/dashboard'
+    await new Promise((r) => setTimeout(r, 0))
+    initRouter(el)
+    await vi.waitFor(() => expect(dashRender).toHaveBeenCalled())
+    expect(el.classList.contains('page-enter')).toBe(false)
+
+    location.hash = '#/profile'
+    await vi.waitFor(() => expect(profileRender).toHaveBeenCalled())
+    expect(el.classList.contains('page-enter')).toBe(true)
+
+    el.dispatchEvent(new Event('animationend'))
+    expect(el.classList.contains('page-enter')).toBe(false)
+  })
+
   it('重叠 resolve 以最后请求为准，陈旧渲染不覆盖', async () => {
     location.hash = '#/dashboard'
     await vi.waitFor(() => expect(dashRender).toHaveBeenCalledTimes(1))

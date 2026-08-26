@@ -68,15 +68,27 @@ test('admin 仪表盘 oas-chart 图表渲染（area 趋势 + donut 环形 + 图�
   expect(errors).toEqual([])
 })
 
-test('admin 仪表盘趋势图 7/14/30 天切换更新数据点', async ({ page }) => {
+test('admin 仪表盘 7/14/30 天切换全联动（趋势/订单构成/最近订单）', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page, '张伟', 'admin')
   const trend = page.locator('#chart-trend')
   await expect(trend.locator('svg .dot')).toHaveCount(7)
+  await expect(page.getByTestId('donut-legend')).toContainText('1,926')
+  await expect(page.getByTestId('orders-table').locator('tbody tr')).toHaveCount(5)
+
   await page.locator('#trend-range').getByText('14日').click()
   await expect(trend.locator('svg .dot')).toHaveCount(14)
+  await expect(page.getByTestId('donut-legend')).toContainText('3,417')
+  await expect(page.getByTestId('orders-table').locator('tbody tr')).toHaveCount(7)
+
   await page.locator('#trend-range').getByText('30日').click()
   await expect(trend.locator('svg .dot')).toHaveCount(30)
+  await expect(page.getByTestId('donut-legend')).toContainText('6,208')
+  await expect(page.getByTestId('orders-table').locator('tbody tr')).toHaveCount(11)
+  const axisLabels = await trend
+    .locator('svg text.axis-label')
+    .evaluateAll((els) => els.map((el) => el.textContent ?? '').filter((text) => text.length > 0))
+  expect(axisLabels).toEqual(['1日', '5日', '10日', '15日', '20日', '25日', '30日'])
   expect(errors).toEqual([])
 })
 

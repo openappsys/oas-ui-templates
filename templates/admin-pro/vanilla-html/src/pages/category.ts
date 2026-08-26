@@ -120,8 +120,8 @@ export function render(el: HTMLElement): () => void {
           <td class="num">${r.sort}</td>
           <td><oas-tag type="${r.status === 'on' ? 'success' : 'default'}">${statusLabel(r.status)}</oas-tag></td>
           <td class="cat-actions">
+            <oas-button size="small" icon="edit" data-testid="category-edit" data-id="${r.id}" aria-label="${t('common.edit')}"></oas-button>
             <oas-popconfirm title="${t('category.confirmDelete')}" data-testid="category-del-pop">
-              <oas-button size="small" icon="edit" data-testid="category-edit" data-id="${r.id}" aria-label="${t('common.edit')}"></oas-button>
               <oas-button size="small" icon="trash" type="danger" data-testid="category-delete" data-id="${r.id}" aria-label="${t('common.delete')}"></oas-button>
             </oas-popconfirm>
           </td>

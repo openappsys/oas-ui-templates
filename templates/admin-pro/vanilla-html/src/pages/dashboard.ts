@@ -3,16 +3,8 @@ import { message } from '@oas-ui/ui/feedback/message'
 import { t, currentLocale } from '../i18n'
 import { session } from '../store/session'
 import { listProducts } from '../data/products'
-
-const TREND = [820, 932, 901, 1290, 1330, 1520, 1680]
-
-const RECENT_ORDERS = [
-  { id: 'SO-10086', customer: '华信科技', amount: '¥ 12,800', status: '已完成' },
-  { id: 'SO-10085', customer: '蓝海贸易', amount: '¥ 8,600', status: '配送中' },
-  { id: 'SO-10084', customer: '星野文化', amount: '¥ 3,200', status: '待支付' },
-  { id: 'SO-10083', customer: '晨光实业', amount: '¥ 21,500', status: '已完成' },
-  { id: 'SO-10082', customer: '云图软件', amount: '¥ 6,900', status: '已取消' },
-]
+import { orderBreakdown, recentOrders, trendDays, trendSeries } from '../data/dashboard'
+import type { OrderBreakdown } from '../data/dashboard'
 
 const STATS = [
   {
@@ -50,21 +42,12 @@ const STATS = [
   },
 ]
 
-const PIE_DATA = [
-  { key: 'orders.status.done', value: 42 },
-  { key: 'orders.status.shipping', value: 31 },
-  { key: 'orders.status.pending', value: 18 },
-  { key: 'orders.status.cancelled', value: 9 },
-]
-
 const DONUT_COLORS = [
   'var(--oas-color-success)',
   'var(--oas-color-primary)',
   'var(--oas-color-warning)',
   'var(--oas-color-danger)',
 ]
-
-const TOTAL_ORDERS = 1926
 
 const SEGMENTED_OPTIONS = (): Array<{ label: string; value: string }> => [
   { label: t('dashboard.rangeDays', { days: '7' }), value: '7' },
@@ -82,20 +65,16 @@ function todayLabel(): string {
   }).format(d)
 }
 
-function makeTrend(days: number): number[] {
-  return Array.from({ length: days }, (_, i) => {
-    const base = TREND[i % TREND.length]
-    const wave = Math.sin(i * 1.3 + 1) * 60
-    return Math.max(200, Math.round(base + wave))
-  })
-}
-
-function makeTrendLabels(days: number): string[] {
-  return Array.from({ length: days }, (_, i) => t('dashboard.rangeDays', { days: i + 1 }))
+function trendLabels(days: number): string[] {
+  return trendDays(days).map((d) => (d === '' ? '' : t('dashboard.rangeDays', { days: d })))
 }
 
 function formatNumber(n: number): string {
   return n.toLocaleString('en-US')
+}
+
+function formatMoney(n: number): string {
+  return `¥ ${formatNumber(n)}`
 }
 
 function getToneVars(tone: string): { bg: string; icon: string } {
@@ -111,13 +90,15 @@ function getToneVars(tone: string): { bg: string; icon: string } {
   return { bg: 'var(--oas-color-warning)', icon: 'var(--oas-color-warning)' }
 }
 
-function donutLegendHtml(): string {
-  const items = PIE_DATA.map((p, i) => {
-    const pct = Math.round((p.value / 100) * 100)
-    return `<span class="donut-legend-item" style="--dot:${DONUT_COLORS[i]}"><i class="donut-dot"></i><span>${t(p.key)}</span><span class="donut-legend-pct mono">${pct}%</span></span>`
-  }).join('')
+function donutLegendHtml(breakdown: OrderBreakdown): string {
+  const items = breakdown.slices
+    .map((s, i) => {
+      const pct = Math.round((s.value / breakdown.total) * 100)
+      return `<span class="donut-legend-item" style="--dot:${DONUT_COLORS[i]}"><i class="donut-dot"></i><span>${t(`orders.status.${s.status}`)}</span><span class="donut-legend-pct mono">${pct}%</span></span>`
+    })
+    .join('')
   return `<div class="donut-legend" data-testid="donut-legend">
-    <div class="donut-total"><span class="mono">${formatNumber(TOTAL_ORDERS)}</span><span>${t('dashboard.ordersLabel')}</span></div>
+    <div class="donut-total"><span class="mono">${formatNumber(breakdown.total)}</span><span>${t('dashboard.ordersLabel')}</span></div>
     <div class="donut-legend-items">${items}</div>
   </div>`
 }
@@ -155,7 +136,7 @@ export function render(el: HTMLElement): () => void {
         </oas-card>
         <oas-card title="${t('dashboard.ordersTitle')}">
           <oas-chart id="chart-orders" class="chart" type="donut" options='${JSON.stringify({ colors: DONUT_COLORS })}' aria-label="${t('dashboard.ordersTitle')}"></oas-chart>
-          ${donutLegendHtml()}
+          <div id="donut-legend-wrap">${donutLegendHtml(orderBreakdown(7))}</div>
         </oas-card>
       </div>
       <div class="bottom-grid">
@@ -196,11 +177,6 @@ export function render(el: HTMLElement): () => void {
         </oas-card>
       </div>
     </div>`
-
-  el.querySelector<HTMLElement>('[data-testid="orders-table"]')!.setAttribute(
-    'data',
-    JSON.stringify(RECENT_ORDERS),
-  )
 
   let skeletonTimer: ReturnType<typeof setTimeout> | null = null
   let currentRange = '7'
@@ -275,15 +251,34 @@ export function render(el: HTMLElement): () => void {
     if (!chart) return
     const days = Number(currentRange)
     chart.data = {
-      labels: makeTrendLabels(days),
-      series: [{ name: t('dashboard.stat.visits'), data: makeTrend(days) }],
+      labels: trendLabels(days),
+      series: [{ name: t('dashboard.stat.visits'), data: trendSeries(days) }],
     }
   }
 
   function setDonutData(): void {
     const chart = el.querySelector<OASChart>('#chart-orders')
-    if (!chart) return
-    chart.data = PIE_DATA.map((p) => ({ label: t(p.key), value: p.value }))
+    const breakdown = orderBreakdown(Number(currentRange))
+    if (chart) {
+      chart.data = breakdown.slices.map((s) => ({
+        label: t(`orders.status.${s.status}`),
+        value: s.value,
+      }))
+    }
+    const wrap = el.querySelector<HTMLElement>('#donut-legend-wrap')
+    if (wrap) wrap.innerHTML = donutLegendHtml(breakdown)
+  }
+
+  function setRecentOrders(): void {
+    const table = el.querySelector<HTMLElement>('[data-testid="orders-table"]')
+    if (!table) return
+    const rows = recentOrders(Number(currentRange)).map((r) => ({
+      id: r.id,
+      customer: r.customer,
+      amount: formatMoney(r.amount),
+      status: t(`orders.status.${r.status}`),
+    }))
+    table.setAttribute('data', JSON.stringify(rows))
   }
 
   skeletonTimer = setTimeout(() => {
@@ -293,10 +288,13 @@ export function render(el: HTMLElement): () => void {
 
   setTrendData()
   setDonutData()
+  setRecentOrders()
   void loadTop5()
 
   el.querySelector<HTMLElement>('#dash-refresh')!.addEventListener('click', () => {
     setTrendData()
+    setDonutData()
+    setRecentOrders()
     message.success(t('dashboard.refreshed'))
   })
 
@@ -311,6 +309,8 @@ export function render(el: HTMLElement): () => void {
   el.querySelector<HTMLElement>('#trend-range')!.addEventListener('oas-change', (e) => {
     currentRange = (e as CustomEvent<{ value: string }>).detail.value
     setTrendData()
+    setDonutData()
+    setRecentOrders()
   })
 
   return () => {

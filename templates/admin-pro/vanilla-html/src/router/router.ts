@@ -27,6 +27,13 @@ let view: HTMLElement | null = null
 let dispose: (() => void) | undefined
 let epoch = 0
 
+function playViewEnter(wasEmpty: boolean): void {
+  if (!view || wasEmpty) return
+  view.classList.remove('page-enter')
+  void view.offsetWidth
+  view.classList.add('page-enter')
+}
+
 function clearDispose(): void {
   dispose?.()
   dispose = undefined
@@ -41,6 +48,9 @@ function runResolve(): void {
 
 export function initRouter(el: HTMLElement): void {
   view = el
+  el.addEventListener('animationend', (e) => {
+    if (e.target === el) el.classList.remove('page-enter')
+  })
   window.addEventListener('hashchange', runResolve)
   runResolve()
 }
@@ -52,12 +62,14 @@ export async function resolve(): Promise<void> {
   const path = parseHash(location.hash)
   const g = guard(path)
   clearDispose()
+  const wasEmpty = view.innerHTML === ''
   view.innerHTML = ''
   if (!g.ok) {
     if (g.reason === 'login') {
       const mod = await import('../pages/login')
       if (token !== epoch) return
       dispose = mod.render(view)
+      playViewEnter(wasEmpty)
       progress.done()
       return
     } else if (g.reason === 'not-found') {
@@ -74,6 +86,7 @@ export async function resolve(): Promise<void> {
   const mod: PageModule = await route.load()
   if (token !== epoch) return
   dispose = mod.render(view)
+  playViewEnter(wasEmpty)
   document.title = `${t(route.meta.titleKey)} · ${t('app.fullname')}`
   progress.done()
 }

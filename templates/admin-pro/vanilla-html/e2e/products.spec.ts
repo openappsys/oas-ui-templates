@@ -89,6 +89,21 @@ test('设置中心：通用页切换表单呈现方式写入 localStorage', asyn
   expect(errors).toEqual([])
 })
 
+test('设置中心：字号较大档位写入 localStorage 且 reload 后保持选中', async ({ page }) => {
+  const errors = await noConsoleErrors(page)
+  await login(page, '张伟', 'admin')
+  await page.locator('#nav').getByText('设置中心').click()
+  await expect(page.getByTestId('settings-tabs')).toHaveAttribute('active', 'general')
+  await page.getByTestId('font-size-group').getByText('较大').click()
+  expect(await page.evaluate(() => localStorage.getItem('oas-admin.settings.font-size'))).toBe('lg')
+  await page.reload()
+  await expect(page.getByTestId('settings-tabs')).toHaveAttribute('active', 'general')
+  await expect(page.locator('#font-size-group oas-radio[checked]')).toContainText('较大')
+  await page.getByTestId('font-size-group').getByText('特大').click()
+  expect(await page.evaluate(() => localStorage.getItem('oas-admin.settings.font-size'))).toBe('xl')
+  expect(errors).toEqual([])
+})
+
 test('设置中心：外观页主题色即时作用于 --oas-color-primary', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page, '张伟', 'admin')

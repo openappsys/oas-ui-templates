@@ -44,6 +44,8 @@ export default {
   'header.fullscreen': 'Fullscreen',
   'header.theme': 'Switch Theme',
   'header.notification': 'Notifications',
+  'header.notificationCount': 'Notifications, {count} unread',
+  'header.userMenu': 'User Menu',
   'header.profile': 'Profile',
   'header.logout': 'Sign Out',
   'header.allRead': 'Mark all read',

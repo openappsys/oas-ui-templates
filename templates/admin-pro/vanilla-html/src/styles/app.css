@@ -405,6 +405,20 @@ oas-sider[collapsed] {
 #view:has(.form-wizard) {
   overflow: visible;
 }
+#view.page-enter {
+  animation: viewEnter 180ms ease-out;
+}
+@keyframes viewEnter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #view.page-enter {
+    animation: none;
+  }
+}
 .app-foot {
   flex-shrink: 0;
   padding: var(--oas-table-cell-padding-block, var(--oas-space-3)) var(--oas-space-4);
@@ -429,13 +443,6 @@ oas-sider[collapsed] {
   padding: var(--oas-space-4);
   max-width: 1280px;
   margin: 0 auto;
-  animation: pageIn 120ms ease-out;
-}
-@keyframes pageIn {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
 }
 
 .notice {

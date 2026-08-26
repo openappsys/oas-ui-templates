@@ -158,17 +158,17 @@ export function mountApp(root: HTMLElement): void {
         </button>
         <button id="theme-toggle" class="theme-dot" type="button" title="${t('header.theme')}" aria-label="${t('header.theme')}"></button>
         <oas-dropdown id="lang-menu" placement="bottom" arrow-point-at-center trigger="hover click" value="${currentLocale()}" items='${LANG_ITEMS}'>
-          <button id="lang-toggle" class="icon-btn" type="button" title="${t('cmd.locale')}" aria-label="${t('cmd.locale')}">
+          <button id="lang-toggle" class="icon-btn" type="button" title="${t('cmd.locale')}" aria-label="${t('cmd.locale')}" aria-haspopup="menu">
             <oas-icon size="18">${GLOBE_ICON}</oas-icon>
           </button>
         </oas-dropdown>
         <oas-badge id="notif-badge" value="0" size="small" offset="-2,2">
-          <button id="notif-toggle" class="icon-btn" type="button" title="${t('header.notification')}" aria-label="${t('header.notification')}">
+          <button id="notif-toggle" class="icon-btn" type="button" title="${t('header.notification')}" aria-label="${t('header.notificationCount', { count: unreadCount() })}">
             <oas-icon size="18">${BELL_ICON}</oas-icon>
           </button>
         </oas-badge>
         <oas-dropdown id="user-menu" placement="bottom" arrow-point-at-center trigger="hover click" items='${userMenuItems()}'>
-          <oas-avatar id="user-avatar" size="28"></oas-avatar>
+          <oas-avatar id="user-avatar" size="28" aria-label="${t('header.userMenu')}" aria-haspopup="menu"></oas-avatar>
         </oas-dropdown>
       </header>
       <oas-sider slot="sider">
@@ -203,6 +203,7 @@ export function mountApp(root: HTMLElement): void {
   const langMenu = root.querySelector<HTMLElement>('#lang-menu')!
   const langToggle = root.querySelector<HTMLElement>('#lang-toggle')!
   const userMenu = root.querySelector<HTMLElement>('#user-menu')!
+  const userAvatar = root.querySelector<HTMLElement>('#user-avatar')!
   const footer = root.querySelector<HTMLElement>('.app-foot')!
   const drawer = root.querySelector<HTMLElement>('#notif-drawer')!
   const badge = root.querySelector<HTMLElement>('#notif-badge')!
@@ -286,6 +287,11 @@ export function mountApp(root: HTMLElement): void {
 
   search.addEventListener('pointerdown', (e) => e.preventDefault())
   search.addEventListener('click', openCommand)
+  search.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return
+    e.preventDefault()
+    openCommand()
+  })
 
   document.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
@@ -313,7 +319,9 @@ export function mountApp(root: HTMLElement): void {
   })
 
   function syncBadge(): void {
-    badge.setAttribute('value', String(unreadCount()))
+    const count = unreadCount()
+    badge.setAttribute('value', String(count))
+    notifToggle.setAttribute('aria-label', t('header.notificationCount', { count }))
   }
 
   function renderNotifications(): void {
@@ -509,7 +517,8 @@ export function mountApp(root: HTMLElement): void {
     userMenu.setAttribute('items', userMenuItems())
     drawer.setAttribute('title', t('header.notification'))
     notifToggle.setAttribute('title', t('header.notification'))
-    notifToggle.setAttribute('aria-label', t('header.notification'))
+    notifToggle.setAttribute('aria-label', t('header.notificationCount', { count: unreadCount() }))
+    userAvatar.setAttribute('aria-label', t('header.userMenu'))
     footer.textContent = t('app.footer')
     sidebar.setAttribute('items', sidebarItems())
     command.setAttribute('items', JSON.stringify(buildCommandItems()))
