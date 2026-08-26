@@ -53,6 +53,7 @@ export default {
   'header.allRead': '全部已读',
   'header.allReadDone': '已全部已读',
   'header.loggedOut': '已退出登录',
+  'common.back': '返回上一页',
   'common.home': '返回首页',
   'common.404.title': '页面不存在',
   'common.404.desc': '你访问的页面不存在或已被移除。',

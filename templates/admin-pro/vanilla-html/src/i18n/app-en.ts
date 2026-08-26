@@ -53,6 +53,7 @@ export default {
   'header.allRead': 'Mark all read',
   'header.allReadDone': 'All read',
   'header.loggedOut': 'Signed Out',
+  'common.back': 'Go Back',
   'common.home': 'Back Home',
   'common.404.title': 'Page Not Found',
   'common.404.desc': 'The page you are looking for does not exist or has been removed.',

@@ -17,6 +17,10 @@ test('403：访客访问 admin 路由跳 forbidden 页', async ({ page }) => {
   await expect(page).toHaveURL(/#\/forbidden/)
   await expect(page.locator('.notice-code')).toHaveText('403')
   await expect(page.locator('.notice-title')).toHaveText('无权访问该页面')
+  await expect(page.locator('.notice-actions [data-action="back"]')).toBeVisible()
+  await expect(page.locator('.notice-actions [data-action="home"]')).toBeVisible()
+  await page.locator('.notice-actions [data-action="home"]').click()
+  await expect(page).toHaveURL(/#\/dashboard/)
 })
 
 test('404：未知路由跳 not-found 页', async ({ page }) => {
@@ -25,6 +29,10 @@ test('404：未知路由跳 not-found 页', async ({ page }) => {
   await expect(page).toHaveURL(/#\/not-found/)
   await expect(page.locator('.notice-code')).toHaveText('404')
   await expect(page.locator('.notice-title')).toHaveText('页面不存在')
+  await expect(page.locator('.notice-actions [data-action="back"]')).toBeVisible()
+  await expect(page.locator('.notice-actions [data-action="home"]')).toBeVisible()
+  await page.locator('.notice-actions [data-action="home"]').click()
+  await expect(page).toHaveURL(/#\/dashboard/)
 })
 
 test('500：直达错误页并展示大号状态码', async ({ page }) => {
@@ -32,6 +40,21 @@ test('500：直达错误页并展示大号状态码', async ({ page }) => {
   await page.goto('#/500')
   await expect(page.locator('.notice-code')).toHaveText('500')
   await expect(page.locator('.notice-title')).toHaveText('页面加载失败')
+  await expect(page.locator('.notice-actions [data-action="back"]')).toBeVisible()
+  await expect(page.locator('.notice-actions [data-action="home"]')).toBeVisible()
+  await page.locator('.notice-actions [data-action="home"]').click()
+  await expect(page).toHaveURL(/#\/dashboard/)
+})
+
+test('错误页：home 按钮文案随语言切换', async ({ page }) => {
+  await login(page)
+  await page.goto('#/not-found')
+  await expect(page.locator('.notice-actions [data-action="home"]')).toContainText('返回首页')
+  await expect(page.locator('.notice-actions [data-action="back"]')).toContainText('返回上一页')
+  await page.locator('#lang-menu').hover()
+  await page.locator('#lang-menu').getByText('English').click()
+  await expect(page.locator('.notice-actions [data-action="home"]')).toContainText('Back Home')
+  await expect(page.locator('.notice-actions [data-action="back"]')).toContainText('Go Back')
 })
 
 test('示例分组：侧栏提供错误页入口并可导航', async ({ page }) => {
