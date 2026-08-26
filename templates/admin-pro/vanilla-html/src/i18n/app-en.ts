@@ -63,6 +63,7 @@ export default {
   'common.edit': 'Edit',
   'common.delete': 'Delete',
   'common.refresh': 'Refresh',
+  'common.retry': 'Retry',
   'common.noPerm': 'No Permission',
   'common.clearFilter': 'Clear Filters',
   'common.created': 'Created',

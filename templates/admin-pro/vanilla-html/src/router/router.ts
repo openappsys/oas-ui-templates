@@ -3,6 +3,7 @@ import { matchRoute, routes } from './routes'
 import type { PageModule } from './routes'
 import { t } from '../i18n'
 import { progress } from '../components/progress'
+import { reportError } from '../error'
 
 export type GuardResult =
   | { ok: true; path: string }
@@ -40,10 +41,23 @@ function clearDispose(): void {
 }
 
 function runResolve(): void {
-  resolve().catch(() => {
+  resolve().catch((err) => {
     progress.done()
-    if (view && view.innerHTML === '') location.hash = '/500'
+    reportError(err, 'router-load', { hash: location.hash })
+    if (!view) return
+    if (view.innerHTML === '') location.hash = '/500'
+    else renderPageError(view)
   })
+}
+
+function renderPageError(el: HTMLElement): void {
+  el.innerHTML = `<div class="page notice">
+    <div class="notice-code">500</div>
+    <h1 class="notice-title">${t('common.500.title')}</h1>
+    <p class="notice-desc">${t('common.500.desc')}</p>
+    <oas-button type="primary" data-action="retry">${t('common.retry')}</oas-button>
+  </div>`
+  el.querySelector('[data-action="retry"]')?.addEventListener('click', () => runResolve())
 }
 
 export function initRouter(el: HTMLElement): void {

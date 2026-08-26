@@ -63,6 +63,7 @@ export default {
   'common.edit': '编辑',
   'common.delete': '删除',
   'common.refresh': '刷新',
+  'common.retry': '重试',
   'common.noPerm': '无权限',
   'common.clearFilter': '清除筛选',
   'common.created': '已创建',

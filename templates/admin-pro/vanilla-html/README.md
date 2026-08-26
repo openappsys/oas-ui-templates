@@ -76,6 +76,13 @@ npx degit <本仓库地址>/templates/admin-pro/vanilla-html my-admin
 - 路由 `meta.icon` 指向这些 `nav-*` 名字（`src/router/routes.ts`）；active 项仍由 oas-sidebar 组件用主色高亮兜底
 - **临时方案**：当前以「注册自带色 path 的图标名」绕过组件单色限制。待 oas-ui 发版（含 v2.2.4 之后 `be2876b`：os-sidebar `SidebarItem.iconColor` + 接入 `registerIcon` 查表正路）后，改用官方 `iconColor` 项级着色并移除本 hack
 
+## 网站 / 发布
+
+本模版作为 `oas-ui-templates` 仓库的一员，会被聚合进**门户站**：仓库根 `pnpm site` 逐模版构建后，本模版构建产物拷贝到 `site/dist/admin-pro/vanilla-html/`（子路径）。
+
+- 模版 vite 用 `base: './'`（相对路径 asset），可挂任意子路径，不影响本地 dev / 单测 / e2e
+- 发布到 Cloudflare Workers（wrangler 静态资产站）：见仓库根 README「网站 / 发布」节（`wrangler.jsonc` 的 `assets.directory` 指向 `site/dist`）
+
 ## CI
 
 - `.github/workflows/ci.yml`：matrix 由 `template` 列表驱动，新增模版 = 在列表追加一行（name / workdir / size / e2e 开关）
@@ -85,7 +92,6 @@ npx degit <本仓库地址>/templates/admin-pro/vanilla-html my-admin
 
 - 页面 chunk 加载失败（`import()` reject / 渲染抛错）时整页兜底为 500 结果态（`src/router/router.ts` 的 `runResolve`），不会部分渲染
 - demo 数据 localStorage 持久化，清除 storage（或 `resetXxx`）即重置；接真后端时替换 data 层
-- 侧栏激活高亮由组件内部点击自管理；程序化改 hash（登录后跳转）不保证高亮同步
 - 登录形态默认分屏品牌墙（`?style=split`），可通过 `?style=glass` 切换为玻璃拟态
 
 ## Roadmap

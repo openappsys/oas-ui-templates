@@ -40,18 +40,20 @@ admin-pro/vanilla-html/           # 模版 demo（模版自己的 dist）
 - 模版 vite 用 `base: './'`（相对路径 asset），可挂任意子路径，不影响本地 dev / 单测 / e2e
 - 新增模版：在 `templates/<family>/<name>` 放模版（带 package.json），`pnpm site` 自动发现并打包
 
-### 发布到 Cloudflare Pages
+### 发布到 Cloudflare Workers（静态站）
+
+仓库已带 `wrangler.jsonc`（Cloudflare Worker 静态资产站配置）。Connect GitHub 仓库后在 Cloudflare 建 **Worker**（项目用 wrangler 自动部署）：
 
 | 项 | 值 |
 | --- | --- |
-| Framework preset | 无 / Node |
-| Root directory | `/`（仓库根） |
-| Build command | `corepack enable && pnpm install && pnpm site` |
-| Build output directory | `site/dist` |
+| 路径（root directory） | `/`（仓库根，wrangler.jsonc 所在目录） |
+| 构建/部署 | Wrangler 读 `wrangler.jsonc`（`assets.directory` → `site/dist`）自动构建 + 上传 |
 | Node version | 20+ |
 | 路由 | hash 路由，无需 SPA fallback |
 
-> `corepack enable` 让 Cloudflare 构建使用仓库声明的 pnpm（`packageManager: pnpm@11.20.0`）。
+`wrangler.jsonc` 要点：`assets.directory: ./site/dist`（单站：门户 + 各模版子路径）、`not_found_handling: single-page-application`、`build.command: corepack enable && pnpm install && pnpm site`（Cloudflare 构建时自动执行）。
+
+> 模板 vite `base:'./'`（相对路径 asset）确保各模版挂子路径可用。
 
 ## CI
 

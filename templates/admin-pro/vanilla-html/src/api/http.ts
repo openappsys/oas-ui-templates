@@ -1,6 +1,7 @@
 import { message } from '@oas-ui/ui/feedback/message'
 import { createHttp, type Interceptor } from './request'
 import { t } from '../i18n'
+import { reportError } from '../error'
 
 function tokenFromSession(): string {
   try {
@@ -21,6 +22,10 @@ const injectToken: Interceptor = {
 const onError: Interceptor = {
   onError: (ctx) => {
     ctx.handled = false
+    reportError(new Error(`HTTP ${ctx.response?.status ?? 'network'}`), 'http', {
+      url: ctx.url,
+      status: ctx.response?.status,
+    })
     message.error(t('common.networkError'))
   },
 }
