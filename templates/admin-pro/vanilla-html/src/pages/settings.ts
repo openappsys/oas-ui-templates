@@ -94,7 +94,12 @@ export function render(el: HTMLElement): () => void {
   const tabs = document.createElement('oas-tabs')
   tabs.setAttribute('data-testid', 'settings-tabs')
   tabs.setAttribute('id', 'settings-tabs')
-  if (readTabLayout() === 'vertical') tabs.classList.add('oas-tabs--vertical')
+  function setTabsLayout(layout: 'horizontal' | 'vertical'): void {
+    tabs.classList.toggle('oas-tabs--vertical', layout === 'vertical')
+    // 竖排 = 左 tab + 右内容（oas-tabs 用 --vertical + --left 组合实现真正的左右布局）
+    tabs.classList.toggle('oas-tabs--left', layout === 'vertical')
+  }
+  setTabsLayout(readTabLayout())
 
   function panel(value: string): { node: HTMLDivElement; set: (html: string) => void } {
     const node = document.createElement('div')
@@ -141,7 +146,7 @@ export function render(el: HTMLElement): () => void {
     const v = (e as CustomEvent<{ value: string }>).detail.value
     if (v !== 'vertical' && v !== 'horizontal') return
     localStorage.setItem(tabsLayoutKey, v)
-    tabs.classList.toggle('oas-tabs--vertical', v === 'vertical')
+    setTabsLayout(v)
     message.success(t('common.saved'))
   })
 
