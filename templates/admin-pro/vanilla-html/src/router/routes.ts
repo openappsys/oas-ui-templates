@@ -232,6 +232,16 @@ export const routes: Route[] = [
     },
     load: () => import('../pages/advanced-form'),
   },
+  {
+    path: '/data-board',
+    meta: {
+      titleKey: 'nav.dataBoard',
+      icon: 'eye',
+      iconColor: 'var(--oas-color-primary)',
+      group: 'nav.demo',
+    },
+    load: () => import('../pages/data-board'),
+  },
 ]
 
 export function matchRoute(path: string): Route | undefined {
