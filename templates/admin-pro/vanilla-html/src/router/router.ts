@@ -31,23 +31,9 @@ function clearDispose(): void {
   dispose = undefined
 }
 
-function notice(code: '404' | '403' | '500'): { title: string; desc: string } {
-  if (code === '404') return { title: t('common.404.title'), desc: t('common.404.desc') }
-  if (code === '403') return { title: t('common.403.title'), desc: t('common.403.desc') }
-  return { title: t('common.500.title'), desc: t('common.500.desc') }
-}
-
-function renderNotice(el: HTMLElement, code: '404' | '403' | '500'): void {
-  const info = notice(code)
-  el.innerHTML = `<div class="page notice"><div class="notice-code">${code}</div><h1 class="notice-title">${info.title}</h1><p class="notice-desc">${info.desc}</p><oas-button type="primary" data-action="home">${t('common.home')}</oas-button></div>`
-  el.querySelector('[data-action="home"]')?.addEventListener('click', () => {
-    location.hash = routes[0].path
-  })
-}
-
 function runResolve(): void {
   resolve().catch(() => {
-    if (view && view.innerHTML === '') renderNotice(view, '500')
+    if (view && view.innerHTML === '') location.hash = '/500'
   })
 }
 

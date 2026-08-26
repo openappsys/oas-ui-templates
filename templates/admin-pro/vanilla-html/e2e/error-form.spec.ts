@@ -15,14 +15,37 @@ test('403：访客访问 admin 路由跳 forbidden 页', async ({ page }) => {
   await login(page, '李四', '访客（只读）')
   await page.goto('#/system/roles')
   await expect(page).toHaveURL(/#\/forbidden/)
-  await expect(page.getByText('无权访问该页面')).toBeVisible()
+  await expect(page.locator('.notice-code')).toHaveText('403')
+  await expect(page.locator('.notice-title')).toHaveText('无权访问该页面')
 })
 
 test('404：未知路由跳 not-found 页', async ({ page }) => {
   await login(page)
   await page.goto('#/no-such-page')
   await expect(page).toHaveURL(/#\/not-found/)
-  await expect(page.getByText('页面不存在')).toBeVisible()
+  await expect(page.locator('.notice-code')).toHaveText('404')
+  await expect(page.locator('.notice-title')).toHaveText('页面不存在')
+})
+
+test('500：直达错误页并展示大号状态码', async ({ page }) => {
+  await login(page)
+  await page.goto('#/500')
+  await expect(page.locator('.notice-code')).toHaveText('500')
+  await expect(page.locator('.notice-title')).toHaveText('页面加载失败')
+})
+
+test('示例分组：侧栏提供错误页入口并可导航', async ({ page }) => {
+  await login(page)
+  await expect(page.locator('#nav')).toContainText('示例')
+  await page.locator('#nav').getByText('无权访问').click()
+  await expect(page).toHaveURL(/#\/forbidden/)
+  await expect(page.locator('.notice-code')).toHaveText('403')
+  await page.locator('#nav').getByText('页面不存在').click()
+  await expect(page).toHaveURL(/#\/not-found/)
+  await expect(page.locator('.notice-code')).toHaveText('404')
+  await page.locator('#nav').getByText('页面加载失败').click()
+  await expect(page).toHaveURL(/#\/500/)
+  await expect(page.locator('.notice-code')).toHaveText('500')
 })
 
 test('基础表单：空值提交触发必填校验', async ({ page }) => {
