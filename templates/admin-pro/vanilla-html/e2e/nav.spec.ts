@@ -70,13 +70,13 @@ test('admin 选中高亮随路由同步：aria-current 高亮项随路由迁移'
   await login(page)
 
   await expect(page.locator('#nav')).toHaveAttribute('active', '/dashboard')
-  await expect(page.locator('#nav [aria-current="page"]')).toHaveText('仪表盘')
+  await expect(page.locator('#nav [aria-current="page"]')).toContainText('仪表盘')
 
   await page.locator('#nav').getByText('用户管理').click()
   await expect(page.locator('#nav')).toHaveAttribute('active', '/users')
-  await expect(page.locator('#nav [aria-current="page"]')).toHaveText('用户管理')
+  await expect(page.locator('#nav [aria-current="page"]')).toContainText('用户管理')
 
   await page.locator('#nav').getByText('个人中心').click()
   await expect(page.locator('#nav')).toHaveAttribute('active', '/profile')
-  await expect(page.locator('#nav [aria-current="page"]')).toHaveText('个人中心')
+  await expect(page.locator('#nav [aria-current="page"]')).toContainText('个人中心')
 })

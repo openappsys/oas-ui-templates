@@ -1,5 +1,6 @@
 .idea/
 .worktrees/
+.openchamber/
 *.un~
 node_modules/
 dist/
