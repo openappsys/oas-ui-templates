@@ -24,6 +24,8 @@ export default {
   'nav.basicForm': '基础表单',
   'nav.forbidden': '无权访问',
   'nav.notFound': '页面不存在',
+  'tabs.closeTab': '关闭标签',
+  'tabs.closeAll': '关闭全部',
   'cmd.page': '页面',
   'cmd.action': '操作',
   'cmd.themeGroup': '主题',

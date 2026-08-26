@@ -24,6 +24,7 @@ test('未登录访问任意路由跳转登录页', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await page.goto('/#/users')
   await expect(page.getByTestId('login-submit')).toBeVisible()
+  await expect(page.locator('.tabs-bar')).toBeHidden()
   expect(errors).toEqual([])
 })
 

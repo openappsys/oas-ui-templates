@@ -2,6 +2,8 @@ import { message } from '@oas-ui/ui/feedback/message'
 import { listNotifications, markAllRead, markRead, unreadCount } from '../data/notifications'
 import { matchRoute, parseHash, resolve } from '../router/router'
 import { routes, type RouteGroup } from '../router/routes'
+import { HOME_PATH, closeAll, closeTab, visit } from '../router/tabs'
+import type { TabsView } from '../router/tabs'
 import { session } from '../store/session'
 import { currentLocale, onLocaleChange, setLocale, t } from '../i18n'
 
@@ -173,6 +175,10 @@ export function mountApp(root: HTMLElement): void {
         <oas-sidebar id="nav" items='${sidebarItems()}'></oas-sidebar>
       </oas-sider>
       <div slot="content" class="content-col">
+        <div class="tabs-bar">
+          <oas-tabs id="page-tabs" data-testid="page-tabs" type="card" hide-content></oas-tabs>
+          <button id="page-tabs-close-all" class="tabs-close-all" type="button" hidden>${t('tabs.closeAll')}</button>
+        </div>
         <div class="crumbs-bar"><oas-breadcrumb id="crumbs"></oas-breadcrumb></div>
         <main id="view"></main>
         <footer class="app-foot">${t('app.footer')}</footer>
@@ -203,6 +209,8 @@ export function mountApp(root: HTMLElement): void {
   const notifToggle = root.querySelector<HTMLElement>('#notif-toggle')!
   const notifList = root.querySelector<HTMLElement>('#notif-list')!
   const notifReadall = root.querySelector<HTMLButtonElement>('#notif-readall')!
+  const pageTabs = root.querySelector<HTMLElement>('#page-tabs')!
+  const closeAllBtn = root.querySelector<HTMLButtonElement>('#page-tabs-close-all')!
 
   navToggle.addEventListener('click', () => {
     if (sidebar.hasAttribute('drawer-open')) (sidebar as any).closeDrawer()
@@ -367,6 +375,96 @@ export function mountApp(root: HTMLElement): void {
   window.addEventListener('hashchange', syncNav)
   syncNav()
 
+  let tabsView: TabsView = { keys: [], active: null }
+
+  function tabPanelHtml(key: string): string {
+    const route = matchRoute(key)
+    const label = route ? t(route.meta.titleKey) : key
+    const close =
+      key === HOME_PATH
+        ? ''
+        : `<span class="ptab-close" role="button" tabindex="-1" title="${t('tabs.closeTab')}" aria-label="${t('tabs.closeTab')}" data-ptab-close><oas-icon name="close" size="12"></oas-icon></span>`
+    return `<oas-tab-panel value="${key}"><span slot="label" class="ptab">${label}${close}</span></oas-tab-panel>`
+  }
+
+  let renderedTabsHtml = ''
+
+  function renderTabs(): void {
+    const html = tabsView.keys.map(tabPanelHtml).join('')
+    if (html !== renderedTabsHtml) {
+      renderedTabsHtml = html
+      pageTabs.innerHTML = html
+    }
+    pageTabs.setAttribute('active', tabsView.active ?? '')
+    closeAllBtn.textContent = t('tabs.closeAll')
+    closeAllBtn.hidden = tabsView.keys.length <= 1
+  }
+
+  function syncTabs(): void {
+    if (!session.user) {
+      tabsView = { keys: [], active: null }
+      renderTabs()
+      return
+    }
+    tabsView = visit(tabsView, parseHash(location.hash))
+    renderTabs()
+  }
+
+  function closeTabAt(key: string): void {
+    const res = closeTab(tabsView, key)
+    tabsView = res.view
+    renderTabs()
+    if (res.navigateTo) location.hash = res.navigateTo
+  }
+
+  pageTabs.addEventListener('oas-change', (e) => {
+    const value = (e as CustomEvent<{ value: string }>).detail.value
+    if (value && location.hash !== `#${value}`) location.hash = value
+  })
+
+  pageTabs.addEventListener(
+    'click',
+    (e) => {
+      const path = e.composedPath()
+      if (!path.some((n) => n instanceof Element && n.hasAttribute('data-ptab-close'))) return
+      e.preventDefault()
+      e.stopPropagation()
+      const tabNode = path.find(
+        (n): n is Element => n instanceof Element && n.getAttribute('role') === 'tab',
+      )
+      const key = tabNode?.getAttribute('data-value')
+      if (key) closeTabAt(key)
+    },
+    true,
+  )
+
+  pageTabs.addEventListener(
+    'keydown',
+    (e) => {
+      const path = e.composedPath()
+      if (!path.some((n) => n instanceof Element && n.hasAttribute('data-ptab-close'))) return
+      if (e.key !== 'Enter' && e.key !== ' ') return
+      e.preventDefault()
+      e.stopPropagation()
+      const tabNode = path.find(
+        (n): n is Element => n instanceof Element && n.getAttribute('role') === 'tab',
+      )
+      const key = tabNode?.getAttribute('data-value')
+      if (key) closeTabAt(key)
+    },
+    true,
+  )
+
+  closeAllBtn.addEventListener('click', () => {
+    const res = closeAll(tabsView)
+    tabsView = res.view
+    renderTabs()
+    if (res.navigateTo) location.hash = res.navigateTo
+  })
+
+  window.addEventListener('hashchange', syncTabs)
+  syncTabs()
+
   function syncUser(): void {
     const avatar = root.querySelector<HTMLElement>('#user-avatar')
     if (avatar) avatar.textContent = (session.user?.name ?? '').charAt(0)
@@ -395,6 +493,7 @@ export function mountApp(root: HTMLElement): void {
     command.setAttribute('items', JSON.stringify(buildCommandItems()))
     renderNotifications()
     syncNav()
+    syncTabs()
     const route = matchRoute(parseHash(location.hash))
     document.title = route ? `${t(route.meta.titleKey)} · ${t('app.fullname')}` : t('app.fullname')
   }

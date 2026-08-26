@@ -24,6 +24,8 @@ export default {
   'nav.basicForm': 'Basic Form',
   'nav.forbidden': 'Forbidden',
   'nav.notFound': 'Not Found',
+  'tabs.closeTab': 'Close tab',
+  'tabs.closeAll': 'Close all',
   'cmd.page': 'Pages',
   'cmd.action': 'Actions',
   'cmd.themeGroup': 'Theme',
