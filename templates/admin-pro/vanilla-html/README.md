@@ -72,9 +72,8 @@ npx degit <本仓库地址>/templates/admin-pro/vanilla-html my-admin
 
 ## 侧栏图标
 
-- 侧栏菜单图标用 `@oas-ui/icons` 的 SVG 几何（非 emoji），`src/components/sidebar-icons.ts` 注册 `nav-*` 名字，path 的 `stroke` 改用主题色变量（`--oas-color-primary` / `--oas-tint-*` / success / warning / danger），**随 light/dark 主题换肤自适应**（见 `src/styles/app.css` 的 `:root` / `html[data-theme="dark"]` 里新增的 `--oas-tint-cyan/orange/green/red`）
-- 路由 `meta.icon` 指向这些 `nav-*` 名字（`src/router/routes.ts`）；active 项仍由 oas-sidebar 组件用主色高亮兜底
-- **临时方案**：当前以「注册自带色 path 的图标名」绕过组件单色限制。待 oas-ui 发版（含 v2.2.4 之后 `be2876b`：os-sidebar `SidebarItem.iconColor` + 接入 `registerIcon` 查表正路）后，改用官方 `iconColor` 项级着色并移除本 hack
+- 侧栏菜单图标用 `@oas-ui/icons` 内置 SVG 名（非 emoji），路由 `meta.icon` 指向标准图标名（`star`/`calendar`/`edit`/`index` 等）
+- **项级着色**：路由 `meta.iconColor`（任意 CSS 色值，如 `var(--oas-tint-cyan)`）经 `SidebarItem.iconColor` 写入 oas-sidebar，`iconSvg` 渲染时 `stroke="{iconColor || 'currentColor'}"`——**随 light/dark 主题换肤自适应**，active 项仍由组件主色高亮兜底
 
 ## 网站 / 发布
 

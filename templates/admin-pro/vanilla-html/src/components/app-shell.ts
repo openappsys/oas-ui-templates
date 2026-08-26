@@ -33,6 +33,7 @@ function sidebarItems(): string {
       label: t(r.meta.titleKey),
       value: r.path,
       icon: r.meta.icon,
+      iconColor: r.meta.iconColor,
       group: groupLabel(r.meta.group),
     }))
   return JSON.stringify(items)

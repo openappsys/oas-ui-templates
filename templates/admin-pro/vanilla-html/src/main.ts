@@ -1,13 +1,10 @@
 import './components/registry'
 import './styles/app.css'
-import { registerSidebarIcons } from './components/sidebar-icons'
 import { initI18n } from './i18n'
 import { enableFakeFetch } from './api/http'
 import { mountApp } from './components/app-shell'
 import { initRouter } from './router/router'
 import { applySettings } from './settings-init'
-
-registerSidebarIcons()
 
 initI18n()
 enableFakeFetch()

@@ -3,6 +3,8 @@ export type RouteGroup = 'nav.output' | 'nav.business' | 'nav.system' | 'nav.dem
 export interface RouteMeta {
   titleKey: string
   icon: string
+  /** 侧栏图标颜色（可选，任意 CSS 色值；缺省随激活/禁用态着色） */
+  iconColor?: string
   roles?: string[]
   hidden?: boolean
   group?: RouteGroup
@@ -23,19 +25,30 @@ export interface Route {
 export const routes: Route[] = [
   {
     path: '/dashboard',
-    meta: { titleKey: 'nav.dashboard', icon: 'nav-dashboard', group: 'nav.output' },
+    meta: {
+      titleKey: 'nav.dashboard',
+      icon: 'star',
+      iconColor: 'var(--oas-color-primary)',
+      group: 'nav.output',
+    },
     load: () => import('../pages/dashboard'),
   },
   {
     path: '/orders',
-    meta: { titleKey: 'nav.orders', icon: 'nav-orders', group: 'nav.business' },
+    meta: {
+      titleKey: 'nav.orders',
+      icon: 'calendar',
+      iconColor: 'var(--oas-tint-cyan)',
+      group: 'nav.business',
+    },
     load: () => import('../pages/orders'),
   },
   {
     path: '/products',
     meta: {
       titleKey: 'nav.products',
-      icon: 'nav-products',
+      icon: 'edit',
+      iconColor: 'var(--oas-tint-violet)',
       roles: ['admin'],
       group: 'nav.business',
     },
@@ -45,7 +58,8 @@ export const routes: Route[] = [
     path: '/users',
     meta: {
       titleKey: 'nav.users',
-      icon: 'nav-users',
+      icon: 'user',
+      iconColor: 'var(--oas-color-success)',
       roles: ['admin', 'viewer'],
       group: 'nav.business',
     },
@@ -53,12 +67,22 @@ export const routes: Route[] = [
   },
   {
     path: '/profile',
-    meta: { titleKey: 'nav.profile', icon: 'nav-profile', group: 'nav.output' },
+    meta: {
+      titleKey: 'nav.profile',
+      icon: 'gear',
+      iconColor: 'var(--oas-color-primary)',
+      group: 'nav.output',
+    },
     load: () => import('../pages/profile'),
   },
   {
     path: '/form',
-    meta: { titleKey: 'nav.createOrder', icon: 'nav-create-order', group: 'nav.business' },
+    meta: {
+      titleKey: 'nav.createOrder',
+      icon: 'plus',
+      iconColor: 'var(--oas-color-warning)',
+      group: 'nav.business',
+    },
     load: () => import('../pages/form'),
   },
   {
@@ -73,37 +97,78 @@ export const routes: Route[] = [
   },
   {
     path: '/system/roles',
-    meta: { titleKey: 'nav.roles', icon: 'nav-roles', roles: ['admin'], group: 'nav.system' },
+    meta: {
+      titleKey: 'nav.roles',
+      icon: 'star-filled',
+      iconColor: 'var(--oas-tint-violet)',
+      roles: ['admin'],
+      group: 'nav.system',
+    },
     load: () => import('../pages/roles'),
   },
   {
     path: '/system/menus',
-    meta: { titleKey: 'nav.menus', icon: 'nav-menus', roles: ['admin'], group: 'nav.system' },
+    meta: {
+      titleKey: 'nav.menus',
+      icon: 'lock',
+      iconColor: 'var(--oas-color-primary)',
+      roles: ['admin'],
+      group: 'nav.system',
+    },
     load: () => import('../pages/menus'),
   },
   {
     path: '/system/dept',
-    meta: { titleKey: 'nav.dept', icon: 'nav-dept', roles: ['admin'], group: 'nav.system' },
+    meta: {
+      titleKey: 'nav.dept',
+      icon: 'organization',
+      iconColor: 'var(--oas-tint-cyan)',
+      roles: ['admin'],
+      group: 'nav.system',
+    },
     load: () => import('../pages/dept'),
   },
   {
     path: '/system/category',
-    meta: { titleKey: 'nav.category', icon: 'nav-category', roles: ['admin'], group: 'nav.system' },
+    meta: {
+      titleKey: 'nav.category',
+      icon: 'tree',
+      iconColor: 'var(--oas-tint-violet)',
+      roles: ['admin'],
+      group: 'nav.system',
+    },
     load: () => import('../pages/category'),
   },
   {
     path: '/system/dict',
-    meta: { titleKey: 'nav.dict', icon: 'nav-dict', roles: ['admin'], group: 'nav.system' },
+    meta: {
+      titleKey: 'nav.dict',
+      icon: 'search',
+      iconColor: 'var(--oas-color-success)',
+      roles: ['admin'],
+      group: 'nav.system',
+    },
     load: () => import('../pages/dict'),
   },
   {
     path: '/system/logs',
-    meta: { titleKey: 'nav.logs', icon: 'nav-logs', roles: ['admin'], group: 'nav.system' },
+    meta: {
+      titleKey: 'nav.logs',
+      icon: 'clock',
+      iconColor: 'var(--oas-color-warning)',
+      roles: ['admin'],
+      group: 'nav.system',
+    },
     load: () => import('../pages/logs'),
   },
   {
     path: '/settings',
-    meta: { titleKey: 'nav.settings', icon: 'nav-settings', group: 'nav.system' },
+    meta: {
+      titleKey: 'nav.settings',
+      icon: 'filter',
+      iconColor: 'var(--oas-tint-violet)',
+      group: 'nav.system',
+    },
     load: () => import('../pages/settings'),
   },
   {
@@ -119,22 +184,42 @@ export const routes: Route[] = [
   },
   {
     path: '/forbidden',
-    meta: { titleKey: 'nav.forbidden', icon: 'nav-forbidden', group: 'nav.demo' },
+    meta: {
+      titleKey: 'nav.forbidden',
+      icon: 'warning',
+      iconColor: 'var(--oas-color-danger)',
+      group: 'nav.demo',
+    },
     load: () => import('../pages/forbidden'),
   },
   {
     path: '/not-found',
-    meta: { titleKey: 'nav.notFound', icon: 'nav-not-found', group: 'nav.demo' },
+    meta: {
+      titleKey: 'nav.notFound',
+      icon: 'search',
+      iconColor: 'var(--oas-color-primary)',
+      group: 'nav.demo',
+    },
     load: () => import('../pages/not-found'),
   },
   {
     path: '/500',
-    meta: { titleKey: 'nav.serverError', icon: 'nav-server-error', group: 'nav.demo' },
+    meta: {
+      titleKey: 'nav.serverError',
+      icon: 'error',
+      iconColor: 'var(--oas-color-warning)',
+      group: 'nav.demo',
+    },
     load: () => import('../pages/server-error'),
   },
   {
     path: '/basic-form',
-    meta: { titleKey: 'nav.basicForm', icon: 'nav-basic-form', group: 'nav.demo' },
+    meta: {
+      titleKey: 'nav.basicForm',
+      icon: 'plus',
+      iconColor: 'var(--oas-color-success)',
+      group: 'nav.demo',
+    },
     load: () => import('../pages/basic-form'),
   },
 ]
