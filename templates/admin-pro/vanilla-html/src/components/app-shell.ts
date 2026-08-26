@@ -56,7 +56,7 @@ const LOGO = `
 const EXPAND_ICON = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 5V3.5A1.5 1.5 0 0 1 3.5 2H5"/><path d="M11 2h1.5A1.5 1.5 0 0 1 14 3.5V5"/><path d="M14 11v1.5a1.5 1.5 0 0 1-1.5 1.5H11"/><path d="M5 14H3.5A1.5 1.5 0 0 1 2 12.5V11"/></svg>`
 const COMPRESS_ICON = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 5h3V2"/><path d="M14 5h-3V2"/><path d="M14 11h-3v3"/><path d="M2 11h3v3"/></svg>`
 const BELL_ICON = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.2a3.6 3.6 0 0 1 3.6 3.6c0 2.2.5 3.4 1.5 4.4H2.9c1-1 1.5-2.2 1.5-4.4A3.6 3.6 0 0 1 8 2.2z"/><path d="M6.7 12.4a1.4 1.4 0 0 0 2.6 0"/></svg>`
-const LANG_ICON = `<svg viewBox="0 0 18 16" fill="currentColor" stroke="none" aria-hidden="true"><text x="0" y="11" font-size="9" font-family="'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif">文</text><text x="8" y="12.5" font-size="10" font-family="Arial, Helvetica, sans-serif">A</text></svg>`
+const GLOBE_ICON = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M2 8h12"/><path d="M8 2c2 1.7 3 3.8 3 6s-1 4.3-3 6c-2-1.7-3-3.8-3-6s1-4.3 3-6z"/></svg>`
 
 interface CommandEntry {
   label: string
@@ -157,17 +157,17 @@ export function mountApp(root: HTMLElement): void {
           <oas-icon size="18" class="fs-compress">${COMPRESS_ICON}</oas-icon>
         </button>
         <button id="theme-toggle" class="theme-dot" type="button" title="${t('header.theme')}" aria-label="${t('header.theme')}"></button>
-        <oas-dropdown id="lang-menu" placement="bottom" arrow-point-at-center value="${currentLocale()}" items='${LANG_ITEMS}'>
-          <oas-button id="lang-toggle" class="icon-btn" type="text" title="${t('cmd.locale')}" aria-label="${t('cmd.locale')}">
-            <oas-icon size="18">${LANG_ICON}</oas-icon>
-          </oas-button>
+        <oas-dropdown id="lang-menu" placement="bottom" arrow-point-at-center trigger="hover click" value="${currentLocale()}" items='${LANG_ITEMS}'>
+          <button id="lang-toggle" class="icon-btn" type="button" title="${t('cmd.locale')}" aria-label="${t('cmd.locale')}">
+            <oas-icon size="18">${GLOBE_ICON}</oas-icon>
+          </button>
         </oas-dropdown>
         <oas-badge id="notif-badge" value="0" size="small" offset="-2,2">
-          <oas-button id="notif-toggle" class="icon-btn" type="text" title="${t('header.notification')}" aria-label="${t('header.notification')}">
+          <button id="notif-toggle" class="icon-btn" type="button" title="${t('header.notification')}" aria-label="${t('header.notification')}">
             <oas-icon size="18">${BELL_ICON}</oas-icon>
-          </oas-button>
+          </button>
         </oas-badge>
-        <oas-dropdown id="user-menu" placement="bottom" arrow-point-at-center items='${userMenuItems()}'>
+        <oas-dropdown id="user-menu" placement="bottom" arrow-point-at-center trigger="hover click" items='${userMenuItems()}'>
           <oas-avatar id="user-avatar" size="28"></oas-avatar>
         </oas-dropdown>
       </header>

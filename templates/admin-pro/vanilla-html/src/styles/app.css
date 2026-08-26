@@ -226,10 +226,6 @@ html[data-theme="dark"] .theme-dot::before {
   box-shadow: var(--oas-focus-ring);
 }
 
-#notif-toggle {
-  --oas-control-height-md: 28px;
-}
-
 .fullscreen-btn .fs-compress {
   display: none;
 }
