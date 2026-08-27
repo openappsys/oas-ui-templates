@@ -1,5 +1,6 @@
 // 应用层 i18n：saved > navigator.language 嗅探 > zh-CN 默认
 // 注意：组件内置文案（popconfirm 确定/取消等）由 cdn.js 内联 registry 控制，恒为 zh-CN（已知边界）
+// 同步锚定：index.html <head> 内有同逻辑的 FOUC 内联脚本，改 KEY / matchBrowser 须两处同步
 const KEY = 'oas-admin-cdn.locale'
 const listeners = new Set()
 

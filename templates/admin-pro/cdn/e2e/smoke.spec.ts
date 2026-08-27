@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
@@ -11,12 +11,12 @@ test.beforeEach(async ({ page }) => {
   await page.route('**unpkg.com/@oas-ui/**', (route) => {
     const url = route.request().url()
     if (url.endsWith('.css'))
-      return route.fulfill({ body: THEME_CSS, contentType: 'text/css' })
-    return route.fulfill({ body: CDN_JS, contentType: 'application/javascript' })
+      return route.fulfill({ body: THEME_CSS, contentType: 'text/css; charset=utf-8' })
+    return route.fulfill({ body: CDN_JS, contentType: 'application/javascript; charset=utf-8' })
   })
 })
 
-async function login(page: import('@playwright/test').Page): Promise<void> {
+async function login(page: Page): Promise<void> {
   await page.goto('/')
   await page.getByTestId('login-name').locator('input').fill('张伟')
   await page.getByTestId('login-submit').click()
@@ -63,5 +63,15 @@ test('刷新后语言保持（localStorage 生效）', async ({ page }) => {
   await expect(page.locator('#nav')).toContainText('Dashboard')
   await page.reload()
   await expect(page.locator('#nav')).toContainText('Dashboard')
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en')
   expect(await page.evaluate(() => localStorage.getItem('oas-admin-cdn.locale'))).toBe('en')
+})
+
+test.describe('首访语言嗅探', () => {
+  test.use({ locale: 'en-US' })
+  test('en-US 浏览器首访：<html lang> 与登录页均为英文', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en')
+    await expect(page.locator('h1')).toHaveText('Welcome back')
+  })
 })
