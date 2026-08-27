@@ -136,17 +136,18 @@ test('admin 商品分类：删除需 popconfirm 确认后移除行', async ({ pa
   await page.waitForTimeout(500)
   await page.evaluate(() => {
     const t = document.querySelector('[data-testid="category-table"]')
-    const pop = Array.from(
-      t?.shadowRoot?.querySelectorAll('oas-popconfirm') ?? [],
-    ).find((x) => x.isConnected && x.hasAttribute('open')) as HTMLElement | undefined
+    const pop = Array.from(t?.shadowRoot?.querySelectorAll('oas-popconfirm') ?? []).find(
+      (x) => x.isConnected && x.hasAttribute('open'),
+    ) as HTMLElement | undefined
     pop?.shadowRoot?.querySelector<HTMLButtonElement>('[part="ok"]')?.click()
   })
   await expect
     .poll(async () =>
-      page.evaluate(() =>
-        document
-          .querySelector('[data-testid="category-table"]')
-          ?.shadowRoot?.querySelectorAll('tbody tr').length,
+      page.evaluate(
+        () =>
+          document
+            .querySelector('[data-testid="category-table"]')
+            ?.shadowRoot?.querySelectorAll('tbody tr').length,
       ),
     )
     .toBe(3)
