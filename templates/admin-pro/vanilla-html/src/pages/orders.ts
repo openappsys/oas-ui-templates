@@ -1,4 +1,5 @@
 import { message } from '@oas-ui/ui/feedback/message'
+import type { OASTable, TableColumn } from '@oas-ui/ui/data/table'
 import { t } from '../i18n'
 import { listOrders, updateOrderStatus } from '../data/orders'
 import type { OrderRow, OrderStatus } from '../data/orders'
@@ -56,11 +57,6 @@ function itemSummary(items: string[]): string {
   })
 }
 
-function tagMarkup(status: OrderStatus): string {
-  const t = STATUS_TAG[status]
-  return t === 'purple' ? `color="purple"` : `type="${t}"`
-}
-
 function setTagType(tag: HTMLElement, status: OrderStatus): void {
   const t = STATUS_TAG[status]
   if (t === 'purple') {
@@ -71,6 +67,42 @@ function setTagType(tag: HTMLElement, status: OrderStatus): void {
     tag.removeAttribute('color')
   }
 }
+
+function statusCell(row: OrderRow): HTMLElement {
+  const tag = document.createElement('oas-tag')
+  tag.textContent = statusLabel(row.status)
+  setTagType(tag, row.status)
+  return tag
+}
+
+function moneyCell(row: OrderRow): HTMLElement {
+  const span = document.createElement('span')
+  span.className = 'mono'
+  span.textContent = formatMoney(row.amount)
+  return span
+}
+
+const TABLE_COLUMNS = (): TableColumn[] => [
+  { key: 'id', title: t('orders.th.no') },
+  { key: 'customer', title: t('orders.th.customer') },
+  {
+    key: 'items',
+    title: t('orders.th.items'),
+    render: (r) => String(itemSummary((r as unknown as OrderRow).items)),
+  },
+  {
+    key: 'amount',
+    title: t('orders.th.amount'),
+    align: 'right',
+    render: (r) => moneyCell(r as unknown as OrderRow),
+  },
+  {
+    key: 'status',
+    title: t('orders.th.status'),
+    render: (r) => statusCell(r as unknown as OrderRow),
+  },
+  { key: 'created', title: t('orders.th.created') },
+]
 
 export function render(el: HTMLElement): () => void {
   const state: PageState = {
@@ -119,19 +151,7 @@ export function render(el: HTMLElement): () => void {
         </div>
         <oas-tabs data-testid="orders-tabs" id="orders-tabs"></oas-tabs>
         <div class="table-wrap" id="orders-table-wrap">
-          <table class="orders-table" data-testid="orders-list">
-            <thead>
-              <tr>
-                <th>${t('orders.th.no')}</th>
-                <th>${t('orders.th.customer')}</th>
-                <th>${t('orders.th.items')}</th>
-                <th class="num">${t('orders.th.amount')}</th>
-                <th>${t('orders.th.status')}</th>
-                <th>${t('orders.th.created')}</th>
-              </tr>
-            </thead>
-            <tbody id="orders-tbody"></tbody>
-          </table>
+          <oas-table data-testid="orders-list" row-key="id" empty-text="${t('orders.empty')}"></oas-table>
           <div class="empty-overlay" id="orders-empty" hidden>
             <oas-empty description="${t('orders.empty')}"></oas-empty>
             <oas-button id="orders-clear" type="primary">${t('common.clearFilter')}</oas-button>
@@ -161,7 +181,7 @@ export function render(el: HTMLElement): () => void {
       </oas-drawer>
     </div>`
 
-  const tbody = el.querySelector<HTMLElement>('#orders-tbody')!
+  const table = el.querySelector<OASTable>('[data-testid="orders-list"]')!
   const pager = el.querySelector<HTMLElement>('[data-testid="orders-pager"]')!
   const search = el.querySelector<HTMLElement>('[data-testid="orders-search"]')!
   const tabs = el.querySelector<HTMLElement>('[data-testid="orders-tabs"]')!
@@ -194,7 +214,7 @@ export function render(el: HTMLElement): () => void {
 
   function setEmpty(empty: boolean): void {
     if (empty) {
-      tbody.innerHTML = ''
+      table.setAttribute('data', '[]')
       pager.classList.add('table-hidden')
       emptyOverlay.hidden = false
       tableWrap.classList.add('is-empty')
@@ -207,6 +227,7 @@ export function render(el: HTMLElement): () => void {
 
   function renderTable(): void {
     const list = filtered()
+    table.columns = TABLE_COLUMNS()
     if (list.length === 0) {
       pager.setAttribute('total', '0')
       pager.setAttribute('current', '1')
@@ -217,19 +238,7 @@ export function render(el: HTMLElement): () => void {
     const maxPage = Math.max(1, Math.ceil(list.length / PAGE_SIZE))
     if (state.page > maxPage) state.page = maxPage
     const slice = list.slice((state.page - 1) * PAGE_SIZE, state.page * PAGE_SIZE)
-    tbody.innerHTML = slice
-      .map(
-        (r) => `
-        <tr data-id="${r.id}">
-          <td class="mono">${r.id}</td>
-          <td>${r.customer}</td>
-          <td class="items-cell" title="${r.items.join(t('orders.itemJoin'))}">${itemSummary(r.items)}</td>
-          <td class="amount-cell mono">${formatMoney(r.amount)}</td>
-          <td><oas-tag ${tagMarkup(r.status)}>${statusLabel(r.status)}</oas-tag></td>
-          <td class="mono">${r.created}</td>
-        </tr>`,
-      )
-      .join('')
+    table.setAttribute('data', JSON.stringify(slice))
     pager.setAttribute('total', String(list.length))
     pager.setAttribute('current', String(state.page))
   }
@@ -262,7 +271,7 @@ export function render(el: HTMLElement): () => void {
   }
 
   async function refresh(): Promise<void> {
-    tbody.classList.add('table-loading')
+    table.setAttribute('loading', '')
     let rows = await listOrders()
     const u = session.user
     if (u?.role === 'viewer') {
@@ -272,7 +281,7 @@ export function render(el: HTMLElement): () => void {
       scopeEl.hidden = true
     }
     state.rows = rows
-    tbody.classList.remove('table-loading')
+    table.removeAttribute('loading')
     renderTabs()
     renderStats()
     renderTable()
@@ -386,12 +395,9 @@ export function render(el: HTMLElement): () => void {
     },
   )
 
-  tbody.addEventListener('click', (e) => {
-    const tr = (e.target as HTMLElement).closest<HTMLElement>('tr[data-id]')
-    if (!tr) return
-    const id = tr.getAttribute('data-id')
-    const row = state.rows.find((r) => r.id === id)
-    if (row) openDrawer(row)
+  table.addEventListener('oas-row-click', (e) => {
+    const row = (e as CustomEvent<{ row: OrderRow }>).detail?.row
+    if (row?.id) openDrawer(row)
   })
 
   search.addEventListener('oas-input', (e) => {
