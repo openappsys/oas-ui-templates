@@ -1,4 +1,5 @@
 import { message } from '@oas-ui/ui/feedback/message'
+import type { OASTable, TableColumn } from '@oas-ui/ui/data/table'
 import { t } from '../i18n'
 import { createCategory, listCategories, removeCategory, updateCategory } from '../data/categories'
 import type { CategoryRow } from '../data/categories'
@@ -13,6 +14,56 @@ const RULES = (): string =>
 function statusLabel(s: CategoryRow['status']): string {
   return t(s === 'on' ? 'category.status.on' : 'category.status.off')
 }
+
+function cellTag(row: CategoryRow): HTMLElement {
+  const tag = document.createElement('oas-tag')
+  tag.setAttribute('type', row.status === 'on' ? 'success' : 'default')
+  tag.textContent = statusLabel(row.status)
+  return tag
+}
+
+function cellAction(row: CategoryRow): HTMLElement {
+  const ctx = document.createElement('div')
+  ctx.className = 'cat-actions'
+  const edit = document.createElement('oas-button')
+  edit.className = 'category-edit'
+  edit.setAttribute('data-testid', 'category-edit')
+  edit.setAttribute('data-id', String(row.id))
+  edit.setAttribute('size', 'small')
+  edit.setAttribute('icon', 'edit')
+  edit.setAttribute('aria-label', t('common.edit'))
+  const pop = document.createElement('oas-popconfirm')
+  pop.setAttribute('data-testid', 'category-del-pop')
+  pop.setAttribute('title', t('category.confirmDelete'))
+  const del = document.createElement('oas-button')
+  del.className = 'category-delete'
+  del.setAttribute('data-testid', 'category-delete')
+  del.setAttribute('data-id', String(row.id))
+  del.setAttribute('size', 'small')
+  del.setAttribute('icon', 'trash')
+  del.setAttribute('type', 'danger')
+  del.setAttribute('aria-label', t('common.delete'))
+  pop.appendChild(del)
+  ctx.appendChild(edit)
+  ctx.appendChild(pop)
+  return ctx
+}
+
+const TABLE_COLUMNS = (): TableColumn[] => [
+  { key: 'name', title: t('category.th.name') },
+  { key: 'code', title: t('category.th.code') },
+  { key: 'sort', title: t('category.th.sort'), align: 'right' },
+  {
+    key: 'status',
+    title: t('category.th.status'),
+    render: (r) => cellTag(r as unknown as CategoryRow),
+  },
+  {
+    key: 'action',
+    title: t('category.th.action'),
+    render: (r) => cellAction(r as unknown as CategoryRow),
+  },
+]
 
 interface PageState {
   rows: CategoryRow[]
@@ -38,18 +89,10 @@ export function render(el: HTMLElement): () => void {
           <oas-input data-testid="category-search" placeholder="${t('category.search')}" prefix-icon="search" clearable class="category-search"></oas-input>
         </div>
         <div id="category-items-wrap">
-          <table class="dict-items-table" data-testid="category-table">
-            <thead>
-              <tr>
-                <th>${t('category.th.name')}</th>
-                <th>${t('category.th.code')}</th>
-                <th class="num">${t('category.th.sort')}</th>
-                <th>${t('category.th.status')}</th>
-                <th>${t('category.th.action')}</th>
-              </tr>
-            </thead>
-            <tbody id="category-body"></tbody>
-          </table>
+          <oas-table data-testid="category-table" row-key="id"></oas-table>
+          <div class="table-empty" data-testid="category-empty" hidden>
+            <oas-empty description="${t('category.empty')}"></oas-empty>
+          </div>
         </div>
       </div>
 
@@ -91,7 +134,8 @@ export function render(el: HTMLElement): () => void {
     </div>`
 
   const tableWrap = el.querySelector<HTMLElement>('#category-items-wrap')!
-  const body = el.querySelector<HTMLElement>('#category-body')!
+  const table = el.querySelector<OASTable>('[data-testid="category-table"]')!
+  const empty = el.querySelector<HTMLElement>('[data-testid="category-empty"]')!
   const search = el.querySelector<HTMLElement>('[data-testid="category-search"]')!
   const modal = el.querySelector<HTMLElement>('[data-testid="category-modal"]')!
   const form = el.querySelector<HTMLElement>('#category-form')!
@@ -104,30 +148,13 @@ export function render(el: HTMLElement): () => void {
     modal.removeAttribute('visible')
   }
 
-  function esc(v: string): string {
-    return v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-  }
-
   function renderTable(): void {
     const kw = state.keyword.trim()
     const list = state.rows.filter((r) => !kw || r.name.includes(kw) || r.code.includes(kw))
+    table.columns = TABLE_COLUMNS()
+    table.setAttribute('data', JSON.stringify(list))
+    empty.hidden = list.length !== 0
     tableWrap.classList.toggle('table-hidden', list.length === 0)
-    body.innerHTML = list
-      .map(
-        (r) => `<tr data-id="${r.id}" data-testid="category-row">
-          <td>${esc(r.name)}</td>
-          <td class="mono">${esc(r.code)}</td>
-          <td class="num">${r.sort}</td>
-          <td><oas-tag type="${r.status === 'on' ? 'success' : 'default'}">${statusLabel(r.status)}</oas-tag></td>
-          <td class="cat-actions">
-            <oas-button size="small" icon="edit" data-testid="category-edit" data-id="${r.id}" aria-label="${t('common.edit')}"></oas-button>
-            <oas-popconfirm title="${t('category.confirmDelete')}" data-testid="category-del-pop">
-              <oas-button size="small" icon="trash" type="danger" data-testid="category-delete" data-id="${r.id}" aria-label="${t('common.delete')}"></oas-button>
-            </oas-popconfirm>
-          </td>
-        </tr>`,
-      )
-      .join('')
   }
 
   async function refresh(): Promise<void> {
@@ -168,8 +195,8 @@ export function render(el: HTMLElement): () => void {
     ;(form.shadowRoot?.querySelector('form') as HTMLFormElement | null)?.requestSubmit()
   })
 
-  body.addEventListener('click', (e) => {
-    const target = e.target as HTMLElement
+  table.addEventListener('click', (e) => {
+    const target = e.composedPath()[0] as HTMLElement
     const editBtn = target.closest<HTMLElement>('[data-testid="category-edit"]')
     if (editBtn) {
       const row = state.rows.find((r) => r.id === Number(editBtn.getAttribute('data-id')))
@@ -186,7 +213,7 @@ export function render(el: HTMLElement): () => void {
     }
   })
 
-  body.addEventListener('oas-ok', (e) => {
+  table.addEventListener('oas-ok', (e) => {
     const btn = (e.target as HTMLElement)?.closest<HTMLElement>('[data-testid="category-del-pop"]')
     void (async () => {
       const id = btn

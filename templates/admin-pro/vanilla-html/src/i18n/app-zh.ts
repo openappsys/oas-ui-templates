@@ -351,6 +351,7 @@ export default {
   'category.placeholder.code': '如：digital',
   'category.placeholder.desc': '分类说明（可选）',
   'category.confirmDelete': '确认删除该分类？',
+  'category.empty': '暂无分类，点击右上角新建分类',
   'dict.subtitle': '维护数据字典类型与键值项',
   'dict.typeTitle': '字典类型',
   'dict.itemTitle': '字典项',

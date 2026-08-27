@@ -353,6 +353,7 @@ export default {
   'category.placeholder.code': 'e.g. digital',
   'category.placeholder.desc': 'Optional description',
   'category.confirmDelete': 'Delete this category?',
+  'category.empty': 'No categories. Click "New Category" to add one.',
   'dict.subtitle': 'Maintain dictionary types and key-value items',
   'dict.typeTitle': 'Dictionary Types',
   'dict.itemTitle': 'Dictionary Items',
