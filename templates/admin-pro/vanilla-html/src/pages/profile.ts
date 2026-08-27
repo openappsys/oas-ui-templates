@@ -75,7 +75,9 @@ export function render(el: HTMLElement): () => void {
     </div>`
 
   const avatar = el.querySelector<HTMLElement>('#profile-avatar')!
-  el.querySelector<HTMLElement>('#profile-avatar-text')!.textContent = user.name.charAt(0).toUpperCase()
+  el.querySelector<HTMLElement>('#profile-avatar-text')!.textContent = user.name
+    .charAt(0)
+    .toUpperCase()
   if (user.role === 'admin') {
     avatar.style.setProperty('--oas-color-primary', 'var(--oas-color-primary)')
   }
