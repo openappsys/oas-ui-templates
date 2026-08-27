@@ -38,7 +38,9 @@ function renderLogin() {
     </div>`
   const input = app.querySelector('[data-testid="login-name"]')
   const submit = () => {
-    const name = (input.value ?? '').trim()
+    const name = (
+      input.shadowRoot?.querySelector('input')?.value ?? ''
+    ).trim()
     if (!name) return
     localStorage.setItem(SESSION_KEY, JSON.stringify({ name }))
     location.hash = '#/dashboard'
@@ -76,9 +78,9 @@ function syncNav() {
   if (!nav) return
   nav.setAttribute(
     'items',
-    JSON.stringify([
-      { group: t('nav.group'), children: NAV.map((n) => ({ key: n.path, label: t(n.key), icon: n.icon })) },
-    ]),
+    JSON.stringify(
+      NAV.map((n) => ({ label: t(n.key), value: n.path, icon: n.icon, group: t('nav.group') })),
+    ),
   )
   nav.setAttribute('active', location.hash.replace(/^#/, '') || '/dashboard')
 }
