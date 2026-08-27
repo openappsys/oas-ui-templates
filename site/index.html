@@ -3,7 +3,28 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>OAS-UI Templates</title>
+    <title data-i18n="meta.title">OAS-UI Templates</title>
+    <script>
+      // 业界通行 3 级优先级：localStorage 已保存 > navigator.language 嗅探 > zh-CN 默认
+      // 静态门户无依赖，IIFE 内联执行，同步决定 <html lang> 防 FOUC
+      (function () {
+        var KEY = 'oas-templates.locale'
+        var saved = null
+        try {
+          saved = localStorage.getItem(KEY)
+        } catch (e) {
+          /* 隐私模式无 storage */
+        }
+        function matchNav(lang) {
+          var n = (lang || '').toLowerCase()
+          if (n === 'zh' || n.indexOf('zh-') === 0) return 'zh-CN'
+          if (n.indexOf('en') === 0) return 'en'
+          return 'zh-CN'
+        }
+        var detected = saved === 'zh-CN' || saved === 'en' ? saved : matchNav(navigator.language)
+        document.documentElement.lang = detected
+      })()
+    </script>
     <style>
       :root {
         --bg: #0b0f1a;
@@ -52,30 +73,129 @@
         background: rgba(255,255,255,.05); color: var(--muted); border: 1px solid var(--border);
       }
       .foot { margin-top: 48px; text-align: center; font-size: 13px; color: var(--muted); }
+      .lang-switch {
+        position: fixed; top: 18px; right: 18px; z-index: 1;
+        display: inline-flex; padding: 4px;
+        background: rgba(255,255,255,.04); border: 1px solid var(--border); border-radius: 999px;
+        font-size: 12px;
+      }
+      .lang-switch button {
+        appearance: none; border: 0; background: none; color: var(--muted);
+        padding: 4px 10px; border-radius: 999px; cursor: pointer; font: inherit;
+      }
+      .lang-switch button:hover { color: var(--text); }
+      .lang-switch button[aria-pressed='true'] {
+        background: var(--primary); color: #fff; font-weight: 600;
+      }
     </style>
   </head>
   <body>
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" data-lang="zh-CN" aria-pressed="true">中</button>
+      <button type="button" data-lang="en" aria-pressed="false">EN</button>
+    </div>
     <div class="wrap">
       <div class="brand"><div class="logo">OAS</div></div>
-      <h1>OAS-UI Templates</h1>
-      <p class="subtitle">基于 oas-ui Web Components 的官方模板集合。零框架运行时，TypeScript + Vite，即取即用。</p>
+      <h1 data-i18n="meta.title">OAS-UI Templates</h1>
+      <p class="subtitle" data-i18n="intro.subtitle">基于 oas-ui Web Components 的官方模板集合。零框架运行时，TypeScript + Vite，即取即用。</p>
 
       <div class="grid">
         <a class="card" href="./admin-pro/vanilla-html/">
           <div class="card-head">
-            <span class="card-name">admin-pro / vanilla-html</span>
-            <span class="tag">admin</span>
+            <span class="card-name" data-i18n="card.adminPro.name">admin-pro / vanilla-html</span>
+            <span class="tag" data-i18n="card.adminPro.tag">admin</span>
           </div>
-          <p class="card-desc">后台管理系统模板：i18n / 权限守卫 / 多页签 / 数据可视化 / 表单 / 请求层。</p>
+          <p class="card-desc" data-i18n="card.adminPro.desc">后台管理系统模板：i18n / 权限守卫 / 多页签 / 数据可视化 / 表单 / 请求层。</p>
           <div class="meta">
-            <span class="chip">Vite + TS</span>
-            <span class="chip">Web Components</span>
-            <span class="chip">零框架运行时</span>
+            <span class="chip" data-i18n="chip.vite">Vite + TS</span>
+            <span class="chip" data-i18n="chip.wc">Web Components</span>
+            <span class="chip" data-i18n="chip.zeroRuntime">零框架运行时</span>
           </div>
         </a>
       </div>
 
-      <p class="foot">OAS-UI Templates · MIT OR Apache-2.0</p>
+      <p class="foot" data-i18n="foot.license">OAS-UI Templates · MIT OR Apache-2.0</p>
     </div>
+    <script>
+      // 双语字典（内联零依赖）。新增键时同步更新两版；保持 key 集合一致防漏翻。
+      var I18N = {
+        'zh-CN': {
+          'meta.title': 'OAS-UI Templates',
+          'intro.subtitle': '基于 oas-ui Web Components 的官方模板集合。零框架运行时，TypeScript + Vite，即取即用。',
+          'card.adminPro.name': 'admin-pro / vanilla-html',
+          'card.adminPro.tag': '后台',
+          'card.adminPro.desc': '后台管理系统模板：i18n / 权限守卫 / 多页签 / 数据可视化 / 表单 / 请求层。',
+          'chip.vite': 'Vite + TS',
+          'chip.wc': 'Web Components',
+          'chip.zeroRuntime': '零框架运行时',
+          'foot.license': 'OAS-UI Templates · MIT OR Apache-2.0',
+        },
+        en: {
+          'meta.title': 'OAS-UI Templates',
+          'intro.subtitle':
+            'Official template collection built on oas-ui Web Components. Zero-framework runtime, TypeScript + Vite, ready to use.',
+          'card.adminPro.name': 'admin-pro / vanilla-html',
+          'card.adminPro.tag': 'admin',
+          'card.adminPro.desc':
+            'Admin dashboard template: i18n / route guards / multi-page tabs / data viz / forms / request layer.',
+          'chip.vite': 'Vite + TS',
+          'chip.wc': 'Web Components',
+          'chip.zeroRuntime': 'Zero-framework',
+          'foot.license': 'OAS-UI Templates · MIT OR Apache-2.0',
+        },
+      }
+      var LOCALE_KEY = 'oas-templates.locale'
+      function readSaved() {
+        try {
+          var v = localStorage.getItem(LOCALE_KEY)
+          return v === 'zh-CN' || v === 'en' ? v : null
+        } catch (e) {
+          return null
+        }
+      }
+      function detect() {
+        var saved = readSaved()
+        if (saved) return saved
+        var n = (navigator.language || '').toLowerCase()
+        if (n === 'zh' || n.indexOf('zh-') === 0) return 'zh-CN'
+        if (n.indexOf('en') === 0) return 'en'
+        return 'zh-CN'
+      }
+      function applyLocale(loc) {
+        var dict = I18N[loc] || I18N['zh-CN']
+        document.documentElement.lang = loc
+        document.title = dict['meta.title']
+        var nodes = document.querySelectorAll('[data-i18n]')
+        for (var i = 0; i < nodes.length; i++) {
+          var key = nodes[i].getAttribute('data-i18n')
+          if (dict[key] !== undefined) nodes[i].textContent = dict[key]
+        }
+        var btns = document.querySelectorAll('.lang-switch [data-lang]')
+        for (var j = 0; j < btns.length; j++) {
+          btns[j].setAttribute('aria-pressed', btns[j].getAttribute('data-lang') === loc ? 'true' : 'false')
+        }
+      }
+      function setLocale(loc) {
+        try {
+          localStorage.setItem(LOCALE_KEY, loc)
+        } catch (e) {
+          /* 隐私模式忽略 */
+        }
+        applyLocale(loc)
+      }
+      var initial = detect()
+      if (initial !== document.documentElement.lang) {
+        applyLocale(initial)
+      } else {
+        // 即便 lang 已一致（FOUC 脚本设过了）也要用 dict 替换 title / 文本一次
+        applyLocale(initial)
+      }
+      document.querySelector('.lang-switch').addEventListener('click', function (e) {
+        var t = e.target
+        if (t && t.hasAttribute && t.hasAttribute('data-lang')) {
+          setLocale(t.getAttribute('data-lang'))
+        }
+      })
+    </script>
   </body>
 </html>
