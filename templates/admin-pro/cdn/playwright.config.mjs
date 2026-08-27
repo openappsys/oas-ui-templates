@@ -6,7 +6,7 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   use: {
     baseURL: 'http://localhost:5190',
-    // 全局模拟 zh-CN：默认按中文跑断言；英文嗅探用例单独 test.use({ locale: 'en-US' })
+    // 全局模拟 zh-CN：默认按中文跑断言
     locale: 'zh-CN',
   },
   webServer: {
