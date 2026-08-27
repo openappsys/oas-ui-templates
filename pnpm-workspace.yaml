@@ -5,8 +5,8 @@ allowBuilds:
   esbuild: true
   workerd: true
 minimumReleaseAgeExclude:
-  - '@oas-ui/core@2.2.2 || 2.2.3 || 2.2.4 || 2.2.5 || 2.2.6 || 2.2.7 || 2.2.8'
-  - '@oas-ui/i18n@2.2.2 || 2.2.3 || 2.2.4 || 2.2.5 || 2.2.6 || 2.2.7 || 2.2.8'
-  - '@oas-ui/icons@2.2.2 || 2.2.3 || 2.2.4 || 2.2.5 || 2.2.6 || 2.2.7 || 2.2.8'
-  - '@oas-ui/theme@2.2.2 || 2.2.3 || 2.2.4 || 2.2.5 || 2.2.6 || 2.2.7 || 2.2.8'
-  - '@oas-ui/ui@2.2.2 || 2.2.3 || 2.2.4 || 2.2.5 || 2.2.6 || 2.2.7 || 2.2.8'
+  - '@oas-ui/core'
+  - '@oas-ui/i18n'
+  - '@oas-ui/icons'
+  - '@oas-ui/theme'
+  - '@oas-ui/ui'
