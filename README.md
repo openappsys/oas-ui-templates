@@ -1,3 +1,5 @@
+## <a id="zh"></a> 中文 | [English](#en)
+
 # oas-ui-templates
 
 基于 [oas-ui](https://oas-ui.dev)（框架无关 Web Components 组件库）的项目模版集合。每个模版目录自包含，可独立安装运行，或 `npx degit` 取用。
@@ -60,6 +62,75 @@ admin-pro/vanilla-html/           # 模版 demo（模版自己的 dist）
 - 由 `.github/workflows/ci.yml` 的 matrix 驱动：模版列表（`matrix.template`）加一行即接入新模版
 - push / PR：每模版 install + build + test + e2e
 - 每周一 03:00 UTC 定时 + oas-ui 发版 repository_dispatch 触发依赖升级复测（防模版随主库演进腐烂）；仅覆盖 semver 范围内（^2.x）的 minor/patch 升级，主版本升级需人工评估
+
+## License
+
+[MIT OR Apache-2.0](./LICENSE) · Copyright (c) 2026 OpenAppSys
+
+## <a id="en"></a> [中文](#zh) | English
+
+# oas-ui-templates
+
+A collection of project templates built on [oas-ui](https://oas-ui.dev), a framework-agnostic Web Components library. Each template is self-contained — install and run it on its own, or pull it via `npx degit`.
+
+## Templates
+
+| Template | Stack | Description | Unit | e2e | Status |
+| --- | --- | --- | --- | --- | --- |
+| `templates/admin-pro/vanilla-html` | Vite + TypeScript | Admin dashboard (zero-framework · i18n / request layer / 403/404) | ✅ | ✅ | Stable |
+
+## Development
+
+A pnpm workspace. From the repo root, after `pnpm install`:
+
+```bash
+pnpm build / pnpm test / pnpm check
+```
+
+e2e (requires a local Chromium):
+
+```bash
+pnpm --filter admin-pro-vanilla test:e2e
+```
+
+## Website / Publishing
+
+The repo can be built as a **single site**: a portal landing page plus each template mounted under a sub-path (hash routing, no server-side fallback required).
+
+```bash
+pnpm site   # Aggregate build: build every template, then copy to site/dist/<family>/<template>/
+```
+
+Output layout (`site/dist`):
+
+```
+index.html                        # Portal landing page (from site/index.html)
+admin-pro/vanilla-html/           # Template demo (template's own dist/)
+```
+
+- Templates use `base: './'` (relative asset paths) and can be mounted under any sub-path without affecting local dev / unit tests / e2e
+- Add a new template: drop it under `templates/<family>/<name>` with a `package.json` and `pnpm site` will pick it up automatically
+
+### Publish to Cloudflare Workers (static site)
+
+`wrangler.jsonc` is included (Cloudflare Worker static-assets config). Connect the GitHub repo, then create a **Worker** on Cloudflare (the project deploys automatically via wrangler):
+
+| Field | Value |
+| --- | --- |
+| Root directory | `/` (the repo root, where `wrangler.jsonc` lives) |
+| Build / Deploy | Wrangler reads `wrangler.jsonc` (`assets.directory` → `site/dist`) — builds and uploads automatically |
+| Node version | 20+ |
+| Routing | Hash routing, no SPA fallback required |
+
+`wrangler.jsonc` highlights: `assets.directory: ./site/dist` (single site: portal + per-template sub-paths), `not_found_handling: single-page-application`, `build.command: corepack enable && pnpm install && pnpm site` (Cloudflare runs it automatically at build time).
+
+> The template's `vite.config.ts` uses `base: './'` (relative asset paths) so each template can be mounted under any sub-path.
+
+## CI
+
+- Driven by `.github/workflows/ci.yml` matrix: append a row to `matrix.template` to onboard a new template
+- push / PR: install + build + test + e2e for every template
+- Weekly Monday 03:00 UTC schedule + oas-ui release `repository_dispatch` to retry a dependency upgrade (preventing rot as the upstream library evolves); covers semver-range (`^2.x`) minor/patch upgrades only — major upgrades require manual review
 
 ## License
 
