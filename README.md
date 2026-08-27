@@ -9,6 +9,7 @@
 | 模版 | 技术栈 | 说明 | 单测 | e2e | 状态 |
 | --- | --- | --- | --- | --- | --- |
 | `templates/admin-pro/vanilla-html` | Vite + TypeScript | 后台管理系统（零框架 · i18n / 请求层 / 403/404） | ✅ | ✅ | 可用 |
+| `templates/admin-pro/cdn` | 零构建（unpkg CDN + 原生 JS） | 轻量后台（登录 / 路由 / CRUD / 表单 / 中英切换） | — | ✅ | 可用 |
 
 ## 开发
 
@@ -78,6 +79,7 @@ A collection of project templates built on [oas-ui](https://oas-ui.dev), a frame
 | Template | Stack | Description | Unit | e2e | Status |
 | --- | --- | --- | --- | --- | --- |
 | `templates/admin-pro/vanilla-html` | Vite + TypeScript | Admin dashboard (zero-framework · i18n / request layer / 403/404) | ✅ | ✅ | Stable |
+| `templates/admin-pro/cdn` | Zero-build (unpkg CDN + plain JS) | Lightweight admin (login / router / CRUD / form / zh-en) | — | ✅ | Stable |
 
 ## Development
 

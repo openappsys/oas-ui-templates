@@ -18,7 +18,8 @@ jobs:
       fail-fast: false
       matrix:
         template:
-          - { name: admin-pro/vanilla-html, workdir: templates/admin-pro/vanilla-html, size: 'true', e2e: 'true' }
+          - { name: admin-pro/vanilla-html, workdir: templates/admin-pro/vanilla-html, tsc: 'true', size: 'true', e2e: 'true' }
+          - { name: admin-pro/cdn, workdir: templates/admin-pro/cdn, tsc: 'false', size: 'false', e2e: 'true' }
     name: ${{ matrix.template.name }}
     runs-on: ubuntu-latest
     defaults:
@@ -33,6 +34,7 @@ jobs:
           cache: pnpm
       - run: pnpm install
       - run: pnpm exec tsc --noEmit
+        if: matrix.template.tsc == 'true'
       - run: pnpm test
       - run: pnpm build
       - run: pnpm size
@@ -43,4 +45,10 @@ jobs:
         if: matrix.template.e2e == 'true'
       - name: 提醒升级依赖（schedule/dispatch 才有意义）
         if: (github.event_name == 'schedule' || github.event_name == 'repository_dispatch') && matrix.template.e2e == 'true'
-        run: pnpm update @oas-ui/ui @oas-ui/theme && pnpm install --no-frozen-lockfile && pnpm test && pnpm build && pnpm size && pnpm test:e2e
+        run: |
+          pnpm update @oas-ui/ui @oas-ui/theme
+          pnpm install --no-frozen-lockfile
+          pnpm test
+          pnpm build
+          if [ "${{ matrix.template.size }}" == "true" ]; then pnpm size; fi
+          pnpm test:e2e
