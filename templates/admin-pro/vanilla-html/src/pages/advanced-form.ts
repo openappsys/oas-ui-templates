@@ -7,7 +7,6 @@ function esc(v: string): string {
 }
 
 export function render(el: HTMLElement): () => void {
-  let stop: () => void
   let formValues: Record<string, string> = {}
   const manual: Record<string, unknown> = {}
 
@@ -134,15 +133,8 @@ export function render(el: HTMLElement): () => void {
     })
   }
 
-  function rerender(): void {
-    stop()
-    draw()
-    stop = onLocaleChange(rerender)
-  }
-
   draw()
-  stop = onLocaleChange(rerender)
-  return () => stop()
+  return onLocaleChange(draw)
 }
 
 const PHONES = [

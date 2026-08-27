@@ -11,8 +11,6 @@ interface StatDef {
 }
 
 export function render(el: HTMLElement): () => void {
-  let stop: () => void
-
   function stats(): StatDef[] {
     return [
       { key: 'gmv', label: t('board.gmv'), value: '12845678', prefix: '¥', anim: true },
@@ -82,15 +80,8 @@ export function render(el: HTMLElement): () => void {
       </div>`
   }
 
-  function rerender(): void {
-    stop()
-    draw()
-    stop = onLocaleChange(rerender)
-  }
-
   draw()
-  stop = onLocaleChange(rerender)
-  return () => stop()
+  return onLocaleChange(draw)
 }
 
 const BAR = [

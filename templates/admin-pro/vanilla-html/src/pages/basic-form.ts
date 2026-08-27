@@ -4,8 +4,6 @@ import '@oas-ui/ui/form/upload'
 import { onLocaleChange, t } from '../i18n'
 
 export function render(el: HTMLElement): () => void {
-  let stop: () => void
-
   function resetForm(form: HTMLElement): void {
     ;(form.shadowRoot?.querySelector('form') as HTMLFormElement | null)?.reset()
   }
@@ -70,13 +68,6 @@ export function render(el: HTMLElement): () => void {
     })
   }
 
-  function rerender(): void {
-    stop()
-    draw()
-    stop = onLocaleChange(rerender)
-  }
-
   draw()
-  stop = onLocaleChange(rerender)
-  return () => stop()
+  return onLocaleChange(draw)
 }
