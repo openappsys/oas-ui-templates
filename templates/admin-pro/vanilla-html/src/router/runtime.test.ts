@@ -3,6 +3,12 @@ import { session } from '../store/session'
 import { progress } from '../components/progress'
 import { initRouter, resolve } from './router'
 
+beforeEach(() => {
+  // happy-dom 默认 navigator.language=en-US，本应用首次访问会嗅探到 en。
+  // 测试套件默认中文断言，固化 locale 避免每次都断言全英文。
+  localStorage.setItem('oas-admin.locale', 'zh-CN')
+})
+
 vi.mock('../components/progress', () => ({
   progress: { start: vi.fn(), done: vi.fn() },
 }))

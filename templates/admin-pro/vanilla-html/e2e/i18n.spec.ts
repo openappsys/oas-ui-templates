@@ -25,3 +25,30 @@ test('切换语言：壳层标题与页脚即时变化', async ({ page }) => {
     page.getByTestId('page-tabs').locator('[role="tab"]').filter({ hasText: '仪表盘' }),
   ).toHaveCount(0)
 })
+
+test.describe('入口语言：首次访问按浏览器语言嗅探', () => {
+  test.use({ locale: 'en-US' })
+  test('en-US 首次访问：<html lang> 与登录页文案均为英文', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.locator('h2.login-title')).toHaveText(/Welcome/i)
+    await expect(page.evaluate(() => document.documentElement.lang)).resolves.toBe('en')
+  })
+
+  test('en-US 浏览器，localStorage 已存 zh-CN：saved 优先于嗅探', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('oas-admin.locale', 'zh-CN')
+    })
+    await page.goto('/')
+    await expect(page.locator('h2.login-title')).toHaveText('欢迎回来')
+    await expect(page.evaluate(() => document.documentElement.lang)).resolves.toBe('zh-CN')
+  })
+})
+
+test.describe('入口语言：zh 浏览器默认中文', () => {
+  test.use({ locale: 'zh-CN' })
+  test('zh-CN 首次访问：登录页中文', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.locator('h2.login-title')).toHaveText('欢迎回来')
+    await expect(page.evaluate(() => document.documentElement.lang)).resolves.toBe('zh-CN')
+  })
+})

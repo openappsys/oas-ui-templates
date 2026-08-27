@@ -5,6 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>OAS Admin Pro</title>
     <script>
+      // 入口页防 FOUC：<head> 内同步决定 <html lang>，与 i18n.initI18n 判定逻辑保持完全一致
+      // 优先级：localStorage 已保存 → navigator.language 嗅探 → 默认 zh-CN
+      (function () {
+        try {
+          var saved = localStorage.getItem('oas-admin.locale')
+          if (saved === 'zh-CN' || saved === 'en') {
+            document.documentElement.lang = saved
+            return
+          }
+          var nav = (navigator.language || '').toLowerCase()
+          if (nav === 'zh' || nav.indexOf('zh-') === 0) {
+            document.documentElement.lang = 'zh-CN'
+          } else if (nav.indexOf('en') === 0) {
+            document.documentElement.lang = 'en'
+          }
+        } catch (e) {
+          /* 无 storage / noop */
+        }
+      })()
+    </script>
+    <script>
       // 统计仅在非 localhost（生产/部署域名）加载；本地 dev / 测试(e2e)不采集
       if (location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
         window.dataLayer = window.dataLayer || []
