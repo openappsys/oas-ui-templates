@@ -89,6 +89,35 @@ test('设置中心：通用页切换表单呈现方式写入 localStorage', asyn
   expect(errors).toEqual([])
 })
 
+test('设置中心：关闭多页签栏立即生效，再开启恢复', async ({ page }) => {
+  const errors = await noConsoleErrors(page)
+  await login(page, '张伟', 'admin')
+
+  await page.locator('#nav').getByText('订单管理').click()
+  await expect(page.locator('#page-tabs')).toBeVisible()
+
+  await page.locator('#nav').getByText('设置中心').click()
+  await expect(page.getByTestId('settings-tabs')).toHaveAttribute('active', 'general')
+  await page.getByTestId('tabs-bar-toggle').click()
+  expect(await page.evaluate(() => localStorage.getItem('oas-admin.settings.tabs-bar'))).toBe(
+    'false',
+  )
+  await expect(page.locator('.tabs-bar')).toBeHidden()
+
+  await page.locator('#nav').getByText('订单管理').click()
+  await expect(page.locator('.tabs-bar')).toBeHidden()
+  await expect(page.locator('#view')).toContainText('订单管理')
+
+  await page.locator('#nav').getByText('设置中心').click()
+  await page.getByTestId('tabs-bar-toggle').click()
+  expect(await page.evaluate(() => localStorage.getItem('oas-admin.settings.tabs-bar'))).toBe(
+    'true',
+  )
+  await expect(page.locator('.tabs-bar')).toBeVisible()
+
+  expect(errors).toEqual([])
+})
+
 test('设置中心：字号较大档位写入 localStorage 且 reload 后保持选中', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page, '张伟', 'admin')

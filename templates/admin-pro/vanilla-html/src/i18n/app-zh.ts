@@ -395,6 +395,8 @@ export default {
   'settings.general.fontSizeTitle': '字体大小',
   'settings.general.pageSizeLabel': '每页条数',
   'settings.general.pageSizeHint': '列表视图每页显示行数',
+  'settings.general.tabsBarLabel': '多页签栏',
+  'settings.general.tabsBarHint': '关闭后顶栏下方不再显示访问过的页面签',
   'settings.pageSizeItem': '{count} 条',
   'settings.fontSize.xs': '较小',
   'settings.fontSize.sm': '默认',

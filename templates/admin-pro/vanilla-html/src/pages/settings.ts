@@ -13,12 +13,14 @@ import {
   NOTIF_PREFIX,
   PAGE_SIZE_KEY,
   RADIUS_KEY,
+  TABS_BAR_KEY,
   THEME_PREFIX,
   type Density,
   type FontSize,
   type FormMode,
   applyDensity,
   applyFontSize,
+  applySettings,
   currentTheme,
   readBool,
   readColor,
@@ -27,6 +29,7 @@ import {
   readFormMode,
   readPageSize,
   readRadius,
+  readTabsBar,
 } from '../settings-init'
 
 const FONT_SIZE_MAP: Record<FontSize, string> = {
@@ -199,6 +202,15 @@ export function render(el: HTMLElement): () => void {
         </div>
         <oas-select data-testid="page-size" options='${JSON.stringify(PAGE_SIZE_OPTIONS())}' value="${readPageSize()}"></oas-select>
       </div>
+    </div>
+    <div class="setting-group">
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">${t('settings.general.tabsBarLabel')}</div>
+          <div class="setting-hint">${t('settings.general.tabsBarHint')}</div>
+        </div>
+        <oas-switch data-testid="tabs-bar-toggle"${readTabsBar() ? ' checked' : ''}></oas-switch>
+      </div>
     </div>`)
 
   notification.set(`
@@ -260,6 +272,7 @@ export function render(el: HTMLElement): () => void {
   const densityGroup = general.node.querySelector<HTMLElement>('#density-group')!
   const fontSizeGroup = general.node.querySelector<HTMLElement>('#font-size-group')!
   const pageSize = general.node.querySelector<HTMLElement>('[data-testid="page-size"]')!
+  const tabsBarToggle = general.node.querySelector<HTMLElement>('[data-testid="tabs-bar-toggle"]')!
   const notifMatrix = notification.node.querySelector<HTMLElement>('#notif-matrix')!
   const colorPicker = appearance.node.querySelector<HTMLElement>('#appearance-color')!
   const radiusSlider = appearance.node.querySelector<HTMLElement>('#appearance-radius')!
@@ -299,6 +312,13 @@ export function render(el: HTMLElement): () => void {
     const v = (e as CustomEvent<{ value: string }>).detail.value
     if (!v) return
     localStorage.setItem(PAGE_SIZE_KEY, v)
+    message.success(t('common.saved'))
+  })
+
+  tabsBarToggle.addEventListener('oas-change', (e) => {
+    const checked = (e as CustomEvent<{ checked: boolean }>).detail.checked
+    localStorage.setItem(TABS_BAR_KEY, String(checked))
+    applySettings()
     message.success(t('common.saved'))
   })
 

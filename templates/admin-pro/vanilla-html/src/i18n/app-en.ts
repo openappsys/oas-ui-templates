@@ -397,6 +397,8 @@ export default {
   'settings.general.fontSizeTitle': 'Font Size',
   'settings.general.pageSizeLabel': 'Page Size',
   'settings.general.pageSizeHint': 'Rows shown per page in list views',
+  'settings.general.tabsBarLabel': 'Multi-tab Bar',
+  'settings.general.tabsBarHint': 'Hide the visited-page tab bar below the header',
   'settings.pageSizeItem': '{count} per page',
   'settings.fontSize.xs': 'Small',
   'settings.fontSize.sm': 'Default',

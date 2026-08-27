@@ -5,6 +5,7 @@ export const RADIUS_KEY = 'oas-admin.settings.radius'
 export const FONT_SIZE_KEY = 'oas-admin.settings.font-size'
 export const THEME_PREFIX = 'oas-admin.settings.theme.'
 export const NOTIF_PREFIX = 'oas-admin.settings.notif.'
+export const TABS_BAR_KEY = 'oas-admin.settings.tabs-bar'
 export const DEFAULT_COLOR = '#0b6cff'
 export const DEFAULT_RADIUS = 6
 
@@ -37,6 +38,10 @@ export function readDensity(): Density {
 
 export function readPageSize(): string {
   return localStorage.getItem(PAGE_SIZE_KEY) ?? '5'
+}
+
+export function readTabsBar(): boolean {
+  return readBool(TABS_BAR_KEY, true)
 }
 
 export function readRadius(): number {
@@ -87,4 +92,5 @@ export function applySettings(): void {
   if (radius) document.documentElement.style.setProperty('--oas-radius-md', `${radius}px`)
   applyDensity()
   applyFontSize()
+  document.documentElement.dataset.tabsBar = readTabsBar() ? 'on' : 'off'
 }

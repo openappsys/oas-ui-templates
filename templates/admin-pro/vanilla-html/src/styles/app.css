@@ -349,6 +349,9 @@ oas-sider[collapsed] {
   background: var(--oas-color-bg);
   border-bottom: 1px solid var(--oas-color-border);
 }
+html[data-tabs-bar="off"] .tabs-bar {
+  display: none;
+}
 .tabs-bar oas-tabs {
   flex: 1;
   min-width: 0;
