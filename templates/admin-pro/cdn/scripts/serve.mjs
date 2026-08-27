@@ -1,6 +1,6 @@
 import { createServer } from 'node:http'
 import { readFile } from 'node:fs/promises'
-import { join, normalize, extname } from 'node:path'
+import { join, normalize, extname, sep } from 'node:path'
 
 const ROOT = normalize(join(import.meta.dirname, '..'))
 const PORT = Number(process.env.PORT || 5175)
@@ -12,13 +12,17 @@ const MIME = {
   '.json': 'application/json; charset=utf-8',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
+  '.ico': 'image/x-icon',
 }
 
 createServer(async (req, res) => {
-  let p = decodeURIComponent((req.url || '/').split('?')[0])
+  let p = (req.url || '/').split('?')[0]
+  try {
+    p = decodeURIComponent(p)
+  } catch {}
   if (p === '/' || p === '') p = '/index.html'
   const fp = normalize(join(ROOT, p))
-  if (!fp.startsWith(ROOT)) {
+  if (fp !== ROOT && !fp.startsWith(ROOT + sep)) {
     res.statusCode = 403
     return res.end()
   }
@@ -30,4 +34,6 @@ createServer(async (req, res) => {
     res.statusCode = 404
     res.end('not found')
   }
-}).listen(PORT, () => console.log(`serving ${ROOT} on http://localhost:${PORT}`))
+}).listen(PORT, process.env.HOST || '127.0.0.1', () =>
+  console.log(`serving ${ROOT} on http://localhost:${PORT}`)
+)
