@@ -4,7 +4,7 @@
 
 零构建轻量后台模板：两个 CDN 标签（`@oas-ui/theme` css + `@oas-ui/ui` cdn.js）+ 原生 JS module，无需 node/npm 即可运行。
 
-功能：登录（任意非空用户名）· hash 路由 · 仪表盘（统计卡 + oas-chart 渐变趋势）· 用户管理（oas-table 搜索/分页/弹窗 CRUD/popconfirm 删除）· 基础表单（oas-form 校验）· 中英切换（saved > navigator 嗅探 > zh-CN，FOUC 防闪）。
+功能：登录（任意非空用户名）· hash 路由 · 仪表盘（统计卡 + oas-chart 渐变趋势）· 用户管理（oas-table 搜索/分页/弹窗 CRUD/popconfirm 删除）· 基础表单（oas-form 校验）· 中英切换（saved > navigator 嗅探：zh 系列 → zh-CN，其余一律 en；FOUC 防闪）。
 
 ## 使用
 
@@ -34,7 +34,7 @@ npx serve .
 
 Zero-build lightweight admin template: two CDN tags (`@oas-ui/theme` css + `@oas-ui/ui` cdn.js) plus plain JS modules — no node/npm required to run.
 
-Features: login (any non-empty username) · hash router · dashboard (stat cards + oas-chart gradient trend) · user management (oas-table search/pagination/modal CRUD/popconfirm delete) · basic form (oas-form validation) · zh-CN/en switch (saved > navigator sniffing > zh-CN, FOUC-free).
+Features: login (any non-empty username) · hash router · dashboard (stat cards + oas-chart gradient trend) · user management (oas-table search/pagination/modal CRUD/popconfirm delete) · basic form (oas-form validation) · zh-CN/en switch (saved > navigator sniffing: zh\* → zh-CN, everything else → en; FOUC-free).
 
 ## Usage
 

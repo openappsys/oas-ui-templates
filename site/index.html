@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title data-i18n="meta.title">OAS-UI Templates</title>
     <script>
-      // 业界通行 3 级优先级：localStorage 已保存 > navigator.language 嗅探 > zh-CN 默认
+      // 业界通行 2 级优先级：localStorage 已保存 > navigator.language 嗅探（zh 系列 → zh-CN，其余一律 en）
       // 静态门户无依赖，IIFE 内联执行，同步决定 <html lang> 防 FOUC
       (function () {
         var KEY = 'oas-templates.locale'
@@ -18,8 +18,7 @@
         function matchNav(lang) {
           var n = (lang || '').toLowerCase()
           if (n === 'zh' || n.indexOf('zh-') === 0) return 'zh-CN'
-          if (n.indexOf('en') === 0) return 'en'
-          return 'zh-CN'
+          return 'en'
         }
         var detected = saved === 'zh-CN' || saved === 'en' ? saved : matchNav(navigator.language)
         document.documentElement.lang = detected
@@ -177,8 +176,7 @@
         if (saved) return saved
         var n = (navigator.language || '').toLowerCase()
         if (n === 'zh' || n.indexOf('zh-') === 0) return 'zh-CN'
-        if (n.indexOf('en') === 0) return 'en'
-        return 'zh-CN'
+        return 'en'
       }
       function applyLocale(loc) {
         var dict = I18N[loc] || I18N['zh-CN']

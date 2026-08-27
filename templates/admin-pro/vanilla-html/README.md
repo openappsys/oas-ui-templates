@@ -49,7 +49,7 @@ npx degit <本仓库地址>/templates/admin-pro/vanilla-html my-admin
 ## 国际化 i18n
 
 - 顶栏语言切换器（简体中文 / English），选择写入 `localStorage['oas-admin.locale']`，默认 zh-CN
-- 入口页同步 IIFE 决定 `<html lang>`，首次访问按浏览器语言嗅探（zh 系列 → zh-CN，en → en，其它 → zh-CN），与壳层同步无 FOUC
+- 入口页同步 IIFE 决定 `<html lang>`，首次访问按浏览器语言嗅探（zh 系列 → zh-CN，其余一律 en），与壳层同步无 FOUC
 - 壳层（document.title / 顶栏 / 侧栏 / 页脚）切换即时重渲染；业务页面仅重新进入或刷新后应用新语言
 - 取词 `t()`，切换 `setLocale()`，订阅 `onLocaleChange()`；新增语言在 `src/i18n/` 加词条文件并 `registerLocale`
 
@@ -153,7 +153,7 @@ npx degit <this-repo>/templates/admin-pro/vanilla-html my-admin
 ## Internationalization (i18n)
 
 - Top-bar language switcher (简体中文 / English), persisted to `localStorage['oas-admin.locale']`, default zh-CN
-- Entry page boots with a synchronous IIFE that decides `<html lang>` (no FOUC); first-visit detection follows browser language (zh\* → zh-CN, en → en, others → zh-CN)
+- Entry page boots with a synchronous IIFE that decides `<html lang>` (no FOUC); first-visit detection follows browser language (zh\* → zh-CN, everything else → en)
 - Shell (document.title / top bar / sidebar / footer) re-renders instantly; in-page content applies the new language on next route enter or reload
 - Read `t()`, switch with `setLocale()`, subscribe via `onLocaleChange()`; add a new language by dropping a messages file under `src/i18n/` and registering it with `registerLocale()`
 

@@ -29,19 +29,17 @@ function isAppLocale(v: unknown): v is AppLocale {
   return v === 'zh-CN' || v === 'en'
 }
 
-function matchBrowser(navLang: string): AppLocale | undefined {
+function matchBrowser(navLang: string): AppLocale {
   const lang = navLang.toLowerCase()
   if (lang === 'zh' || lang.startsWith('zh-')) return 'zh-CN'
-  if (lang.startsWith('en')) return 'en'
-  return undefined
+  return 'en'
 }
 
 /**
  * 决定首次访问的默认 locale。
  * 优先级（业界通行做法）：
  *   1. localStorage 已保存值（用户曾手动切换）
- *   2. navigator.language 嗅探（zh 系列 → zh-CN，en 系列 → en）
- *   3. 默认 zh-CN（产品语言）
+ *   2. navigator.language 嗅探：zh 系列 → zh-CN，其余一律 en（英文兜底）
  *
  * 浏览器多语言列表 navigator.languages 取第一项即可——单语种产品不需要遍历。
  */
@@ -51,10 +49,9 @@ export function detectLocale(): AppLocale {
     if (isAppLocale(saved)) return saved
   }
   if (typeof navigator !== 'undefined') {
-    const m = matchBrowser(navigator.language)
-    if (m) return m
+    return matchBrowser(navigator.language)
   }
-  return 'zh-CN'
+  return 'en'
 }
 
 export function initI18n(): void {

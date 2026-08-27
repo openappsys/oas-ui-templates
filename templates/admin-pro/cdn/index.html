@@ -6,7 +6,7 @@
     <title>OAS Admin CDN</title>
     <script>
       // 入口防 FOUC：<head> 同步决定 <html lang>，与 i18n.js detectLocale 逻辑一致
-      // 优先级：localStorage 已保存 → navigator.language 嗅探 → 默认 zh-CN
+      // 优先级：localStorage 已保存 → navigator.language 嗅探（zh 系列 → zh-CN，其余一律 en）
       (function () {
         try {
           var saved = localStorage.getItem('oas-admin-cdn.locale')
@@ -15,8 +15,7 @@
             return
           }
           var nav = (navigator.language || '').toLowerCase()
-          if (nav === 'zh' || nav.indexOf('zh-') === 0) document.documentElement.lang = 'zh-CN'
-          else if (nav.indexOf('en') === 0) document.documentElement.lang = 'en'
+          document.documentElement.lang = nav === 'zh' || nav.indexOf('zh-') === 0 ? 'zh-CN' : 'en'
         } catch (e) {
           /* 无 storage / noop */
         }

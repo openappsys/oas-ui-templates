@@ -82,9 +82,11 @@ describe('detectLocale', () => {
     expect(detectLocale()).toBe('en')
   })
 
-  it('无 saved 且非 zh/en 时默认 zh-CN', () => {
+  it('无 saved 且非 zh 浏览器 → en（英文兜底）', () => {
     setNav('ja-JP')
-    expect(detectLocale()).toBe('zh-CN')
+    expect(detectLocale()).toBe('en')
+    setNav('fr-FR')
+    expect(detectLocale()).toBe('en')
   })
 
   it('saved 为非法值按无 saved 处理', () => {
