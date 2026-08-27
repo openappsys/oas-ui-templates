@@ -132,7 +132,7 @@ export function render(el: HTMLElement): () => void {
       <div class="chart-grid">
         <oas-card title="${t('dashboard.trendTitle')}">
           <oas-segmented id="trend-range" slot="extra" options='${JSON.stringify(SEGMENTED_OPTIONS())}' value="7"></oas-segmented>
-          <oas-chart id="chart-trend" class="chart" type="area" options='{"smooth":true}' aria-label="${t('dashboard.trendTitle')}"></oas-chart>
+          <oas-chart id="chart-trend" class="chart" type="area" options='{"smooth":true,"gradient":true}' aria-label="${t('dashboard.trendTitle')}"></oas-chart>
         </oas-card>
         <oas-card title="${t('dashboard.ordersTitle')}">
           <oas-chart id="chart-orders" class="chart" type="donut" options='${JSON.stringify({ colors: DONUT_COLORS })}' aria-label="${t('dashboard.ordersTitle')}"></oas-chart>
