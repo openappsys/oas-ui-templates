@@ -33,7 +33,8 @@ function toggleColumn(el: HTMLElement, key: string, checked: boolean): void {
 
 function tableColumns(el: HTMLElement): string[] {
   const table = el.querySelector<HTMLElement>('[data-testid="product-table"]')!
-  return (table as unknown as { columns: Array<{ key: string }> }).columns.map((c) => c.key)
+  const keys = table.getAttribute('column-keys')
+  return keys ? (JSON.parse(keys) as string[]) : []
 }
 
 beforeEach(() => {

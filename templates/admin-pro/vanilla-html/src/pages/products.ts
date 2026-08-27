@@ -290,8 +290,8 @@ export function render(el: HTMLElement): () => void {
   const upload = el.querySelector<HTMLElement>('[data-testid="pf-cover"]')
 
   function renderColumns(): void {
-    const visible = new Set(state.columnKeys)
-    table.columns = TABLE_COLUMNS().filter((c) => visible.has(c.key as ProductColumnKey))
+    table.columns = TABLE_COLUMNS()
+    table.setAttribute('column-keys', JSON.stringify(state.columnKeys))
   }
 
   function updateBatchBar(): void {
