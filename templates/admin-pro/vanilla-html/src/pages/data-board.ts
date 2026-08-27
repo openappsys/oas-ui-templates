@@ -11,6 +11,10 @@ interface StatDef {
 }
 
 export function render(el: HTMLElement): () => void {
+  const STAT_KEYS = ['board.gmv', 'board.orders', 'board.users', 'board.conversion']
+  const CHART_KEYS = ['board.monthRevenue', 'board.categoryShare', 'board.channelTrend']
+  const PROGRESS_KEYS = ['board.targetOrder', 'board.targetRevenue', 'board.targetUsers']
+
   function stats(): StatDef[] {
     return [
       { key: 'gmv', label: t('board.gmv'), value: '12845678', prefix: '¥', anim: true },
@@ -32,6 +36,28 @@ export function render(el: HTMLElement): () => void {
           ${value}
         </div>
       </oas-card>`
+  }
+
+  function refreshText(): void {
+    el.querySelector<HTMLElement>('h1.page-title')!.textContent = t('board.title')
+    el.querySelector<HTMLElement>('p.page-subtitle')!.textContent = t('board.subtitle')
+    // 统计卡 label（4 张，按 index 对应 key）
+    el.querySelectorAll<HTMLElement>('.stat-card .stat-label').forEach((n, i) => {
+      const k = STAT_KEYS[i]
+      if (k) n.textContent = t(k)
+    })
+    // 图表卡片 title + aria-label
+    el.querySelectorAll<HTMLElement>('.chart-card').forEach((n, i) => {
+      const k = CHART_KEYS[i]
+      if (!k) return
+      n.setAttribute('title', t(k))
+      n.querySelector('oas-chart')?.setAttribute('aria-label', t(k))
+    })
+    // 进度条 label（3 行）
+    el.querySelectorAll<HTMLElement>('.progress-label').forEach((n, i) => {
+      const k = PROGRESS_KEYS[i]
+      if (k) n.textContent = t(k)
+    })
   }
 
   function draw(): void {
@@ -81,7 +107,7 @@ export function render(el: HTMLElement): () => void {
   }
 
   draw()
-  return onLocaleChange(draw)
+  return onLocaleChange(refreshText)
 }
 
 const BAR = [
