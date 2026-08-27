@@ -494,7 +494,7 @@ export function mountApp(root: HTMLElement): void {
   function syncUser(): void {
     const avatar = root.querySelector<HTMLElement>('#user-avatar')
     // v2.2.8 契约：首字符走响应式 `text` 属性（attributeChangedCallback 触发重渲染），textContent 只是连接时快照
-    if (avatar) avatar.setAttribute('text', (session.user?.name ?? '').charAt(0))
+    if (avatar) avatar.setAttribute('text', (session.user?.name ?? '').charAt(0).toUpperCase())
     root.classList.toggle('no-chrome', session.user === null)
   }
 

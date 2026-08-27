@@ -385,7 +385,7 @@ export function render(el: HTMLElement): () => void {
     const id = Number(row.id)
     const target = state.rows.find((r) => r.id === id)
     if (!target) return
-    el.querySelector<HTMLElement>('#detail-avatar-text')!.textContent = target.name.charAt(0)
+    el.querySelector<HTMLElement>('#detail-avatar-text')!.textContent = target.name.charAt(0).toUpperCase()
     el.querySelector<HTMLElement>('#detail-name')!.textContent = target.name
     const roleTag = el.querySelector<HTMLElement>('#detail-role-tag')!
     roleTag.textContent = roleName(target)
