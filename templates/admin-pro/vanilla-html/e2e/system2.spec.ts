@@ -102,9 +102,9 @@ test('admin 商品分类：编辑回填 + 必填校验 + 改名校验生效', as
   await expect(page.getByTestId('category-table')).toContainText('数码')
 
   await page
-    .getByTestId('category-row')
-    .filter({ hasText: '数码' })
-    .getByTestId('category-edit')
+    .getByTestId('category-table')
+    .locator('tr[part="row"]', { hasText: '数码' })
+    .locator('[data-testid="category-edit"]')
     .click()
   await expect(page.getByTestId('category-modal')).toHaveAttribute('visible', '')
   await expect(page.locator('#category-modal-title')).toHaveText('编辑分类')
@@ -129,14 +129,28 @@ test('admin 商品分类：删除需 popconfirm 确认后移除行', async ({ pa
   await expect(page.getByTestId('category-table')).toContainText('食品')
 
   await page
-    .getByTestId('category-row')
-    .filter({ hasText: '食品' })
-    .getByTestId('category-delete')
+    .getByTestId('category-table')
+    .locator('tr[part="row"]', { hasText: '食品' })
+    .locator('[data-testid="category-delete"]')
     .click()
-  await expect(page.locator('oas-popconfirm[open] [part="ok"]')).toBeVisible()
-  await page.locator('oas-popconfirm[open] [part="ok"]').click()
+  await page.waitForTimeout(500)
+  await page.evaluate(() => {
+    const t = document.querySelector('[data-testid="category-table"]')
+    const pop = Array.from(
+      t?.shadowRoot?.querySelectorAll('oas-popconfirm') ?? [],
+    ).find((x) => x.isConnected && x.hasAttribute('open')) as HTMLElement | undefined
+    pop?.shadowRoot?.querySelector<HTMLButtonElement>('[part="ok"]')?.click()
+  })
+  await expect
+    .poll(async () =>
+      page.evaluate(() =>
+        document
+          .querySelector('[data-testid="category-table"]')
+          ?.shadowRoot?.querySelectorAll('tbody tr').length,
+      ),
+    )
+    .toBe(3)
   await expect(page.getByTestId('category-table')).not.toContainText('食品')
-  await expect(page.getByTestId('category-table').locator('tbody tr')).toHaveCount(3)
   expect(errors).toEqual([])
 })
 

@@ -1,4 +1,5 @@
 import { message } from '@oas-ui/ui/feedback/message'
+import type { OASTable, TableColumn } from '@oas-ui/ui/data/table'
 import { t } from '../i18n'
 import { createRole, listRoles, removeRole, treeDepts, updateRole } from '../data/system'
 import type { DataScope, DeptTree, RoleRow } from '../data/system'
@@ -31,6 +32,51 @@ const RULES = (): string =>
       { pattern: '^[a-z][a-z0-9:_-]*$', message: t('roles.rule.codeFmt') },
     ],
   })
+
+function scopeCell(row: RoleRow): HTMLElement {
+  const tag = document.createElement('oas-tag')
+  tag.setAttribute('type', DATA_SCOPE_TAG[row.dataScope])
+  tag.textContent = dataScopeLabel(row.dataScope)
+  return tag
+}
+
+function actionCell(row: RoleRow): HTMLElement {
+  const ctx = document.createElement('div')
+  ctx.className = 'action-cell'
+  const edit = document.createElement('oas-button')
+  edit.setAttribute('data-edit', String(row.id))
+  edit.setAttribute('size', 'small')
+  edit.setAttribute('type', 'text')
+  edit.textContent = t('common.edit')
+  const pop = document.createElement('oas-popconfirm')
+  pop.setAttribute('data-del', String(row.id))
+  pop.setAttribute('title', t('roles.confirmDelete'))
+  const del = document.createElement('oas-button')
+  del.setAttribute('size', 'small')
+  del.setAttribute('type', 'danger')
+  del.textContent = t('common.delete')
+  pop.appendChild(del)
+  ctx.appendChild(edit)
+  ctx.appendChild(pop)
+  return ctx
+}
+
+const TABLE_COLUMNS = (): TableColumn[] => [
+  { key: 'name', title: t('roles.th.name') },
+  { key: 'code', title: t('roles.th.code') },
+  {
+    key: 'dataScope',
+    title: t('roles.th.dataScope'),
+    render: (r) => scopeCell(r as unknown as RoleRow),
+  },
+  { key: 'userCount', title: t('roles.th.userCount'), align: 'right' },
+  { key: 'created', title: t('roles.th.created') },
+  {
+    key: 'action',
+    title: t('roles.th.action'),
+    render: (r) => actionCell(r as unknown as RoleRow),
+  },
+]
 
 interface PageState {
   roles: RoleRow[]
@@ -73,19 +119,7 @@ export function render(el: HTMLElement): () => void {
       </div>
       <oas-card class="list-card" title="${t('roles.list')}">
         <div class="table-wrap" id="roles-wrap">
-          <table class="roles-table" data-testid="roles-table">
-            <thead>
-              <tr>
-                <th>${t('roles.th.name')}</th>
-                <th>${t('roles.th.code')}</th>
-                <th>${t('roles.th.dataScope')}</th>
-                <th class="num">${t('roles.th.userCount')}</th>
-                <th>${t('roles.th.created')}</th>
-                <th>${t('roles.th.action')}</th>
-              </tr>
-            </thead>
-            <tbody id="roles-body"></tbody>
-          </table>
+          <oas-table data-testid="roles-table" row-key="id" empty-text="${t('roles.empty')}"></oas-table>
         </div>
       </oas-card>
 
@@ -127,7 +161,7 @@ export function render(el: HTMLElement): () => void {
       </oas-drawer>
     </div>`
 
-  const tbody = el.querySelector<HTMLElement>('#roles-body')!
+  const table = el.querySelector<OASTable>('[data-testid="roles-table"]')!
   const drawer = el.querySelector<HTMLElement>('[data-testid="role-form-drawer"]')!
   const form = el.querySelector<HTMLElement>('#role-form')!
   const scopeGroup = el.querySelector<HTMLElement>('#rf-scope')!
@@ -162,43 +196,39 @@ export function render(el: HTMLElement): () => void {
   }
 
   function renderTable(): void {
-    if (state.roles.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="6" class="roles-empty"><oas-empty description="${t('roles.empty')}"></oas-empty></td></tr>`
+    table.columns = TABLE_COLUMNS()
+    table.setAttribute('data', JSON.stringify(state.roles))
+  }
+
+  function onTableClick(e: Event): void {
+    const path = e.composedPath() as HTMLElement[]
+    const editBtn = path.find((n) => n.matches?.('[data-edit]'))
+    if (editBtn) {
+      const id = Number(editBtn.getAttribute('data-edit'))
+      const row = state.roles.find((r) => r.id === id)
+      if (row) openForm(row)
       return
     }
-    tbody.innerHTML = state.roles
-      .map(
-        (r) => `<tr data-id="${r.id}">
-          <td class="name-cell">${r.name}</td>
-          <td><span class="mono code-cell">${r.code}</span></td>
-          <td><oas-tag type="${DATA_SCOPE_TAG[r.dataScope]}">${dataScopeLabel(r.dataScope)}</oas-tag></td>
-          <td class="num-cell mono">${r.userCount}</td>
-          <td><span class="mono date-cell">${r.created}</span></td>
-          <td class="action-cell">
-            <oas-button size="small" type="text" data-edit="${r.id}">${t('common.edit')}</oas-button>
-            <oas-popconfirm title="${t('roles.confirmDelete')}" data-del="${r.id}">
-              <oas-button size="small" type="danger">${t('common.delete')}</oas-button>
-            </oas-popconfirm>
-          </td>
-        </tr>`,
-      )
-      .join('')
-    tbody.querySelectorAll<HTMLElement>('oas-button[data-edit]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const id = Number(btn.getAttribute('data-edit'))
-        const row = state.roles.find((r) => r.id === id)
-        if (row) openForm(row)
-      })
-    })
-    tbody.querySelectorAll<HTMLElement>('oas-popconfirm[data-del]').forEach((pc) => {
-      pc.addEventListener('oas-ok', () => {
-        const id = Number(pc.getAttribute('data-del'))
-        void removeRole(id).then((ok) => {
-          if (!ok) message.error(t('roles.notFound'))
-          else message.success(t('common.deleted'))
-          void refresh()
-        })
-      })
+    const delPop = path.find((n) => n.matches?.('oas-popconfirm[data-del]'))
+    if (delPop) {
+      const id = delPop.getAttribute('data-del')
+      const connected = Array.from(
+        table.shadowRoot?.querySelectorAll<HTMLElement>('oas-popconfirm[data-del]') ?? [],
+      ).find((p) => p.isConnected && p.getAttribute('data-del') === id)
+      connected?.setAttribute('open', '')
+    }
+  }
+
+  function onDeleteOk(): void {
+    const pc = Array.from(
+      table.shadowRoot?.querySelectorAll<HTMLElement>('oas-popconfirm[data-del]') ?? [],
+    ).find((p) => p.isConnected && p.hasAttribute('open'))
+    if (!pc) return
+    const id = Number(pc.getAttribute('data-del'))
+    void removeRole(id).then((ok) => {
+      if (!ok) message.error(t('roles.notFound'))
+      else message.success(t('common.deleted'))
+      void refresh()
     })
   }
 
@@ -271,6 +301,9 @@ export function render(el: HTMLElement): () => void {
       saving = false
     }
   })
+
+  table.addEventListener('click', onTableClick)
+  table.addEventListener('oas-ok', onDeleteOk)
 
   void refresh()
   return () => {}

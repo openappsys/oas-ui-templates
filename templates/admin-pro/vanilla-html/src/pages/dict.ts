@@ -1,4 +1,5 @@
 import { message } from '@oas-ui/ui/feedback/message'
+import type { OASTable, TableColumn } from '@oas-ui/ui/data/table'
 import { t } from '../i18n'
 import {
   createDictItem,
@@ -24,6 +25,38 @@ const RULES_ITEM = (): string =>
     label: [{ required: true, message: t('dict.rule.label') }],
     value: [{ required: true, message: t('dict.rule.value') }],
   })
+
+function itemActionCell(item: DictItem): HTMLElement {
+  const ctx = document.createElement('div')
+  ctx.className = 'action-cell'
+  const edit = document.createElement('oas-button')
+  edit.setAttribute('data-edit', String(item.id))
+  edit.setAttribute('size', 'small')
+  edit.setAttribute('type', 'text')
+  edit.textContent = t('common.edit')
+  const pop = document.createElement('oas-popconfirm')
+  pop.setAttribute('data-del', String(item.id))
+  pop.setAttribute('title', t('dict.confirmDeleteItem'))
+  const del = document.createElement('oas-button')
+  del.setAttribute('size', 'small')
+  del.setAttribute('type', 'danger')
+  del.textContent = t('common.delete')
+  pop.appendChild(del)
+  ctx.appendChild(edit)
+  ctx.appendChild(pop)
+  return ctx
+}
+
+const ITEM_COLUMNS = (): TableColumn[] => [
+  { key: 'label', title: t('dict.th.label') },
+  { key: 'value', title: t('dict.th.value') },
+  { key: 'sort', title: t('dict.th.sort'), align: 'right' },
+  {
+    key: 'action',
+    title: t('dict.th.action'),
+    render: (r) => itemActionCell(r as unknown as DictItem),
+  },
+]
 
 interface PageState {
   types: DictType[]
@@ -66,12 +99,7 @@ export function render(el: HTMLElement): () => void {
             </div>
           </div>
           <div id="dict-items-wrap">
-            <table class="dict-items-table" data-testid="dict-items-table">
-              <thead>
-                <tr><th>${t('dict.th.label')}</th><th>${t('dict.th.value')}</th><th class="num">${t('dict.th.sort')}</th><th>${t('dict.th.action')}</th></tr>
-              </thead>
-              <tbody id="dict-items-body"></tbody>
-            </table>
+            <oas-table data-testid="dict-items-table" row-key="id"></oas-table>
           </div>
         </oas-card>
       </div>
@@ -130,7 +158,7 @@ export function render(el: HTMLElement): () => void {
     </div>`
 
   const typeList = el.querySelector<HTMLElement>('[data-testid="dict-type-list"]')!
-  const itemBody = el.querySelector<HTMLElement>('#dict-items-body')!
+  const itemTable = el.querySelector<OASTable>('[data-testid="dict-items-table"]')!
   const itemWrap = el.querySelector<HTMLElement>('#dict-items-wrap')!
   const paneTitle = el.querySelector<HTMLElement>('#dict-pane-title')!
   const typeModal = el.querySelector<HTMLElement>('[data-testid="dict-type-modal"]')!
@@ -172,39 +200,41 @@ export function render(el: HTMLElement): () => void {
     }
     paneTitle.innerHTML = `<span class="dict-pane-title">${type.name}</span><div class="dict-pane-sub">${t('dict.itemCount', { code: type.code, count: state.counts[type.id] ?? 0 })}</div>`
     itemWrap.hidden = false
-    const tbody = itemBody
     if (!state.loadedItems) return
     const items = state.loadedItems
-    tbody.closest('table')!.classList.toggle('table-hidden', items.length === 0)
-    tbody.innerHTML = items
-      .map(
-        (it) => `<tr data-id="${it.id}">
-          <td>${it.label}</td>
-          <td class="mono-cell mono">${it.value}</td>
-          <td class="num-cell mono">${it.sort}</td>
-          <td class="action-cell">
-            <oas-button size="small" type="text" data-edit="${it.id}">${t('common.edit')}</oas-button>
-            <oas-popconfirm title="${t('dict.confirmDeleteItem')}" data-del="${it.id}">
-              <oas-button size="small" type="danger">${t('common.delete')}</oas-button>
-            </oas-popconfirm>
-          </td>
-        </tr>`,
-      )
-      .join('')
-    tbody.querySelectorAll<HTMLElement>('oas-button[data-edit]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const id = Number(btn.getAttribute('data-edit'))
-        const item = items.find((d) => d.id === id)
-        if (item) openItemForm(item)
-      })
-    })
-    tbody.querySelectorAll<HTMLElement>('oas-popconfirm[data-del]').forEach((pc) => {
-      pc.addEventListener('oas-ok', async () => {
-        const id = Number(pc.getAttribute('data-del'))
-        await removeDictItem(id)
-        message.success(t('common.deleted'))
-        void refreshItems()
-      })
+    itemTable.columns = ITEM_COLUMNS()
+    itemTable.setAttribute('data', JSON.stringify(items))
+    itemWrap.classList.toggle('table-hidden', items.length === 0)
+  }
+
+  function onItemClick(e: Event): void {
+    const path = e.composedPath() as HTMLElement[]
+    const editBtn = path.find((n) => n.matches?.('[data-edit]'))
+    if (editBtn) {
+      const id = Number(editBtn.getAttribute('data-edit'))
+      const item = state.loadedItems.find((d) => d.id === id)
+      if (item) openItemForm(item)
+      return
+    }
+    const delPop = path.find((n) => n.matches?.('oas-popconfirm[data-del]'))
+    if (delPop) {
+      const id = delPop.getAttribute('data-del')
+      const connected = Array.from(
+        itemTable.shadowRoot?.querySelectorAll<HTMLElement>('oas-popconfirm[data-del]') ?? [],
+      ).find((p) => p.isConnected && p.getAttribute('data-del') === id)
+      connected?.setAttribute('open', '')
+    }
+  }
+
+  function onItemDelete(): void {
+    const pc = Array.from(
+      itemTable.shadowRoot?.querySelectorAll<HTMLElement>('oas-popconfirm[data-del]') ?? [],
+    ).find((p) => p.isConnected && p.hasAttribute('open'))
+    if (!pc) return
+    const id = Number(pc.getAttribute('data-del'))
+    void removeDictItem(id).then(() => {
+      message.success(t('common.deleted'))
+      void refreshItems()
     })
   }
 
@@ -362,6 +392,9 @@ export function render(el: HTMLElement): () => void {
       saving = false
     }
   })
+
+  itemTable.addEventListener('click', onItemClick)
+  itemTable.addEventListener('oas-ok', onItemDelete)
 
   void refresh()
   return () => {}

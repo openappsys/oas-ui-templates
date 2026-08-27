@@ -1,4 +1,5 @@
 import { message } from '@oas-ui/ui/feedback/message'
+import type { OASTable, TableColumn } from '@oas-ui/ui/data/table'
 import { t } from '../i18n'
 import { createDept, listDepts, removeDept, treeDepts, updateDept } from '../data/system'
 import type { DeptNode, DeptTree } from '../data/system'
@@ -6,6 +7,37 @@ import '../styles/pages/dept.css'
 
 const RULES = (): string =>
   JSON.stringify({ name: [{ required: true, message: t('dept.rule.name') }] })
+
+function subActionCell(node: DeptTree): HTMLElement {
+  const ctx = document.createElement('div')
+  ctx.className = 'action-cell'
+  const edit = document.createElement('oas-button')
+  edit.setAttribute('data-edit', String(node.id))
+  edit.setAttribute('size', 'small')
+  edit.setAttribute('type', 'text')
+  edit.textContent = t('common.edit')
+  const pop = document.createElement('oas-popconfirm')
+  pop.setAttribute('data-del', String(node.id))
+  pop.setAttribute('title', t('dept.confirmDelete'))
+  const del = document.createElement('oas-button')
+  del.setAttribute('size', 'small')
+  del.setAttribute('type', 'danger')
+  del.textContent = t('common.delete')
+  pop.appendChild(del)
+  ctx.appendChild(edit)
+  ctx.appendChild(pop)
+  return ctx
+}
+
+const SUB_COLUMNS = (): TableColumn[] => [
+  { key: 'name', title: t('dept.th.name') },
+  { key: 'members', title: t('dept.th.members'), align: 'right' },
+  {
+    key: 'action',
+    title: t('dept.th.action'),
+    render: (r) => subActionCell(r as unknown as DeptTree),
+  },
+]
 
 interface DeptTreeNode {
   key: string
@@ -191,37 +223,41 @@ export function render(el: HTMLElement): () => void {
         `<div class="sub-dept-empty">${t('dept.empty.noChildren')}</div>`
       return
     }
-    const tbody = detailEl.querySelector<HTMLElement>('#dept-sub-body')!
-    tbody.innerHTML = children
-      .map(
-        (c) => `<tr data-id="${c.id}">
-          <td>${c.name}</td>
-          <td class="num-cell mono">${c.members}</td>
-          <td class="action-cell">
-            <oas-button size="small" type="text" data-edit="${c.id}">${t('common.edit')}</oas-button>
-            <oas-popconfirm title="${t('dept.confirmDelete')}" data-del="${c.id}">
-              <oas-button size="small" type="danger">${t('common.delete')}</oas-button>
-            </oas-popconfirm>
-          </td>
-        </tr>`,
-      )
-      .join('')
+    const sub = detailEl.querySelector<OASTable>('[data-testid="dept-sub-table"]')!
+    sub.columns = SUB_COLUMNS()
+    sub.setAttribute('data', JSON.stringify(children))
     detailEl.querySelector<HTMLElement>('#dept-sub')!.hidden = false
-    tbody.querySelectorAll<HTMLElement>('oas-button[data-edit]').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation()
-        const id = Number(btn.getAttribute('data-edit'))
-        const row = state.flat.find((d) => d.id === id)
-        if (row) openForm(row)
-      })
-    })
-    detailEl.querySelectorAll<HTMLElement>('oas-popconfirm[data-del]').forEach((pc) => {
-      pc.addEventListener('oas-ok', async (e) => {
-        e.stopPropagation()
-        const id = Number(pc.getAttribute('data-del'))
-        await doDelete(id)
-      })
-    })
+  }
+
+  function onSubClick(e: Event): void {
+    e.stopPropagation()
+    const path = e.composedPath() as HTMLElement[]
+    const editBtn = path.find((n) => n.matches?.('[data-edit]'))
+    if (editBtn) {
+      const id = Number(editBtn.getAttribute('data-edit'))
+      const row = state.flat.find((d) => d.id === id)
+      if (row) openForm(row)
+      return
+    }
+    const delPop = path.find((n) => n.matches?.('oas-popconfirm[data-del]'))
+    if (delPop) {
+      const id = delPop.getAttribute('data-del')
+      const sub = detailEl.querySelector<OASTable>('[data-testid="dept-sub-table"]')
+      const connected = Array.from(
+        sub?.shadowRoot?.querySelectorAll<HTMLElement>('oas-popconfirm[data-del]') ?? [],
+      ).find((p) => p.isConnected && p.getAttribute('data-del') === id)
+      connected?.setAttribute('open', '')
+    }
+  }
+
+  function onSubDelete(): void {
+    const sub = detailEl.querySelector<OASTable>('[data-testid="dept-sub-table"]')
+    const pc = Array.from(
+      sub?.shadowRoot?.querySelectorAll<HTMLElement>('oas-popconfirm[data-del]') ?? [],
+    ).find((p) => p.isConnected && p.hasAttribute('open'))
+    if (!pc) return
+    const id = Number(pc.getAttribute('data-del'))
+    void doDelete(id)
   }
 
   function renderDetail(): void {
@@ -250,12 +286,7 @@ export function render(el: HTMLElement): () => void {
       <div class="dept-detail-sub">
         <div class="dept-detail-sub-title">${t('dept.subTitle')}</div>
         <div id="dept-sub">
-          <table class="sub-dept-table" data-testid="dept-sub-table">
-            <thead>
-              <tr><th>${t('dept.th.name')}</th><th class="num">${t('dept.th.members')}</th><th>${t('dept.th.action')}</th></tr>
-            </thead>
-            <tbody id="dept-sub-body"></tbody>
-          </table>
+          <oas-table data-testid="dept-sub-table" row-key="id"></oas-table>
         </div>
       </div>`
     detailEl
@@ -381,6 +412,9 @@ export function render(el: HTMLElement): () => void {
       saving = false
     }
   })
+
+  detailEl.addEventListener('click', onSubClick)
+  detailEl.addEventListener('oas-ok', onSubDelete)
 
   void refresh()
   return () => {}

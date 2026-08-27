@@ -34,6 +34,7 @@ function cellAction(row: CategoryRow): HTMLElement {
   edit.setAttribute('aria-label', t('common.edit'))
   const pop = document.createElement('oas-popconfirm')
   pop.setAttribute('data-testid', 'category-del-pop')
+  pop.setAttribute('data-del-id', String(row.id))
   pop.setAttribute('title', t('category.confirmDelete'))
   const del = document.createElement('oas-button')
   del.className = 'category-delete'
@@ -196,8 +197,8 @@ export function render(el: HTMLElement): () => void {
   })
 
   table.addEventListener('click', (e) => {
-    const target = e.composedPath()[0] as HTMLElement
-    const editBtn = target.closest<HTMLElement>('[data-testid="category-edit"]')
+    const path = e.composedPath() as HTMLElement[]
+    const editBtn = path.find((n) => n.matches?.('[data-testid="category-edit"]'))
     if (editBtn) {
       const row = state.rows.find((r) => r.id === Number(editBtn.getAttribute('data-id')))
       if (row) {
@@ -206,19 +207,22 @@ export function render(el: HTMLElement): () => void {
       }
       return
     }
-    const delBtn = target.closest<HTMLElement>('[data-testid="category-delete"]')
+    const delBtn = path.find((n) => n.matches?.('[data-testid="category-delete"]'))
     if (delBtn) {
-      const id = Number(delBtn.getAttribute('data-id'))
-      if (Number.isFinite(id)) state.editingId = id
+      const id = delBtn.getAttribute('data-id')
+      const pop = Array.from(
+        table.shadowRoot?.querySelectorAll<HTMLElement>('oas-popconfirm[data-del-id]') ?? [],
+      ).find((p) => p.isConnected && p.getAttribute('data-del-id') === id)
+      pop?.setAttribute('open', '')
     }
   })
 
-  table.addEventListener('oas-ok', (e) => {
-    const btn = (e.target as HTMLElement)?.closest<HTMLElement>('[data-testid="category-del-pop"]')
+  table.addEventListener('oas-ok', () => {
+    const pop = Array.from(
+      table.shadowRoot?.querySelectorAll<HTMLElement>('oas-popconfirm[data-del-id]') ?? [],
+    ).find((p) => p.isConnected && p.hasAttribute('open'))
+    const id = Number(pop?.getAttribute('data-del-id') ?? state.editingId)
     void (async () => {
-      const id = btn
-        ? Number(btn.querySelector('[data-testid="category-delete"]')?.getAttribute('data-id'))
-        : state.editingId
       if (id == null || !Number.isFinite(id)) return
       await removeCategory(id)
       state.editingId = null
