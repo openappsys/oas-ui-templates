@@ -568,4 +568,10 @@ export default {
   'board.targetOrder': '订单目标',
   'board.targetRevenue': '营收目标',
   'board.targetUsers': '用户目标',
+  'board.month1': '1月',
+  'board.month2': '2月',
+  'board.month3': '3月',
+  'board.month4': '4月',
+  'board.month5': '5月',
+  'board.month6': '6月',
 } as const

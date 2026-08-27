@@ -572,4 +572,10 @@ export default {
   'board.targetOrder': 'Orders',
   'board.targetRevenue': 'Revenue',
   'board.targetUsers': 'Users',
+  'board.month1': 'Jan',
+  'board.month2': 'Feb',
+  'board.month3': 'Mar',
+  'board.month4': 'Apr',
+  'board.month5': 'May',
+  'board.month6': 'Jun',
 } as const

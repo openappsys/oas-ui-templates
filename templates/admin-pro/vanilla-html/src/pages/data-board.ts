@@ -46,12 +46,15 @@ export function render(el: HTMLElement): () => void {
       const k = STAT_KEYS[i]
       if (k) n.textContent = t(k)
     })
-    // 图表卡片 title + aria-label
+    // 图表卡片 title + aria-label + 数据（月份标签随语言）
     el.querySelectorAll<HTMLElement>('.chart-card').forEach((n, i) => {
       const k = CHART_KEYS[i]
-      if (!k) return
-      n.setAttribute('title', t(k))
-      n.querySelector('oas-chart')?.setAttribute('aria-label', t(k))
+      if (k) n.setAttribute('title', t(k))
+      const chart = n.querySelector<HTMLElement>('oas-chart')
+      chart?.setAttribute('aria-label', k ? t(k) : '')
+      if (i === 0) chart?.setAttribute('data', barData())
+      else if (i === 1) chart?.setAttribute('data', JSON.stringify(PIE))
+      else if (i === 2) chart?.setAttribute('data', stackedData())
     })
     // 进度条 label（3 行）
     el.querySelectorAll<HTMLElement>('.progress-label').forEach((n, i) => {
@@ -62,9 +65,9 @@ export function render(el: HTMLElement): () => void {
 
   function draw(): void {
     const defs = stats()
-    const barData = JSON.stringify(BAR)
-    const pieData = JSON.stringify(PIE)
-    const stackedData = JSON.stringify(STACKED)
+    const bData = barData()
+    const pData = JSON.stringify(PIE)
+    const sData = stackedData()
     el.innerHTML = `
       <div class="page">
         <div class="page-head">
@@ -77,13 +80,13 @@ export function render(el: HTMLElement): () => void {
           <div class="board-grid" id="board-grid">${defs.map(statCard).join('')}</div>
           <div class="board-charts">
             <oas-card class="chart-card" title="${t('board.monthRevenue')}">
-              <oas-chart type="bar" data='${barData}' aria-label="${t('board.monthRevenue')}"></oas-chart>
+              <oas-chart type="bar" data='${bData}' aria-label="${t('board.monthRevenue')}"></oas-chart>
             </oas-card>
             <oas-card class="chart-card" title="${t('board.categoryShare')}">
-              <oas-chart type="pie" data='${pieData}' aria-label="${t('board.categoryShare')}"></oas-chart>
+              <oas-chart type="pie" data='${pData}' aria-label="${t('board.categoryShare')}"></oas-chart>
             </oas-card>
             <oas-card class="chart-card chart-card--wide" title="${t('board.channelTrend')}">
-              <oas-chart type="stacked-bar" options='{"showLegend":true}' data='${stackedData}' aria-label="${t('board.channelTrend')}"></oas-chart>
+              <oas-chart type="stacked-bar" options='{"showLegend":true}' data='${sData}' aria-label="${t('board.channelTrend')}"></oas-chart>
             </oas-card>
           </div>
           <oas-card class="board-progress" title="${t('board.targetTitle')}">
@@ -110,14 +113,16 @@ export function render(el: HTMLElement): () => void {
   return onLocaleChange(refreshText)
 }
 
-const BAR = [
-  { label: '1月', value: 86 },
-  { label: '2月', value: 92 },
-  { label: '3月', value: 65 },
-  { label: '4月', value: 78 },
-  { label: '5月', value: 88 },
-  { label: '6月', value: 96 },
-]
+function barData(): string {
+  return JSON.stringify([
+    { label: t('board.month1'), value: 86 },
+    { label: t('board.month2'), value: 92 },
+    { label: t('board.month3'), value: 65 },
+    { label: t('board.month4'), value: 78 },
+    { label: t('board.month5'), value: 88 },
+    { label: t('board.month6'), value: 96 },
+  ])
+}
 
 const PIE = [
   { label: '数码', value: 40 },
@@ -125,11 +130,13 @@ const PIE = [
   { label: '食品', value: 25 },
 ]
 
-const STACKED = {
-  labels: ['1月', '2月', '3月', '4月'],
-  series: [
-    { name: '线上', data: [320, 302, 341, 374] },
-    { name: '分销', data: [120, 132, 101, 134] },
-    { name: '门店', data: [220, 182, 191, 234] },
-  ],
+function stackedData(): string {
+  return JSON.stringify({
+    labels: [t('board.month1'), t('board.month2'), t('board.month3'), t('board.month4')],
+    series: [
+      { name: '线上', data: [320, 302, 341, 374] },
+      { name: '分销', data: [120, 132, 101, 134] },
+      { name: '门店', data: [220, 182, 191, 234] },
+    ],
+  })
 }
