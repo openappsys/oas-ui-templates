@@ -1,6 +1,9 @@
 packages:
   - templates/*
   - templates/*/*
+allowBuilds:
+  esbuild: true
+  workerd: true
 minimumReleaseAgeExclude:
   - '@oas-ui/core@2.2.2 || 2.2.3 || 2.2.4'
   - '@oas-ui/i18n@2.2.2 || 2.2.3 || 2.2.4'
