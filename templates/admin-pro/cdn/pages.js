@@ -18,7 +18,10 @@ function seedUsers() {
 function loadUsers() {
   try {
     const raw = localStorage.getItem(USERS_KEY)
-    if (raw) return JSON.parse(raw)
+    if (raw) {
+      const v = JSON.parse(raw)
+      if (Array.isArray(v)) return v
+    }
   } catch {
     /* 坏数据回退种子 */
   }
@@ -82,8 +85,6 @@ export function renderUsers(el) {
   const state = { rows: loadUsers(), keyword: '', page: 1, editingId: null }
   const PAGE_SIZE = 8
 
-  document.title = `${t('users.title')} · ${t('app.title')}`
-
   function columns() {
     return [
       { key: 'name', title: t('users.th.name') },
@@ -126,6 +127,7 @@ export function renderUsers(el) {
   }
 
   function draw() {
+    document.title = `${t('users.title')} · ${t('app.title')}`
     el.innerHTML = `
       <div class="page">
         <h1 class="page-title">${t('users.title')}</h1>
@@ -231,10 +233,17 @@ export function renderUsers(el) {
     el.querySelector('[data-testid="uf-save"]').addEventListener('click', () => {
       const name = inputValue('uf-name')
       const email = inputValue('uf-email')
-      if (!name) return
+      if (!name) return OASUI.message.warning(t('users.ruleName'))
       if (state.editingId == null) {
         const id = Math.max(0, ...state.rows.map((r) => r.id)) + 1
-        state.rows.unshift({ id, name, email, role: 'viewer', created: '2026-08-27' })
+        state.rows.unshift({
+          id,
+          name,
+          email,
+          role: 'viewer',
+          created: new Date().toISOString().slice(0, 10),
+        })
+        state.page = 1
       } else {
         const row = state.rows.find((r) => r.id === state.editingId)
         if (row) {
@@ -269,7 +278,7 @@ export function renderForm(el) {
               <oas-input name="name" label="${t('form.name')}" placeholder="${t('form.name')}"></oas-input>
               <oas-select name="category" label="${t('form.category')}" options='[{"label":"A","value":"a"},{"label":"B","value":"b"}]'></oas-select>
               <oas-switch name="status" label="${t('form.status')}"></oas-switch>
-              <oas-date-picker name="due" label="${t('form.name')}"></oas-date-picker>
+              <oas-date-picker name="due" label="${t('form.due')}"></oas-date-picker>
             </div>
             <oas-textarea name="desc" label="${t('form.desc')}"></oas-textarea>
             <oas-space style="margin-top: var(--oas-space-3)">
@@ -288,7 +297,7 @@ export function renderForm(el) {
     })
     el.querySelector('[data-action="reset"]').addEventListener('click', () => {
       form.shadowRoot?.querySelector('form')?.reset()
-      OASUI.message.info(t('form.resetDone'))
+      window.OASUI?.message?.info?.(t('form.resetDone'))
     })
   }
   draw()
