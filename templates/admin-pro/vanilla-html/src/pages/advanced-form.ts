@@ -1,5 +1,6 @@
 import { message } from '@oas-ui/ui/feedback/message'
 import { onLocaleChange, t } from '../i18n'
+import { advFormData } from '../data/adv-form'
 import '../styles/pages/advanced-form.css'
 
 function catOptions(): Array<{ label: string; value: string }> {
@@ -59,6 +60,7 @@ export function render(el: HTMLElement): () => void {
   ]
 
   function refreshText(): void {
+    const data = advFormData()
     el.querySelector<HTMLElement>('h1.page-title')!.textContent = t('adv.title')
     el.querySelector<HTMLElement>('p.page-subtitle')!.textContent = t('adv.subtitle')
     const cards = el.querySelectorAll<HTMLElement>('.adv-card')
@@ -103,11 +105,24 @@ export function render(el: HTMLElement): () => void {
       'data',
       JSON.stringify(channelOptions()),
     )
+    el.querySelector<HTMLElement>('oas-auto-complete')?.setAttribute(
+      'options',
+      JSON.stringify(data.phones),
+    )
+    el.querySelector<HTMLElement>('oas-cascader')?.setAttribute(
+      'options',
+      JSON.stringify(data.regions),
+    )
+    el.querySelector<HTMLElement>('oas-tree-select')?.setAttribute(
+      'options',
+      JSON.stringify(data.treeRegions),
+    )
     el.querySelector<HTMLElement>('[data-action="submit"]')!.textContent = t('adv.submit')
     el.querySelector<HTMLElement>('[data-action="reset"]')!.textContent = t('basic.reset')
     el.querySelector<HTMLElement>('#advanced-form')?.setAttribute('rules', rulesJSON())
   }
 
+  const data = advFormData()
   el.innerHTML = `
     <div class="page">
       <div class="page-head">
@@ -136,10 +151,10 @@ export function render(el: HTMLElement): () => void {
         <oas-card class="adv-card" title="${t('adv.contact')}">
           <div class="adv-grid">
             <oas-form-item label="${t('adv.phone')}">
-              <oas-auto-complete name="phone" placeholder="${t('adv.phonePh')}" options='${JSON.stringify(PHONES)}'></oas-auto-complete>
+              <oas-auto-complete name="phone" placeholder="${t('adv.phonePh')}" options='${JSON.stringify(data.phones)}'></oas-auto-complete>
             </oas-form-item>
             <oas-form-item label="${t('adv.address')}">
-              <oas-cascader placeholder="${t('adv.addressPh')}" options='${JSON.stringify(REGIONS)}'></oas-cascader>
+              <oas-cascader placeholder="${t('adv.addressPh')}" options='${JSON.stringify(data.regions)}'></oas-cascader>
             </oas-form-item>
             <oas-form-item label="${t('adv.pinLabel')}">
               <oas-pin-input length="4" data-testid="adv-pin"></oas-pin-input>
@@ -161,7 +176,7 @@ export function render(el: HTMLElement): () => void {
               <oas-dynamic-tags placeholder="${t('adv.tagsPh')}" data-testid="adv-tags"></oas-dynamic-tags>
             </oas-form-item>
             <oas-form-item label="${t('adv.region')}">
-              <oas-tree-select placeholder="${t('adv.regionPh')}" options='${JSON.stringify(TREE_REGIONS)}'></oas-tree-select>
+              <oas-tree-select placeholder="${t('adv.regionPh')}" options='${JSON.stringify(data.treeRegions)}'></oas-tree-select>
             </oas-form-item>
           </div>
         </oas-card>
@@ -212,44 +227,3 @@ export function render(el: HTMLElement): () => void {
 
   return onLocaleChange(refreshText)
 }
-
-const PHONES = [
-  { label: '010-88886666', value: '010-88886666' },
-  { label: '021-66668888', value: '021-66668888' },
-  { label: '0755-33335555', value: '0755-33335555' },
-]
-
-const REGIONS = [
-  {
-    label: '浙江',
-    value: 'zj',
-    children: [
-      { label: '杭州', value: 'hz' },
-      { label: '宁波', value: 'nb' },
-    ],
-  },
-  {
-    label: '江苏',
-    value: 'js',
-    children: [
-      { label: '南京', value: 'nj' },
-      { label: '苏州', value: 'sz' },
-    ],
-  },
-]
-
-const TREE_REGIONS = [
-  {
-    label: '华东',
-    value: 'east',
-    children: [
-      { label: '上海', value: 'sh' },
-      { label: '浙江', value: 'zj' },
-    ],
-  },
-  {
-    label: '华南',
-    value: 'south',
-    children: [{ label: '广东', value: 'gd' }],
-  },
-]
