@@ -13,6 +13,11 @@ const NAV = [
   { path: '/form', icon: 'form', key: 'nav.form' },
 ]
 
+const HOME = '/dashboard'
+function parseHash() {
+  return location.hash.replace(/^#/, '') || HOME
+}
+
 const app = document.querySelector('#app')
 let disposePage = null
 
@@ -42,8 +47,12 @@ function renderLogin() {
       input.shadowRoot?.querySelector('input')?.value ?? ''
     ).trim()
     if (!name) return
-    localStorage.setItem(SESSION_KEY, JSON.stringify({ name }))
-    location.hash = '#/dashboard'
+    try {
+      localStorage.setItem(SESSION_KEY, JSON.stringify({ name }))
+    } catch {
+      /* 隐私模式 */
+    }
+    location.hash = '#' + HOME
   }
   app.querySelector('[data-testid="login-submit"]').addEventListener('click', submit)
   input.addEventListener('oas-enter', submit)
@@ -70,6 +79,10 @@ function renderShell() {
     localStorage.removeItem(SESSION_KEY)
     location.hash = '#/login'
   })
+  app.querySelector('#nav').addEventListener('oas-select', (e) => {
+    const value = e.detail?.value
+    if (value && location.hash !== `#${value}`) location.hash = value
+  })
   syncNav()
 }
 
@@ -82,11 +95,11 @@ function syncNav() {
       NAV.map((n) => ({ label: t(n.key), value: n.path, icon: n.icon, group: t('nav.group') })),
     ),
   )
-  nav.setAttribute('active', location.hash.replace(/^#/, '') || '/dashboard')
+  nav.setAttribute('active', parseHash())
 }
 
 function resolve() {
-  const hash = location.hash.replace(/^#/, '') || '/dashboard'
+  const hash = parseHash()
   if (!session()) {
     disposePage?.()
     disposePage = null
@@ -95,12 +108,12 @@ function resolve() {
     return
   }
   if (hash === '/login') {
-    location.hash = '#/dashboard'
+    location.hash = '#' + HOME
     return
   }
   const render = ROUTES[hash]
   if (!render) {
-    location.hash = '#/dashboard'
+    location.hash = '#' + HOME
     return
   }
   if (!app.querySelector('#view')) renderShell()
@@ -113,11 +126,9 @@ function resolve() {
 window.addEventListener('hashchange', resolve)
 resolve()
 onLocaleChange(() => {
-  // 壳层重渲染（登录态下），当前页由各自 onLocaleChange 重画
-  if (session()) {
-    const hash = location.hash.replace(/^#/, '') || '/dashboard'
-    renderShell()
-    syncNav()
-    if (!location.hash.endsWith(hash)) location.hash = hash
-  }
+  if (!session()) return
+  app.querySelector('.logo').textContent = t('app.title')
+  app.querySelector('#lang-toggle').textContent = t('header.lang')
+  app.querySelector('#logout').textContent = t('header.logout')
+  syncNav()
 })
