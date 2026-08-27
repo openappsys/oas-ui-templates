@@ -239,23 +239,13 @@ export function render(el: HTMLElement): () => void {
       if (row) openForm(row)
       return
     }
-    const delPop = path.find((n) => n.matches?.('oas-popconfirm[data-del]'))
-    if (delPop) {
-      const id = delPop.getAttribute('data-del')
-      const sub = detailEl.querySelector<OASTable>('[data-testid="dept-sub-table"]')
-      const connected = Array.from(
-        sub?.shadowRoot?.querySelectorAll<HTMLElement>('oas-popconfirm[data-del]') ?? [],
-      ).find((p) => p.isConnected && p.getAttribute('data-del') === id)
-      connected?.setAttribute('open', '')
-    }
+    // v2.2.8 起行点击忽略内嵌交互控件：单元格内 popconfirm 原生自驱动，无需模板手动 open
   }
 
-  function onSubDelete(): void {
-    const sub = detailEl.querySelector<OASTable>('[data-testid="dept-sub-table"]')
-    const pc = Array.from(
-      sub?.shadowRoot?.querySelectorAll<HTMLElement>('oas-popconfirm[data-del]') ?? [],
-    ).find((p) => p.isConnected && p.hasAttribute('open'))
-    if (!pc) return
+  function onSubDelete(e: Event): void {
+    // v2.2.8 起 popconfirm 的 ok/cancel 事件带 detail.source，直接反查来源
+    const pc = (e as CustomEvent<{ source: HTMLElement }>).detail.source
+    if (!pc?.hasAttribute?.('data-del')) return
     const id = Number(pc.getAttribute('data-del'))
     void doDelete(id)
   }

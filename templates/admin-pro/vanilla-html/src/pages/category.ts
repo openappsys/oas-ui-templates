@@ -207,21 +207,15 @@ export function render(el: HTMLElement): () => void {
       }
       return
     }
-    const delBtn = path.find((n) => n.matches?.('[data-testid="category-delete"]'))
-    if (delBtn) {
-      const id = delBtn.getAttribute('data-id')
-      const pop = Array.from(
-        table.shadowRoot?.querySelectorAll<HTMLElement>('oas-popconfirm[data-del-id]') ?? [],
-      ).find((p) => p.isConnected && p.getAttribute('data-del-id') === id)
-      pop?.setAttribute('open', '')
-    }
+    // v2.2.8 起行点击忽略内嵌交互控件：单元格内 popconfirm 原生自驱动，无需模板手动 open
   })
 
-  table.addEventListener('oas-ok', () => {
-    const pop = Array.from(
-      table.shadowRoot?.querySelectorAll<HTMLElement>('oas-popconfirm[data-del-id]') ?? [],
-    ).find((p) => p.isConnected && p.hasAttribute('open'))
-    const id = Number(pop?.getAttribute('data-del-id') ?? state.editingId)
+  table.addEventListener('oas-ok', (e) => {
+    // v2.2.8 起 popconfirm 的 ok/cancel 事件带 detail.source，直接反查来源
+    const src = (e as CustomEvent<{ source: HTMLElement }>).detail.source
+    const id = Number(
+      src?.hasAttribute?.('data-del-id') ? src.getAttribute('data-del-id') : state.editingId,
+    )
     void (async () => {
       if (id == null || !Number.isFinite(id)) return
       await removeCategory(id)

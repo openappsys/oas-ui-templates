@@ -209,21 +209,13 @@ export function render(el: HTMLElement): () => void {
       if (row) openForm(row)
       return
     }
-    const delPop = path.find((n) => n.matches?.('oas-popconfirm[data-del]'))
-    if (delPop) {
-      const id = delPop.getAttribute('data-del')
-      const connected = Array.from(
-        table.shadowRoot?.querySelectorAll<HTMLElement>('oas-popconfirm[data-del]') ?? [],
-      ).find((p) => p.isConnected && p.getAttribute('data-del') === id)
-      connected?.setAttribute('open', '')
-    }
+    // v2.2.8 起行点击忽略内嵌交互控件：单元格内 popconfirm 原生自驱动（点击触发即开合），无需模板手动 open
   }
 
-  function onDeleteOk(): void {
-    const pc = Array.from(
-      table.shadowRoot?.querySelectorAll<HTMLElement>('oas-popconfirm[data-del]') ?? [],
-    ).find((p) => p.isConnected && p.hasAttribute('open'))
-    if (!pc) return
+  function onDeleteOk(e: Event): void {
+    // v2.2.8 起 popconfirm 的 ok/cancel 事件带 detail.source，直接反查来源，不再扫 open 态
+    const pc = (e as CustomEvent<{ source: HTMLElement }>).detail.source
+    if (!pc?.hasAttribute?.('data-del')) return
     const id = Number(pc.getAttribute('data-del'))
     void removeRole(id).then((ok) => {
       if (!ok) message.error(t('roles.notFound'))

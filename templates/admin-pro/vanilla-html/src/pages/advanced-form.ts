@@ -35,11 +35,9 @@ function rulesJSON(): string {
 
 export function render(el: HTMLElement): () => void {
   let formValues: Record<string, string> = {}
-  const manual: Record<string, unknown> = {}
 
   function resetForm(form: HTMLElement): void {
     ;(form.shadowRoot?.querySelector('form') as HTMLFormElement | null)?.reset()
-    for (const k of Object.keys(manual)) manual[k] = undefined
   }
 
   const ITEM_KEYS = [
@@ -144,7 +142,7 @@ export function render(el: HTMLElement): () => void {
               <oas-date-picker placeholder="${t('adv.foundedPh')}"></oas-date-picker>
             </oas-form-item>
             <oas-form-item label="${t('adv.staff')}">
-              <oas-slider min="0" max="5000" step="100" value="200" data-testid="adv-staff"></oas-slider>
+              <oas-slider name="staff" min="0" max="5000" step="100" value="200" data-testid="adv-staff"></oas-slider>
             </oas-form-item>
           </div>
         </oas-card>
@@ -157,7 +155,7 @@ export function render(el: HTMLElement): () => void {
               <oas-cascader placeholder="${t('adv.addressPh')}" options='${JSON.stringify(data.regions)}'></oas-cascader>
             </oas-form-item>
             <oas-form-item label="${t('adv.pinLabel')}">
-              <oas-pin-input length="4" data-testid="adv-pin"></oas-pin-input>
+              <oas-pin-input name="pin" length="4" data-testid="adv-pin"></oas-pin-input>
             </oas-form-item>
             <oas-form-item label="${t('adv.email')}">
               <oas-input name="email" type="email" placeholder="${t('adv.emailPh')}"></oas-input>
@@ -170,10 +168,10 @@ export function render(el: HTMLElement): () => void {
               <oas-combobox name="category" placeholder="${t('adv.categoryPh')}" options='${JSON.stringify(catOptions())}'></oas-combobox>
             </oas-form-item>
             <oas-form-item label="${t('adv.rating')}">
-              <oas-rate value="3" data-testid="adv-rating"></oas-rate>
+              <oas-rate name="rating" value="3" data-testid="adv-rating"></oas-rate>
             </oas-form-item>
             <oas-form-item label="${t('adv.tags')}">
-              <oas-dynamic-tags placeholder="${t('adv.tagsPh')}" data-testid="adv-tags"></oas-dynamic-tags>
+              <oas-dynamic-tags name="tags" placeholder="${t('adv.tagsPh')}" data-testid="adv-tags"></oas-dynamic-tags>
             </oas-form-item>
             <oas-form-item label="${t('adv.region')}">
               <oas-tree-select placeholder="${t('adv.regionPh')}" options='${JSON.stringify(data.treeRegions)}'></oas-tree-select>
@@ -199,22 +197,9 @@ export function render(el: HTMLElement): () => void {
 
   const form = el.querySelector<HTMLElement>('#advanced-form')!
 
-  function collectManual(): void {
-    const pick = (sel: string, id: string) =>
-      el.querySelector(sel)?.addEventListener('oas-change', (e) => {
-        manual[id] = (e as CustomEvent<{ value?: unknown }>).detail?.value
-      })
-    pick('[data-testid="adv-staff"]', 'staff')
-    pick('[data-testid="adv-pin"]', 'pin')
-    pick('[data-testid="adv-rating"]', 'rating')
-    pick('[data-testid="adv-tags"]', 'tags')
-  }
-  collectManual()
-
   form.addEventListener('oas-submit', (e) => {
     formValues = (e as CustomEvent<{ values: Record<string, string> }>).detail.values
     message.success(t('adv.submitted'))
-    void Promise.resolve(manual)
   })
   el.querySelector('[data-action="reset"]')?.addEventListener('click', () => {
     resetForm(form)
