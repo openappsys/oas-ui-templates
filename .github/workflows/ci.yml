@@ -20,6 +20,7 @@ jobs:
         template:
           - { name: admin-pro/vanilla-html, workdir: templates/admin-pro/vanilla-html, tsc: 'true', size: 'true', e2e: 'true' }
           - { name: admin-pro/cdn, workdir: templates/admin-pro/cdn, tsc: 'false', size: 'false', e2e: 'true' }
+          - { name: admin-pro/cdn-mpa, workdir: templates/admin-pro/cdn-mpa, tsc: 'false', size: 'false', e2e: 'true' }
     name: ${{ matrix.template.name }}
     runs-on: ubuntu-latest
     defaults:
