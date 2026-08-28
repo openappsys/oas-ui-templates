@@ -128,6 +128,7 @@ export function currentLocale() {
   return locale
 }
 
+// MPA 约定：切语言 = 写 storage + 整页 reload（调用方负责 reload；onLocaleChange 订阅机制在 MPA 下不需要）
 export function setLocale(next) {
   if (next !== 'zh-CN' && next !== 'en') return
   locale = next

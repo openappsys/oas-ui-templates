@@ -2,7 +2,8 @@ const SESSION_KEY = 'oas-admin-cdn-mpa.session'
 
 export function readSession() {
   try {
-    return JSON.parse(localStorage.getItem(SESSION_KEY) ?? 'null')
+    const v = JSON.parse(localStorage.getItem(SESSION_KEY) ?? 'null')
+    return v && typeof v === 'object' && typeof v.name === 'string' ? v : null
   } catch {
     return null
   }
@@ -24,7 +25,9 @@ export function clearSession() {
   }
 }
 
-// 受保护页入口第一行调用：未登录 → 登录页
+// 受保护页入口第一行调用：未登录 → 跳登录页并返回 false（调用方应 early-return）
 export function guard() {
-  if (!readSession()) location.href = './index.html'
+  if (readSession()) return true
+  location.href = './index.html'
+  return false
 }
