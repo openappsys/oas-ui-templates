@@ -35,5 +35,5 @@ createServer(async (req, res) => {
     res.end('not found')
   }
 }).listen(PORT, process.env.HOST || '127.0.0.1', () =>
-  console.log(`serving ${ROOT} on http://localhost:${PORT}`)
+  console.log(`serving ${ROOT} on http://localhost:${PORT}`),
 )

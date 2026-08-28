@@ -43,9 +43,7 @@ function renderLogin() {
     </div>`
   const input = app.querySelector('[data-testid="login-name"]')
   const submit = () => {
-    const name = (
-      input.shadowRoot?.querySelector('input')?.value ?? ''
-    ).trim()
+    const name = (input.shadowRoot?.querySelector('input')?.value ?? '').trim()
     if (!name) return
     try {
       localStorage.setItem(SESSION_KEY, JSON.stringify({ name }))
