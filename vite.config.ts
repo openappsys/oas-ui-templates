@@ -35,7 +35,7 @@ const templates = discoverTemplates()
 
 export default defineConfig({
   server: {
-    port: 5173,
+    port: Number(process.env.PORT) || 5300,
     strictPort: true,
     proxy: Object.fromEntries(
       templates.map((t) => [`${t.subpath}/`, { target: `http://localhost:${t.port}`, ws: true }]),
