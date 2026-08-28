@@ -56,8 +56,7 @@ test('中英切换：点击后整页 reload 且壳层菜单变英文', async ({ 
   await login(page)
   await expect(page.locator('#nav')).toContainText('仪表盘')
   await page.getByTestId('lang-toggle').click()
-  // MPA 切语言 = setLocale + reload，等导航完成后断言
-  await page.waitForLoadState('load')
+  // MPA 切语言 = setLocale + reload；click 会等其触发的导航完成，后续 expect 的 web-first 重试兜底
   await expect(page.locator('#nav')).toContainText('Dashboard')
   await expect(page.locator('#nav')).not.toContainText('仪表盘')
 })
@@ -65,7 +64,6 @@ test('中英切换：点击后整页 reload 且壳层菜单变英文', async ({ 
 test('刷新后语言保持（localStorage 生效）', async ({ page }) => {
   await login(page)
   await page.getByTestId('lang-toggle').click()
-  await page.waitForLoadState('load')
   await expect(page.locator('#nav')).toContainText('Dashboard')
   await page.reload()
   await expect(page.locator('#nav')).toContainText('Dashboard')

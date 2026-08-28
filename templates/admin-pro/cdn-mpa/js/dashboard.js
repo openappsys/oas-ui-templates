@@ -1,4 +1,4 @@
-import { guard } from './session.js'
+import { guard, readSession } from './session.js'
 import { mountShell } from './shell.js'
 import { t } from './i18n.js'
 
@@ -8,7 +8,7 @@ if (guard()) {
 }
 
 function renderDashboard(el) {
-  const user = JSON.parse(localStorage.getItem('oas-admin-cdn-mpa.session') ?? '{}')
+  const user = readSession() ?? {}
   document.title = `${t('nav.dashboard')} · ${t('app.title')}`
   const stats = [
     { testid: 'stat-visits', label: t('dash.statVisits'), value: '12,480', delta: 12.4 },
