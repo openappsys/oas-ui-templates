@@ -24,7 +24,7 @@ npx serve .
 - `index.html`：登录页（已登录自动跳 dashboard.html）
 - `dashboard.html` / `users.html` / `form.html`：三个业务页（真实 HTML 文件，view-source 可读）
 - `js/fouc.js`：每页 `<head>` 同步引入，防语言闪烁（FOUC）
-- `js/i18n.js`：中英字典与语言判定；`js/session.js`：会话与登录守卫；`js/shell.js`：壳层（顶栏+侧栏）一处渲染；`js/data.js`：演示数据；`js/*.js` 页入口：guard + mountShell + 本页渲染
+- `js/i18n.js`：中英字典与语言判定；`js/session.js`：会话与登录守卫；`js/shell.js`：壳层（顶栏+侧栏）一处渲染；`js/data.js`：演示数据；`js/dashboard.js` / `js/users.js` / `js/form.js` 页入口：guard + mountShell + 本页渲染
 - `css/app.css`：全部样式（只消费 theme 的 `--oas-*` token）
 
 ## 已知边界
@@ -63,7 +63,7 @@ npx serve .
 - `index.html`: login page (redirects to dashboard.html when already signed in)
 - `dashboard.html` / `users.html` / `form.html`: the three business pages (real HTML files, readable via view-source)
 - `js/fouc.js`: synchronous per-page `<head>` script preventing language FOUC
-- `js/i18n.js`: zh/en dictionary + locale detection; `js/session.js`: session + login guard; `js/shell.js`: shell (top bar + sidebar) rendered once; `js/data.js`: demo data; `js/*.js` page entries: guard + mountShell + page render
+- `js/i18n.js`: zh/en dictionary + locale detection; `js/session.js`: session + login guard; `js/shell.js`: shell (top bar + sidebar) rendered once; `js/data.js`: demo data; `js/dashboard.js` / `js/users.js` / `js/form.js` page entries: guard + mountShell + page render
 - `css/app.css`: all styles (consumes only theme `--oas-*` tokens)
 
 ## Known boundaries

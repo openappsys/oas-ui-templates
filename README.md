@@ -38,7 +38,7 @@ pnpm site   # 聚合构建：逐模版 build + 拷贝到 site/dist/<family>/<tem
 
 ```
 index.html                        # 门户首页（site/index.html）
-admin-pro/vanilla-html/           # 模版 demo（模版自己的 dist）
+admin-pro/<template>/               # 各模版 demo（模版自己的 dist）
 ```
 
 - 模版 vite 用 `base: './'`（相对路径 asset），可挂任意子路径，不影响本地 dev / 单测 / e2e
@@ -109,7 +109,7 @@ Output layout (`site/dist`):
 
 ```
 index.html                        # Portal landing page (from site/index.html)
-admin-pro/vanilla-html/           # Template demo (template's own dist/)
+admin-pro/<template>/               # Template demos (each template's own dist/)
 ```
 
 - Templates use `base: './'` (relative asset paths) and can be mounted under any sub-path without affecting local dev / unit tests / e2e
