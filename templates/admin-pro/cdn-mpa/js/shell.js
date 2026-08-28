@@ -9,6 +9,7 @@ const NAV = [
 
 // 渲染 oas-layout 壳（顶栏 + 侧栏 + #view 挂载点）到 #app
 // active：当前页路径（如 './users.html'），用于侧栏高亮与导航去重
+// 返回 #view 挂载节点，页面入口可直接 const view = mountShell({ active })
 export function mountShell({ active }) {
   const app = document.querySelector('#app')
   app.innerHTML = `
@@ -46,4 +47,5 @@ export function mountShell({ active }) {
     const value = e.detail?.value
     if (value && value !== active) location.href = value
   })
+  return app.querySelector('#view')
 }

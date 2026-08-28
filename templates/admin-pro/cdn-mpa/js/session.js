@@ -28,6 +28,6 @@ export function clearSession() {
 // 受保护页入口第一行调用：未登录 → 跳登录页并返回 false（调用方应 early-return）
 export function guard() {
   if (readSession()) return true
-  location.href = './index.html'
+  location.replace('./index.html')
   return false
 }

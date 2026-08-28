@@ -1,9 +1,9 @@
 import { readSession, writeSession } from './session.js'
 import { t } from './i18n.js'
 
-// 已登录访问登录页 → 直接进 dashboard
+// 已登录访问登录页 → 直接进 dashboard（自动重定向 replace，防 Back 弹跳）
 if (readSession()) {
-  location.href = './dashboard.html'
+  location.replace('./dashboard.html')
 } else {
   document.title = `${t('login.title')} · ${t('app.title')}`
   const app = document.querySelector('#app')
