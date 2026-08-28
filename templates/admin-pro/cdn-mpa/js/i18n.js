@@ -143,3 +143,15 @@ export function setLocale(next) {
 export function t(key) {
   return dict[locale][key] ?? key
 }
+
+// 静态文本换文：遍历 [data-i18n]（textContent）与 [data-i18n-attr]（JSON 属性映射），
+// 按当前 locale 替换。HTML 里写中文源，入口是 deferred module，paint 前完成无闪烁
+export function applyStaticTexts(root = document) {
+  for (const el of root.querySelectorAll('[data-i18n]')) {
+    el.textContent = t(el.getAttribute('data-i18n'))
+  }
+  for (const el of root.querySelectorAll('[data-i18n-attr]')) {
+    const map = JSON.parse(el.getAttribute('data-i18n-attr'))
+    for (const [attr, key] of Object.entries(map)) el.setAttribute(attr, t(key))
+  }
+}

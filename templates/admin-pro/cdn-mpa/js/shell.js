@@ -7,35 +7,11 @@ const NAV = [
   { href: './form.html', icon: 'form', key: 'nav.form' },
 ]
 
-// 渲染 oas-layout 壳（顶栏 + 侧栏 + #view 挂载点）到 #app
-// active：当前页路径（如 './users.html'），用于侧栏高亮与导航去重
-// 返回 #view 挂载节点，页面入口可直接 const view = mountShell({ active })
-export function mountShell({ active }) {
-  const app = document.querySelector('#app')
-  app.innerHTML = `
-    <oas-layout class="app" viewport>
-      <header class="app-header" slot="header">
-        <span class="logo">${t('app.title')}</span>
-        <span class="spacer"></span>
-        <button id="lang-toggle" data-testid="lang-toggle" class="icon-btn" type="button">${t('header.lang')}</button>
-        <button id="logout" class="icon-btn" type="button">${t('header.logout')}</button>
-      </header>
-      <oas-sider slot="sider">
-        <oas-sidebar id="nav"></oas-sidebar>
-      </oas-sider>
-      <div slot="content" id="view"></div>
-    </oas-layout>`
-
-  app.querySelector('#lang-toggle').addEventListener('click', () => {
-    setLocale(currentLocale() === 'en' ? 'zh-CN' : 'en')
-    location.reload()
-  })
-  app.querySelector('#logout').addEventListener('click', () => {
-    clearSession()
-    location.href = './index.html'
-  })
-
-  const nav = app.querySelector('#nav')
+// 接线壳层行为：侧栏 items 按 locale 重灌 + 语言切换 + 登出 + 导航
+// 壳的静态结构在各页面 HTML 里（MPA 原始做法），此处只做 HTML 做不到的事
+// active：当前页路径（如 './users.html'），须与 NAV href 逐字节全等（组件全等匹配）
+export function initShell({ active }) {
+  const nav = document.querySelector('#nav')
   nav.setAttribute(
     'items',
     JSON.stringify(
@@ -47,5 +23,13 @@ export function mountShell({ active }) {
     const value = e.detail?.value
     if (value && value !== active) location.href = value
   })
-  return app.querySelector('#view')
+
+  document.querySelector('#lang-toggle').addEventListener('click', () => {
+    setLocale(currentLocale() === 'en' ? 'zh-CN' : 'en')
+    location.reload()
+  })
+  document.querySelector('#logout').addEventListener('click', () => {
+    clearSession()
+    location.href = './index.html'
+  })
 }

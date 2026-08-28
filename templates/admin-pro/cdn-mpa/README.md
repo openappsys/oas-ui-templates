@@ -22,9 +22,10 @@ npx serve .
 ## 结构
 
 - `index.html`：登录页（已登录自动跳 dashboard.html）
-- `dashboard.html` / `users.html` / `form.html`：三个业务页（真实 HTML 文件，view-source 可读）
+- `dashboard.html` / `users.html` / `form.html`：三个业务页——**页面静态结构（壳 + 内容 markup）直接写在 HTML 里**，view-source 即完整文档；静态文本标 `data-i18n`，加载时按语言换文
 - `js/fouc.js`：每页 `<head>` 同步引入，防语言闪烁（FOUC）
-- `js/i18n.js`：中英字典与语言判定；`js/session.js`：会话与登录守卫；`js/shell.js`：壳层（顶栏+侧栏）一处渲染；`js/data.js`：演示数据；`js/dashboard.js` / `js/users.js` / `js/form.js` 页入口：guard + mountShell + 本页渲染
+- `js/i18n.js`：中英字典与语言判定 + `applyStaticTexts()` 静态换文；`js/session.js`：会话与登录守卫；`js/shell.js`：壳层行为接线（侧栏 items / 语言切换 / 登出）；`js/data.js`：演示数据
+- `js/login.js` / `js/dashboard.js` / `js/users.js` / `js/form.js` 页入口：guard + initShell + **行为接线与喂数据**（表格 rows/columns、chart.data、弹窗逻辑——组件 API 不是 markup，必须由 JS 提供）
 - `css/app.css`：全部样式（只消费 theme 的 `--oas-*` token）
 
 ## 已知边界
@@ -61,9 +62,10 @@ npx serve .
 ## Structure
 
 - `index.html`: login page (redirects to dashboard.html when already signed in)
-- `dashboard.html` / `users.html` / `form.html`: the three business pages (real HTML files, readable via view-source)
+- `dashboard.html` / `users.html` / `form.html`: the three business pages — **static page structure (shell + content markup) written directly in the HTML**, a complete document via view-source; static texts carry `data-i18n` and are swapped per locale on load
 - `js/fouc.js`: synchronous per-page `<head>` script preventing language FOUC
-- `js/i18n.js`: zh/en dictionary + locale detection; `js/session.js`: session + login guard; `js/shell.js`: shell (top bar + sidebar) rendered once; `js/data.js`: demo data; `js/dashboard.js` / `js/users.js` / `js/form.js` page entries: guard + mountShell + page render
+- `js/i18n.js`: zh/en dictionary + locale detection + `applyStaticTexts()` static-text swapper; `js/session.js`: session + login guard; `js/shell.js`: shell behavior wiring (sidebar items / language toggle / logout); `js/data.js`: demo data
+- `js/login.js` / `js/dashboard.js` / `js/users.js` / `js/form.js` page entries: guard + initShell + **behavior wiring and data feeding** (table rows/columns, chart.data, modal logic — component APIs, not markup, so they must come from JS)
 - `css/app.css`: all styles (consumes only theme `--oas-*` tokens)
 
 ## Known boundaries

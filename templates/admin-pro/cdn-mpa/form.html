@@ -3,14 +3,45 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>OAS Admin CDN · MPA</title>
+    <title>基础表单 · OAS Admin CDN · MPA</title>
     <script src="./js/fouc.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/index.css" />
     <script src="https://unpkg.com/@oas-ui/ui@2/dist/cdn.js"></script>
     <link rel="stylesheet" href="./css/app.css" />
   </head>
   <body>
-    <div id="app"></div>
+    <oas-layout class="app" viewport>
+      <header class="app-header" slot="header">
+        <span class="logo" data-i18n="app.title">OAS Admin CDN · MPA</span>
+        <span class="spacer"></span>
+        <button id="lang-toggle" data-testid="lang-toggle" class="icon-btn" type="button" data-i18n="header.lang">English</button>
+        <button id="logout" class="icon-btn" type="button" data-i18n="header.logout">退出</button>
+      </header>
+      <oas-sider slot="sider">
+        <oas-sidebar id="nav" active="./form.html" items='[{"label":"仪表盘","value":"./dashboard.html","icon":"star","group":"菜单"},{"label":"用户管理","value":"./users.html","icon":"user","group":"菜单"},{"label":"基础表单","value":"./form.html","icon":"form","group":"菜单"}]'></oas-sidebar>
+      </oas-sider>
+      <div slot="content" id="view">
+        <div class="page">
+          <h1 class="page-title" data-i18n="nav.form">基础表单</h1>
+          <p class="page-subtitle" data-i18n="form.subtitle">oas-form 校验 / 提交 / 重置</p>
+          <oas-card>
+            <oas-form id="basic-form">
+              <div class="form-grid">
+                <oas-input name="name" label="项目名称" placeholder="项目名称" data-i18n-attr='{"label":"form.name","placeholder":"form.name"}'></oas-input>
+                <oas-select name="category" label="项目分类" options='[{"label":"A","value":"a"},{"label":"B","value":"b"}]' data-i18n-attr='{"label":"form.category"}'></oas-select>
+                <oas-switch name="status" label="状态" data-i18n-attr='{"label":"form.status"}'></oas-switch>
+                <oas-date-picker name="due" label="截止日期" data-i18n-attr='{"label":"form.due"}'></oas-date-picker>
+              </div>
+              <oas-textarea name="desc" label="项目描述" data-i18n-attr='{"label":"form.desc"}'></oas-textarea>
+              <oas-space style="margin-top: var(--oas-space-3)">
+                <oas-button type="primary" data-action="submit" data-i18n="form.submit">提交</oas-button>
+                <oas-button data-action="reset" data-i18n="form.reset">重置</oas-button>
+              </oas-space>
+            </oas-form>
+          </oas-card>
+        </div>
+      </div>
+    </oas-layout>
     <script type="module" src="./js/form.js"></script>
   </body>
 </html>

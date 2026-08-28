@@ -3,14 +3,55 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>OAS Admin CDN · MPA</title>
+    <title>仪表盘 · OAS Admin CDN · MPA</title>
     <script src="./js/fouc.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/index.css" />
     <script src="https://unpkg.com/@oas-ui/ui@2/dist/cdn.js"></script>
     <link rel="stylesheet" href="./css/app.css" />
   </head>
   <body>
-    <div id="app"></div>
+    <oas-layout class="app" viewport>
+      <header class="app-header" slot="header">
+        <span class="logo" data-i18n="app.title">OAS Admin CDN · MPA</span>
+        <span class="spacer"></span>
+        <button id="lang-toggle" data-testid="lang-toggle" class="icon-btn" type="button" data-i18n="header.lang">English</button>
+        <button id="logout" class="icon-btn" type="button" data-i18n="header.logout">退出</button>
+      </header>
+      <oas-sider slot="sider">
+        <oas-sidebar id="nav" active="./dashboard.html" items='[{"label":"仪表盘","value":"./dashboard.html","icon":"star","group":"菜单"},{"label":"用户管理","value":"./users.html","icon":"user","group":"菜单"},{"label":"基础表单","value":"./form.html","icon":"form","group":"菜单"}]'></oas-sidebar>
+      </oas-sider>
+      <div slot="content" id="view">
+        <div class="page">
+          <h1 class="page-title" data-i18n="nav.dashboard">仪表盘</h1>
+          <p class="page-subtitle"><span data-i18n="dash.welcome">欢迎回来</span>，<span id="dash-user"></span></p>
+          <div class="stat-grid">
+            <oas-card class="stat-card" data-testid="stat-visits">
+              <div class="stat-label" data-i18n="dash.statVisits">今日访问</div>
+              <div class="stat-value">12,480</div>
+              <div class="stat-delta delta-up">+12.4% <span data-i18n="dash.vsYesterday">较昨日</span></div>
+            </oas-card>
+            <oas-card class="stat-card" data-testid="stat-users">
+              <div class="stat-label" data-i18n="dash.statUsers">新增用户</div>
+              <div class="stat-value">328</div>
+              <div class="stat-delta delta-up">+8.2% <span data-i18n="dash.vsYesterday">较昨日</span></div>
+            </oas-card>
+            <oas-card class="stat-card" data-testid="stat-orders">
+              <div class="stat-label" data-i18n="dash.statOrders">订单量</div>
+              <div class="stat-value">1,926</div>
+              <div class="stat-delta delta-up">+3.1% <span data-i18n="dash.vsYesterday">较昨日</span></div>
+            </oas-card>
+            <oas-card class="stat-card" data-testid="stat-rate">
+              <div class="stat-label" data-i18n="dash.statRate">转化率</div>
+              <div class="stat-value">4.6%</div>
+              <div class="stat-delta delta-down">-0.4% <span data-i18n="dash.vsYesterday">较昨日</span></div>
+            </oas-card>
+          </div>
+          <oas-card title="访问趋势" data-i18n-attr='{"title":"dash.trendTitle"}'>
+            <oas-chart id="chart-trend" type="area" options='{"smooth":true,"gradient":true}' aria-label="访问趋势" data-i18n-attr='{"aria-label":"dash.trendTitle"}'></oas-chart>
+          </oas-card>
+        </div>
+      </div>
+    </oas-layout>
     <script type="module" src="./js/dashboard.js"></script>
   </body>
 </html>

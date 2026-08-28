@@ -10,7 +10,15 @@
     <link rel="stylesheet" href="./css/app.css" />
   </head>
   <body>
-    <div id="app"></div>
+    <div class="login-wrap">
+      <div class="login-card">
+        <h1 data-i18n="login.title">欢迎回来</h1>
+        <p class="sub" data-i18n="login.subtitle">零构建 · CDN 引入 oas-ui 的轻量后台</p>
+        <oas-input data-testid="login-name" data-i18n-attr='{"placeholder":"login.namePh"}' placeholder="输入任意用户名"></oas-input>
+        <oas-button data-testid="login-submit" type="primary" data-i18n="login.submit">登 录</oas-button>
+        <p class="login-tip" data-i18n="login.tip">演示环境：任意非空用户名即可登录</p>
+      </div>
+    </div>
     <script type="module" src="./js/login.js"></script>
   </body>
 </html>
