@@ -1,5 +1,5 @@
 import { message } from '@oas-ui/ui/feedback/message'
-import { t } from '../i18n'
+import { onLocaleChange, t } from '../i18n'
 import { listCategories } from '../data/categories'
 import { createProduct, getProduct, updateProduct } from '../data/products'
 import type { ProductRow } from '../data/products'
@@ -145,6 +145,41 @@ export function render(el: HTMLElement): () => void {
     }
   })
 
+  function refreshText(): void {
+    el.querySelector<HTMLElement>('[data-testid="pe-page-header"]')!.setAttribute(
+      'title',
+      id ? t('products.editItem').replace('#{id}', String(id)) : t('products.newProduct'),
+    )
+    el.querySelector<HTMLElement>('[data-testid="pe-back"]')!.textContent =
+      t('orderDetail.backList')
+    const LABEL_KEYS = [
+      'products.form.name',
+      'products.category',
+      'products.th.price',
+      'products.th.stock',
+      'products.form.listedDate',
+      'products.form.cover',
+    ]
+    el.querySelectorAll<HTMLElement>('#product-form .form-field .form-label').forEach((n, i) => {
+      const k = LABEL_KEYS[i]
+      if (!k) return
+      const req = n.querySelector('.req')
+      n.textContent = t(k)
+      if (req) n.appendChild(req)
+    })
+    el.querySelector<HTMLElement>('[data-testid="pf-name"]')!.setAttribute(
+      'placeholder',
+      t('products.form.namePlaceholder'),
+    )
+    datePicker.setAttribute('placeholder', t('products.form.datePlaceholder'))
+    form.setAttribute(
+      'rules',
+      JSON.stringify({ name: [{ required: true, message: t('products.rule.name') }] }),
+    )
+    el.querySelector<HTMLElement>('[data-testid="pe-cancel"]')!.textContent = t('common.cancel')
+    el.querySelector<HTMLElement>('[data-testid="pe-save"]')!.textContent = t('common.save')
+  }
+
   void init()
-  return () => {}
+  return onLocaleChange(refreshText)
 }

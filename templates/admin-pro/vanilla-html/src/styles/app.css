@@ -1254,56 +1254,10 @@ oas-card:not([title])::part(header) {
   margin-bottom: var(--oas-space-3);
 }
 
-.orders-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--oas-font-size-md);
-  min-width: 620px;
-}
 #orders-table-wrap {
   overflow: auto;
   border: 1px solid var(--oas-color-border);
   border-radius: var(--oas-radius-md);
-}
-.orders-table th {
-  text-align: left;
-  padding: var(--oas-table-cell-padding-block, var(--oas-space-3)) var(--oas-space-4);
-  background: var(--oas-color-bg-hover);
-  font-weight: 500;
-  border-bottom: 1px solid var(--oas-color-border);
-  white-space: nowrap;
-}
-.orders-table td {
-  padding: var(--oas-table-cell-padding-block, var(--oas-space-3)) var(--oas-space-4);
-  border-bottom: 1px solid var(--oas-color-border);
-  color: var(--oas-color-text-primary);
-}
-.orders-table tr:last-child td {
-  border-bottom: none;
-}
-.orders-table tbody tr {
-  cursor: pointer;
-}
-.orders-table tbody tr:hover td {
-  background: var(--oas-color-bg-hover);
-}
-.orders-table th.num,
-.orders-table td.amount-cell {
-  text-align: right;
-  white-space: nowrap;
-}
-.orders-table th.num {
-  font-family: var(--app-mono);
-}
-.orders-table td.items-cell {
-  max-width: 220px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.orders-table tbody.table-loading {
-  opacity: 0.5;
-  pointer-events: none;
 }
 
 .order-detail-head {
@@ -1851,50 +1805,6 @@ oas-sidebar[collapsed]::part(group) {
   margin-top: var(--oas-space-4);
 }
 
-.roles-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--oas-font-size-md);
-  min-width: 720px;
-}
-.roles-table th {
-  text-align: left;
-  padding: var(--oas-table-cell-padding-block, var(--oas-space-3)) var(--oas-space-4);
-  background: var(--oas-color-bg-hover);
-  font-weight: 500;
-  border-bottom: 1px solid var(--oas-color-border);
-  white-space: nowrap;
-}
-.roles-table td {
-  padding: var(--oas-table-cell-padding-block, var(--oas-space-3)) var(--oas-space-4);
-  border-bottom: 1px solid var(--oas-color-border);
-  color: var(--oas-color-text-primary);
-}
-.roles-table tr:last-child td {
-  border-bottom: none;
-}
-.roles-table tbody tr:hover td {
-  background: var(--oas-color-bg-hover);
-}
-.roles-table th.num,
-.roles-table td.num-cell {
-  text-align: right;
-  white-space: nowrap;
-}
-.roles-table td.date-cell {
-  color: var(--oas-color-text-secondary);
-}
-.roles-table td.action-cell {
-  white-space: nowrap;
-}
-.roles-table td.action-cell oas-popconfirm {
-  margin-left: var(--oas-space-2);
-}
-.roles-empty {
-  text-align: center;
-  padding: var(--oas-space-6);
-}
-
 .role-form-body,
 .menu-form-body {
   display: flex;
@@ -1994,11 +1904,6 @@ oas-sidebar[collapsed]::part(group) {
 @media (max-width: 992px) {
   .menu-layout {
     grid-template-columns: 1fr;
-  }
-}
-@media (max-width: 768px) {
-  .roles-table {
-    min-width: 640px;
   }
 }
 

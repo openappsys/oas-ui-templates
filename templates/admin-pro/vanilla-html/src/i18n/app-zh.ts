@@ -219,6 +219,8 @@ export default {
   'products.form.datePlaceholder': '选择日期',
   'products.form.cover': '封面',
   'products.rule.name': '请输入商品名称',
+  'products.inlineEdit.priceInvalid': '价格需大于 0',
+  'products.inlineEdit.stockInvalid': '库存需为不小于 0 的整数',
   'products.empty': '未找到匹配商品',
   'products.status.on': '已上架',
   'products.status.off': '已下架',

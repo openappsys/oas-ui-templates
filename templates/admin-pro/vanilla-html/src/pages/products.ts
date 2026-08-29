@@ -1,6 +1,6 @@
 import { message } from '@oas-ui/ui/feedback/message'
 import type { OASTable, TableColumn } from '@oas-ui/ui/data/table'
-import { t } from '../i18n'
+import { onLocaleChange, t } from '../i18n'
 import { listCategories } from '../data/categories'
 import {
   createProduct,
@@ -20,16 +20,13 @@ import {
 } from './product-columns'
 import type { ProductColumnKey } from './product-columns'
 import '../styles/pages/products.css'
+import { PAGE_SIZE_KEY, readFormMode } from '../settings-init'
+import type { FormMode } from '../settings-init'
 
 const VIEW_KEY = 'oas-admin.products-view'
-const FORM_MODE_KEY = 'oas-admin.form-mode'
-const DENSITY_KEY = 'oas-admin.settings.table-density'
-const PAGE_SIZE_KEY = 'oas-admin.settings.page-size'
 const DEFAULT_PAGE_SIZE = 5
 
 type ViewMode = 'cards' | 'table'
-type FormMode = 'dialog' | 'drawer' | 'page'
-type Density = 'compact' | 'default' | 'large'
 
 type Option = { label: string; value: string }
 
@@ -41,11 +38,6 @@ const VIEW_OPTIONS = (): Array<{ label: string; value: string }> => [
   { label: t('products.viewCards'), value: 'cards' },
   { label: t('products.viewTable'), value: 'table' },
 ]
-const DENSITY_PAD: Record<Density, string> = {
-  compact: '6px',
-  default: '12px',
-  large: '16px',
-}
 
 interface PageState {
   rows: ProductRow[]
@@ -56,7 +48,6 @@ interface PageState {
   page: number
   view: ViewMode
   formMode: FormMode
-  density: Density
   pageSize: number
   selected: number[]
   columnKeys: ProductColumnKey[]
@@ -64,16 +55,6 @@ interface PageState {
 
 function readView(): ViewMode {
   return localStorage.getItem(VIEW_KEY) === 'table' ? 'table' : 'cards'
-}
-
-function readFormMode(): FormMode {
-  const v = localStorage.getItem(FORM_MODE_KEY)
-  return v === 'dialog' || v === 'page' ? v : 'drawer'
-}
-
-function readDensity(): Density {
-  const v = localStorage.getItem(DENSITY_KEY)
-  return v === 'compact' || v === 'large' ? v : 'default'
 }
 
 function readPageSize(): number {
@@ -147,12 +128,31 @@ const TABLE_COLUMNS = (): TableColumn[] => [
     key: 'price',
     title: t('products.th.price'),
     align: 'right',
+    editable: true,
+    validate: (value) => {
+      const n = Number(value)
+      if (!Number.isFinite(n) || n <= 0) return t('products.inlineEdit.priceInvalid')
+    },
     render: (r) => cellPrice(Number(r.price)),
   },
-  { key: 'stock', title: t('products.th.stock'), render: (r) => cellStock(Number(r.stock)) },
+  {
+    key: 'stock',
+    title: t('products.th.stock'),
+    editable: true,
+    validate: (value) => {
+      const n = Number(value)
+      if (!Number.isInteger(n) || n < 0) return t('products.inlineEdit.stockInvalid')
+    },
+    render: (r) => cellStock(Number(r.stock)),
+  },
   {
     key: 'status',
     title: t('products.th.status'),
+    filterable: true,
+    filters: [
+      { label: t('products.status.on'), value: 'on' },
+      { label: t('products.status.off'), value: 'off' },
+    ],
     render: (r) => cellStatus(r as unknown as ProductRow),
   },
   {
@@ -208,7 +208,6 @@ export function render(el: HTMLElement): () => void {
     page: 1,
     view: readView(),
     formMode: readFormMode(),
-    density: readDensity(),
     pageSize: readPageSize(),
     selected: [],
     columnKeys: readProductColumns(),
@@ -380,6 +379,7 @@ export function render(el: HTMLElement): () => void {
       empty.hidden = false
       return
     }
+    // 手动分页模式（演示）：宿主 slice + 外部 oas-pagination；users/orders 用表格内置 pagination
     const maxPage = Math.max(1, Math.ceil(list.length / state.pageSize))
     if (state.page > maxPage) state.page = maxPage
     const slice = list.slice((state.page - 1) * state.pageSize, state.page * state.pageSize)
@@ -464,6 +464,23 @@ export function render(el: HTMLElement): () => void {
   }
 
   createBtn.addEventListener('click', () => openForm(null))
+
+  // 行内编辑演示（v2.2.7+）：双击 price/stock 单元格进入编辑，validate 校验，oas-edit 持久化
+  if (canMutate()) {
+    table.setAttribute('editable', '')
+    table.addEventListener('oas-edit', (e) => {
+      const { key, column, value } = (
+        e as CustomEvent<{ key: string; column: string; value: unknown }>
+      ).detail
+      const id = Number(key)
+      if (!Number.isFinite(id) || (column !== 'price' && column !== 'stock')) return
+      void updateProduct(id, { [column]: Number(value) }).then((updated) => {
+        if (!updated) message.error(t('products.notFound'))
+        else message.success(t('common.saved'))
+        void refresh()
+      })
+    })
+  }
 
   table.addEventListener('oas-check', (e) => {
     const keys = (e as CustomEvent<{ keys: string[] }>).detail.keys
@@ -664,6 +681,73 @@ export function render(el: HTMLElement): () => void {
     renderList()
   })
 
+  function refreshText(): void {
+    el.querySelector<HTMLElement>('h1.page-title')!.textContent = t('nav.products')
+    el.querySelector<HTMLElement>('p.page-subtitle')!.textContent = t('products.subtitle')
+    el.querySelector<HTMLElement>('[data-testid="product-create"]')!.textContent =
+      t('products.newProduct')
+    search.setAttribute('placeholder', t('products.search'))
+    category.setAttribute('placeholder', t('products.category'))
+    applyCategoryOptions()
+    viewSeg.setAttribute('options', JSON.stringify(VIEW_OPTIONS()))
+    el.querySelector<HTMLElement>('[data-testid="product-columns"]')!.textContent =
+      t('products.columns.title')
+    // 批量栏
+    el.querySelector<HTMLElement>('[data-testid="product-batch-unlist"]')!.textContent =
+      t('products.batch.unlist')
+    el.querySelector<HTMLElement>('[data-testid="product-batch-list"]')!.textContent =
+      t('products.batch.list')
+    el.querySelector<HTMLElement>('[data-testid="product-batch-delete"]')!.textContent =
+      t('products.batch.delete')
+    updateBatchBar()
+    // 空态
+    el.querySelector<HTMLElement>('[data-testid="product-empty"] oas-empty')!.setAttribute(
+      'description',
+      t('products.empty'),
+    )
+    // 列设置弹窗
+    columnsModal.setAttribute('title', t('products.columns.title'))
+    el.querySelector<HTMLElement>('[data-testid="product-columns-reset"]')!.textContent =
+      t('products.columns.reset')
+    el.querySelector<HTMLElement>('[data-testid="product-columns-close"]')!.textContent =
+      t('common.save')
+    renderColumnList()
+    // 表单容器（dialog/drawer）：标题随新建/编辑态 + 字段 label/占位/规则/按钮
+    const editTitle =
+      state.editingId == null
+        ? t('products.newProduct')
+        : t('products.editItem').replace('#{id}', String(state.editingId))
+    const titleEl = el.querySelector<HTMLElement>('#form-title')
+    if (titleEl) titleEl.textContent = editTitle
+    else surface?.setAttribute('title', editTitle)
+    const LABEL_KEYS = [
+      'products.form.name',
+      'products.category',
+      'products.th.price',
+      'products.th.stock',
+      'products.form.listedDate',
+      'products.form.cover',
+    ]
+    el.querySelectorAll<HTMLElement>('#product-form .form-field .form-label').forEach((n, i) => {
+      const k = LABEL_KEYS[i]
+      if (k) n.textContent = t(k)
+    })
+    el.querySelector<HTMLElement>('[data-testid="pf-name"]')?.setAttribute(
+      'placeholder',
+      t('products.form.namePlaceholder'),
+    )
+    datePicker?.setAttribute('placeholder', t('products.form.datePlaceholder'))
+    form?.setAttribute(
+      'rules',
+      JSON.stringify({ name: [{ required: true, message: t('products.rule.name') }] }),
+    )
+    el.querySelector<HTMLElement>('[data-testid="pf-cancel"]')?.replaceChildren(t('common.cancel'))
+    el.querySelector<HTMLElement>('[data-testid="pf-save"]')?.replaceChildren(t('common.save'))
+    // 表格列定义（含状态过滤项文案）+ 当前视图数据文案（库存/状态）随语言重建；分页/筛选/列设置不动
+    renderColumns()
+    renderList()
+  }
+
   void refresh()
-  return () => {}
+  return onLocaleChange(refreshText)
 }

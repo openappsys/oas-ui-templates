@@ -55,41 +55,6 @@
   font-family: var(--app-mono);
   font-size: 11px;
 }
-.dict-items-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--oas-font-size-md);
-}
-.dict-items-table th {
-  text-align: left;
-  padding: var(--oas-table-cell-padding-block, var(--oas-space-3)) var(--oas-space-4);
-  background: var(--oas-color-bg-hover);
-  font-weight: 500;
-  border-bottom: 1px solid var(--oas-color-border);
-  white-space: nowrap;
-}
-.dict-items-table td {
-  padding: var(--oas-table-cell-padding-block, var(--oas-space-3)) var(--oas-space-4);
-  border-bottom: 1px solid var(--oas-color-border);
-  color: var(--oas-color-text-primary);
-}
-.dict-items-table tr:last-child td {
-  border-bottom: none;
-}
-.dict-items-table th.num,
-.dict-items-table td.num-cell {
-  text-align: right;
-  white-space: nowrap;
-}
-.dict-items-table td.action-cell {
-  white-space: nowrap;
-}
-.dict-items-table td.action-cell oas-popconfirm {
-  margin-left: var(--oas-space-2);
-}
-.dict-items-table td.mono-cell {
-  font-family: var(--app-mono);
-}
 .dict-pane-head {
   display: flex;
   align-items: center;

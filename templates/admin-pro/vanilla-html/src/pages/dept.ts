@@ -1,5 +1,6 @@
 import { message } from '@oas-ui/ui/feedback/message'
 import type { OASTable, TableColumn } from '@oas-ui/ui/data/table'
+import '@oas-ui/ui/layout/splitter'
 import { t } from '../i18n'
 import { createDept, listDepts, removeDept, treeDepts, updateDept } from '../data/system'
 import type { DeptNode, DeptTree } from '../data/system'
@@ -157,8 +158,8 @@ export function render(el: HTMLElement): () => void {
         </div>
         <oas-button data-testid="dept-create" type="primary" icon="plus">${t('dept.new')}</oas-button>
       </div>
-      <div class="dept-layout">
-        <oas-card class="dept-tree-card" title="${t('dept.treeTitle')}">
+      <oas-splitter class="dept-layout" percent="30" min="20" max="45">
+        <oas-card slot="left" class="dept-tree-card" title="${t('dept.treeTitle')}">
           <oas-tree data-testid="dept-tree" id="dept-tree" data="[]" expanded="">
             <template slot="node">
               <span class="tree-node-label">
@@ -168,10 +169,10 @@ export function render(el: HTMLElement): () => void {
             </template>
           </oas-tree>
         </oas-card>
-        <oas-card class="dept-detail-card" title="${t('dept.detailTitle')}">
+        <oas-card slot="right" class="dept-detail-card" title="${t('dept.detailTitle')}">
           <div id="dept-detail" class="dept-detail"></div>
         </oas-card>
-      </div>
+      </oas-splitter>
 
       <oas-drawer data-testid="dept-form-drawer" id="dept-form-drawer" title="${t('dept.new')}" placement="right" size="medium" no-footer>
         <oas-form id="dept-form" rules='${RULES()}'>

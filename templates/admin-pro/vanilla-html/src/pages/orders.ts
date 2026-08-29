@@ -1,11 +1,16 @@
 import { message } from '@oas-ui/ui/feedback/message'
 import type { OASTable, TableColumn } from '@oas-ui/ui/data/table'
-import { t } from '../i18n'
+import { onLocaleChange, t } from '../i18n'
 import { listOrders, updateOrderStatus } from '../data/orders'
 import type { OrderRow, OrderStatus } from '../data/orders'
 import { session } from '../store/session'
+import { PAGE_SIZE_KEY } from '../settings-init'
 
-const PAGE_SIZE = 8
+// 每页条数跟随设置中心（settings 页 page-size）；未设置时保持原默认 8
+const pageSize = (): number => {
+  const raw = localStorage.getItem(PAGE_SIZE_KEY)
+  return raw ? Number(raw) || 8 : 8
+}
 
 function statusLabel(status: OrderStatus): string {
   return t(`orders.status.${status}`)
@@ -41,7 +46,6 @@ interface PageState {
   rows: OrderRow[]
   keyword: string
   status: 'all' | OrderStatus
-  page: number
   selectedId: string | null
 }
 
@@ -83,17 +87,20 @@ function moneyCell(row: OrderRow): HTMLElement {
 }
 
 const TABLE_COLUMNS = (): TableColumn[] => [
+  { key: 'no', title: '#', serialNumber: true, width: '48px' },
   { key: 'id', title: t('orders.th.no') },
   { key: 'customer', title: t('orders.th.customer') },
   {
     key: 'items',
     title: t('orders.th.items'),
+    ellipsis: true,
     render: (r) => String(itemSummary((r as unknown as OrderRow).items)),
   },
   {
     key: 'amount',
     title: t('orders.th.amount'),
     align: 'right',
+    summary: 'sum',
     render: (r) => moneyCell(r as unknown as OrderRow),
   },
   {
@@ -109,7 +116,6 @@ export function render(el: HTMLElement): () => void {
     rows: [],
     keyword: '',
     status: 'all',
-    page: 1,
     selectedId: null,
   }
 
@@ -151,13 +157,12 @@ export function render(el: HTMLElement): () => void {
         </div>
         <oas-tabs data-testid="orders-tabs" id="orders-tabs"></oas-tabs>
         <div class="table-wrap" id="orders-table-wrap">
-          <oas-table data-testid="orders-list" row-key="id" empty-text="${t('orders.empty')}"></oas-table>
+          <oas-table data-testid="orders-list" row-key="id" empty-text="${t('orders.empty')}" pagination page-size="${pageSize()}"></oas-table>
           <div class="empty-overlay" id="orders-empty" hidden>
             <oas-empty description="${t('orders.empty')}"></oas-empty>
             <oas-button id="orders-clear" type="primary">${t('common.clearFilter')}</oas-button>
           </div>
         </div>
-        <oas-pagination data-testid="orders-pager" total="0" page-size="${PAGE_SIZE}" current="1" show-total></oas-pagination>
       </oas-card>
 
       <oas-drawer data-testid="order-drawer" title="${t('orders.detailTitle')}" placement="right" size="medium" no-footer>
@@ -182,7 +187,6 @@ export function render(el: HTMLElement): () => void {
     </div>`
 
   const table = el.querySelector<OASTable>('[data-testid="orders-list"]')!
-  const pager = el.querySelector<HTMLElement>('[data-testid="orders-pager"]')!
   const search = el.querySelector<HTMLElement>('[data-testid="orders-search"]')!
   const tabs = el.querySelector<HTMLElement>('[data-testid="orders-tabs"]')!
   const tableWrap = el.querySelector<HTMLElement>('#orders-table-wrap')!
@@ -215,11 +219,9 @@ export function render(el: HTMLElement): () => void {
   function setEmpty(empty: boolean): void {
     if (empty) {
       table.setAttribute('data', '[]')
-      pager.classList.add('table-hidden')
       emptyOverlay.hidden = false
       tableWrap.classList.add('is-empty')
     } else {
-      pager.classList.remove('table-hidden')
       emptyOverlay.hidden = true
       tableWrap.classList.remove('is-empty')
     }
@@ -229,18 +231,11 @@ export function render(el: HTMLElement): () => void {
     const list = filtered()
     table.columns = TABLE_COLUMNS()
     if (list.length === 0) {
-      pager.setAttribute('total', '0')
-      pager.setAttribute('current', '1')
       setEmpty(true)
       return
     }
     setEmpty(false)
-    const maxPage = Math.max(1, Math.ceil(list.length / PAGE_SIZE))
-    if (state.page > maxPage) state.page = maxPage
-    const slice = list.slice((state.page - 1) * PAGE_SIZE, state.page * PAGE_SIZE)
-    table.setAttribute('data', JSON.stringify(slice))
-    pager.setAttribute('total', String(list.length))
-    pager.setAttribute('current', String(state.page))
+    table.setAttribute('data', JSON.stringify(list))
   }
 
   function renderStats(): void {
@@ -357,7 +352,7 @@ export function render(el: HTMLElement): () => void {
   el.querySelector<HTMLElement>('#orders-clear')!.addEventListener('click', () => {
     state.keyword = ''
     state.status = 'all'
-    state.page = 1
+    table.setAttribute('current', '1')
     search.setAttribute('value', '')
     renderTabs()
     renderTable()
@@ -402,27 +397,52 @@ export function render(el: HTMLElement): () => void {
 
   search.addEventListener('oas-input', (e) => {
     state.keyword = (e as CustomEvent<{ value: string }>).detail.value
-    state.page = 1
+    table.setAttribute('current', '1')
     renderTable()
   })
   search.addEventListener('oas-clear', () => {
     state.keyword = ''
-    state.page = 1
+    table.setAttribute('current', '1')
     renderTable()
   })
 
   tabs.addEventListener('oas-change', (e) => {
     const value = (e as CustomEvent<{ value: string }>).detail.value
     state.status = value === 'all' ? 'all' : (value as OrderStatus)
-    state.page = 1
+    table.setAttribute('current', '1')
     renderTable()
   })
 
-  pager.addEventListener('oas-change', (e) => {
-    state.page = (e as CustomEvent<{ page: number }>).detail.page
+  function refreshText(): void {
+    el.querySelector<HTMLElement>('h1.page-title')!.textContent = t('nav.orders')
+    el.querySelector<HTMLElement>('p.page-subtitle')!.textContent = t('orders.subtitle')
+    el.querySelector<HTMLElement>('[data-testid="orders-export"]')!.textContent =
+      t('orders.exportCsv')
+    el.querySelector<HTMLElement>('[data-testid="orders-scope-text"]')!.textContent =
+      t('orders.scopeOnlySelf')
+    el.querySelector<HTMLElement>('oas-card.list-card')!.setAttribute(
+      'title',
+      t('orders.listTitle'),
+    )
+    search.setAttribute('placeholder', t('orders.search'))
+    el.querySelector<HTMLElement>('#orders-empty oas-empty')!.setAttribute(
+      'description',
+      t('orders.empty'),
+    )
+    el.querySelector<HTMLElement>('#orders-clear')!.textContent = t('common.clearFilter')
+    el.querySelector<HTMLElement>('[data-testid="order-drawer"]')!.setAttribute(
+      'title',
+      t('orders.detailTitle'),
+    )
+    el.querySelector<HTMLElement>('.order-detail-sub')!.textContent = t('orders.detailTitle')
+    el.querySelector<HTMLElement>('[data-testid="order-detail-link"]')!.textContent =
+      t('orders.fullDetail')
+    // 统计卡 / 状态 tabs / 表格列与行内状态标签随语言重建；分页/筛选/搜索状态不动
+    renderStats()
+    renderTabs()
     renderTable()
-  })
+  }
 
   void refresh()
-  return () => {}
+  return onLocaleChange(refreshText)
 }

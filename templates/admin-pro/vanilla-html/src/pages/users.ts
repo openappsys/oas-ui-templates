@@ -1,13 +1,15 @@
 import { message } from '@oas-ui/ui/feedback/message'
 import type { OASTable, TableColumn } from '@oas-ui/ui/data/table'
-import { t } from '../i18n'
+import { onLocaleChange, t } from '../i18n'
+import { readPageSize } from '../settings-init'
 import { createUser, listUsers, removeUser, updateUser } from '../data/users'
 import type { UserRow, UserRole, UserStatus } from '../data/users'
 import { listRoles, treeMenus } from '../data/system'
 import type { MenuTree, RoleRow } from '../data/system'
 import { session } from '../store/session'
 
-const PAGE_SIZE = 5
+// 每页条数跟随设置中心（settings 页 page-size，默认 5）
+const pageSize = (): number => Number(readPageSize()) || 5
 const ALLOWED: Record<UserRole, string[]> = {
   admin: ['user:list', 'user:add', 'user:edit', 'user:delete'],
   editor: ['user:list', 'user:add', 'user:edit'],
@@ -40,12 +42,20 @@ function fromPath(path: EventTarget[], selector: string): HTMLElement | null {
   return null
 }
 
-const COLUMNS = (): TableColumn[] => [
+const COLUMNS = (roleFilters: Array<{ label: string; value: string }>): TableColumn[] => [
   { key: 'id', title: 'ID', width: '60px' },
   { key: 'name', title: t('users.name') },
   { key: 'email', title: t('users.email') },
-  { key: 'role', title: t('users.role') },
-  { key: 'status', title: t('users.status') },
+  { key: 'role', title: t('users.role'), filterable: true, filters: roleFilters },
+  {
+    key: 'status',
+    title: t('users.status'),
+    filterable: true,
+    filters: [
+      { label: statusLabel('active'), value: statusLabel('active') },
+      { label: statusLabel('disabled'), value: statusLabel('disabled') },
+    ],
+  },
   { key: 'created', title: t('users.created'), sortable: true },
   {
     key: 'action',
@@ -64,22 +74,13 @@ const RULES = () =>
     ],
   })
 
-const STATUS_OPTIONS = () => [
-  { label: t('users.allStatus'), value: '' },
-  { label: statusLabel('active'), value: 'active' },
-  { label: statusLabel('disabled'), value: 'disabled' },
-]
-
 interface PageState {
   rows: UserRow[]
   roles: RoleRow[]
   roleMap: Map<number, RoleRow>
   menuTree: MenuTree[]
   keyword: string
-  page: number
   editingId: number | null
-  roleFilter: number | ''
-  statusFilter: UserStatus | ''
 }
 
 function findMenu(nodes: MenuTree[], title: string): MenuTree | null {
@@ -111,10 +112,7 @@ export function render(el: HTMLElement): () => void {
     roleMap: new Map(),
     menuTree: [],
     keyword: '',
-    page: 1,
     editingId: null,
-    roleFilter: '',
-    statusFilter: '',
   }
   let saving = false
 
@@ -130,18 +128,15 @@ export function render(el: HTMLElement): () => void {
       <oas-card class="list-card" title="${t('users.list')}">
         <div class="users-toolbar" slot="extra">
           <oas-input data-testid="user-search" placeholder="${t('users.search')}" clearable prefix-icon="search"></oas-input>
-          <oas-select data-testid="role-filter" placeholder="${t('users.role')}" options="[]" value=""></oas-select>
-          <oas-select data-testid="status-filter" placeholder="${t('users.status')}" options='${JSON.stringify(STATUS_OPTIONS())}' value=""></oas-select>
           <oas-button id="users-refresh" icon="refresh" title="${t('common.refresh')}"></oas-button>
         </div>
         <div class="table-wrap" id="table-wrap">
-          <oas-table data-testid="users-table" row-key="id" data="[]"></oas-table>
+          <oas-table data-testid="users-table" row-key="id" data="[]" pagination page-size="${pageSize()}"></oas-table>
           <div class="empty-overlay" id="empty-overlay" hidden>
             <oas-empty description="${t('users.empty')}"></oas-empty>
             <oas-button id="clear-filters" type="primary">${t('common.clearFilter')}</oas-button>
           </div>
         </div>
-        <oas-pagination data-testid="users-pager" total="0" page-size="${PAGE_SIZE}" current="1" show-total></oas-pagination>
       </oas-card>
 
       <oas-modal data-testid="user-form-modal" no-footer>
@@ -191,11 +186,7 @@ export function render(el: HTMLElement): () => void {
     </div>`
 
   const table = el.querySelector<OASTable>('[data-testid="users-table"]')!
-  table.columns = COLUMNS()
-  const pager = el.querySelector<HTMLElement>('[data-testid="users-pager"]')!
   const search = el.querySelector<HTMLElement>('[data-testid="user-search"]')!
-  const roleFilter = el.querySelector<HTMLElement>('[data-testid="role-filter"]')!
-  const statusFilter = el.querySelector<HTMLElement>('[data-testid="status-filter"]')!
   const formModal = el.querySelector<HTMLElement>('[data-testid="user-form-modal"]')!
   const detailModal = el.querySelector<HTMLElement>('[data-testid="user-detail-modal"]')!
   const form = el.querySelector<HTMLElement>('#user-form')!
@@ -234,8 +225,6 @@ export function render(el: HTMLElement): () => void {
     return state.rows.filter((r) => {
       if (kw && !(r.name.toLowerCase().includes(kw) || r.email.toLowerCase().includes(kw)))
         return false
-      if (state.roleFilter !== '' && r.roleId !== state.roleFilter) return false
-      if (state.statusFilter && r.status !== state.statusFilter) return false
       return true
     })
   }
@@ -244,12 +233,10 @@ export function render(el: HTMLElement): () => void {
     if (empty) {
       table.setAttribute('data', '[]')
       table.classList.add('table-hidden')
-      pager.classList.add('table-hidden')
       emptyOverlay.hidden = false
       tableWrap.classList.add('is-empty')
     } else {
       table.classList.remove('table-hidden')
-      pager.classList.remove('table-hidden')
       emptyOverlay.hidden = true
       tableWrap.classList.remove('is-empty')
     }
@@ -257,19 +244,13 @@ export function render(el: HTMLElement): () => void {
 
   function renderTable(): void {
     const list = filtered()
+    table.columns = COLUMNS(state.roles.map((r) => ({ label: r.name, value: r.name })))
     if (list.length === 0) {
-      pager.setAttribute('total', '0')
-      pager.setAttribute('current', '1')
       setEmpty(true)
       return
     }
     setEmpty(false)
-    const maxPage = Math.max(1, Math.ceil(list.length / PAGE_SIZE))
-    if (state.page > maxPage) state.page = maxPage
-    const slice = list.slice((state.page - 1) * PAGE_SIZE, state.page * PAGE_SIZE)
-    table.setAttribute('data', JSON.stringify(slice.map(toDisplay)))
-    pager.setAttribute('total', String(list.length))
-    pager.setAttribute('current', String(state.page))
+    table.setAttribute('data', JSON.stringify(list.map(toDisplay)))
   }
 
   async function refresh(): Promise<void> {
@@ -279,13 +260,6 @@ export function render(el: HTMLElement): () => void {
     state.roles = roles
     state.roleMap = new Map(roles.map((r) => [r.id, r]))
     state.menuTree = menuTree
-    roleFilter.setAttribute(
-      'options',
-      JSON.stringify([
-        { label: t('users.allRole'), value: '' },
-        ...roles.map((r) => ({ label: r.name, value: String(r.id) })),
-      ]),
-    )
     fieldRole.setAttribute(
       'options',
       JSON.stringify(roles.map((r) => ({ label: r.name, value: String(r.id) }))),
@@ -500,36 +474,20 @@ export function render(el: HTMLElement): () => void {
 
   search.addEventListener('oas-input', (e) => {
     state.keyword = (e as CustomEvent<{ value: string }>).detail.value
-    state.page = 1
+    table.setAttribute('current', '1')
     renderTable()
   })
   search.addEventListener('oas-clear', () => {
     state.keyword = ''
-    state.page = 1
-    renderTable()
-  })
-
-  roleFilter.addEventListener('oas-change', (e) => {
-    const v = (e as CustomEvent<{ value: string }>).detail.value
-    state.roleFilter = v === '' ? '' : Number(v)
-    state.page = 1
-    renderTable()
-  })
-
-  statusFilter.addEventListener('oas-change', (e) => {
-    state.statusFilter = (e as CustomEvent<{ value: string }>).detail.value as UserStatus | ''
-    state.page = 1
+    table.setAttribute('current', '1')
     renderTable()
   })
 
   el.querySelector<HTMLElement>('#clear-filters')!.addEventListener('click', () => {
     state.keyword = ''
-    state.roleFilter = ''
-    state.statusFilter = ''
-    state.page = 1
+    table.setAttribute('current', '1')
+    table.removeAttribute('filter-values')
     search.setAttribute('value', '')
-    roleFilter.setAttribute('value', '')
-    statusFilter.setAttribute('value', '')
     renderTable()
   })
 
@@ -537,13 +495,57 @@ export function render(el: HTMLElement): () => void {
     void refresh()
   })
 
-  pager.addEventListener('oas-change', (e) => {
-    state.page = (e as CustomEvent<{ page: number }>).detail.page
+  function refreshText(): void {
+    el.querySelector<HTMLElement>('h1.page-title')!.textContent = t('users.title')
+    el.querySelector<HTMLElement>('p.page-subtitle')!.textContent = t('users.subtitle')
+    el.querySelector<HTMLElement>('[data-testid="user-create"]')!.textContent = t('users.new')
+    el.querySelector<HTMLElement>('oas-card.list-card')!.setAttribute('title', t('users.list'))
+    search.setAttribute('placeholder', t('users.search'))
+    el.querySelector<HTMLElement>('#users-refresh')!.setAttribute('title', t('common.refresh'))
+    el.querySelector<HTMLElement>('#empty-overlay oas-empty')!.setAttribute(
+      'description',
+      t('users.empty'),
+    )
+    el.querySelector<HTMLElement>('#clear-filters')!.textContent = t('common.clearFilter')
+    // 表单弹窗（标题随新建/编辑态；占位/选项/规则/按钮文案刷新）
+    const titleEl = el.querySelector<HTMLElement>('#form-title')
+    if (titleEl)
+      titleEl.textContent =
+        state.editingId == null
+          ? t('users.new')
+          : t('users.editUser').replace('#{id}', String(state.editingId))
+    el.querySelector<HTMLElement>('[data-testid="field-name"]')!.setAttribute(
+      'placeholder',
+      t('users.name'),
+    )
+    el.querySelector<HTMLElement>('[data-testid="field-email"]')!.setAttribute(
+      'placeholder',
+      t('users.email'),
+    )
+    el.querySelector<HTMLElement>('[data-testid="field-status"]')!.setAttribute(
+      'options',
+      JSON.stringify([
+        { label: statusLabel('active'), value: 'active' },
+        { label: statusLabel('disabled'), value: 'disabled' },
+      ]),
+    )
+    el.querySelector<HTMLElement>('#user-form')!.setAttribute('rules', RULES())
+    el.querySelector<HTMLElement>('[data-testid="form-cancel"]')!.textContent = t('common.cancel')
+    el.querySelector<HTMLElement>('[data-testid="form-save"]')!.textContent = t('common.save')
+    // 详情弹窗静态文案
+    el.querySelector<HTMLElement>('.detail-perms-title')!.textContent = t('users.perm')
+    el.querySelector<HTMLElement>('[data-testid="detail-edit"]')!.textContent = t('common.edit')
+    el.querySelector<HTMLElement>('[data-testid="detail-delete"]')!.textContent = t('common.delete')
+    el.querySelector<HTMLElement>('#delete-popconfirm')!.setAttribute(
+      'title',
+      t('users.confirmDelete'),
+    )
+    // 表格：列定义（t 文案）+ 行数据标签（statusLabel）随语言重建；分页/筛选/搜索状态不动
     renderTable()
-  })
+  }
 
   void refresh()
-  return () => {}
+  return onLocaleChange(refreshText)
 }
 
 function roleTagType(target: UserRow): string {

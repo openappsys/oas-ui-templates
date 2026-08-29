@@ -219,6 +219,8 @@ export default {
   'products.form.datePlaceholder': 'Select a date',
   'products.form.cover': 'Cover',
   'products.rule.name': 'Please enter a product name',
+  'products.inlineEdit.priceInvalid': 'Price must be greater than 0',
+  'products.inlineEdit.stockInvalid': 'Stock must be a non-negative integer',
   'products.empty': 'No matching products',
   'products.status.on': 'Listed',
   'products.status.off': 'Unlisted',

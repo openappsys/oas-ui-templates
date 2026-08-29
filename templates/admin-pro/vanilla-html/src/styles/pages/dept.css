@@ -1,8 +1,9 @@
 .dept-layout {
-  display: grid;
-  grid-template-columns: 340px 1fr;
-  gap: var(--oas-space-3);
   margin-bottom: var(--oas-space-3);
+}
+.dept-layout::part(pane-left),
+.dept-layout::part(pane-right) {
+  min-width: 0;
 }
 .dept-tree-card::part(body) {
   padding: 0;
@@ -46,38 +47,6 @@
   gap: var(--oas-space-2);
   align-items: center;
 }
-.sub-dept-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--oas-font-size-md);
-}
-.sub-dept-table th {
-  text-align: left;
-  padding: var(--oas-table-cell-padding-block, var(--oas-space-2)) var(--oas-space-3);
-  background: var(--oas-color-bg-hover);
-  font-weight: 500;
-  border-bottom: 1px solid var(--oas-color-border);
-  white-space: nowrap;
-}
-.sub-dept-table td {
-  padding: var(--oas-table-cell-padding-block, var(--oas-space-2)) var(--oas-space-3);
-  border-bottom: 1px solid var(--oas-color-border);
-  color: var(--oas-color-text-primary);
-}
-.sub-dept-table tr:last-child td {
-  border-bottom: none;
-}
-.sub-dept-table th.num,
-.sub-dept-table td.num-cell {
-  text-align: right;
-  white-space: nowrap;
-}
-.sub-dept-table td.action-cell {
-  white-space: nowrap;
-}
-.sub-dept-table td.action-cell oas-popconfirm {
-  margin-left: var(--oas-space-2);
-}
 .sub-dept-empty {
   text-align: center;
   padding: var(--oas-space-6);
@@ -92,9 +61,4 @@
 .dept-form-body oas-tree-select,
 .dept-form-body oas-input-number {
   width: 100%;
-}
-@media (max-width: 992px) {
-  .dept-layout {
-    grid-template-columns: 1fr;
-  }
 }

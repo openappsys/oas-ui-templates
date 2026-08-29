@@ -29,7 +29,7 @@ test('admin 订单管理：tabs 筛选只显对应状态 + 抽屉状态流转', 
 
   await page.getByTestId('orders-tabs').getByText('待支付').click()
   await expect(page.getByTestId('orders-tabs')).toHaveAttribute('active', 'pending')
-  const rows = page.getByTestId('orders-list').locator('tbody tr')
+  const rows = page.getByTestId('orders-list').locator('tbody tr[part="row"]')
   const count = await rows.count()
   expect(count).toBeGreaterThan(0)
   for (let i = 0; i < count; i++) {
