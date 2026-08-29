@@ -1,9 +1,9 @@
-// 导航菜单 模式（形态）× 位置 配置——9 宫格矩阵中「sidebar + top」不可选
+// 导航菜单 模式（形态）× 位置 配置——矩阵中「sidebar + top / top-head」不可选
 export type MenuStyle = 'sidebar' | 'menubar' | 'navigation'
-export type MenuPosition = 'left' | 'right' | 'top'
+export type MenuPosition = 'left' | 'right' | 'top' | 'top-head'
 
 export const MENU_STYLES: MenuStyle[] = ['sidebar', 'menubar', 'navigation']
-export const MENU_POSITIONS: MenuPosition[] = ['left', 'right', 'top']
+export const MENU_POSITIONS: MenuPosition[] = ['left', 'right', 'top', 'top-head']
 
 const STYLE_KEY = 'oas-admin.menu-style'
 const POSITION_KEY = 'oas-admin.menu-position'
@@ -14,9 +14,9 @@ export interface NavConfig {
   position: MenuPosition
 }
 
-/** sidebar 不支持横置：top 不可选 */
+/** sidebar 不支持横置：top（独立一行）与 top-head（logo 与搜索之间）均不可选 */
 export function canPosition(style: MenuStyle, position: MenuPosition): boolean {
-  if (style === 'sidebar' && position === 'top') return false
+  if (style === 'sidebar' && (position === 'top' || position === 'top-head')) return false
   return true
 }
 

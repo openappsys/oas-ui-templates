@@ -91,18 +91,72 @@ oas-sidebar::part(toggle) {
   border-bottom: 1px solid var(--oas-color-border);
 }
 
-/* header 内顶部菜单条（top 模式）：撑满 logo 与 search 之间；下拉需溢出，故不裁剪 */
-.in-header-nav {
+/* 顶部 menubar（top+menubar）：塞进 header 的 logo 与搜索之间。
+   解决之前 .in-header-nav 被 flex 挤压崩坏的坑——菜单区 flex-shrink:0 + max-width 上限，
+   不参与 header 的 flex 收缩（搜索框 spacer 会先被压缩而不是把菜单压扁/换行），
+   下拉可溢出（overflow:visible）且浮于内容上。 */
+.header-nav-menubar {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
-  flex: 1 1 auto;
-  min-width: 0;
+  overflow: visible;
+  position: relative;
+  z-index: 30;
+}
+.header-nav-menubar > oas-menubar {
+  display: block;
+  width: auto;
   overflow: visible;
 }
-/* sider 槽菜单容器（left/right 模式）：填满轨道高度 */
+
+/* 顶部导航条（top 模式）：占 sider 槽全宽一行，菜单项按内容宽横排，下拉可溢出且浮于内容上 */
+.top-nav-bar {
+  width: 100%;
+  min-height: 0;
+  overflow: visible;
+  padding: var(--oas-space-1) var(--oas-space-3);
+  border-bottom: 1px solid var(--oas-color-border);
+  position: relative;
+  z-index: 30;
+}
+/* 顶部菜单条撑满导航条：barRight 以视口右缘为准，避免子菜单被误判溢出而错翻（图标被推出屏外）。
+   此前 width:100% 坍塌是 .in-header-nav 的 flex 挤压所致；独立 .top-nav-bar 下可安全满宽 */
+.top-nav-bar > oas-menubar,
+.top-nav-bar > oas-navigation-menu {
+  width: 100%;
+}
+/* sider 槽菜单容器（left/right 模式）：填满轨道高度。宽度不由容器定——三形态共用一个 .nav-sider 容器，
+   若在此定宽会破坏 sidebar 折叠（oas-sider 折叠收窄到 64px 时容器仍 200px，内容区不扩）→ 宽度下放到各自组件 */
 .nav-sider {
   height: 100%;
   min-height: 0;
+}
+/* menubar/navigation 竖排：补整列面板背景 + 右缘分隔线，与 sidebar（内嵌 oas-sider 自带 --oas-color-bg-hover
+   背景 + 200px 轨、右缘即面板缘）外观统一——否则它们只是左上角小卡片、下方大片空白、无与正文的分隔感。
+   用 :has() 限定仅 menubar/navigation 生效，避免污染 sidebar（其面板由内嵌 oas-sider 提供，会双重背景/边框） */
+.nav-sider:has(> oas-menubar),
+.nav-sider:has(> oas-navigation-menu) {
+  background: var(--oas-color-bg-hover);
+  border-right: 1px solid var(--oas-color-border);
+}
+/* menubar/navigation 竖排：宽度自适应贴合菜单内容（总览/业务/系统/示例 等短项，贴合后侧栏紧凑、
+   无大片空白——固定 200px 时面板撑满但菜单项只占顶部，显得空荡）。面板背景/分隔线仍随 sider 槽保留。
+   host 是 inline-block 不撑满，display:block 让 .bar.vertical align-items:stretch 生效填满面板高 */
+.nav-sider > oas-menubar,
+.nav-sider > oas-navigation-menu {
+  display: block;
+  min-width: 0;
+}
+/* 菜单条/多级导航顶部下拉需溢出 sider 区（不被 viewport 的 overflow-y:auto 裁剪）。
+   data-side 设在内部 .struct 而非宿主，须用宿主反射的 side 属性匹配 */
+oas-layout[side="top"]::part(sider) {
+  overflow: visible;
+}
+/* menubar/navigation 左/右竖排：下拉往右浮出，sider 需 visible（否则 62px 窄区 auto 裁剪子菜单、出滚动条）。
+   仅对菜单条/多级导航生效；sidebar 树形仍需 sider 内部滚动，故用 data-menu-style 区分（非 sidebar 才 visible） */
+oas-layout[data-menu-style="menubar"]::part(sider),
+oas-layout[data-menu-style="navigation"]::part(sider) {
+  overflow: visible;
 }
 
 @media (max-width: 768px) {
@@ -272,6 +326,27 @@ html[data-theme="dark"] .theme-dot::before {
   padding-top: var(--oas-space-3);
   margin-top: var(--oas-space-2);
   border-top: 1px solid var(--oas-color-border);
+}
+/* ☰ 悬浮菜单面板（menubar/navigation）：点 ☰ 弹出，内嵌垂直 menubar——顶级=总览/业务/系统/示例，
+   点击顶级项展开其子路由（还原 menubar 交互，而非 sidebar 式平铺列表） */
+.menu-popover {
+  position: fixed;
+  top: calc(var(--app-header-height, 56px) + var(--oas-space-1));
+  left: var(--oas-space-2);
+  z-index: var(--oas-z-dropdown, 1000);
+  background: var(--oas-color-bg);
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-md);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  padding: var(--oas-space-1);
+}
+.menu-popover[hidden] {
+  display: none;
+}
+.menu-popover > oas-menubar,
+.menu-popover > oas-navigation-menu {
+  display: block;
+  min-width: 200px;
 }
 .notif-item {
   cursor: pointer;
@@ -1560,6 +1635,14 @@ oas-sidebar[collapsed]::part(group) {
     width: 0;
     padding: 0;
     overflow: hidden;
+  }
+  /* 移动端：menubar/navigation 的侧栏/顶部菜单收起，统一由 ☰ 弹出抽屉导航（避免菜单仍显示 + ☰ 并存）。
+     仅限菜单条/多级导航（:has() 判定），sidebar 的 .nav-sider 内嵌 oas-sider，移动端走自身 drawer（oas-sider 收窄为 0 由上方规则处理），不可整容器隐藏 */
+  .nav-sider:has(> oas-menubar),
+  .nav-sider:has(> oas-navigation-menu),
+  .top-nav-bar:has(> oas-menubar),
+  .top-nav-bar:has(> oas-navigation-menu) {
+    display: none;
   }
   .global-search {
     display: none;

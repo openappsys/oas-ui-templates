@@ -94,6 +94,7 @@ const MENU_POSITIONS_META: Array<{ value: MenuPosition; label: string }> = [
   { value: 'left', label: 'menuLeft' },
   { value: 'right', label: 'menuRight' },
   { value: 'top', label: 'menuTop' },
+  { value: 'top-head', label: 'menuTopHead' },
 ]
 
 /** 9 宫格菜单矩阵表头（位置列名） */

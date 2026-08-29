@@ -46,34 +46,35 @@ function sidebarItems(): string {
   return JSON.stringify(items)
 }
 
-/** 顶部/竖排菜单（menubar / navigation-menu）：按分组映射成「分组 → 子菜单下拉」 */
-function groupMenuItems(): string {
-  const groups = new Map<string, Array<{ label: string; value: string; icon?: string }>>()
+/** 顶部/竖排菜单（menubar / navigation-menu）：顶级=分组、children=组内路由，点击弹出子菜单（业界后台通行做法）。
+ *  active 字段标记当前路由高亮（组件靠 items.active 渲染 aria-current/高亮类，非元素 value） */
+function groupMenuItems(activePath: string): string {
+  const groups = new Map<string, Array<{ label: string; value: string; icon?: string; active?: boolean }>>()
   for (const r of routes) {
     if (r.meta.hidden) continue
     const g = groupLabel(r.meta.group)
     const items = groups.get(g) ?? []
-    items.push({ label: t(r.meta.titleKey), value: r.path, icon: r.meta.icon })
+    items.push({ label: t(r.meta.titleKey), value: r.path, icon: r.meta.icon, active: r.path === activePath })
     groups.set(g, items)
   }
   return JSON.stringify(
     Array.from(groups.entries()).map(([label, children]) => ({
       label,
-      value: '',
+      value: label,
       children,
     })),
   )
 }
 
 /** 按「形态 × 位置」渲染菜单组件内容（不含 slot 容器，供初挂载与 reapply 复用） */
-/** 生成菜单组件的纯 HTML（不带 slot 容器）：top 放 header 内、left/right 放 sider 槽 */
-function menuHTML(vertical: boolean): string {
+/** 生成菜单组件的纯 HTML（不带 slot 容器）：top 放 sider 槽顶部、left/right 放 sider 槽 */
+function menuHTML(vertical: boolean, activePath: string): string {
   const { style } = navConfig()
   if (style === 'menubar') {
-    return `<oas-menubar id="nav" orientation="${vertical ? 'vertical' : 'horizontal'}" items='${groupMenuItems()}'></oas-menubar>`
+    return `<oas-menubar id="nav" orientation="${vertical ? 'vertical' : 'horizontal'}" items='${groupMenuItems(activePath)}'></oas-menubar>`
   }
   if (style === 'navigation') {
-    return `<oas-navigation-menu id="nav" orientation="${vertical ? 'vertical' : 'horizontal'}" items='${groupMenuItems()}'></oas-navigation-menu>`
+    return `<oas-navigation-menu id="nav" orientation="${vertical ? 'vertical' : 'horizontal'}" items='${groupMenuItems(activePath)}'></oas-navigation-menu>`
   }
   return `<oas-sider id="nav-sider"><oas-sidebar id="nav" items='${sidebarItems()}'${readSidebarCollapsed() ? ' collapsed' : ''}></oas-sidebar></oas-sider>`
 }
@@ -181,13 +182,12 @@ function safeFullscreen(p: Promise<void> | undefined): void {
 }
 
 export function mountApp(root: HTMLElement): void {
-  const isTopMenu = navConfig().position === 'top'
   root.innerHTML = `
-      <oas-layout class="app" viewport side="${navConfig().position}">
+      <oas-layout class="app" viewport side="${navConfig().position === 'top-head' ? 'top' : navConfig().position}" data-menu-style="${navConfig().style}">
         <header class="app-header" slot="header">
           <oas-button id="nav-toggle" class="nav-toggle" type="text" icon="menu" aria-label="${t('header.openMenu')}"></oas-button>
           ${LOGO}
-          ${isTopMenu ? `<span class="in-header-nav">${menuHTML(false)}</span>` : ''}
+          ${navConfig().position === 'top-head' ? `<div class="header-nav-menubar">${menuHTML(false, currentPath())}</div>` : ''}
           <span class="spacer"></span>
           <div class="global-search">
             <oas-input id="global-search" placeholder="${t('header.search')}" prefix-icon="search" readonly></oas-input>
@@ -213,7 +213,8 @@ export function mountApp(root: HTMLElement): void {
             <oas-avatar id="user-avatar" size="28" aria-label="${t('header.userMenu')}" aria-haspopup="menu"></oas-avatar>
           </oas-dropdown>
         </header>
-        ${isTopMenu ? '' : `<div slot="sider" class="nav-sider">${menuHTML(true)}</div>`}
+        ${navConfig().position === 'top' ? `<div class="top-nav-bar" slot="sider">${menuHTML(false, currentPath())}</div>` : ''}
+        ${navConfig().position !== 'top' && navConfig().position !== 'top-head' ? `<div slot="sider" class="nav-sider">${menuHTML(true, currentPath())}</div>` : ''}
         <div slot="content" class="content-col">
           <div class="tabs-bar">
             <oas-tabs id="page-tabs" data-testid="page-tabs" type="card" hide-content context-menu></oas-tabs>
@@ -231,25 +232,30 @@ export function mountApp(root: HTMLElement): void {
           <button id="notif-readall" class="link-btn" type="button">${t('header.allRead')}</button>
         </div>
       </div>
-    </oas-drawer>`
+    </oas-drawer>
+    <div id="menu-popover" class="menu-popover" hidden></div>`
   function navEl(): HTMLElement {
     return root.querySelector<HTMLElement>('#nav')!
   }
   const menuStyle = (): MenuStyle => navConfig().style
-  /** 按形态设置菜单 items（sidebar→带分组字段；menubar/navigation→分组下拉） */
-  function setNavItems(): void {
+  /** 按形态设置菜单 items（sidebar→分组字段；navigation→分组下拉 + active 高亮） */
+  function setNavItems(activePath: string): void {
     const style = menuStyle()
-    const items = style === 'sidebar' ? sidebarItems() : groupMenuItems()
+    const items = style === 'sidebar' ? sidebarItems() : groupMenuItems(activePath)
     navEl().setAttribute('items', items)
   }
-  /** 按形态映射当前路由高亮：sidebar→active 属性；menubar/navigation→value（组级）+ 子项 active */
+  /** 按形态映射当前路由高亮（各组件高亮机制不同，须分开处理，避免 navigation-menu 把 value 当「已展开面板」）：
+   *  sidebar→active 属性；menubar→value 属性（radio 勾选 ✓ 高亮，其展开态由内部 expanded 独立维护）；
+   *  navigation→items.active 字段（aria-current，value 必须留空否则 findItem 落空面板空白） */
   function applyNavActive(path: string): void {
     const nav = navEl()
     const style = menuStyle()
     if (style === 'sidebar') {
       nav.setAttribute('active', path)
-    } else {
+    } else if (style === 'menubar') {
       nav.setAttribute('value', path)
+    } else {
+      setNavItems(path)
     }
   }
   const command = root.querySelector<HTMLElement>('#command')!
@@ -269,13 +275,69 @@ export function mountApp(root: HTMLElement): void {
   const notifList = root.querySelector<HTMLElement>('#notif-list')!
   const notifReadall = root.querySelector<HTMLButtonElement>('#notif-readall')!
   const pageTabs = root.querySelector<HTMLElement>('#page-tabs')!
+  const menuPopover = root.querySelector<HTMLElement>('#menu-popover')!
+  /** 当前面板内菜单元素（按 style 渲染 menubar / navigation-menu） */
+  function popoverNav(): HTMLElement {
+    return menuPopover.firstElementChild as HTMLElement
+  }
+
+  /** 关闭 ☰ 弹出菜单（悬浮面板） */
+  function closeMenuPopover(): void {
+    menuPopover.hidden = true
+  }
+  /** ☰ 弹出菜单：按当前菜单形态渲染对应组件到面板（menubar→点击展开下拉子菜单；navigation→点击展开巨型面板）。
+   *  顶级=总览/业务/系统/示例，均保留各自「顶级 → 展开子菜单」交互。
+   *  navigation 在浮层容器里首帧测量会坍缩成 0×0（oas-navigation-menu 浮层测量缺陷，已记入库 demands）：
+   *  挂载后重设 items 触发重新测量兜底（组件 MutationObserver 触发 update + syncViewportSize） */
+  function toggleMenuPopover(): void {
+    if (!menuPopover.hidden) {
+      closeMenuPopover()
+      return
+    }
+    menuPopover.hidden = false
+    const isMenuBar = menuStyle() === 'menubar'
+    const items = groupMenuItems(currentPath())
+    menuPopover.innerHTML = isMenuBar
+      ? `<oas-menubar id="nav-popover" orientation="vertical" trigger="click" items='${items}'></oas-menubar>`
+      : `<oas-navigation-menu id="nav-popover" orientation="vertical" items='${items}'></oas-navigation-menu>`
+    const nav = popoverNav()
+    // navigation 浮层测量坍缩兜底：挂载稳定后重设 items 触发重新测量，确保面板有真实宽高
+    if (!isMenuBar) {
+      requestAnimationFrame(() => nav.setAttribute('items', groupMenuItems(currentPath())))
+    }
+    nav.addEventListener('oas-select', (e) => {
+      const value = (e as CustomEvent<{ value: string }>).detail.value
+      if (!value) return
+      if (currentPath() !== value) navigate(value)
+      closeMenuPopover()
+    })
+    nav.addEventListener('oas-change', (e) => {
+      const value = (e as CustomEvent<{ value: string }>).detail.value
+      if (!value) return
+      if (currentPath() !== value) navigate(value)
+      closeMenuPopover()
+    })
+  }
+  // 点击面板外关闭
+  root.addEventListener('pointerdown', (e) => {
+    if (menuPopover.hidden) return
+    const target = e.target as HTMLElement
+    if (target.closest('#menu-popover') || target.closest('#nav-toggle')) return
+    closeMenuPopover()
+  })
+  // Esc 关闭
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !menuPopover.hidden) closeMenuPopover()
+  })
 
   navToggle.addEventListener('click', () => {
-    // sidebar 专属抽屉逻辑；menubar/navigation 无 drawer（移动端自带收纳）
+    // sidebar 走自身抽屉；menubar/navigation 走 ☰ 悬浮菜单（内嵌垂直 menubar）
     const nav = navEl()
     if (nav.tagName === 'OAS-SIDEBAR') {
       if (nav.hasAttribute('drawer-open')) (nav as any).closeDrawer()
       else (nav as any).openDrawer()
+    } else {
+      toggleMenuPopover()
     }
   })
 
@@ -455,8 +517,8 @@ export function mountApp(root: HTMLElement): void {
       items.push({ label: t(route.meta.titleKey) })
     }
     crumbs.setAttribute('items', JSON.stringify(items))
-    const activePath = route === undefined ? '' : (route.meta.parent ?? route.path)
-    applyNavActive(activePath)
+    // 高亮当前路由叶子项（sidebar 的 active 属性 / menubar·navigation 的 items.active 均匹配叶子 value）
+    applyNavActive(route === undefined ? '' : route.path)
   }
 
   onRouteChange(syncNav)
@@ -591,7 +653,7 @@ export function mountApp(root: HTMLElement): void {
     notifToggle.setAttribute('aria-label', t('header.notificationCount', { count: unreadCount() }))
     userAvatar.setAttribute('aria-label', t('header.userMenu'))
     footer.textContent = t('app.footer')
-    setNavItems()
+    setNavItems(currentPath())
     command.setAttribute('items', JSON.stringify(buildCommandItems()))
     renderNotifications()
     syncNav()
@@ -604,25 +666,39 @@ export function mountApp(root: HTMLElement): void {
 
   // 设置中心切换菜单位置/形态：实时重建菜单（top 放 header 内，否则放 sider 槽），不全页刷新
   function reapplyNavConfig(): void {
-    const isTop = navConfig().position === 'top'
-    root.querySelector('.in-header-nav')?.remove()
+    const { style, position } = navConfig()
     root.querySelector('oas-layout > [slot="sider"]')?.remove()
-    if (isTop) {
-      const wrap = document.createElement('span')
-      wrap.className = 'in-header-nav'
-      wrap.innerHTML = menuHTML(false)
+    root.querySelector('.app-header .header-nav-menubar')?.remove()
+    if (position === 'top-head') {
+      // 顶部（logo 与搜索框之间）：菜单塞 header，紧凑下拉
+      const wrap = document.createElement('div')
+      wrap.className = 'header-nav-menubar'
+      wrap.innerHTML = menuHTML(false, currentPath())
       root.querySelector<HTMLElement>('.app-header .oas-logo')?.after(wrap)
+    } else if (position === 'top') {
+      // 顶部（独立一行）：巨型面板需完整展开空间，避免被 header 挤压
+      const wrap = document.createElement('div')
+      wrap.setAttribute('slot', 'sider')
+      wrap.className = 'top-nav-bar'
+      wrap.innerHTML = menuHTML(false, currentPath())
+      root
+        .querySelector('oas-layout')
+        ?.insertBefore(wrap, root.querySelector('oas-layout > [slot="content"]'))
     } else {
+      // 左/右：sider 槽
       const wrap = document.createElement('div')
       wrap.setAttribute('slot', 'sider')
       wrap.className = 'nav-sider'
-      wrap.innerHTML = menuHTML(true)
+      wrap.innerHTML = menuHTML(true, currentPath())
       root
         .querySelector('oas-layout')
         ?.insertBefore(wrap, root.querySelector('oas-layout > [slot="content"]'))
     }
     const layout = root.querySelector<HTMLElement>('oas-layout')
-    if (layout) layout.setAttribute('side', navConfig().position)
+    if (layout) {
+      layout.setAttribute('side', position === 'top-head' ? 'top' : position)
+      layout.setAttribute('data-menu-style', style)
+    }
     bindNav()
     syncNav()
   }

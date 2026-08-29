@@ -99,7 +99,7 @@
 
 .menu-matrix {
   display: grid;
-  grid-template-columns: auto repeat(3, 1fr);
+  grid-template-columns: auto repeat(4, 1fr);
   gap: var(--oas-space-2);
   align-items: stretch;
 }
