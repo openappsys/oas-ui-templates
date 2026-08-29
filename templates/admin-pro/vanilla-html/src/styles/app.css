@@ -328,7 +328,9 @@ html[data-theme="dark"] .theme-dot::before {
   border-top: 1px solid var(--oas-color-border);
 }
 /* ☰ 悬浮菜单面板（menubar/navigation）：点 ☰ 弹出，内嵌垂直 menubar——顶级=总览/业务/系统/示例，
-   点击顶级项展开其子路由（还原 menubar 交互，而非 sidebar 式平铺列表） */
+   点击顶级项展开其子路由（还原 menubar 交互，而非 sidebar 式平铺列表）。
+   宽度自适应：菜单贴顶级项内容宽（不强制 min-width 200px——竖排子菜单/巨型面板宽度由各自组件
+   的 vp 变量/min-width 决定，与顶级项宽无关；强制 200px 会让短词顶级项（总览/业务等）占很宽） */
 .menu-popover {
   position: fixed;
   top: calc(var(--app-header-height, 56px) + var(--oas-space-1));
@@ -339,14 +341,16 @@ html[data-theme="dark"] .theme-dot::before {
   border-radius: var(--oas-radius-md);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   padding: var(--oas-space-1);
+  width: fit-content;
 }
 .menu-popover[hidden] {
   display: none;
 }
 .menu-popover > oas-menubar,
 .menu-popover > oas-navigation-menu {
-  display: block;
-  min-width: 200px;
+  /* 不覆盖 display：组件 host 默认 inline-block（贴内容宽），fit-content 才能收缩到顶级项内容宽 */
+  width: auto;
+  max-width: 100%;
 }
 .notif-item {
   cursor: pointer;
