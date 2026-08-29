@@ -1,5 +1,5 @@
 import { message } from '@oas-ui/ui/feedback/message'
-import { t } from '../i18n'
+import { onLocaleChange, t } from '../i18n'
 import { getOrder, updateOrderStatus } from '../data/orders'
 import type { OrderRow, OrderStatus } from '../data/orders'
 
@@ -202,6 +202,29 @@ export function render(el: HTMLElement): () => void {
     renderAll()
   })
 
+  function refreshText(): void {
+    el.querySelector<HTMLElement>('[data-testid="order-back"]')!.textContent =
+      t('orderDetail.backList')
+    el.querySelector<HTMLElement>('.order-timeline-head')!.textContent = t(
+      'orderDetail.timelineTitle',
+    )
+    if (order) {
+      // 订单已加载：页头标题保持订单号，动态区（步骤/描述/时间线/操作）随语言重渲
+      ph.setAttribute('title', order.id)
+      tag.textContent = statusLabel(order.status)
+      renderSteps()
+      renderBasic()
+      renderTimeline()
+      renderAction()
+    } else {
+      ph.setAttribute('title', t('nav.orderDetail'))
+      tag.textContent = t('orderDetail.loading')
+      if (!missing.hidden) {
+        missing.innerHTML = `<oas-empty description="${t('orderDetail.missing')}"></oas-empty>`
+      }
+    }
+  }
+
   void load()
-  return () => {}
+  return onLocaleChange(refreshText)
 }
