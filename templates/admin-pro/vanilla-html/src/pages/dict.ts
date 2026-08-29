@@ -1,6 +1,6 @@
 import { message } from '@oas-ui/ui/feedback/message'
 import type { OASTable, TableColumn } from '@oas-ui/ui/data/table'
-import { t } from '../i18n'
+import { onLocaleChange, t } from '../i18n'
 import {
   createDictItem,
   createDictType,
@@ -388,6 +388,52 @@ export function render(el: HTMLElement): () => void {
   itemTable.addEventListener('click', onItemClick)
   itemTable.addEventListener('oas-ok', onItemDelete)
 
+  function refreshText(): void {
+    el.querySelector<HTMLElement>('h1.page-title')!.textContent = t('nav.dict')
+    el.querySelector<HTMLElement>('p.page-subtitle')!.textContent = t('dict.subtitle')
+    el.querySelector<HTMLElement>('.dict-type-card')!.setAttribute('title', t('dict.typeTitle'))
+    el.querySelector<HTMLElement>('.dict-items-card')!.setAttribute('title', t('dict.itemTitle'))
+    el.querySelector<HTMLElement>('[data-testid="dict-type-create"]')!.textContent =
+      t('dict.newType')
+    el.querySelector<HTMLElement>('[data-testid="dict-item-create"]')!.textContent =
+      t('dict.newItem')
+    // 类型弹窗
+    const editingType = state.types.find((x) => x.id === state.editingTypeId)
+    el.querySelector<HTMLElement>('#dict-type-title')!.textContent = editingType
+      ? t('dict.editType', { name: editingType.name })
+      : t('dict.newType')
+    el.querySelector<HTMLElement>('[data-testid="dtf-name"]')!.setAttribute(
+      'placeholder',
+      t('dict.placeholder.typeName'),
+    )
+    el.querySelector<HTMLElement>('[data-testid="dtf-code"]')!.setAttribute(
+      'placeholder',
+      t('dict.placeholder.typeCode'),
+    )
+    el.querySelector<HTMLElement>('#dict-type-form')!.setAttribute('rules', RULES_TYPE())
+    el.querySelector<HTMLElement>('[data-testid="dtf-cancel"]')!.textContent = t('common.cancel')
+    el.querySelector<HTMLElement>('[data-testid="dtf-save"]')!.textContent = t('common.save')
+    // 键值弹窗
+    const editingItem = state.loadedItems.find((x) => x.id === state.editingItemId)
+    el.querySelector<HTMLElement>('#dict-item-title')!.textContent = editingItem
+      ? t('dict.editItem', { label: editingItem.label })
+      : t('dict.newItem')
+    el.querySelector<HTMLElement>('[data-testid="dif-label"]')!.setAttribute(
+      'placeholder',
+      t('dict.placeholder.label'),
+    )
+    el.querySelector<HTMLElement>('[data-testid="dif-value"]')!.setAttribute(
+      'placeholder',
+      t('dict.placeholder.value'),
+    )
+    el.querySelector<HTMLElement>('#dict-item-form')!.setAttribute('rules', RULES_ITEM())
+    el.querySelector<HTMLElement>('[data-testid="dif-cancel"]')!.textContent = t('common.cancel')
+    el.querySelector<HTMLElement>('[data-testid="dif-save"]')!.textContent = t('common.save')
+    // 类型列表 / 键值区（pane 标题、列定义、空态文案）随语言重渲；选中态由内部状态恢复
+    renderTypeList()
+    renderItems()
+  }
+
   void refresh()
-  return () => {}
+  return onLocaleChange(refreshText)
 }

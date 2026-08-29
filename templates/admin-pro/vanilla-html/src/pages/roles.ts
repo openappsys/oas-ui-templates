@@ -1,6 +1,6 @@
 import { message } from '@oas-ui/ui/feedback/message'
 import type { OASTable, TableColumn } from '@oas-ui/ui/data/table'
-import { t } from '../i18n'
+import { onLocaleChange, t } from '../i18n'
 import { createRole, listRoles, removeRole, treeDepts, updateRole } from '../data/system'
 import type { DataScope, DeptTree, RoleRow } from '../data/system'
 
@@ -297,6 +297,56 @@ export function render(el: HTMLElement): () => void {
   table.addEventListener('click', onTableClick)
   table.addEventListener('oas-ok', onDeleteOk)
 
+  function refreshText(): void {
+    el.querySelector<HTMLElement>('h1.page-title')!.textContent = t('nav.roles')
+    el.querySelector<HTMLElement>('p.page-subtitle')!.textContent = t('roles.subtitle')
+    el.querySelector<HTMLElement>('[data-testid="role-create"]')!.textContent = t('roles.new')
+    el.querySelector<HTMLElement>('oas-card.list-card')!.setAttribute('title', t('roles.list'))
+    table.setAttribute('empty-text', t('roles.empty'))
+    // 抽屉表单：标题随新建/编辑态 + 字段 label/占位/提示/规则/按钮
+    drawer.setAttribute(
+      'title',
+      state.editingId == null
+        ? t('roles.new')
+        : t('roles.editRole').replace('#{id}', String(state.editingId)),
+    )
+    const LABEL_KEYS = ['roles.form.name', 'roles.form.code', 'roles.form.dataScope']
+    el.querySelectorAll<HTMLElement>('#role-form .form-field > .form-label').forEach((n, i) => {
+      const k = LABEL_KEYS[i]
+      if (k) {
+        const req = n.querySelector('.req')
+        n.textContent = t(k)
+        if (req) n.append(' ', req)
+      }
+    })
+    el.querySelector<HTMLElement>('#rf-custom > .form-label')?.replaceChildren(
+      t('roles.form.customScope'),
+    )
+    el.querySelector<HTMLElement>('[data-testid="rf-name"]')!.setAttribute(
+      'placeholder',
+      t('roles.rule.name'),
+    )
+    el.querySelector<HTMLElement>('[data-testid="rf-code"]')!.setAttribute(
+      'placeholder',
+      t('roles.placeholder.code'),
+    )
+    el.querySelector<HTMLElement>('.form-hint')!.textContent = t('roles.hint.code')
+    scopeGroup.innerHTML = DATA_SCOPE_OPTIONS()
+      .map(
+        (o) =>
+          `<oas-radio name="dataScope" value="${o.value}"><span class="radio-item"><span class="radio-label">${o.label}</span><span class="radio-desc">${o.desc}</span></span></oas-radio>`,
+      )
+      .join('')
+    setRadioChecked(state.dataScope)
+    transfer.setAttribute('source-title', t('roles.transfer.source'))
+    transfer.setAttribute('target-title', t('roles.transfer.target'))
+    form.setAttribute('rules', RULES())
+    el.querySelector<HTMLElement>('[data-testid="rf-cancel"]')!.textContent = t('common.cancel')
+    el.querySelector<HTMLElement>('[data-testid="rf-save"]')!.textContent = t('common.save')
+    // 表格列定义随语言重建；数据/勾选不动
+    renderTable()
+  }
+
   void refresh()
-  return () => {}
+  return onLocaleChange(refreshText)
 }

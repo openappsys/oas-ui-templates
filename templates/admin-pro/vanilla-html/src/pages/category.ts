@@ -1,6 +1,6 @@
 import { message } from '@oas-ui/ui/feedback/message'
 import type { OASTable, TableColumn } from '@oas-ui/ui/data/table'
-import { t } from '../i18n'
+import { onLocaleChange, t } from '../i18n'
 import { createCategory, listCategories, removeCategory, updateCategory } from '../data/categories'
 import type { CategoryRow } from '../data/categories'
 import '../styles/pages/dict.css'
@@ -264,7 +264,54 @@ export function render(el: HTMLElement): () => void {
     renderTable()
   })
 
+  function refreshText(): void {
+    el.querySelector<HTMLElement>('h1.page-title')!.textContent = t('nav.category')
+    el.querySelector<HTMLElement>('p.page-subtitle')!.textContent = t('category.subtitle')
+    el.querySelector<HTMLElement>('[data-testid="category-create"]')!.textContent =
+      t('category.new')
+    search.setAttribute('placeholder', t('category.search'))
+    el.querySelector<HTMLElement>('[data-testid="category-empty"] oas-empty')!.setAttribute(
+      'description',
+      t('category.empty'),
+    )
+    // 表单弹窗：标题随新建/编辑态 + 字段 label/占位/规则/按钮
+    el.querySelector<HTMLElement>('#category-modal-title')!.textContent =
+      state.editingId == null ? t('category.new') : t('category.edit')
+    const LABEL_KEYS = [
+      'category.form.name',
+      'category.form.code',
+      'category.form.sort',
+      'category.form.status',
+      'category.form.desc',
+    ]
+    el.querySelectorAll<HTMLElement>('#category-form .form-field > .form-label').forEach((n, i) => {
+      const k = LABEL_KEYS[i]
+      if (k) {
+        const req = n.querySelector('.req')
+        n.textContent = t(k)
+        if (req) n.append(' ', req)
+      }
+    })
+    el.querySelector<HTMLElement>('[data-testid="cf-name"]')!.setAttribute(
+      'placeholder',
+      t('category.placeholder.name'),
+    )
+    el.querySelector<HTMLElement>('[data-testid="cf-code"]')!.setAttribute(
+      'placeholder',
+      t('category.placeholder.code'),
+    )
+    el.querySelector<HTMLElement>('[data-testid="cf-desc"]')!.setAttribute(
+      'placeholder',
+      t('category.placeholder.desc'),
+    )
+    form.setAttribute('rules', RULES())
+    el.querySelector<HTMLElement>('[data-testid="cf-cancel"]')!.textContent = t('common.cancel')
+    el.querySelector<HTMLElement>('[data-testid="cf-save"]')!.textContent = t('common.save')
+    // 表格列定义（t 文案）+ 行内状态标签随语言重建；搜索词不动
+    renderTable()
+  }
+
   void refresh()
 
-  return () => {}
+  return onLocaleChange(refreshText)
 }

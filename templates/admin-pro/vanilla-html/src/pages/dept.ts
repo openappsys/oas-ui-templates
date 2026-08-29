@@ -1,7 +1,7 @@
 import { message } from '@oas-ui/ui/feedback/message'
 import type { OASTable, TableColumn } from '@oas-ui/ui/data/table'
 import '@oas-ui/ui/layout/splitter'
-import { t } from '../i18n'
+import { onLocaleChange, t } from '../i18n'
 import { createDept, listDepts, removeDept, treeDepts, updateDept } from '../data/system'
 import type { DeptNode, DeptTree } from '../data/system'
 import '../styles/pages/dept.css'
@@ -407,6 +407,39 @@ export function render(el: HTMLElement): () => void {
   detailEl.addEventListener('click', onSubClick)
   detailEl.addEventListener('oas-ok', onSubDelete)
 
+  function refreshText(): void {
+    el.querySelector<HTMLElement>('h1.page-title')!.textContent = t('nav.dept')
+    el.querySelector<HTMLElement>('p.page-subtitle')!.textContent = t('dept.subtitle')
+    el.querySelector<HTMLElement>('[data-testid="dept-create"]')!.textContent = t('dept.new')
+    el.querySelector<HTMLElement>('.dept-tree-card')!.setAttribute('title', t('dept.treeTitle'))
+    el.querySelector<HTMLElement>('.dept-detail-card')!.setAttribute('title', t('dept.detailTitle'))
+    // 抽屉表单：标题随新建/编辑态 + 字段 label/占位/规则/按钮
+    const editingNode = state.editingId == null ? null : findNode(state.tree, state.editingId)
+    drawer.setAttribute(
+      'title',
+      editingNode ? t('dept.editDept', { name: editingNode.name }) : t('dept.new'),
+    )
+    const LABEL_KEYS = ['dept.form.name', 'dept.form.parent', 'dept.form.members']
+    el.querySelectorAll<HTMLElement>('#dept-form .form-field > .form-label').forEach((n, i) => {
+      const k = LABEL_KEYS[i]
+      if (k) {
+        const req = n.querySelector('.req')
+        n.textContent = t(k)
+        if (req) n.append(' ', req)
+      }
+    })
+    el.querySelector<HTMLElement>('[data-testid="df-name"]')!.setAttribute(
+      'placeholder',
+      t('dept.rule.name'),
+    )
+    parentSelect.setAttribute('placeholder', t('dept.placeholder.top'))
+    form.setAttribute('rules', RULES())
+    el.querySelector<HTMLElement>('[data-testid="df-cancel"]')!.textContent = t('common.cancel')
+    el.querySelector<HTMLElement>('[data-testid="df-save"]')!.textContent = t('common.save')
+    // 详情区（含空态/描述/按钮文案）随语言重渲；树选中状态由 renderDetail 内部按 selectedId 恢复
+    renderDetail()
+  }
+
   void refresh()
-  return () => {}
+  return onLocaleChange(refreshText)
 }

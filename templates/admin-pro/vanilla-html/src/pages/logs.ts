@@ -2,7 +2,7 @@ import '../styles/pages/logs.css'
 import '@oas-ui/ui/data/virtual-list'
 import '@oas-ui/ui/navigation/anchor'
 import { message } from '@oas-ui/ui/feedback/message'
-import { t } from '../i18n'
+import { onLocaleChange, t } from '../i18n'
 import { listLogs, type LogEntry, type LogLevel } from '../data/logs'
 
 const LEVEL_VALUES: Array<LogLevel | 'all'> = ['all', 'info', 'warn', 'error']
@@ -357,9 +357,46 @@ export function render(el: HTMLElement): () => void {
     state.rows = await listLogs()
     await applyFilter()
   }
+  function refreshText(): void {
+    el.querySelector<HTMLElement>('h1.page-title')!.textContent = t('nav.logs')
+    el.querySelector<HTMLElement>('p.page-subtitle')!.textContent = t('logs.subtitle')
+    el.querySelector<HTMLElement>('.logs-card')!.setAttribute('title', t('logs.cardTitle'))
+    levelSelect.setAttribute('placeholder', t('logs.toolbar.level'))
+    levelSelect.setAttribute('options', JSON.stringify(LEVEL_OPTIONS()))
+    keywordInput.setAttribute('placeholder', t('logs.toolbar.keyword'))
+    el.querySelector<HTMLElement>('[data-testid="logs-date"]')!.setAttribute(
+      'placeholder',
+      t('logs.toolbar.dateRange'),
+    )
+    el.querySelector<HTMLElement>('[data-testid="logs-export"]')!.textContent = t('logs.export')
+    const HEADERS: Array<[string, string]> = [
+      ['.logs-h-time', 'logs.th.time'],
+      ['.logs-h-level', 'logs.th.level'],
+      ['.logs-h-operator', 'logs.th.operator'],
+      ['.logs-h-action', 'logs.th.action'],
+      ['.logs-h-ip', 'logs.th.ip'],
+    ]
+    for (const [sel, k] of HEADERS) {
+      el.querySelector<HTMLElement>(sel)!.textContent = t(k)
+    }
+    el.querySelector<HTMLElement>('#logs-empty oas-empty')!.setAttribute(
+      'description',
+      t('logs.empty'),
+    )
+    el.querySelector<HTMLElement>('[data-testid="logs-detail"]')!.setAttribute(
+      'title',
+      t('logs.detailTitle'),
+    )
+    // 统计卡 + 虚拟列表行内级别标签随语言重渲；过滤条件/滚动位置不动
+    renderStats()
+    renderVirtualList()
+  }
+
   init()
 
+  const offLocale = onLocaleChange(refreshText)
   return () => {
     mq.removeEventListener('change', syncAnchorDirection)
+    offLocale()
   }
 }

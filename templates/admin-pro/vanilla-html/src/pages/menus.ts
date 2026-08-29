@@ -1,5 +1,5 @@
 import { message } from '@oas-ui/ui/feedback/message'
-import { t } from '../i18n'
+import { onLocaleChange, t } from '../i18n'
 import { treeMenus } from '../data/system'
 import type { MenuTree, MenuType } from '../data/system'
 
@@ -440,8 +440,57 @@ export function render(el: HTMLElement): () => void {
     renderDetail()
   })
 
+  function refreshText(): void {
+    el.querySelector<HTMLElement>('h1.page-title')!.textContent = t('nav.menus')
+    el.querySelector<HTMLElement>('p.page-subtitle')!.textContent = t('menus.subtitle')
+    el.querySelector<HTMLElement>('[data-testid="menu-create"]')!.textContent = t('menus.new')
+    el.querySelector<HTMLElement>('.menu-tree-card')!.setAttribute('title', t('menus.treeTitle'))
+    el.querySelector<HTMLElement>('.menu-detail-card')!.setAttribute(
+      'title',
+      t('menus.detailTitle'),
+    )
+    // 抽屉表单：标题随新建/编辑态 + 字段 label/占位/类型单选/规则/按钮
+    const editingNode = state.editingId == null ? null : findNode(state.tree, state.editingId)
+    drawer.setAttribute(
+      'title',
+      editingNode ? t('menus.editMenu', { title: editingNode.title }) : t('menus.new'),
+    )
+    const LABEL_KEYS = [
+      'menus.form.name',
+      'menus.form.type',
+      'menus.form.parent',
+      'menus.form.perms',
+      'menus.form.path',
+    ]
+    el.querySelectorAll<HTMLElement>('#menu-form .form-field > .form-label').forEach((n, i) => {
+      const k = LABEL_KEYS[i]
+      if (!k) return
+      const req = n.querySelector('.req')
+      const hint = n.querySelector('.form-hint-inline')
+      n.textContent = t(k)
+      if (hint) n.append(' ', hint)
+      if (req) n.append(' ', req)
+    })
+    el.querySelector<HTMLElement>('[data-testid="mf-name"]')!.setAttribute(
+      'placeholder',
+      t('menus.rule.name'),
+    )
+    parentSelect.setAttribute('placeholder', t('menus.placeholder.top'))
+    permsInput.setAttribute('placeholder', t('menus.placeholder.perms'))
+    pathInput.setAttribute('placeholder', t('menus.placeholder.path'))
+    el.querySelectorAll<HTMLElement>('#mf-type .radio-label').forEach((n, i) => {
+      n.textContent = typeLabel((['M', 'C', 'F'] as const)[i] ?? 'C')
+    })
+    form.setAttribute('rules', RULES())
+    el.querySelector<HTMLElement>('[data-testid="mf-cancel"]')!.textContent = t('common.cancel')
+    el.querySelector<HTMLElement>('[data-testid="mf-save"]')!.textContent = t('common.save')
+    syncMenuType()
+    // 详情区（空态/描述/类型标签/按钮文案）随语言重渲；选中态由内部状态恢复
+    renderDetail()
+  }
+
   void init()
-  return () => {}
+  return onLocaleChange(refreshText)
 }
 
 function insertChild(nodes: MenuTree[], parentId: number | null, child: MenuTree): void {

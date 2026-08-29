@@ -1,6 +1,6 @@
 import type { OASChart } from '@oas-ui/ui/data/chart'
 import { message } from '@oas-ui/ui/feedback/message'
-import { t, currentLocale } from '../i18n'
+import { onLocaleChange, t, currentLocale } from '../i18n'
 import { session } from '../store/session'
 import { listProducts } from '../data/products'
 import { orderBreakdown, recentOrders, trendDays, trendSeries } from '../data/dashboard'
@@ -313,7 +313,78 @@ export function render(el: HTMLElement): () => void {
     setRecentOrders()
   })
 
+  function refreshText(): void {
+    el.querySelector<HTMLElement>('h1.page-title')!.textContent = t('nav.dashboard')
+    el.querySelector<HTMLElement>('p.page-subtitle')!.textContent = t('dashboard.welcome', {
+      name,
+      date: todayLabel(),
+    })
+    el.querySelector<HTMLElement>('#dash-refresh')!.textContent = t('common.refresh')
+    el.querySelector<HTMLElement>('#dash-export')!.textContent = t('dashboard.export')
+    // 图表卡：标题/aria/分段选项/图例/系列名
+    const chartCards = el.querySelectorAll<HTMLElement>('.chart-grid > oas-card')
+    chartCards[0]?.setAttribute('title', t('dashboard.trendTitle'))
+    chartCards[1]?.setAttribute('title', t('dashboard.ordersTitle'))
+    el.querySelector<HTMLElement>('#chart-trend')!.setAttribute(
+      'aria-label',
+      t('dashboard.trendTitle'),
+    )
+    el.querySelector<HTMLElement>('#chart-orders')!.setAttribute(
+      'aria-label',
+      t('dashboard.ordersTitle'),
+    )
+    el.querySelector<HTMLElement>('#trend-range')!.setAttribute(
+      'options',
+      JSON.stringify(SEGMENTED_OPTIONS()),
+    )
+    setTrendData()
+    setDonutData()
+    // 最近订单：卡标题/查看全部/列定义/行状态标签
+    const bottomCards = el.querySelectorAll<HTMLElement>('.bottom-grid > oas-card')
+    bottomCards[0]?.setAttribute('title', t('dashboard.recentOrders'))
+    bottomCards[1]?.setAttribute('title', t('dashboard.topProducts'))
+    bottomCards[2]?.setAttribute('title', t('dashboard.quickActions'))
+    for (const a of el.querySelectorAll<HTMLElement>('.bottom-grid .link-btn')) {
+      a.replaceChildren(t('dashboard.viewAll'), ' ')
+      const icon = document.createElement('oas-icon')
+      icon.setAttribute('name', 'chevron-right')
+      icon.setAttribute('size', '12')
+      a.appendChild(icon)
+    }
+    el.querySelector<HTMLElement>('[data-testid="orders-table"]')!.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'id', title: t('orders.th.no') },
+        { key: 'customer', title: t('orders.th.customer') },
+        { key: 'amount', title: t('orders.th.amount') },
+        { key: 'status', title: t('orders.th.status') },
+      ]),
+    )
+    setRecentOrders()
+    // 快捷操作
+    const actions = [
+      { href: '#/form', icon: 'plus', label: t('nav.createOrder') },
+      ...(isAdmin ? [{ href: '#/products', icon: 'edit', label: t('products.newProduct') }] : []),
+      { href: '#/orders', icon: 'calendar', label: t('nav.orders') },
+      ...(isAdmin ? [{ href: '#/users', icon: 'user', label: t('nav.users') }] : []),
+    ]
+    el.querySelector<HTMLElement>('[data-testid="quick-actions"]')!.innerHTML = actions
+      .map(
+        (a) => `<a class="quick-action" href="${a.href}">
+          <oas-icon name="${a.icon}" size="16"></oas-icon>
+          <span>${a.label}</span>
+        </a>`,
+      )
+      .join('')
+    el.querySelector<HTMLElement>('.quick-foot')!.textContent = t('dashboard.techNote')
+    // 统计卡 + Top5
+    fillStats()
+    void loadTop5()
+  }
+
+  const offLocale = onLocaleChange(refreshText)
   return () => {
     if (skeletonTimer) clearTimeout(skeletonTimer)
+    offLocale()
   }
 }
