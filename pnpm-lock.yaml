@@ -18,11 +18,11 @@ importers:
   templates/admin-pro/cdn:
     devDependencies:
       '@oas-ui/theme':
-        specifier: ^2.2.8
-        version: 2.2.8
+        specifier: ^2.3.1
+        version: 2.3.1
       '@oas-ui/ui':
-        specifier: ^2.2.8
-        version: 2.2.8
+        specifier: ^2.3.1
+        version: 2.3.1
       '@playwright/test':
         specifier: ^1.62.1
         version: 1.62.1
@@ -30,11 +30,11 @@ importers:
   templates/admin-pro/cdn-mpa:
     devDependencies:
       '@oas-ui/theme':
-        specifier: ^2.2.8
-        version: 2.2.8
+        specifier: ^2.3.1
+        version: 2.3.1
       '@oas-ui/ui':
-        specifier: ^2.2.8
-        version: 2.2.8
+        specifier: ^2.3.1
+        version: 2.3.1
       '@playwright/test':
         specifier: ^1.62.1
         version: 1.62.1
@@ -42,17 +42,17 @@ importers:
   templates/admin-pro/vanilla-html:
     dependencies:
       '@oas-ui/i18n':
-        specifier: ^2.2.8
-        version: 2.2.8
+        specifier: ^2.3.1
+        version: 2.3.1
       '@oas-ui/icons':
-        specifier: ^2.2.8
-        version: 2.2.8
+        specifier: ^2.3.1
+        version: 2.3.1
       '@oas-ui/theme':
-        specifier: ^2.2.8
-        version: 2.2.8
+        specifier: ^2.3.1
+        version: 2.3.1
       '@oas-ui/ui':
-        specifier: ^2.2.8
-        version: 2.2.8
+        specifier: ^2.3.1
+        version: 2.3.1
     devDependencies:
       '@playwright/test':
         specifier: ^1.62.1
@@ -288,20 +288,20 @@ packages:
   '@jridgewell/sourcemap-codec@1.5.5':
     resolution: {integrity: sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og==}
 
-  '@oas-ui/core@2.2.8':
-    resolution: {integrity: sha512-XkkzuStOqNFxHo+mHQMEaEaQGuWgMNlp8ui/HbfPQEGFfcfhXMX6K3El3CjjVnYtex/9ixKGp4rMjOnHeGXpCg==}
+  '@oas-ui/core@2.3.1':
+    resolution: {integrity: sha512-JzEfnzrsuQCf0kCpo94EPsEZZBLMEUdpJR+AanEXr31JAwWK1pRCPA5h7evIqh6hSoT+TnqdCw6ZQHmBDXmQGg==}
 
-  '@oas-ui/i18n@2.2.8':
-    resolution: {integrity: sha512-2MX46fPDVtZhHa66y1QLdjUCMF8i/L5P7U8+35GWFwvZ8dDDytE6Ej08NfsyL0O+Fiw4eF/kyWAPwom5ybbN+g==}
+  '@oas-ui/i18n@2.3.1':
+    resolution: {integrity: sha512-aYPApJZDDezc9gKjC2bcnjIvejtmA4bjSPfw9boXocNEYvffS5qRk657m1MS2VvrvXxWTzhs8xnh8T+bdTm8Fg==}
 
-  '@oas-ui/icons@2.2.8':
-    resolution: {integrity: sha512-cawzW/gO2+t8ZjrM9jz2t0G7qp962ywLydttSfT6Al8dAQ33f6kaaCnKSNOcWIZHv48IE1WxInf4Kf4DesGY+Q==}
+  '@oas-ui/icons@2.3.1':
+    resolution: {integrity: sha512-FEA4cGCg9QIt0ScdPPcRbV5mnx/PHAFklR2t6RCxQaEikQAAHTT/nBv8yW3OxSUJxnqED2CVs6vbp6ne57NNig==}
 
-  '@oas-ui/theme@2.2.8':
-    resolution: {integrity: sha512-m+fUH0htz3LoQA0VMC3wVpfbVgYdNxosVE07aRmko7jfh/B/v2wpy66JHeMfBXxovB0yMQa0lltggSsBC/THwA==}
+  '@oas-ui/theme@2.3.1':
+    resolution: {integrity: sha512-FmUkGE+u21AHdd0jJDPjGmCgbx8bSfsPqhw7V/CPSRbg5gjEuXlVNqgvKuotFYcxZ289SNZKO0y+/KjYj0SGVA==}
 
-  '@oas-ui/ui@2.2.8':
-    resolution: {integrity: sha512-3GmfrHkN7JzYAZXrDrSY41HXk2Tv81vOWvNrBJYJZsUNv3QOoxY4ZcfDePRLEuJr9j1BVIHHQvMD8EFp/nwysg==}
+  '@oas-ui/ui@2.3.1':
+    resolution: {integrity: sha512-S5r6fXyVJpii3P+m5GdKTiTRcL59DSWywC40SAPsxpJnfZBSsTNa6k02qRH+XsCAbbwjBSrE409jwubbVjQhoQ==}
 
   '@oxc-project/types@0.147.0':
     resolution: {integrity: sha512-IJ3s6ltHLp45S0bh7phkX+gJO7A1Wuz2EaqpAhb8WjqDwbzMiWKHhyyT42tskaWjEYXtHtVCPpnBJVT9+dcRLg==}
@@ -1018,21 +1018,21 @@ snapshots:
 
   '@jridgewell/sourcemap-codec@1.5.5': {}
 
-  '@oas-ui/core@2.2.8': {}
+  '@oas-ui/core@2.3.1': {}
 
-  '@oas-ui/i18n@2.2.8':
+  '@oas-ui/i18n@2.3.1':
     dependencies:
-      '@oas-ui/core': 2.2.8
+      '@oas-ui/core': 2.3.1
 
-  '@oas-ui/icons@2.2.8': {}
+  '@oas-ui/icons@2.3.1': {}
 
-  '@oas-ui/theme@2.2.8': {}
+  '@oas-ui/theme@2.3.1': {}
 
-  '@oas-ui/ui@2.2.8':
+  '@oas-ui/ui@2.3.1':
     dependencies:
-      '@oas-ui/core': 2.2.8
-      '@oas-ui/i18n': 2.2.8
-      '@oas-ui/icons': 2.2.8
+      '@oas-ui/core': 2.3.1
+      '@oas-ui/i18n': 2.3.1
+      '@oas-ui/icons': 2.3.1
 
   '@oxc-project/types@0.147.0': {}
 
