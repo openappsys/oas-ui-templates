@@ -1,6 +1,7 @@
 import { message } from '@oas-ui/ui/feedback/message'
-import { t } from '../i18n'
+import { onLocaleChange, t } from '../i18n'
 import { createOrder } from '../data/orders'
+import { navigate } from '../router/mode'
 import { listProducts } from '../data/products'
 import type { ProductRow } from '../data/products'
 
@@ -295,7 +296,7 @@ export function render(el: HTMLElement): () => void {
         JSON.stringify({ status: 'success', orderId: order.id }),
       )
       message.success(t('form.created'))
-      location.hash = '/result'
+      navigate('/result')
     } finally {
       submit.removeAttribute('loading')
     }
@@ -351,7 +352,51 @@ export function render(el: HTMLElement): () => void {
     state.products = (e as CustomEvent<{ value: string[] }>).detail.value
   })
 
+  function refreshText(): void {
+    el.querySelector<HTMLElement>('h1.page-title')!.textContent = t('nav.createOrder')
+    el.querySelector<HTMLElement>('p.page-subtitle')!.textContent = t('form.subtitle')
+    stepsEl.setAttribute('steps', JSON.stringify(STEPS()))
+    stepsEl.setAttribute('current', String(state.step))
+    const LABEL_KEYS = [
+      'form.label.customer',
+      'form.label.phone',
+      'form.label.note',
+      'form.label.products',
+      'form.label.qty',
+      'form.label.urgent',
+      'form.label.expectDate',
+    ]
+    el.querySelectorAll<HTMLElement>('.form-step .form-field > .form-label').forEach((n, i) => {
+      const k = LABEL_KEYS[i]
+      if (!k) return
+      const req = n.querySelector('.req')
+      n.textContent = t(k)
+      if (req) n.appendChild(req)
+    })
+    el.querySelector<HTMLElement>('[data-testid="form-customer"]')!.setAttribute(
+      'placeholder',
+      t('form.rule.customer'),
+    )
+    el.querySelector<HTMLElement>('[data-testid="form-phone"]')!.setAttribute(
+      'placeholder',
+      t('form.rule.phone'),
+    )
+    el.querySelector<HTMLElement>('[data-testid="form-note"]')!.setAttribute(
+      'placeholder',
+      t('form.placeholder.note'),
+    )
+    el.querySelector<HTMLElement>('#form-products span[slot="label"]')!.textContent = t(
+      'form.placeholder.products',
+    )
+    el.querySelector<HTMLElement>('.form-total')!.childNodes[0]!.textContent = t('form.total')
+    el.querySelector<HTMLElement>('[data-testid="form-confirm"]')!.textContent = t('form.confirm')
+    prev.textContent = t('form.prev')
+    next.textContent = t('form.next')
+    submit.textContent = t('form.submit')
+    if (state.step === 2) renderSummary()
+  }
+
   void loadProducts()
   syncStepVis()
-  return () => {}
+  return onLocaleChange(refreshText)
 }

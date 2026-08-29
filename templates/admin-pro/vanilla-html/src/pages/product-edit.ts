@@ -1,5 +1,6 @@
 import { message } from '@oas-ui/ui/feedback/message'
 import { onLocaleChange, t } from '../i18n'
+import { navigate } from '../router/mode'
 import { listCategories } from '../data/categories'
 import { createProduct, getProduct, updateProduct } from '../data/products'
 import type { ProductRow } from '../data/products'
@@ -139,7 +140,7 @@ export function render(el: HTMLElement): () => void {
         await createProduct(payload)
         message.success(t('common.created'))
       }
-      location.hash = '/products'
+      navigate('/products')
     } finally {
       saving = false
     }

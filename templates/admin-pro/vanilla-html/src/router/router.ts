@@ -1,5 +1,6 @@
 import { hasAccess, session } from '../store/session'
 import { matchRoute, routes } from './routes'
+import { currentPath, navigate, onRouteChange } from './mode'
 import type { PageModule } from './routes'
 import { t } from '../i18n'
 import { progress } from '../components/progress'
@@ -65,7 +66,7 @@ export function initRouter(el: HTMLElement): void {
   el.addEventListener('animationend', (e) => {
     if (e.target === el) el.classList.remove('page-enter')
   })
-  window.addEventListener('hashchange', runResolve)
+  onRouteChange(runResolve)
   runResolve()
 }
 
@@ -73,7 +74,7 @@ export async function resolve(): Promise<void> {
   if (!view) return
   progress.start()
   const token = ++epoch
-  const path = parseHash(location.hash)
+  const path = currentPath()
   const g = guard(path)
   clearDispose()
   const wasEmpty = view.innerHTML === ''
@@ -87,11 +88,11 @@ export async function resolve(): Promise<void> {
       progress.done()
       return
     } else if (g.reason === 'not-found') {
-      if (parseHash(location.hash) !== '/not-found') location.hash = '/not-found'
+      if (currentPath() !== '/not-found') navigate('/not-found')
       else progress.done()
       return
     } else {
-      if (parseHash(location.hash) !== '/forbidden') location.hash = '/forbidden'
+      if (currentPath() !== '/forbidden') navigate('/forbidden')
       else progress.done()
       return
     }

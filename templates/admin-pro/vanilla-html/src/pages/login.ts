@@ -1,7 +1,8 @@
 import { session } from '../store/session'
 import { resolve } from '../router/router'
 import { routes } from '../router/routes'
-import { t } from '../i18n'
+import { onLocaleChange, t } from '../i18n'
+import { navigate } from '../router/mode'
 
 type LoginStyle = 'split' | 'glass'
 
@@ -93,7 +94,7 @@ export function render(el: HTMLElement): () => void {
   form.addEventListener('oas-submit', (e) => {
     const values = (e as CustomEvent<{ values: { name: string; role?: string } }>).detail.values
     session.login(values.name || '用户', values.role === 'viewer' ? 'viewer' : 'admin')
-    location.hash = routes[0].path
+    navigate(routes[0].path)
     void resolve()
   })
 
@@ -101,5 +102,47 @@ export function render(el: HTMLElement): () => void {
     btn.addEventListener('click', () => switchStyle(btn.dataset.style as LoginStyle))
   })
 
-  return () => {}
+  function refreshText(): void {
+    el.querySelector<HTMLElement>('.login-title')!.textContent = t('login.welcome')
+    el.querySelector<HTMLElement>('.login-sub')!.textContent = t('login.subtitle')
+    el.querySelector<HTMLElement>('[data-testid="login-name"]')!.setAttribute(
+      'placeholder',
+      t('login.namePlaceholder'),
+    )
+    el.querySelector<HTMLElement>('[data-testid="login-role"]')!.setAttribute(
+      'options',
+      JSON.stringify([
+        { label: t('users.role.admin'), value: 'admin' },
+        { label: t('profile.roleViewer'), value: 'viewer' },
+      ]),
+    )
+    el.querySelector<HTMLElement>('[data-testid="login-submit"]')!.replaceChildren(
+      `${t('login.submit')} `,
+    )
+    const icon = document.createElement('oas-icon')
+    icon.setAttribute('name', 'arrow-right')
+    icon.setAttribute('size', '14')
+    el.querySelector<HTMLElement>('[data-testid="login-submit"]')!.appendChild(icon)
+    el.querySelector<HTMLElement>('.login-tip')!.textContent = t('login.tip')
+    form.setAttribute(
+      'rules',
+      JSON.stringify({ name: [{ required: true, message: t('login.rule.name') }] }),
+    )
+    // split 版品牌区（glass 版无这些节点，防御式可选链）
+    el.querySelector<HTMLElement>('.login-brand h1')?.replaceChildren(t('login.slogan'))
+    el.querySelector<HTMLElement>('.login-brand-main > p')?.replaceChildren(t('login.sloganSub'))
+    const STAT_KEYS = ['login.statComponents', 'login.statBundle', 'login.statFrameworks']
+    el.querySelectorAll<HTMLElement>('.brand-stat .label').forEach((n, i) => {
+      const k = STAT_KEYS[i]
+      if (k) n.textContent = t(k)
+    })
+    el.querySelector<HTMLElement>('.brand-code')?.replaceChildren(
+      `<oas-button type="primary">${t('common.save')}</oas-button>`,
+    )
+    el.querySelector<HTMLElement>('[data-style="glass"]')?.replaceChildren(t('login.switchGlass'))
+    el.querySelector<HTMLElement>('.glass-slogan')?.replaceChildren(t('login.glassSlogan'))
+    el.querySelector<HTMLElement>('[data-style="split"]')?.replaceChildren(t('login.switchSplit'))
+  }
+
+  return onLocaleChange(refreshText)
 }

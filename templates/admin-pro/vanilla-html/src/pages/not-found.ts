@@ -1,4 +1,5 @@
 import { onLocaleChange, t } from '../i18n'
+import { navigate } from '../router/mode'
 
 export function render(el: HTMLElement): () => void {
   function draw(): void {
@@ -14,11 +15,11 @@ export function render(el: HTMLElement): () => void {
         </div>
       </div>`
     el.querySelector('[data-action="home"]')?.addEventListener('click', () => {
-      location.hash = '#/dashboard'
+      navigate('/dashboard')
     })
     el.querySelector('[data-action="back"]')?.addEventListener('click', () => {
       if (history.length > 1) history.back()
-      else location.hash = '#/dashboard'
+      else navigate('/dashboard')
     })
   }
   draw()

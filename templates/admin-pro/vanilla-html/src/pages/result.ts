@@ -1,5 +1,6 @@
 import { destroyAll } from '@oas-ui/ui/feedback/message'
-import { t } from '../i18n'
+import { onLocaleChange, t } from '../i18n'
+import { navigate } from '../router/mode'
 
 export function render(el: HTMLElement): () => void {
   destroyAll()
@@ -40,7 +41,7 @@ export function render(el: HTMLElement): () => void {
   }
 
   const nav = (path: string): void => {
-    location.hash = path
+    navigate(path)
   }
   el.querySelector<HTMLElement>('[data-testid="result-view-order"]')?.addEventListener(
     'click',
@@ -53,5 +54,22 @@ export function render(el: HTMLElement): () => void {
     nav('/form'),
   )
 
-  return () => {}
+  function refreshText(): void {
+    const result = el.querySelector<HTMLElement>('[data-testid="form-result"]')!
+    if (success) {
+      result.setAttribute('title', t('result.success.title'))
+      result.setAttribute('description', t('result.success.desc', { orderId }))
+      el.querySelector<HTMLElement>('[data-testid="result-view-order"]')!.textContent =
+        t('result.viewOrder')
+      el.querySelector<HTMLElement>('[data-testid="result-reset"]')!.textContent =
+        t('result.createAnother')
+    } else {
+      result.setAttribute('title', t('result.error.title'))
+      result.setAttribute('description', t('result.error.desc'))
+      el.querySelector<HTMLElement>('[data-testid="result-back-form"]')!.textContent =
+        t('result.backForm')
+    }
+  }
+
+  return onLocaleChange(refreshText)
 }

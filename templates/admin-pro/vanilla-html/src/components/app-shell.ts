@@ -1,6 +1,7 @@
 import { message } from '@oas-ui/ui/feedback/message'
 import { listNotifications, markAllRead, markRead, unreadCount } from '../data/notifications'
-import { matchRoute, parseHash, resolve } from '../router/router'
+import { matchRoute, resolve } from '../router/router'
+import { currentPath, href, navigate, onRouteChange } from '../router/mode'
 import { routes, type RouteGroup } from '../router/routes'
 import { HOME_PATH, closeKeys, closeTab, visit } from '../router/tabs'
 import type { TabsView } from '../router/tabs'
@@ -219,8 +220,8 @@ export function mountApp(root: HTMLElement): void {
 
   sidebar.addEventListener('oas-select', (e) => {
     const value = (e as CustomEvent<{ value: string }>).detail.value
-    if (location.hash === `#${value}`) void resolve()
-    else location.hash = value
+    if (currentPath() === value) void resolve()
+    else navigate(value)
   })
 
   themeToggle.addEventListener('click', () => {
@@ -238,10 +239,10 @@ export function mountApp(root: HTMLElement): void {
     if (value === 'logout') {
       session.logout()
       message.info(t('header.loggedOut'))
-      location.hash = routes[0].path
+      navigate(routes[0].path)
       void resolve()
     } else if (value === '/profile') {
-      location.hash = value
+      navigate(value)
     }
   })
 
@@ -259,8 +260,8 @@ export function mountApp(root: HTMLElement): void {
 
   function execCommand(value: string): void {
     if (value.startsWith('/')) {
-      if (location.hash === `#${value}`) void resolve()
-      else location.hash = value
+      if (currentPath() === value) void resolve()
+      else navigate(value)
       return
     }
     if (value === 'action:theme') {
@@ -271,7 +272,7 @@ export function mountApp(root: HTMLElement): void {
     } else if (value === 'action:logout') {
       session.logout()
       message.info(t('header.loggedOut'))
-      location.hash = routes[0].path
+      navigate(routes[0].path)
       void resolve()
     } else if (value === 'action:locale') {
       setLocale(currentLocale() === 'en' ? 'zh-CN' : 'en')
@@ -364,7 +365,7 @@ export function mountApp(root: HTMLElement): void {
   renderNotifications()
 
   function syncNav(): void {
-    const path = parseHash(location.hash)
+    const path = currentPath()
     const route = matchRoute(path)
     const home = routes[0]
     const rootLabel = t('nav.root')
@@ -372,11 +373,11 @@ export function mountApp(root: HTMLElement): void {
     if (route === undefined || route.path === home.path) {
       items = [{ label: rootLabel }, { label: t(home.meta.titleKey) }]
     } else {
-      items = [{ label: rootLabel, href: `#${home.path}` }]
+      items = [{ label: rootLabel, href: href(home.path) }]
       const parentPath = route.meta.parent
       const parent = parentPath ? matchRoute(parentPath) : undefined
       if (parent) {
-        items.push({ label: t(parent.meta.titleKey), href: `#${parentPath}` })
+        items.push({ label: t(parent.meta.titleKey), href: href(parentPath!) })
       }
       items.push({ label: t(route.meta.titleKey) })
     }
@@ -385,7 +386,7 @@ export function mountApp(root: HTMLElement): void {
     sidebar.setAttribute('active', activePath)
   }
 
-  window.addEventListener('hashchange', syncNav)
+  onRouteChange(syncNav)
   syncNav()
 
   let tabsView: TabsView = { keys: [], active: null }
@@ -419,7 +420,7 @@ export function mountApp(root: HTMLElement): void {
       renderTabs()
       return
     }
-    tabsView = visit(tabsView, parseHash(location.hash))
+    tabsView = visit(tabsView, currentPath())
     renderTabs()
   }
 
@@ -427,12 +428,12 @@ export function mountApp(root: HTMLElement): void {
     const res = closeTab(tabsView, key)
     tabsView = res.view
     renderTabs()
-    if (res.navigateTo) location.hash = res.navigateTo
+    if (res.navigateTo) navigate(res.navigateTo)
   }
 
   pageTabs.addEventListener('oas-change', (e) => {
     const value = (e as CustomEvent<{ value: string }>).detail.value
-    if (value && location.hash !== `#${value}`) location.hash = value
+    if (value && currentPath() !== value) navigate(value)
   })
 
   pageTabs.addEventListener('oas-close', (e) => {
@@ -447,12 +448,12 @@ export function mountApp(root: HTMLElement): void {
       const res = closeKeys(tabsView, keys)
       tabsView = res.view
       renderTabs()
-      if (res.navigateTo) location.hash = res.navigateTo
+      if (res.navigateTo) navigate(res.navigateTo)
     })
   })
 
   pageTabs.addEventListener('oas-add', () => {
-    location.hash = routes[0].path
+    navigate(routes[0].path)
   })
 
   pageTabs.addEventListener(
@@ -488,7 +489,7 @@ export function mountApp(root: HTMLElement): void {
     true,
   )
 
-  window.addEventListener('hashchange', syncTabs)
+  onRouteChange(syncTabs)
   syncTabs()
 
   function syncUser(): void {
@@ -522,7 +523,7 @@ export function mountApp(root: HTMLElement): void {
     renderNotifications()
     syncNav()
     syncTabs()
-    const route = matchRoute(parseHash(location.hash))
+    const route = matchRoute(currentPath())
     document.title = route ? `${t(route.meta.titleKey)} · ${t('app.fullname')}` : t('app.fullname')
   }
   refreshLocale()

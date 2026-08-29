@@ -1,7 +1,8 @@
 import { message } from '@oas-ui/ui/feedback/message'
-import { t, currentLocale } from '../i18n'
+import { t, currentLocale, onLocaleChange } from '../i18n'
 import { routes } from '../router/routes'
 import { resolve } from '../router/router'
+import { navigate } from '../router/mode'
 import { session } from '../store/session'
 
 function formatLoginAt(n: number | null): string {
@@ -108,9 +109,38 @@ export function render(el: HTMLElement): () => void {
   el.querySelector('#profile-logout')!.addEventListener('click', () => {
     session.logout()
     message.info(t('header.loggedOut'))
-    location.hash = routes[0].path
+    navigate(routes[0].path)
     void resolve()
   })
 
-  return () => {}
+  function refreshText(): void {
+    const role = user.role === 'admin' ? t('users.role.admin') : t('profile.roleViewer')
+    el.querySelector<HTMLElement>('h1.page-title')!.textContent = t('nav.profile')
+    el.querySelector<HTMLElement>('#profile-role-tag')!.textContent = role
+    el.querySelector<HTMLElement>('#profile-role2')!.textContent = role
+    el.querySelector<HTMLElement>('#profile-login-at')!.textContent = formatLoginAt(session.loginAt)
+    el.querySelector<HTMLElement>('.profile-right')!.setAttribute('title', t('profile.accountInfo'))
+    const DESC_KEYS = ['profile.username', 'profile.role', 'profile.loginAt', 'profile.dataVersion']
+    el.querySelectorAll<HTMLElement>('.profile-right oas-descriptions-item').forEach((n, i) => {
+      const k = DESC_KEYS[i]
+      if (k) n.setAttribute('label', t(k))
+    })
+    el.querySelector<HTMLElement>(
+      '.profile-right oas-descriptions-item:last-child span',
+    )!.textContent = t('profile.demoData')
+    el.querySelector<HTMLElement>('.profile-theme')!.setAttribute('title', t('profile.appearance'))
+    const THEME_KEYS: Array<[string, string, string]> = [
+      ['light', 'profile.theme.light', 'cmd.light'],
+      ['dark', 'profile.theme.dark', 'cmd.dark'],
+      ['system', 'profile.theme.system', 'cmd.system'],
+    ]
+    for (const [theme, ariaKey, labelKey] of THEME_KEYS) {
+      const btn = el.querySelector<HTMLElement>(`.theme-preview[data-theme="${theme}"]`)!
+      btn.setAttribute('aria-label', t(ariaKey))
+      btn.querySelector<HTMLElement>('.preview-label')!.textContent = t(labelKey)
+    }
+    el.querySelector<HTMLElement>('#profile-logout')!.textContent = t('header.logout')
+  }
+
+  return onLocaleChange(refreshText)
 }
