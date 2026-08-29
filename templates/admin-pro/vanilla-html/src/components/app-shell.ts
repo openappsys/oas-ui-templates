@@ -311,12 +311,6 @@ export function mountApp(root: HTMLElement): void {
       if (currentPath() !== value) navigate(value)
       closeMenuPopover()
     })
-    nav.addEventListener('oas-change', (e) => {
-      const value = (e as CustomEvent<{ value: string }>).detail.value
-      if (!value) return
-      if (currentPath() !== value) navigate(value)
-      closeMenuPopover()
-    })
   }
   // 点击面板外关闭
   root.addEventListener('pointerdown', (e) => {
