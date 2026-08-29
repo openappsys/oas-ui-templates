@@ -1,3 +1,4 @@
+export const CUSTOM_TOKENS_KEY = 'oas-admin.settings.custom-tokens'
 export const FORM_MODE_KEY = 'oas-admin.form-mode'
 export const DENSITY_KEY = 'oas-admin.settings.table-density'
 export const PAGE_SIZE_KEY = 'oas-admin.settings.page-size'
@@ -92,5 +93,20 @@ export function applySettings(): void {
   if (radius) document.documentElement.style.setProperty('--oas-radius-md', `${radius}px`)
   applyDensity()
   applyFontSize()
+  applyCustomTokens()
   document.documentElement.dataset.tabsBar = readTabsBar() ? 'on' : 'off'
+}
+
+/** 主题编辑器（oas-theme-editor）写入的自定义 token 持久化：启动时重放 */
+export function applyCustomTokens(): void {
+  try {
+    const raw = localStorage.getItem(CUSTOM_TOKENS_KEY)
+    if (!raw) return
+    const map = JSON.parse(raw) as Record<string, string>
+    for (const [k, v] of Object.entries(map)) {
+      document.documentElement.style.setProperty(k, v)
+    }
+  } catch {
+    /* 忽略损坏数据 */
+  }
 }

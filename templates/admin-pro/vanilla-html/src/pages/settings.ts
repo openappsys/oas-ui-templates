@@ -1,8 +1,10 @@
 import '../styles/pages/settings.css'
 import '@oas-ui/ui/form/color-picker'
 import '@oas-ui/ui/form/slider'
+import '@oas-ui/ui/floating/theme-editor'
 import { message } from '@oas-ui/ui/feedback/message'
 import { t } from '../i18n'
+import { applyRouterMode, routerMode } from '../router/mode'
 import {
   DEFAULT_COLOR,
   DEFAULT_RADIUS,
@@ -30,6 +32,7 @@ import {
   readPageSize,
   readRadius,
   readTabsBar,
+  CUSTOM_TOKENS_KEY,
 } from '../settings-init'
 
 const FONT_SIZE_MAP: Record<FontSize, string> = {
@@ -74,6 +77,11 @@ const PAGE_SIZE_OPTIONS = (): Array<{ label: string; value: string }> =>
     label: t('settings.pageSizeItem', { count: n }),
     value: String(n),
   }))
+
+const ROUTER_MODE_OPTIONS = (): Array<{ label: string; value: string }> => [
+  { label: t('settings.general.routerModeHash'), value: 'hash' },
+  { label: t('settings.general.routerModeHistory'), value: 'history' },
+]
 
 const NOTIF_ROWS = (): Array<{ key: string; label: string }> => [
   { key: 'orders', label: t('settings.notif.orders') },
@@ -211,6 +219,15 @@ export function render(el: HTMLElement): () => void {
         </div>
         <oas-switch data-testid="tabs-bar-toggle"${readTabsBar() ? ' checked' : ''}></oas-switch>
       </div>
+    </div>
+    <div class="setting-group">
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">${t('settings.general.routerModeLabel')}</div>
+          <div class="setting-hint">${t('settings.general.routerModeHint')}</div>
+        </div>
+        <oas-select data-testid="router-mode" options='${JSON.stringify(ROUTER_MODE_OPTIONS())}' value="${routerMode()}"></oas-select>
+      </div>
     </div>`)
 
   notification.set(`
@@ -265,6 +282,11 @@ export function render(el: HTMLElement): () => void {
       </div>
     </div>
     <div class="setting-group">
+      <div class="setting-group-title">${t('settings.appearance.themeEditorTitle')}</div>
+      <div class="setting-hint">${t('settings.appearance.themeEditorHint')}</div>
+      <oas-theme-editor data-testid="settings-theme-editor" id="settings-theme-editor"></oas-theme-editor>
+    </div>
+    <div class="setting-group">
       <oas-button data-testid="appearance-reset" type="default">${t('settings.appearance.reset')}</oas-button>
     </div>`)
 
@@ -278,6 +300,22 @@ export function render(el: HTMLElement): () => void {
   const radiusSlider = appearance.node.querySelector<HTMLElement>('#appearance-radius')!
   const radiusValue = appearance.node.querySelector<HTMLElement>('#radius-value')!
   const resetBtn = appearance.node.querySelector<HTMLElement>('[data-testid="appearance-reset"]')!
+  const themeEditor = appearance.node.querySelector<HTMLElement>('#settings-theme-editor')!
+
+  // 主题编辑器：每次修改把 token 持久化，重启后由 settings-init.applyCustomTokens 重放
+  themeEditor?.addEventListener('oas-change', (e) => {
+    const { token, value } = (e as CustomEvent<{ token: string; value: string }>).detail
+    if (typeof token !== 'string' || !token.startsWith('--')) return
+    try {
+      const raw = localStorage.getItem(CUSTOM_TOKENS_KEY)
+      const map = raw ? (JSON.parse(raw) as Record<string, string>) : {}
+      if (value == null || value === '') delete map[token]
+      else map[token] = value
+      localStorage.setItem(CUSTOM_TOKENS_KEY, JSON.stringify(map))
+    } catch {
+      /* ignore */
+    }
+  })
 
   formModeGroup.addEventListener('oas-change', (e) => {
     const radio = e.composedPath()[0] as HTMLElement
@@ -322,6 +360,15 @@ export function render(el: HTMLElement): () => void {
     message.success(t('common.saved'))
   })
 
+  general.node
+    .querySelector<HTMLElement>('[data-testid="router-mode"]')!
+    .addEventListener('oas-change', (e) => {
+      const mode = (e as CustomEvent<{ value: string }>).detail.value
+      if (mode !== 'hash' && mode !== 'history') return
+      if (mode === routerMode()) return
+      applyRouterMode(mode)
+    })
+
   notifMatrix.addEventListener('oas-change', (e) => {
     const sw = e.composedPath()[0] as HTMLElement
     const key = sw.getAttribute('data-key')
@@ -354,11 +401,13 @@ export function render(el: HTMLElement): () => void {
     localStorage.removeItem(`${THEME_PREFIX}light`)
     localStorage.removeItem(`${THEME_PREFIX}dark`)
     localStorage.removeItem(RADIUS_KEY)
+    localStorage.removeItem(CUSTOM_TOKENS_KEY)
     document.documentElement.style.removeProperty('--oas-color-primary')
     document.documentElement.style.removeProperty('--oas-radius-md')
     colorPicker.setAttribute('value', DEFAULT_COLOR)
     radiusSlider.setAttribute('value', String(DEFAULT_RADIUS))
     radiusValue.textContent = `${DEFAULT_RADIUS}px`
+    ;(themeEditor as unknown as { reset?: () => void }).reset?.()
     message.success(t('settings.appearance.resetDone'))
   })
 

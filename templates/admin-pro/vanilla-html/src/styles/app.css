@@ -1302,11 +1302,6 @@ oas-card:not([title])::part(header) {
   width: 140px;
 }
 
-.product-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: var(--oas-space-3);
-}
 .product-card {
   display: flex;
   flex-direction: column;

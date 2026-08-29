@@ -1,6 +1,8 @@
 import { message } from '@oas-ui/ui/feedback/message'
 import type { OASTable, TableColumn } from '@oas-ui/ui/data/table'
+import '@oas-ui/ui/data/masonry'
 import { onLocaleChange, t } from '../i18n'
+import { navigate } from '../router/mode'
 import { listCategories } from '../data/categories'
 import {
   createProduct,
@@ -257,7 +259,7 @@ export function render(el: HTMLElement): () => void {
           </oas-popconfirm>
         </oas-space>
       </div>
-      <div class="product-grid" data-testid="product-grid"${state.view === 'table' ? ' hidden' : ''}></div>
+      <oas-masonry class="product-grid" data-testid="product-grid" columns="4" gap="12px"${state.view === 'table' ? ' hidden' : ''}></oas-masonry>
       <div class="table-wrap products-table-wrap"${state.view === 'cards' ? ' hidden' : ''}>
         <oas-table data-testid="product-table" row-key="id" checkable stripe></oas-table>
         <div class="product-list-empty" data-testid="product-empty" hidden>
@@ -447,7 +449,7 @@ export function render(el: HTMLElement): () => void {
     if (state.formMode === 'page') {
       if (row) sessionStorage.setItem('product-edit-id', String(row.id))
       else sessionStorage.removeItem('product-edit-id')
-      location.hash = '/products/edit'
+      navigate('/products/edit')
       return
     }
     state.editingId = row?.id ?? null
