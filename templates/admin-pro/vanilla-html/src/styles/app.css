@@ -1637,11 +1637,13 @@ oas-sidebar[collapsed]::part(group) {
     overflow: hidden;
   }
   /* 移动端：menubar/navigation 的侧栏/顶部菜单收起，统一由 ☰ 弹出抽屉导航（避免菜单仍显示 + ☰ 并存）。
-     仅限菜单条/多级导航（:has() 判定），sidebar 的 .nav-sider 内嵌 oas-sider，移动端走自身 drawer（oas-sider 收窄为 0 由上方规则处理），不可整容器隐藏 */
+     仅限菜单条/多级导航（:has() 判定），sidebar 的 .nav-sider 内嵌 oas-sider，移动端走自身 drawer（oas-sider 收窄为 0 由上方规则处理），不可整容器隐藏。
+     .header-nav-menubar（top-head 塞 header 的菜单）同样收起，只留 ☰ */
   .nav-sider:has(> oas-menubar),
   .nav-sider:has(> oas-navigation-menu),
   .top-nav-bar:has(> oas-menubar),
-  .top-nav-bar:has(> oas-navigation-menu) {
+  .top-nav-bar:has(> oas-navigation-menu),
+  .header-nav-menubar {
     display: none;
   }
   .global-search {
