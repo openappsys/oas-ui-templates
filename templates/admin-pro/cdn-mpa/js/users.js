@@ -92,7 +92,9 @@ function renderUsers() {
 
   function openModal(editing) {
     state.editingId = editing?.id ?? null
-    document.querySelector('#form-title').textContent = t(editing ? 'users.formEdit' : 'users.formNew')
+    document.querySelector('#form-title').textContent = t(
+      editing ? 'users.formEdit' : 'users.formNew',
+    )
     document.querySelector('[data-testid="uf-name"]').setAttribute('value', editing?.name ?? '')
     document.querySelector('[data-testid="uf-email"]').setAttribute('value', editing?.email ?? '')
     modal.setAttribute('visible', '')
@@ -107,7 +109,9 @@ function renderUsers() {
     state.page = 1
     renderTable()
   })
-  document.querySelector('[data-testid="user-new"]').addEventListener('click', () => openModal(null))
+  document
+    .querySelector('[data-testid="user-new"]')
+    .addEventListener('click', () => openModal(null))
   pager.addEventListener('oas-change', (e) => {
     state.page = Number(e.detail.page ?? 1)
     renderTable()
