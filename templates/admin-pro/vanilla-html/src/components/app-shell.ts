@@ -7,6 +7,12 @@ import { HOME_PATH, closeKeys, closeTab, visit } from '../router/tabs'
 import type { TabsView } from '../router/tabs'
 import { session } from '../store/session'
 import { currentLocale, onLocaleChange, setLocale, t } from '../i18n'
+import {
+  navConfig,
+  readSidebarCollapsed,
+  writeSidebarCollapsed,
+  type MenuStyle,
+} from '../layout-config'
 
 const GROUP_ORDER: RouteGroup[] = ['nav.output', 'nav.business', 'nav.system', 'nav.demo']
 const GROUP_KEYS: Record<RouteGroup, string> = {
@@ -38,6 +44,38 @@ function sidebarItems(): string {
       group: groupLabel(r.meta.group),
     }))
   return JSON.stringify(items)
+}
+
+/** 顶部/竖排菜单（menubar / navigation-menu）：按分组映射成「分组 → 子菜单下拉」 */
+function groupMenuItems(): string {
+  const groups = new Map<string, Array<{ label: string; value: string; icon?: string }>>()
+  for (const r of routes) {
+    if (r.meta.hidden) continue
+    const g = groupLabel(r.meta.group)
+    const items = groups.get(g) ?? []
+    items.push({ label: t(r.meta.titleKey), value: r.path, icon: r.meta.icon })
+    groups.set(g, items)
+  }
+  return JSON.stringify(
+    Array.from(groups.entries()).map(([label, children]) => ({
+      label,
+      value: '',
+      children,
+    })),
+  )
+}
+
+/** 按「形态 × 位置」渲染菜单组件内容（不含 slot 容器，供初挂载与 reapply 复用） */
+/** 生成菜单组件的纯 HTML（不带 slot 容器）：top 放 header 内、left/right 放 sider 槽 */
+function menuHTML(vertical: boolean): string {
+  const { style } = navConfig()
+  if (style === 'menubar') {
+    return `<oas-menubar id="nav" orientation="${vertical ? 'vertical' : 'horizontal'}" items='${groupMenuItems()}'></oas-menubar>`
+  }
+  if (style === 'navigation') {
+    return `<oas-navigation-menu id="nav" orientation="${vertical ? 'vertical' : 'horizontal'}" items='${groupMenuItems()}'></oas-navigation-menu>`
+  }
+  return `<oas-sider id="nav-sider"><oas-sidebar id="nav" items='${sidebarItems()}'${readSidebarCollapsed() ? ' collapsed' : ''}></oas-sidebar></oas-sider>`
 }
 
 function userMenuItems(): string {
@@ -143,48 +181,48 @@ function safeFullscreen(p: Promise<void> | undefined): void {
 }
 
 export function mountApp(root: HTMLElement): void {
+  const isTopMenu = navConfig().position === 'top'
   root.innerHTML = `
-    <oas-layout class="app" viewport>
-      <header class="app-header" slot="header">
-        <oas-button id="nav-toggle" class="nav-toggle" type="text" icon="menu" aria-label="${t('header.openMenu')}"></oas-button>
-        ${LOGO}
-        <span class="spacer"></span>
-        <div class="global-search">
-          <oas-input id="global-search" placeholder="${t('header.search')}" prefix-icon="search" readonly></oas-input>
-          <span class="kbd-hint">/</span>
-        </div>
-        <span class="spacer"></span>
-        <button id="fullscreen-toggle" class="icon-btn fullscreen-btn" type="button" title="${t('header.fullscreen')}" aria-label="${t('header.fullscreen')}" aria-pressed="false">
-          <oas-icon size="18" class="fs-expand">${EXPAND_ICON}</oas-icon>
-          <oas-icon size="18" class="fs-compress">${COMPRESS_ICON}</oas-icon>
-        </button>
-        <button id="theme-toggle" class="theme-dot" type="button" title="${t('header.theme')}" aria-label="${t('header.theme')}"></button>
-        <oas-dropdown id="lang-menu" placement="bottom" arrow-point-at-center trigger="hover click" value="${currentLocale()}" items='${LANG_ITEMS}'>
-          <button id="lang-toggle" class="icon-btn" type="button" title="${t('cmd.locale')}" aria-label="${t('cmd.locale')}" aria-haspopup="menu">
-            <oas-icon size="18">${GLOBE_ICON}</oas-icon>
+      <oas-layout class="app" viewport side="${navConfig().position}">
+        <header class="app-header" slot="header">
+          <oas-button id="nav-toggle" class="nav-toggle" type="text" icon="menu" aria-label="${t('header.openMenu')}"></oas-button>
+          ${LOGO}
+          ${isTopMenu ? `<span class="in-header-nav">${menuHTML(false)}</span>` : ''}
+          <span class="spacer"></span>
+          <div class="global-search">
+            <oas-input id="global-search" placeholder="${t('header.search')}" prefix-icon="search" readonly></oas-input>
+            <span class="kbd-hint">/</span>
+          </div>
+          <span class="spacer"></span>
+          <button id="fullscreen-toggle" class="icon-btn fullscreen-btn" type="button" title="${t('header.fullscreen')}" aria-label="${t('header.fullscreen')}" aria-pressed="false">
+            <oas-icon size="18" class="fs-expand">${EXPAND_ICON}</oas-icon>
+            <oas-icon size="18" class="fs-compress">${COMPRESS_ICON}</oas-icon>
           </button>
-        </oas-dropdown>
-        <oas-badge id="notif-badge" value="0" size="small" offset="-2,2">
-          <button id="notif-toggle" class="icon-btn" type="button" title="${t('header.notification')}" aria-label="${t('header.notificationCount', { count: unreadCount() })}">
-            <oas-icon size="18">${BELL_ICON}</oas-icon>
-          </button>
-        </oas-badge>
-        <oas-dropdown id="user-menu" placement="bottom" arrow-point-at-center trigger="hover click" items='${userMenuItems()}'>
-          <oas-avatar id="user-avatar" size="28" aria-label="${t('header.userMenu')}" aria-haspopup="menu"></oas-avatar>
-        </oas-dropdown>
-      </header>
-      <oas-sider slot="sider">
-        <oas-sidebar id="nav" items='${sidebarItems()}'></oas-sidebar>
-      </oas-sider>
-      <div slot="content" class="content-col">
-        <div class="tabs-bar">
-          <oas-tabs id="page-tabs" data-testid="page-tabs" type="card" hide-content context-menu></oas-tabs>
+          <button id="theme-toggle" class="theme-dot" type="button" title="${t('header.theme')}" aria-label="${t('header.theme')}"></button>
+          <oas-dropdown id="lang-menu" placement="bottom" arrow-point-at-center trigger="hover click" value="${currentLocale()}" items='${LANG_ITEMS}'>
+            <button id="lang-toggle" class="icon-btn" type="button" title="${t('cmd.locale')}" aria-label="${t('cmd.locale')}" aria-haspopup="menu">
+              <oas-icon size="18">${GLOBE_ICON}</oas-icon>
+            </button>
+          </oas-dropdown>
+          <oas-badge id="notif-badge" value="0" size="small" offset="-2,2">
+            <button id="notif-toggle" class="icon-btn" type="button" title="${t('header.notification')}" aria-label="${t('header.notificationCount', { count: unreadCount() })}">
+              <oas-icon size="18">${BELL_ICON}</oas-icon>
+            </button>
+          </oas-badge>
+          <oas-dropdown id="user-menu" placement="bottom" arrow-point-at-center trigger="hover click" items='${userMenuItems()}'>
+            <oas-avatar id="user-avatar" size="28" aria-label="${t('header.userMenu')}" aria-haspopup="menu"></oas-avatar>
+          </oas-dropdown>
+        </header>
+        ${isTopMenu ? '' : `<div slot="sider" class="nav-sider">${menuHTML(true)}</div>`}
+        <div slot="content" class="content-col">
+          <div class="tabs-bar">
+            <oas-tabs id="page-tabs" data-testid="page-tabs" type="card" hide-content context-menu></oas-tabs>
+          </div>
+          <div class="crumbs-bar"><oas-breadcrumb id="crumbs"></oas-breadcrumb></div>
+          <main id="view"></main>
+          <footer class="app-foot">${t('app.footer')}</footer>
         </div>
-        <div class="crumbs-bar"><oas-breadcrumb id="crumbs"></oas-breadcrumb></div>
-        <main id="view"></main>
-        <footer class="app-foot">${t('app.footer')}</footer>
-      </div>
-    </oas-layout>
+      </oas-layout>
     <oas-command id="command" hotkey="false"></oas-command>
     <oas-drawer id="notif-drawer" title="${t('header.notification')}" placement="right" size="medium" no-footer>
       <div class="notif-content">
@@ -194,7 +232,26 @@ export function mountApp(root: HTMLElement): void {
         </div>
       </div>
     </oas-drawer>`
-  const sidebar = root.querySelector<HTMLElement>('#nav')!
+  function navEl(): HTMLElement {
+    return root.querySelector<HTMLElement>('#nav')!
+  }
+  const menuStyle = (): MenuStyle => navConfig().style
+  /** 按形态设置菜单 items（sidebar→带分组字段；menubar/navigation→分组下拉） */
+  function setNavItems(): void {
+    const style = menuStyle()
+    const items = style === 'sidebar' ? sidebarItems() : groupMenuItems()
+    navEl().setAttribute('items', items)
+  }
+  /** 按形态映射当前路由高亮：sidebar→active 属性；menubar/navigation→value（组级）+ 子项 active */
+  function applyNavActive(path: string): void {
+    const nav = navEl()
+    const style = menuStyle()
+    if (style === 'sidebar') {
+      nav.setAttribute('active', path)
+    } else {
+      nav.setAttribute('value', path)
+    }
+  }
   const command = root.querySelector<HTMLElement>('#command')!
   const crumbs = root.querySelector<HTMLElement>('#crumbs')!
   const navToggle = root.querySelector<HTMLElement>('#nav-toggle')!
@@ -214,15 +271,31 @@ export function mountApp(root: HTMLElement): void {
   const pageTabs = root.querySelector<HTMLElement>('#page-tabs')!
 
   navToggle.addEventListener('click', () => {
-    if (sidebar.hasAttribute('drawer-open')) (sidebar as any).closeDrawer()
-    else (sidebar as any).openDrawer()
+    // sidebar 专属抽屉逻辑；menubar/navigation 无 drawer（移动端自带收纳）
+    const nav = navEl()
+    if (nav.tagName === 'OAS-SIDEBAR') {
+      if (nav.hasAttribute('drawer-open')) (nav as any).closeDrawer()
+      else (nav as any).openDrawer()
+    }
   })
 
-  sidebar.addEventListener('oas-select', (e) => {
-    const value = (e as CustomEvent<{ value: string }>).detail.value
-    if (currentPath() === value) void resolve()
-    else navigate(value)
-  })
+  function bindNav(): void {
+    const nav = navEl()
+    nav.addEventListener('oas-select', (e) => {
+      const value = (e as CustomEvent<{ value: string }>).detail.value
+      if (!value) return
+      if (currentPath() === value) void resolve()
+      else navigate(value)
+    })
+    // 折叠持久化：仅 sidebar 形态有折叠（collapsed）
+    if (nav.tagName === 'OAS-SIDEBAR') {
+      nav.addEventListener('oas-collapse', (e) => {
+        const collapsed = (e as CustomEvent<{ collapsed: boolean }>).detail?.collapsed
+        if (typeof collapsed === 'boolean') writeSidebarCollapsed(collapsed)
+      })
+    }
+  }
+  bindNav()
 
   themeToggle.addEventListener('click', () => {
     const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'
@@ -383,7 +456,7 @@ export function mountApp(root: HTMLElement): void {
     }
     crumbs.setAttribute('items', JSON.stringify(items))
     const activePath = route === undefined ? '' : (route.meta.parent ?? route.path)
-    sidebar.setAttribute('active', activePath)
+    applyNavActive(activePath)
   }
 
   onRouteChange(syncNav)
@@ -518,7 +591,7 @@ export function mountApp(root: HTMLElement): void {
     notifToggle.setAttribute('aria-label', t('header.notificationCount', { count: unreadCount() }))
     userAvatar.setAttribute('aria-label', t('header.userMenu'))
     footer.textContent = t('app.footer')
-    sidebar.setAttribute('items', sidebarItems())
+    setNavItems()
     command.setAttribute('items', JSON.stringify(buildCommandItems()))
     renderNotifications()
     syncNav()
@@ -528,4 +601,30 @@ export function mountApp(root: HTMLElement): void {
   }
   refreshLocale()
   onLocaleChange(refreshLocale)
+
+  // 设置中心切换菜单位置/形态：实时重建菜单（top 放 header 内，否则放 sider 槽），不全页刷新
+  function reapplyNavConfig(): void {
+    const isTop = navConfig().position === 'top'
+    root.querySelector('.in-header-nav')?.remove()
+    root.querySelector('oas-layout > [slot="sider"]')?.remove()
+    if (isTop) {
+      const wrap = document.createElement('span')
+      wrap.className = 'in-header-nav'
+      wrap.innerHTML = menuHTML(false)
+      root.querySelector<HTMLElement>('.app-header .oas-logo')?.after(wrap)
+    } else {
+      const wrap = document.createElement('div')
+      wrap.setAttribute('slot', 'sider')
+      wrap.className = 'nav-sider'
+      wrap.innerHTML = menuHTML(true)
+      root
+        .querySelector('oas-layout')
+        ?.insertBefore(wrap, root.querySelector('oas-layout > [slot="content"]'))
+    }
+    const layout = root.querySelector<HTMLElement>('oas-layout')
+    if (layout) layout.setAttribute('side', navConfig().position)
+    bindNav()
+    syncNav()
+  }
+  window.addEventListener('oas:navconfig-change', reapplyNavConfig)
 }

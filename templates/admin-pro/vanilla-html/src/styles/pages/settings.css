@@ -96,3 +96,80 @@
   font-size: var(--oas-font-size-sm);
   color: var(--oas-color-text-primary);
 }
+
+.menu-matrix {
+  display: grid;
+  grid-template-columns: auto repeat(3, 1fr);
+  gap: var(--oas-space-2);
+  align-items: stretch;
+}
+.menu-matrix-corner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--oas-color-text-secondary);
+  font-size: var(--oas-font-size-xs);
+  padding: 4px;
+}
+.menu-matrix-head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--oas-font-size-sm);
+  font-weight: 500;
+  color: var(--oas-color-text-secondary);
+  padding: 4px;
+  text-align: center;
+}
+.menu-matrix-rowlabel {
+  display: flex;
+  align-items: center;
+  font-size: var(--oas-font-size-sm);
+  color: var(--oas-color-text-primary);
+  padding: 4px var(--oas-space-3);
+  white-space: nowrap;
+}
+.menu-matrix-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-sm);
+  background: var(--oas-color-bg-hover);
+  color: var(--oas-color-text-secondary);
+  cursor: pointer;
+  font-size: var(--oas-font-size-md);
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+}
+.menu-matrix-cell::after {
+  content: "";
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--oas-color-border-strong);
+  box-sizing: border-box;
+}
+.menu-matrix-cell:not(.is-disabled):hover {
+  border-color: var(--oas-color-primary);
+  color: var(--oas-color-primary);
+}
+.menu-matrix-cell[aria-checked="true"] {
+  border-color: var(--oas-color-primary);
+  background: var(--oas-color-primary-soft, rgba(24, 144, 255, 0.08));
+  color: var(--oas-color-primary);
+}
+.menu-matrix-cell[aria-checked="true"]::after {
+  border-color: var(--oas-color-primary);
+  border-width: 5px;
+}
+.menu-matrix-cell.is-disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.menu-matrix-cell.is-disabled::after {
+  border-color: var(--oas-color-border-strong);
+}

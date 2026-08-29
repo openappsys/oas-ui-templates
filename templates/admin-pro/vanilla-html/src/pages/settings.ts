@@ -5,6 +5,8 @@ import '@oas-ui/ui/floating/theme-editor'
 import { message } from '@oas-ui/ui/feedback/message'
 import { t } from '../i18n'
 import { applyRouterMode, routerMode } from '../router/mode'
+import { canPosition, navConfig, setMenuPosition, setMenuStyle } from '../layout-config'
+import type { MenuPosition, MenuStyle } from '../layout-config'
 import {
   DEFAULT_COLOR,
   DEFAULT_RADIUS,
@@ -82,6 +84,36 @@ const ROUTER_MODE_OPTIONS = (): Array<{ label: string; value: string }> => [
   { label: t('settings.general.routerModeHash'), value: 'hash' },
   { label: t('settings.general.routerModeHistory'), value: 'history' },
 ]
+
+const MENU_STYLES_META: Array<{ value: MenuStyle; label: string }> = [
+  { value: 'sidebar', label: 'menuStyleSidebar' },
+  { value: 'menubar', label: 'menuStyleMenubar' },
+  { value: 'navigation', label: 'menuStyleNavigation' },
+]
+const MENU_POSITIONS_META: Array<{ value: MenuPosition; label: string }> = [
+  { value: 'left', label: 'menuLeft' },
+  { value: 'right', label: 'menuRight' },
+  { value: 'top', label: 'menuTop' },
+]
+
+/** 9 宫格菜单矩阵表头（位置列名） */
+const MENU_MATRIX_HEADER = `<div class="menu-matrix-corner"></div>${MENU_POSITIONS_META.map(
+  (p) => `<div class="menu-matrix-head">${t(`settings.general.${p.label}`)}</div>`,
+).join('')}`
+
+/** 9 宫格菜单矩阵行：行=形态、列=位置；sidebar+top 不可选（禁用） */
+const MENU_MATRIX_ROWS = (): string =>
+  MENU_STYLES_META.map(
+    (s) =>
+      `<div class="menu-matrix-rowlabel">${t(`settings.general.${s.label}`)}</div>${MENU_POSITIONS_META.map(
+        (p) => {
+          const ok = canPosition(s.value, p.value)
+          return `<button type="button" class="menu-matrix-cell${ok ? '' : ' is-disabled'}" role="radio" data-style="${s.value}" data-position="${p.value}"${ok ? '' : ' disabled'} aria-label="${t(`settings.general.${s.label}`)} · ${t(`settings.general.${p.label}`)}"></button>`
+        },
+      ).join('')}`,
+  ).join('')
+
+/** 9 宫格菜单矩阵：行=形态、列=位置；sidebar+top 不可选（禁用），见 MENU_MATRIX_ROWS/HEADER */
 
 const NOTIF_ROWS = (): Array<{ key: string; label: string }> => [
   { key: 'orders', label: t('settings.notif.orders') },
@@ -228,6 +260,14 @@ export function render(el: HTMLElement): () => void {
         </div>
         <oas-select data-testid="router-mode" options='${JSON.stringify(ROUTER_MODE_OPTIONS())}' value="${routerMode()}"></oas-select>
       </div>
+    </div>
+    <div class="setting-group">
+      <div class="setting-label setting-group-title">${t('settings.general.menuStyleLabel')}</div>
+      <div class="setting-hint">${t('settings.general.menuStyleHint')}</div>
+      <div class="menu-matrix" data-testid="menu-matrix" role="radiogroup" aria-label="${t('settings.general.menuStyleLabel')}">
+        ${MENU_MATRIX_HEADER}
+        ${MENU_MATRIX_ROWS()}
+      </div>
     </div>`)
 
   notification.set(`
@@ -368,6 +408,34 @@ export function render(el: HTMLElement): () => void {
       if (mode === routerMode()) return
       applyRouterMode(mode)
     })
+
+  const matrix = general.node.querySelector<HTMLElement>('[data-testid="menu-matrix"]')!
+  const emitNavConfigChange = (): void => {
+    window.dispatchEvent(new CustomEvent('oas:navconfig-change'))
+  }
+  const refreshMatrixMark = (): void => {
+    const { style, position } = navConfig()
+    matrix.querySelectorAll<HTMLElement>('.menu-matrix-cell').forEach((cell) => {
+      cell.setAttribute(
+        'aria-checked',
+        String(cell.dataset.style === style && cell.dataset.position === position),
+      )
+    })
+  }
+
+  matrix.addEventListener('click', (e) => {
+    const cell = (e.target as HTMLElement).closest<HTMLElement>('.menu-matrix-cell')
+    if (!cell || cell.hasAttribute('disabled')) return
+    const style = cell.dataset.style as MenuStyle
+    const position = cell.dataset.position as MenuPosition
+    if (!canPosition(style, position)) return
+    setMenuStyle(style)
+    setMenuPosition(position)
+    refreshMatrixMark()
+    emitNavConfigChange()
+  })
+
+  refreshMatrixMark()
 
   notifMatrix.addEventListener('oas-change', (e) => {
     const sw = e.composedPath()[0] as HTMLElement

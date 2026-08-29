@@ -91,6 +91,20 @@ oas-sidebar::part(toggle) {
   border-bottom: 1px solid var(--oas-color-border);
 }
 
+/* header 内顶部菜单条（top 模式）：撑满 logo 与 search 之间；下拉需溢出，故不裁剪 */
+.in-header-nav {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: visible;
+}
+/* sider 槽菜单容器（left/right 模式）：填满轨道高度 */
+.nav-sider {
+  height: 100%;
+  min-height: 0;
+}
+
 @media (max-width: 768px) {
   .app-header {
     padding-left: var(--oas-space-4);
