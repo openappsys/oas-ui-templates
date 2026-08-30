@@ -46,15 +46,23 @@ function sidebarItems(): string {
   return JSON.stringify(items)
 }
 
-/** 顶部/竖排菜单（menubar / navigation-menu）：顶级=分组、children=组内路由，点击弹出子菜单（业界后台通行做法）。
- *  active 字段标记当前路由高亮（组件靠 items.active 渲染 aria-current/高亮类，非元素 value） */
-function groupMenuItems(activePath: string): string {
-  const groups = new Map<string, Array<{ label: string; value: string; icon?: string; active?: boolean }>>()
+/** 顶部/竖排菜单（menubar / navigation-menu）：顶级=分组、children=组内路由，点击弹出子菜单。
+ *  active 字段标记当前路由高亮。
+ *  includeHref：仅 navigation 需要（卡片用 <a href> 渲染，无 href 会落到 '#' 致点击被 <a> 默认跳转
+ *  重置成 '#'，丢 #/settings）；menubar 子项是 li（走 select→navigate 本就正常）绝不传，保持原样 */
+function groupMenuItems(activePath: string, includeHref: boolean): string {
+  const groups = new Map<string, Array<{ label: string; value: string; icon?: string; active?: boolean; href?: string }>>()
   for (const r of routes) {
     if (r.meta.hidden) continue
     const g = groupLabel(r.meta.group)
     const items = groups.get(g) ?? []
-    items.push({ label: t(r.meta.titleKey), value: r.path, icon: r.meta.icon, active: r.path === activePath })
+    items.push({
+      label: t(r.meta.titleKey),
+      value: r.path,
+      icon: r.meta.icon,
+      active: r.path === activePath,
+      ...(includeHref ? { href: href(r.path) } : {}),
+    })
     groups.set(g, items)
   }
   return JSON.stringify(
@@ -71,10 +79,10 @@ function groupMenuItems(activePath: string): string {
 function menuHTML(vertical: boolean, activePath: string): string {
   const { style } = navConfig()
   if (style === 'menubar') {
-    return `<oas-menubar id="nav" orientation="${vertical ? 'vertical' : 'horizontal'}" items='${groupMenuItems(activePath)}'></oas-menubar>`
+    return `<oas-menubar id="nav" orientation="${vertical ? 'vertical' : 'horizontal'}" items='${groupMenuItems(activePath, false)}'></oas-menubar>`
   }
   if (style === 'navigation') {
-    return `<oas-navigation-menu id="nav" orientation="${vertical ? 'vertical' : 'horizontal'}" items='${groupMenuItems(activePath)}'></oas-navigation-menu>`
+    return `<oas-navigation-menu id="nav" orientation="${vertical ? 'vertical' : 'horizontal'}" items='${groupMenuItems(activePath, true)}'></oas-navigation-menu>`
   }
   return `<oas-sider id="nav-sider"><oas-sidebar id="nav" items='${sidebarItems()}'${readSidebarCollapsed() ? ' collapsed' : ''}></oas-sidebar></oas-sider>`
 }
@@ -241,7 +249,7 @@ export function mountApp(root: HTMLElement): void {
   /** 按形态设置菜单 items（sidebar→分组字段；navigation→分组下拉 + active 高亮） */
   function setNavItems(activePath: string): void {
     const style = menuStyle()
-    const items = style === 'sidebar' ? sidebarItems() : groupMenuItems(activePath)
+    const items = style === 'sidebar' ? sidebarItems() : groupMenuItems(activePath, style === 'navigation')
     navEl().setAttribute('items', items)
   }
   /** 按形态映射当前路由高亮（各组件高亮机制不同，须分开处理，避免 navigation-menu 把 value 当「已展开面板」）：
@@ -296,14 +304,14 @@ export function mountApp(root: HTMLElement): void {
     }
     menuPopover.hidden = false
     const isMenuBar = menuStyle() === 'menubar'
-    const items = groupMenuItems(currentPath())
+    const items = groupMenuItems(currentPath(), !isMenuBar)
     menuPopover.innerHTML = isMenuBar
       ? `<oas-menubar id="nav-popover" orientation="vertical" trigger="click" items='${items}'></oas-menubar>`
       : `<oas-navigation-menu id="nav-popover" orientation="vertical" items='${items}'></oas-navigation-menu>`
     const nav = popoverNav()
     // navigation 浮层测量坍缩兜底：挂载稳定后重设 items 触发重新测量，确保面板有真实宽高
     if (!isMenuBar) {
-      requestAnimationFrame(() => nav.setAttribute('items', groupMenuItems(currentPath())))
+      requestAnimationFrame(() => nav.setAttribute('items', groupMenuItems(currentPath(), true)))
     }
     nav.addEventListener('oas-select', (e) => {
       const value = (e as CustomEvent<{ value: string }>).detail.value
