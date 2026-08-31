@@ -1280,10 +1280,6 @@ oas-table::part(table) {
   margin-top: var(--oas-space-3);
 }
 
-oas-card:not([title])::part(header) {
-  display: none;
-}
-
 .detail-header {
   display: flex;
   align-items: center;
