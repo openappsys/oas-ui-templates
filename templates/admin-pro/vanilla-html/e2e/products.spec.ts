@@ -77,9 +77,14 @@ test('设置中心：通用页切换表单呈现方式写入 localStorage', asyn
   const errors = await noConsoleErrors(page)
   await login(page, '张伟', 'admin')
   await page.locator('#nav').getByText('设置中心').click()
-  await expect(page.getByTestId('settings-tabs')).toHaveAttribute('active', 'general')
+  // 表单呈现方式在「数据与列表」tab
+  await page.getByTestId('settings-tabs').getByText('数据与列表', { exact: true }).click()
+  await expect(page.getByTestId('settings-tabs')).toHaveAttribute('active', 'data')
   await page.getByTestId('form-mode-group').getByText('对话框').click()
   expect(await page.evaluate(() => localStorage.getItem('oas-admin.form-mode'))).toBe('dialog')
+  // 密度与字号在「外观」tab
+  await page.getByTestId('settings-tabs').getByText('外观', { exact: true }).click()
+  await expect(page.getByTestId('settings-tabs')).toHaveAttribute('active', 'appearance')
   await page.getByTestId('density-group').getByText('紧凑').click()
   expect(await page.evaluate(() => localStorage.getItem('oas-admin.settings.table-density'))).toBe(
     'compact',
@@ -97,7 +102,9 @@ test('设置中心：关闭多页签栏立即生效，再开启恢复', async ({
   await expect(page.locator('#page-tabs')).toBeVisible()
 
   await page.locator('#nav').getByText('设置中心').click()
-  await expect(page.getByTestId('settings-tabs')).toHaveAttribute('active', 'general')
+  // 多页签栏在「布局与导航」tab
+  await page.getByTestId('settings-tabs').getByText('布局与导航', { exact: true }).click()
+  await expect(page.getByTestId('settings-tabs')).toHaveAttribute('active', 'layout')
   await page.getByTestId('tabs-bar-toggle').click()
   expect(await page.evaluate(() => localStorage.getItem('oas-admin.settings.tabs-bar'))).toBe(
     'false',
@@ -109,6 +116,7 @@ test('设置中心：关闭多页签栏立即生效，再开启恢复', async ({
   await expect(page.locator('#view')).toContainText('订单管理')
 
   await page.locator('#nav').getByText('设置中心').click()
+  await page.getByTestId('settings-tabs').getByText('布局与导航', { exact: true }).click()
   await page.getByTestId('tabs-bar-toggle').click()
   expect(await page.evaluate(() => localStorage.getItem('oas-admin.settings.tabs-bar'))).toBe(
     'true',
@@ -122,11 +130,14 @@ test('设置中心：字号较大档位写入 localStorage 且 reload 后保持�
   const errors = await noConsoleErrors(page)
   await login(page, '张伟', 'admin')
   await page.locator('#nav').getByText('设置中心').click()
-  await expect(page.getByTestId('settings-tabs')).toHaveAttribute('active', 'general')
+  // 字号在「外观」tab
+  await page.getByTestId('settings-tabs').getByText('外观', { exact: true }).click()
+  await expect(page.getByTestId('settings-tabs')).toHaveAttribute('active', 'appearance')
   await page.getByTestId('font-size-group').getByText('较大').click()
   expect(await page.evaluate(() => localStorage.getItem('oas-admin.settings.font-size'))).toBe('lg')
   await page.reload()
-  await expect(page.getByTestId('settings-tabs')).toHaveAttribute('active', 'general')
+  await page.getByTestId('settings-tabs').getByText('外观', { exact: true }).click()
+  await expect(page.getByTestId('settings-tabs')).toHaveAttribute('active', 'appearance')
   await expect(page.locator('#font-size-group oas-radio[checked]')).toContainText('较大')
   await page.getByTestId('font-size-group').getByText('特大').click()
   expect(await page.evaluate(() => localStorage.getItem('oas-admin.settings.font-size'))).toBe('xl')
@@ -137,7 +148,7 @@ test('设置中心：外观页主题色即时作用于 --oas-color-primary', asy
   const errors = await noConsoleErrors(page)
   await login(page, '张伟', 'admin')
   await page.locator('#nav').getByText('设置中心').click()
-  await page.getByTestId('settings-tabs').getByText('外观').click()
+  await page.getByTestId('settings-tabs').getByText('外观', { exact: true }).click()
   const picker = page.getByTestId('appearance-color')
   await picker.locator('[part="trigger"]').click()
   await picker.locator('[part="preset"]').nth(1).click()

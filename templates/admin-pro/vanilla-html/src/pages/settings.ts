@@ -3,6 +3,7 @@ import '@oas-ui/ui/form/color-picker'
 import '@oas-ui/ui/form/slider'
 import '@oas-ui/ui/floating/theme-editor'
 import { message } from '@oas-ui/ui/feedback/message'
+import { modal } from '@oas-ui/ui/feedback/modal'
 import { t } from '../i18n'
 import { applyRouterMode, routerMode } from '../router/mode'
 import { canPosition, navConfig, setMenuPosition, setMenuStyle } from '../layout-config'
@@ -49,9 +50,10 @@ const FONT_SIZE_ITEMS = (): Array<{ label: string; value: FontSize }> =>
   FONT_SIZE_OPTIONS.map((o) => ({ label: t(FONT_SIZE_MAP[o.value]), value: o.value }))
 
 const TABS = (): Array<{ label: string; value: string }> => [
-  { label: t('settings.tab.general'), value: 'general' },
-  { label: t('settings.tab.notification'), value: 'notification' },
   { label: t('settings.tab.appearance'), value: 'appearance' },
+  { label: t('settings.tab.layout'), value: 'layout' },
+  { label: t('settings.tab.data'), value: 'data' },
+  { label: t('settings.tab.notification'), value: 'notification' },
 ]
 
 const FORM_MODE_OPTIONS = (): Array<{ label: string; value: FormMode; desc: string }> => [
@@ -157,9 +159,10 @@ export function render(el: HTMLElement): () => void {
     }
   }
 
-  const general = panel('general')
-  const notification = panel('notification')
   const appearance = panel('appearance')
+  const layout = panel('layout')
+  const data = panel('data')
+  const notification = panel('notification')
 
   el.innerHTML = `
     <div class="page settings-page">
@@ -170,16 +173,17 @@ export function render(el: HTMLElement): () => void {
         </div>
         <oas-segmented id="settings-tabs-layout" data-testid="settings-tabs-layout" value="${readTabLayout()}" options='${JSON.stringify(TAB_LAYOUT_OPTIONS())}'></oas-segmented>
       </div>
-      <oas-card class="settings-card" title="${t('settings.cardTitle')}"></oas-card>
+      <oas-card class="settings-card"></oas-card>
     </div>`
 
   const card = el.querySelector<HTMLElement>('.settings-card')!
   card.appendChild(tabs)
   // 标准 oas-tabs 结构：内容作为 oas-tab-panel 子元素（slot 投射），oas-tabs 自动管理 tab 头部 + 面板显隐 + 位置（left/right）
   const defs = [
-    { value: 'general', node: general.node, titleKey: 'settings.tab.general' },
-    { value: 'notification', node: notification.node, titleKey: 'settings.tab.notification' },
     { value: 'appearance', node: appearance.node, titleKey: 'settings.tab.appearance' },
+    { value: 'layout', node: layout.node, titleKey: 'settings.tab.layout' },
+    { value: 'data', node: data.node, titleKey: 'settings.tab.data' },
+    { value: 'notification', node: notification.node, titleKey: 'settings.tab.notification' },
   ]
   for (const d of defs) {
     const tabPanel = document.createElement('oas-tab-panel')
@@ -188,27 +192,48 @@ export function render(el: HTMLElement): () => void {
     tabPanel.appendChild(d.node)
     tabs.appendChild(tabPanel)
   }
-  tabs.setAttribute('active', 'general')
+  tabs.setAttribute('active', 'appearance')
   setTabsLayout(readTabLayout())
 
   const tabsLayout = el.querySelector<HTMLElement>('#settings-tabs-layout')!
   tabsLayout.addEventListener('oas-change', (e) => {
     const v = (e as CustomEvent<{ value: string }>).detail.value
     if (v !== 'vertical' && v !== 'horizontal') return
+    // 即时生效的布局切换，无需 toast
     localStorage.setItem(tabsLayoutKey, v)
     setTabsLayout(v)
-    message.success(t('common.saved'))
   })
 
-  general.set(`
+  // 外观：主题色/圆角/字体大小/表格密度/主题编辑器/重置
+  appearance.set(`
     <div class="setting-group">
-      <div class="setting-group-title">${t('settings.general.formModeTitle')}</div>
-      <div class="form-hint">${t('settings.general.formModeHint')}</div>
-      <div class="radio-group" data-testid="form-mode-group" id="form-mode-group">
-        ${FORM_MODE_OPTIONS()
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">${t('settings.appearance.primaryLabel')}</div>
+          <div class="setting-hint">${t('settings.appearance.primaryHint')}</div>
+        </div>
+        <oas-color-picker data-testid="appearance-color" id="appearance-color" value="${readColor()}"></oas-color-picker>
+      </div>
+    </div>
+    <div class="setting-group">
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">${t('settings.appearance.radiusLabel')}</div>
+          <div class="setting-hint">${t('settings.appearance.radiusHint')}</div>
+        </div>
+        <div class="radius-control">
+          <oas-slider data-testid="appearance-radius" id="appearance-radius" min="1" max="12" step="1" value="${readRadius()}"></oas-slider>
+          <span id="radius-value" class="mono">${readRadius()}px</span>
+        </div>
+      </div>
+    </div>
+    <div class="setting-group">
+      <div class="setting-group-title">${t('settings.general.fontSizeTitle')}</div>
+      <div class="radio-group inline" data-testid="font-size-group" id="font-size-group">
+        ${FONT_SIZE_ITEMS()
           .map(
             (o) =>
-              `<oas-radio name="formMode" value="${o.value}"${readFormMode() === o.value ? ' checked' : ''}><span class="radio-item"><span class="radio-label">${o.label}</span><span class="radio-desc">${o.desc}</span></span></oas-radio>`,
+              `<oas-radio name="fontSize" value="${o.value}"${readFontSize() === o.value ? ' checked' : ''}>${o.label}</oas-radio>`,
           )
           .join('')}
       </div>
@@ -225,23 +250,22 @@ export function render(el: HTMLElement): () => void {
       </div>
     </div>
     <div class="setting-group">
-      <div class="setting-group-title">${t('settings.general.fontSizeTitle')}</div>
-      <div class="radio-group inline" data-testid="font-size-group" id="font-size-group">
-        ${FONT_SIZE_ITEMS()
-          .map(
-            (o) =>
-              `<oas-radio name="fontSize" value="${o.value}"${readFontSize() === o.value ? ' checked' : ''}>${o.label}</oas-radio>`,
-          )
-          .join('')}
-      </div>
+      <div class="setting-group-title">${t('settings.appearance.themeEditorTitle')}</div>
+      <div class="setting-hint">${t('settings.appearance.themeEditorHint')}</div>
+      <oas-theme-editor data-testid="settings-theme-editor" id="settings-theme-editor"></oas-theme-editor>
     </div>
     <div class="setting-group">
-      <div class="setting-row">
-        <div>
-          <div class="setting-label">${t('settings.general.pageSizeLabel')}</div>
-          <div class="setting-hint">${t('settings.general.pageSizeHint')}</div>
-        </div>
-        <oas-select data-testid="page-size" options='${JSON.stringify(PAGE_SIZE_OPTIONS())}' value="${readPageSize()}"></oas-select>
+      <oas-button data-testid="appearance-reset" type="default">${t('settings.appearance.reset')}</oas-button>
+    </div>`)
+
+  // 布局与导航：菜单形态矩阵（置顶）/多页签栏/路由模式（开发者选项，底部）
+  layout.set(`
+    <div class="setting-group">
+      <div class="setting-label setting-group-title">${t('settings.general.menuStyleLabel')}</div>
+      <div class="setting-hint">${t('settings.general.menuStyleHint')}</div>
+      <div class="menu-matrix" data-testid="menu-matrix" role="radiogroup" aria-label="${t('settings.general.menuStyleLabel')}">
+        ${MENU_MATRIX_HEADER}
+        ${MENU_MATRIX_ROWS()}
       </div>
     </div>
     <div class="setting-group">
@@ -261,13 +285,29 @@ export function render(el: HTMLElement): () => void {
         </div>
         <oas-select data-testid="router-mode" options='${JSON.stringify(ROUTER_MODE_OPTIONS())}' value="${routerMode()}"></oas-select>
       </div>
+    </div>`)
+
+  // 数据与列表：表单呈现方式/每页条数
+  data.set(`
+    <div class="setting-group">
+      <div class="setting-group-title">${t('settings.general.formModeTitle')}</div>
+      <div class="form-hint">${t('settings.general.formModeHint')}</div>
+      <div class="radio-group" data-testid="form-mode-group" id="form-mode-group">
+        ${FORM_MODE_OPTIONS()
+          .map(
+            (o) =>
+              `<oas-radio name="formMode" value="${o.value}"${readFormMode() === o.value ? ' checked' : ''}><span class="radio-item"><span class="radio-label">${o.label}</span><span class="radio-desc">${o.desc}</span></span></oas-radio>`,
+          )
+          .join('')}
+      </div>
     </div>
     <div class="setting-group">
-      <div class="setting-label setting-group-title">${t('settings.general.menuStyleLabel')}</div>
-      <div class="setting-hint">${t('settings.general.menuStyleHint')}</div>
-      <div class="menu-matrix" data-testid="menu-matrix" role="radiogroup" aria-label="${t('settings.general.menuStyleLabel')}">
-        ${MENU_MATRIX_HEADER}
-        ${MENU_MATRIX_ROWS()}
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">${t('settings.general.pageSizeLabel')}</div>
+          <div class="setting-hint">${t('settings.general.pageSizeHint')}</div>
+        </div>
+        <oas-select data-testid="page-size" options='${JSON.stringify(PAGE_SIZE_OPTIONS())}' value="${readPageSize()}"></oas-select>
       </div>
     </div>`)
 
@@ -298,44 +338,11 @@ export function render(el: HTMLElement): () => void {
       </div>
     </div>`)
 
-  appearance.set(`
-    <div class="setting-group">
-      <div class="setting-group-title">${t('settings.appearance.colorTitle')}</div>
-      <div class="setting-row">
-        <div>
-          <div class="setting-label">${t('settings.appearance.primaryLabel')}</div>
-          <div class="setting-hint">${t('settings.appearance.primaryHint')}</div>
-        </div>
-        <oas-color-picker data-testid="appearance-color" id="appearance-color" value="${readColor()}"></oas-color-picker>
-      </div>
-    </div>
-    <div class="setting-group">
-      <div class="setting-group-title">${t('settings.appearance.radiusTitle')}</div>
-      <div class="setting-row">
-        <div>
-          <div class="setting-label">${t('settings.appearance.radiusLabel')}</div>
-          <div class="setting-hint">${t('settings.appearance.radiusHint')}</div>
-        </div>
-        <div class="radius-control">
-          <oas-slider data-testid="appearance-radius" id="appearance-radius" min="1" max="12" step="1" value="${readRadius()}"></oas-slider>
-          <span id="radius-value" class="mono">${readRadius()}px</span>
-        </div>
-      </div>
-    </div>
-    <div class="setting-group">
-      <div class="setting-group-title">${t('settings.appearance.themeEditorTitle')}</div>
-      <div class="setting-hint">${t('settings.appearance.themeEditorHint')}</div>
-      <oas-theme-editor data-testid="settings-theme-editor" id="settings-theme-editor"></oas-theme-editor>
-    </div>
-    <div class="setting-group">
-      <oas-button data-testid="appearance-reset" type="default">${t('settings.appearance.reset')}</oas-button>
-    </div>`)
-
-  const formModeGroup = general.node.querySelector<HTMLElement>('#form-mode-group')!
-  const densityGroup = general.node.querySelector<HTMLElement>('#density-group')!
-  const fontSizeGroup = general.node.querySelector<HTMLElement>('#font-size-group')!
-  const pageSize = general.node.querySelector<HTMLElement>('[data-testid="page-size"]')!
-  const tabsBarToggle = general.node.querySelector<HTMLElement>('[data-testid="tabs-bar-toggle"]')!
+  const formModeGroup = data.node.querySelector<HTMLElement>('#form-mode-group')!
+  const densityGroup = appearance.node.querySelector<HTMLElement>('#density-group')!
+  const fontSizeGroup = appearance.node.querySelector<HTMLElement>('#font-size-group')!
+  const pageSize = data.node.querySelector<HTMLElement>('[data-testid="page-size"]')!
+  const tabsBarToggle = layout.node.querySelector<HTMLElement>('[data-testid="tabs-bar-toggle"]')!
   const notifMatrix = notification.node.querySelector<HTMLElement>('#notif-matrix')!
   const colorPicker = appearance.node.querySelector<HTMLElement>('#appearance-color')!
   const radiusSlider = appearance.node.querySelector<HTMLElement>('#appearance-radius')!
@@ -401,16 +408,23 @@ export function render(el: HTMLElement): () => void {
     message.success(t('common.saved'))
   })
 
-  general.node
+  layout.node
     .querySelector<HTMLElement>('[data-testid="router-mode"]')!
     .addEventListener('oas-change', (e) => {
       const mode = (e as CustomEvent<{ value: string }>).detail.value
       if (mode !== 'hash' && mode !== 'history') return
       if (mode === routerMode()) return
-      applyRouterMode(mode)
+      // 切换会整页刷新，二次确认防误触
+      modal.confirm({
+        title: t('settings.general.routerModeConfirmTitle'),
+        content: t('settings.general.routerModeConfirmContent'),
+        okText: t('common.confirm'),
+        cancelText: t('common.cancel'),
+        onOk: () => applyRouterMode(mode),
+      })
     })
 
-  const matrix = general.node.querySelector<HTMLElement>('[data-testid="menu-matrix"]')!
+  const matrix = layout.node.querySelector<HTMLElement>('[data-testid="menu-matrix"]')!
   const emitNavConfigChange = (): void => {
     window.dispatchEvent(new CustomEvent('oas:navconfig-change'))
   }

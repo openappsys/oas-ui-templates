@@ -53,8 +53,9 @@ test('admin 菜单矩阵：设置中心可切换形态+位置（实时生效）'
   await expect(page.locator('#nav')).toHaveAttribute('id', 'nav')
   expect(await page.locator('#nav').evaluate((el) => el.tagName)).toBe('OAS-SIDEBAR')
 
-  // 进设置中心 → 点矩阵「菜单条+顶部」
+  // 进设置中心 → 布局与导航 tab → 点矩阵「菜单条+顶部」
   await page.goto('/#/settings')
+  await page.getByTestId('settings-tabs').getByText('布局与导航', { exact: true }).click()
   await expect(page.getByTestId('menu-matrix')).toBeVisible()
   await page.locator('.menu-matrix-cell[data-style="menubar"][data-position="top"]').click()
   await expect(page.locator('#nav')).toHaveAttribute('orientation', 'horizontal')

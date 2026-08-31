@@ -40,7 +40,7 @@ test('设置中心：主题色按明暗主题独立存储并联动生效', async
   const errors = await noConsoleErrors(page)
   await login(page, '张伟', 'admin')
   await page.goto('/#/settings')
-  await page.getByTestId('settings-tabs').getByText('外观').click()
+  await page.getByTestId('settings-tabs').getByText('外观', { exact: true }).click()
 
   // 浅色主题下设主题色 → 存到 .theme.light
   await page.locator('html').evaluate(() => {
