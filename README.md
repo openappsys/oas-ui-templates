@@ -8,7 +8,7 @@
 
 | 模版 | 技术栈 | 说明 | 单测 | e2e | 状态 |
 | --- | --- | --- | --- | --- | --- |
-| `templates/admin-pro/vanilla-html` | Vite + TypeScript | 后台管理系统（零框架 · i18n / 请求层 / 403/404） | ✅ | ✅ | 可用 |
+| `templates/admin-pro/vanilla-html` | Vite + TypeScript | 后台管理系统（零框架 · i18n / 请求层 / 权限守卫 / 多页签 / **可配置导航**（sidebar/menubar/navigation × 左/右/顶）/ **设置中心**（外观 / 布局 / 数据 / 通知）） | ✅ | ✅ | 可用 |
 | `templates/admin-pro/cdn` | 零构建（unpkg CDN + 原生 JS） | 轻量后台（登录 / 路由 / CRUD / 表单 / 中英切换） | — | ✅ | 可用 |
 | `templates/admin-pro/cdn-mpa` | 零构建（unpkg CDN + 原生 JS） | 轻量后台 MPA（一页一 HTML · 登录 / CRUD / 表单 / 中英切换） | — | ✅ | 可用 |
 
@@ -79,7 +79,7 @@ A collection of project templates built on [oas-ui](https://oas-ui.dev), a frame
 
 | Template | Stack | Description | Unit | e2e | Status |
 | --- | --- | --- | --- | --- | --- |
-| `templates/admin-pro/vanilla-html` | Vite + TypeScript | Admin dashboard (zero-framework · i18n / request layer / 403/404) | ✅ | ✅ | Stable |
+| `templates/admin-pro/vanilla-html` | Vite + TypeScript | Admin dashboard (zero-framework · i18n / request layer / route guards / multi-tab / **configurable nav** (sidebar/menubar/navigation × left/right/top) / **settings center** (appearance / layout / data / notifications)) | ✅ | ✅ | Stable |
 | `templates/admin-pro/cdn` | Zero-build (unpkg CDN + plain JS) | Lightweight admin (login / router / CRUD / form / zh-en) | — | ✅ | Stable |
 | `templates/admin-pro/cdn-mpa` | Zero-build (unpkg CDN + plain JS) | Lightweight MPA admin (one HTML per page · login / CRUD / form / zh-en) | — | ✅ | Stable |
 

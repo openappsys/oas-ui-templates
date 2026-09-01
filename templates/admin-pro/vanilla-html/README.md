@@ -4,7 +4,7 @@
 
 基于 [oas-ui](https://oas-ui.dev) Web Components 的后台管理模版：TypeScript + Vite，零框架运行时。
 
-功能：双登录形态（分屏品牌墙 / 玻璃拟态，默认 `?style=split`，可用 `?style=glass` 切换）· 登录（角色：管理员 / 只读访客）· hash 路由权限守卫 · 路由切换顶部全局进度条 · 仪表盘（统计卡 + oas-chart 图表 + 最近订单 + 热销商品 Top5）· 多页签导航（顶栏多开页面 + 右键批量关闭菜单）· Command 面板（Ctrl+K 新页直达）· 通知中心 · 全屏 · 用户管理（搜索 / 筛选 / 分页 / 弹窗 CRUD / 空态 / popconfirm 删除确认）· 订单管理（tabs 筛选 / 状态流转抽屉 / CSV 导出）· 商品管理（卡片网格 / 上下架开关 / 新建抽屉表单，分类选项来自分类数据源）· 商品分类管理（/system/category CRUD）· 分步表单向导 · 订单详情 · 结果页 · 403/404/500 结果页 · 基础表单页 · 高级表单页（供应商信息登记：级联 / 联想 / 评分 / 标签 / 穿梭 / 树选等复杂控件 + 校验）· 个人中心（外观三主题卡）· i18n 中英切换（壳层即时生效）· fetch 请求层（拦截器 / 超时 / 本地 `/api/*` mock）· 侧栏分组（总览 / 业务 / 系统 / 示例）· 侧栏图标智能着色（官方 iconColor，随主题换肤）· light/dark/system 主题 · 移动端抽屉侧栏 · demo 数据 localStorage 持久化（刷新不丢，清 storage 即重置）。
+功能：双登录形态（分屏品牌墙 / 玻璃拟态，默认 `?style=split`，可用 `?style=glass` 切换）· 登录（角色：管理员 / 只读访客）· hash 路由权限守卫 · 路由切换顶部全局进度条 · 仪表盘（统计卡 + oas-chart 图表 + 最近订单 + 热销商品 Top5）· 多页签导航（顶栏多开页面 + 右键批量关闭菜单）· Command 面板（Ctrl+K 新页直达）· 通知中心 · 全屏 · 设置中心（外观 / 布局与导航 / 数据与列表 / 通知 四区：主题色、圆角、字体大小、表格密度、主题编辑器、**菜单形态×位置矩阵**、多页签栏开关、路由模式、表单呈现方式、每页条数、通知渠道矩阵）· 导航菜单可配置（sidebar 树形 / menubar 下拉条 / navigation 巨型面板，位置 左 / 右 / 顶 / 顶（logo 与搜索之间），设置中心实时切换持久化）· 用户管理（搜索 / 筛选 / 分页 / 弹窗 CRUD / 空态 / popconfirm 删除确认）· 订单管理（tabs 筛选 / 状态流转抽屉 / CSV 导出）· 商品管理（卡片网格 / 上下架开关 / 新建抽屉表单，分类选项来自分类数据源）· 商品分类管理（/system/category CRUD）· 角色 / 菜单 / 部门 / 字典 / 日志 系统页 · 分步表单向导 · 订单详情 · 结果页 · 403/404/500 结果页 · 基础表单页 · 高级表单页（供应商信息登记：级联 / 联想 / 评分 / 标签 / 穿梭 / 树选等复杂控件 + 校验）· 个人中心（外观三主题卡）· i18n 中英切换（壳层即时生效）· fetch 请求层（拦截器 / 超时 / 本地 `/api/*` mock）· 侧栏分组（总览 / 业务 / 系统 / 示例）· 侧栏图标智能着色（官方 iconColor，随主题换肤）· light/dark/system 主题 · 菜单触控基线（触屏 pointer:coarse 提至 44px）· 移动端抽屉侧栏 · demo 数据 localStorage 持久化（刷新不丢，清 storage 即重置）。
 
 ## 使用
 
@@ -62,10 +62,19 @@ npx degit <本仓库地址>/templates/admin-pro/vanilla-html my-admin
 
 ## 页面
 
-- `/forbidden`、`/not-found`、`/500`：权限守卫 / 未知路由 / 加载失败落地页（`oas-result` 结果态 + 返回首页 + 返回上一页）
+- `/dashboard`：仪表盘（统计卡 + oas-chart 趋势 / 订单构成 / 最近订单 / Top5 热销）
+- `/data-board`：数据看板（统计卡 + 图表 + 目标进度）
+- `/orders`：订单管理（tabs 筛选 / 状态流转抽屉 / CSV 导出）
+- `/products`：商品管理（卡片网格 / 上下架开关 / 新建抽屉表单，分类选项来自分类数据源）
+- `/users`：用户管理（搜索 / 筛选 / 分页 / 弹窗 CRUD / 空态 / popconfirm 删除确认）
+- `/system/roles` / `/system/dept` / `/system/dict` / `/system/menus` / `/system/category` / `/system/logs`：系统管理页（角色 / 部门 / 字典 / 菜单 / 分类 / 日志）
+- `/settings`：设置中心（外观 / 布局与导航 / 数据与列表 / 通知）
+- `/profile`：个人中心（外观三主题卡）
+- `/form`：分步表单向导（创建订单）；`/order-detail`：订单详情（隐藏路由，归 `/orders`）
+- `/result`：结果页（隐藏路由，归 `/form`）
 - `/basic-form`：通用卡片表单（input / select / switch / date-picker / upload / textarea + 必填与格式校验）
 - `/advanced-form`：高级表单（供应商信息登记）——级联 / 联想 / 组合 / 评分 / 滑块 / 验证码 / 标签 / 穿梭 / 树选等复杂控件组合 + oas-form 校验 / 提交 / 重置
-- `/system/category`：商品分类管理（搜索 / 新建 / 编辑 / 删除，分类数据源 `src/data/categories.ts`）；商品页的分类选项（筛选 / 表单）从该数据源实时拉取，分类页增删改后商品页刷新即同步
+- `/forbidden`、`/not-found`、`/500`：权限守卫 / 未知路由 / 加载失败落地页（`oas-result` 结果态 + 返回首页 + 返回上一页）
 
 ## 多页签
 
@@ -78,6 +87,19 @@ npx degit <本仓库地址>/templates/admin-pro/vanilla-html my-admin
 
 - 侧栏菜单图标用 `@oas-ui/icons` 内置 SVG 名（非 emoji），路由 `meta.icon` 指向标准图标名（`star`/`calendar`/`edit`/`index` 等）
 - **项级着色**：路由 `meta.iconColor`（任意 CSS 色值，如 `var(--oas-tint-cyan)`）经 `SidebarItem.iconColor` 写入 oas-sidebar，`iconSvg` 渲染时 `stroke="{iconColor || 'currentColor'}"`——**随 light/dark 主题换肤自适应**，active 项仍由组件主色高亮兜底
+
+## 导航菜单配置
+
+- **形态**：`sidebar`（树形，默认）/ `menubar`（点击顶级展开下拉子菜单）/ `navigation`（顶级点击展开巨型面板）——在设置中心「布局与导航」的**菜单形态×位置矩阵**实时切换并持久化（`localStorage['oas-admin.menu-style' / 'menu-position']`）
+- **位置**：`left` / `right` / `top`（独立一行）/ `top-head`（logo 与搜索框之间）；sidebar 不支持横置（top / top-head），矩阵中禁用（`canPosition`，`src/layout-config.ts`）
+- 部署子路径（`base`）下 history 路由仍正常——`src/router/mode.ts` 内 `BASE` 由 vite `BASE_URL` 注入
+
+## 设置中心
+
+- 四区：**外观**（主题色 / 圆角 / 字体大小 / 表格密度 / 主题编辑器 / 重置）· **布局与导航**（菜单形态矩阵 / 多页签栏 / 路由模式）· **数据与列表**（表单呈现方式 / 每页条数）· **通知**（订单 / 库存 / 系统 × 站内 / 邮件 渠道矩阵）
+- 即时生效项（主题色 / 圆角 / 字体 / 密度 / 多页签栏 / 菜单矩阵）实时应用；**路由模式**（hash / history）切换经 `modal.confirm` 二次确认后整页重载
+- 持久化 key 集中于 `src/settings-init.ts`（`readXxx` reader 与 `applySettings()` 启动重放），设置页与启动逻辑共享、避免静态导入拖入设置页 chunk
+- 页头「横排 / 竖排」切换设置页自身布局（`oas-tabs` `tab-position`），持久化 `localStorage['oas-admin.settings.tabs-layout']`
 
 ## 网站 / 发布
 
@@ -108,7 +130,7 @@ npx degit <本仓库地址>/templates/admin-pro/vanilla-html my-admin
 
 An admin dashboard template built on [oas-ui](https://oas-ui.dev) Web Components: TypeScript + Vite, zero-framework runtime.
 
-Features: two login layouts (split brand wall / glassmorphism, default `?style=split`, switch to `?style=glass`) · login (roles: admin / viewer) · hash router with permission guards · top progress bar on route change · dashboard (stat cards + oas-chart graphs + recent orders + top-5 best sellers) · multi-tab navigation (open multiple pages in the top-bar tab strip + right-click batch close menu) · command palette (Ctrl+K) · notification center · fullscreen · user management (search / filter / paginate / modal CRUD / empty state / popconfirm delete) · order management (tabs filter / status-flow drawer / CSV export) · product management (card grid / on-off switch / create-drawer form with categories pulled live from the data source) · product category management (`/system/category` CRUD) · multi-step form wizard · order details · result page · 403/404/500 result pages · basic form page · advanced form page (vendor onboarding: cascader / autocomplete / rate / tags / transfer / tree-select + validation) · profile (three-theme appearance card) · i18n zh-CN / en switch (shell re-renders instantly) · fetch request layer (interceptors / timeout / local `/api/*` mock) · sidebar grouped by section (overview / business / system / demos) · smart sidebar-icon coloring (upstream `iconColor`, follows theme) · light/dark/system themes · mobile drawer sidebar · demo data persisted to localStorage (survives reload, cleared on storage reset).
+Features: two login layouts (split brand wall / glassmorphism, default `?style=split`, switch to `?style=glass`) · login (roles: admin / viewer) · hash router with permission guards · top progress bar on route change · dashboard (stat cards + oas-chart graphs + recent orders + top-5 best sellers) · multi-tab navigation (open multiple pages in the top-bar tab strip + right-click batch close menu) · command palette (Ctrl+K) · notification center · fullscreen · settings center (Appearance / Layout & Navigation / Data & Lists / Notifications: theme color, radius, font size, table density, theme editor, **menu-style×position matrix**, tabs-bar toggle, router mode, form mode, page size, notification-channel matrix) · **configurable navigation** (sidebar tree / menubar dropdown / navigation mega-panel; positions left / right / top / top-between-logo-and-search — switched live in settings, persisted) · user management (search / filter / paginate / modal CRUD / empty state / popconfirm delete) · order management (tabs filter / status-flow drawer / CSV export) · product management (card grid / on-off switch / create-drawer form with categories pulled live from the data source) · product category management (`/system/category` CRUD) · role / menu / dept / dict / log system pages · multi-step form wizard · order details · result page · 403/404/500 result pages · basic form page · advanced form page (vendor onboarding: cascader / autocomplete / rate / tags / transfer / tree-select + validation) · profile (three-theme appearance card) · i18n zh-CN / en switch (shell re-renders instantly) · fetch request layer (interceptors / timeout / local `/api/*` mock) · sidebar grouped by section (overview / business / system / demos) · smart sidebar-icon coloring (upstream `iconColor`, follows theme) · light/dark/system themes · menu touch-target baseline (raised to 44px on `pointer:coarse`) · mobile drawer sidebar · demo data persisted to localStorage (survives reload, cleared on storage reset).
 
 ## Usage
 
@@ -166,10 +188,19 @@ npx degit <this-repo>/templates/admin-pro/vanilla-html my-admin
 
 ## Pages
 
-- `/forbidden`, `/not-found`, `/500`: permission guard / unknown route / load-failure landing pages (`oas-result` + Back to Home + Go Back)
+- `/dashboard`: dashboard (stat cards + oas-chart trend / order composition / recent orders / top-5 best sellers)
+- `/data-board`: data board (stat cards + charts + target progress)
+- `/orders`: order management (tabs filter / status-flow drawer / CSV export)
+- `/products`: product management (card grid / on-off switch / create-drawer form with categories pulled live from the data source)
+- `/users`: user management (search / filter / paginate / modal CRUD / empty state / popconfirm delete)
+- `/system/roles` / `/system/dept` / `/system/dict` / `/system/menus` / `/system/category` / `/system/logs`: system management pages (roles / dept / dict / menus / category / logs)
+- `/settings`: settings center (Appearance / Layout & Navigation / Data & Lists / Notifications)
+- `/profile`: profile (three-theme appearance card)
+- `/form`: multi-step form wizard (create order); `/order-detail`: order details (hidden route, attached to `/orders`)
+- `/result`: result page (hidden route, attached to `/form`)
 - `/basic-form`: card-style form (input / select / switch / date-picker / upload / textarea + required and format validation)
 - `/advanced-form`: complex form (vendor onboarding) — cascader / autocomplete / combobox / rate / slider / captcha / tags / transfer / tree-select composed with `oas-form` validation / submit / reset
-- `/system/category`: product category CRUD (search / create / edit / delete; data lives in `src/data/categories.ts`); product pages pull category options (filter / form) from this source in real time, so changes propagate on the next product-page refresh
+- `/forbidden`, `/not-found`, `/500`: permission guard / unknown route / load-failure landing pages (`oas-result` + Back to Home + Go Back)
 
 ## Multi-tab
 
@@ -182,6 +213,19 @@ npx degit <this-repo>/templates/admin-pro/vanilla-html my-admin
 
 - Sidebar icons use the built-in SVG names from `@oas-ui/icons` (no emoji); route `meta.icon` points to a standard name (`star` / `calendar` / `edit` / `index` etc.)
 - **Per-item coloring**: route `meta.iconColor` (any CSS color, e.g. `var(--oas-tint-cyan)`) flows into `oas-sidebar` via `SidebarItem.iconColor`; `iconSvg` renders with `stroke="{iconColor || 'currentColor'}"` — **adapts to light/dark automatically**; the active item still gets the primary-color highlight as a fallback
+
+## Navigation config
+
+- **Style**: `sidebar` (tree, default) / `menubar` (click a top item to expand dropdown children) / `navigation` (click a top item to expand a mega panel) — switched live via the **menu-style×position matrix** in Settings → Layout & Navigation, persisted (`localStorage['oas-admin.menu-style' / 'menu-position']`)
+- **Position**: `left` / `right` / `top` (own row) / `top-head` (between logo and search); sidebar cannot be horizontal (top / top-head) — the matrix disables those cells (`canPosition`, `src/layout-config.ts`)
+- Deployed sub-path (`base`) still works with history routing — `BASE` in `src/router/mode.ts` is injected from vite `BASE_URL`
+
+## Settings center
+
+- Four areas: **Appearance** (theme color / radius / font size / table density / theme editor / reset) · **Layout & Navigation** (menu-style matrix / tabs-bar / router mode) · **Data & Lists** (form mode / page size) · **Notifications** (orders / inventory / system × in-app / email channel matrix)
+- Instant-apply items (color / radius / font / density / tabs-bar / menu matrix) apply live; **router mode** (hash / history) reloads the whole app after a `modal.confirm` confirmation
+- Persisted keys live in `src/settings-init.ts` (`readXxx` readers + `applySettings()` boot replay), shared between the settings page and bootstrap to avoid static import pulling in the settings chunk
+- The header "horizontal / vertical" toggle switches the settings page's own tabs layout (`oas-tabs` `tab-position`), persisted to `localStorage['oas-admin.settings.tabs-layout']`
 
 ## Website / Publishing
 

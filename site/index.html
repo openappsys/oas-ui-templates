@@ -52,6 +52,24 @@
       }
       h1 { margin: 0 0 8px; font-size: 28px; font-weight: 700; }
       .subtitle { margin: 0 0 40px; font-size: 15px; color: var(--muted); line-height: 1.6; }
+      .ctas { display: flex; gap: 12px; margin: 0 0 40px; flex-wrap: wrap; }
+      .cta {
+        appearance: none; border: 0; cursor: pointer; font: inherit;
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 10px 18px; border-radius: 10px; font-weight: 600; font-size: 14px;
+        transition: transform .15s ease, box-shadow .15s ease;
+        text-decoration: none;
+      }
+      .cta--primary { background: var(--primary); color: #fff; }
+      .cta--primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(11,108,255,.35); }
+      .cta--ghost { background: rgba(255,255,255,.04); color: var(--text); border: 1px solid var(--border); }
+      .cta--ghost:hover { border-color: var(--primary); color: var(--text); }
+      .badges { display: flex; gap: 10px; margin: 0 0 40px; flex-wrap: wrap; }
+      .badge {
+        font-size: 13px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px;
+        padding: 5px 12px; border-radius: 999px; background: rgba(255,255,255,.04); border: 1px solid var(--border);
+      }
+      .badge::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #22c55e; }
       .grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
       .card {
         display: block; text-decoration: none; color: inherit;
@@ -97,6 +115,16 @@
       <div class="brand"><div class="logo">OAS</div></div>
       <h1 data-i18n="meta.title">OAS-UI Templates</h1>
       <p class="subtitle" data-i18n="intro.subtitle">基于 oas-ui Web Components 的官方模板集合。零框架运行时，TypeScript + Vite，即取即用。</p>
+      <div class="ctas">
+        <a class="cta cta--primary" href="./admin-pro/vanilla-html/" data-i18n="cta.live">在线预览</a>
+        <a class="cta cta--ghost" href="https://github.com/OpenAppSys/oas-ui-templates" target="_blank" rel="noopener" data-i18n="cta.github">GitHub</a>
+      </div>
+      <div class="badges">
+        <span class="badge" data-i18n="badge.wc">Web Components</span>
+        <span class="badge" data-i18n="badge.zeroRuntime">零框架运行时</span>
+        <span class="badge" data-i18n="badge.i18n">中英双语</span>
+        <span class="badge" data-i18n="badge.theme">light / dark / system</span>
+      </div>
 
       <div class="grid">
         <a class="card" href="./admin-pro/vanilla-html/">
@@ -104,7 +132,7 @@
             <span class="card-name" data-i18n="card.adminPro.name">admin-pro / vanilla-html</span>
             <span class="tag" data-i18n="card.adminPro.tag">admin</span>
           </div>
-          <p class="card-desc" data-i18n="card.adminPro.desc">后台管理系统模板：i18n / 权限守卫 / 多页签 / 数据可视化 / 表单 / 请求层。</p>
+          <p class="card-desc" data-i18n="card.adminPro.desc">后台管理系统完整模板：可配置导航（sidebar / menubar / navigation）、设置中心（外观 / 布局 / 数据 / 通知）、i18n / 权限守卫 / 多页签 / 数据可视化 / 表单 / 请求层。</p>
           <div class="meta">
             <span class="chip" data-i18n="chip.vite">Vite + TS</span>
             <span class="chip" data-i18n="chip.wc">Web Components</span>
@@ -143,9 +171,15 @@
         'zh-CN': {
           'meta.title': 'OAS-UI Templates',
           'intro.subtitle': '基于 oas-ui Web Components 的官方模板集合。零框架运行时，TypeScript + Vite，即取即用。',
+          'cta.live': '在线预览',
+          'cta.github': 'GitHub',
+          'badge.wc': 'Web Components',
+          'badge.zeroRuntime': '零框架运行时',
+          'badge.i18n': '中英双语',
+          'badge.theme': 'light / dark / system',
           'card.adminPro.name': 'admin-pro / vanilla-html',
           'card.adminPro.tag': '后台',
-          'card.adminPro.desc': '后台管理系统模板：i18n / 权限守卫 / 多页签 / 数据可视化 / 表单 / 请求层。',
+          'card.adminPro.desc': '后台管理系统完整模板：可配置导航（sidebar / menubar / navigation）、设置中心（外观 / 布局 / 数据 / 通知）、i18n / 权限守卫 / 多页签 / 数据可视化 / 表单 / 请求层。',
           'chip.vite': 'Vite + TS',
           'chip.wc': 'Web Components',
           'chip.zeroRuntime': '零框架运行时',
@@ -163,10 +197,16 @@
           'meta.title': 'OAS-UI Templates',
           'intro.subtitle':
             'Official template collection built on oas-ui Web Components. Zero-framework runtime, TypeScript + Vite, ready to use.',
+          'cta.live': 'Live Preview',
+          'cta.github': 'GitHub',
+          'badge.wc': 'Web Components',
+          'badge.zeroRuntime': 'Zero-framework',
+          'badge.i18n': 'i18n zh/en',
+          'badge.theme': 'light / dark / system',
           'card.adminPro.name': 'admin-pro / vanilla-html',
           'card.adminPro.tag': 'admin',
           'card.adminPro.desc':
-            'Admin dashboard template: i18n / route guards / multi-page tabs / data viz / forms / request layer.',
+            'Full-featured admin template: configurable nav (sidebar / menubar / navigation), settings center (appearance / layout / data / notifications), i18n / route guards / multi-tab / data viz / forms / request layer.',
           'chip.vite': 'Vite + TS',
           'chip.wc': 'Web Components',
           'chip.zeroRuntime': 'Zero-framework',
