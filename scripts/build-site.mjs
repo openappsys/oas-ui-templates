@@ -16,7 +16,20 @@ const families = readdirSync(templatesRoot, { withFileTypes: true })
   .filter((d) => d.isDirectory())
   .map((d) => d.name)
 
-rmSync(outDir, { recursive: true, force: true })
+// 不主动 rm dist 自身（Windows 上若被 dev server / 静态预览锁住会 EPERM）；
+// dist 内部产物（每个模板的子目录）在循环里逐项清空再写，行为等价。
+function safeRm(p) {
+  if (!existsSync(p)) return
+  try {
+    rmSync(p, { recursive: true, force: true })
+  } catch (e) {
+    if (e && (e.code === 'EPERM' || e.code === 'EBUSY' || e.code === 'ENOTEMPTY')) {
+      console.warn(`warn: could not clean ${p} (${e.code}); existing files will be overwritten in place.`)
+    } else {
+      throw e
+    }
+  }
+}
 mkdirSync(outDir, { recursive: true })
 
 cpSync(join(siteDir, 'index.html'), join(outDir, 'index.html'))
@@ -39,6 +52,7 @@ for (const family of families) {
     }
     const relPath = relative(templatesRoot, join(familyDir, tpl.name)).replace(/\\/g, '/')
     const target = join(outDir, relPath)
+    safeRm(target)
     mkdirSync(target, { recursive: true })
     cpSync(distDir, target, { recursive: true })
     deployed.push(relPath)

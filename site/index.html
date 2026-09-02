@@ -1,211 +1,274 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0b0f1a" />
     <title data-i18n="meta.title">OAS-UI Templates</title>
+    <meta name="description" data-i18n="meta.desc" content="基于 oas-ui Web Components 的官方后台模板集合：零框架运行时、TypeScript + Vite，三套范式覆盖 SPA / CDN / MPA。" />
+    <link rel="canonical" href="./" />
+    <link rel="alternate" hreflang="zh-CN" href="./" />
+    <link rel="alternate" hreflang="en" href="./" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Cdefs%3E%3ClinearGradient id=%22g%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22%3E%3Cstop offset=%220%22 stop-color=%22%230b6cff%22/%3E%3Cstop offset=%221%22 stop-color=%22%237c3aed%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width=%2264%22 height=%2264%22 rx=%2214%22 fill=%22url(%23g)%22/%3E%3Ctext x=%2250%25%22 y=%2254%25%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22 font-family=%22ui-sans-serif,system-ui%22 font-weight=%22800%22 font-size=%2222%22 fill=%22white%22 letter-spacing=%22-1%22%3EOAS%3C/text%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/index.css" />
     <script>
       (function () {
-        var KEY = 'oas-templates.locale'
+        var KEY = "oas-templates.locale"
         var saved = null
         try { saved = localStorage.getItem(KEY) } catch (e) {}
         function matchNav(lang) {
-          var n = (lang || '').toLowerCase()
-          if (n === 'zh' || n.indexOf('zh-') === 0) return 'zh-CN'
-          return 'en'
+          var n = (lang || "").toLowerCase()
+          if (n === "zh" || n.indexOf("zh-") === 0) return "zh-CN"
+          return "en"
         }
-        var detected = saved === 'zh-CN' || saved === 'en' ? saved : matchNav(navigator.language)
+        var detected = saved === "zh-CN" || saved === "en" ? saved : matchNav(navigator.language)
         document.documentElement.lang = detected
       })()
     </script>
     <style>
       :root {
-        --bg: #0b0f1a;
-        --bg2: #0b1020;
-        --card: #0f1729;
-        --card2: #131c33;
-        --border: #1d2742;
-        --border2: #2a3658;
-        --text: #eaf0fb;
-        --muted: #8b96b3;
-        --muted2: #6a7592;
-        --primary: #5b8cff;
-        --primary2: #7c3aed;
-        --green: #22c55e;
-        --radius: 16px;
-        --font: system-ui, -apple-system, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
-        --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+        --oas-bg-page: #0b0f1a;
+        --oas-bg-elev-1: #0f1729;
+        --oas-bg-elev-2: #131c33;
+        --oas-border: #1d2742;
+        --oas-border-strong: #2a3658;
+        --oas-text: #eaf0fb;
+        --oas-text-muted: #8b96b3;
+        --oas-text-dim: #6a7592;
+        --oas-accent: #5b8cff;
+        --oas-accent-2: #7c5dff;
+        --oas-success: #22c55e;
+        --oas-success-soft: #5fdba0;
+        --oas-radius: 14px;
+        --oas-radius-lg: 18px;
+        --oas-shadow-sm: 0 1px 2px rgba(0,0,0,.35);
+        --oas-shadow-md: 0 12px 32px rgba(0,0,0,.35);
+        --oas-shadow-lg: 0 24px 60px rgba(0,0,0,.45);
+        --oas-shadow-accent: 0 10px 30px rgba(91,140,255,.25);
+        --oas-font: system-ui, -apple-system, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+        --oas-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
       }
       * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; }
       body {
-        margin: 0;
         min-height: 100vh;
-        font-family: var(--font);
-        color: var(--text);
+        font-family: var(--oas-font);
+        color: var(--oas-text);
         background:
-          radial-gradient(900px 600px at 50% -120px, rgba(11,108,255,.18), transparent 70%),
-          var(--bg);
+          radial-gradient(1100px 720px at 50% -160px, rgba(91,140,255,.14), transparent 70%),
+          radial-gradient(800px 520px at 100% 12%, rgba(124,58,237,.10), transparent 70%),
+          var(--oas-bg-page);
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
       }
-      .wrap { max-width: 1200px; margin: 0 auto; padding: 56px 28px 88px; }
-      /* 顶部导航 */
+      a { color: inherit; }
+      ::selection { background: rgba(91,140,255,.35); color: var(--oas-text); }
+
+      .wrap { max-width: 1180px; margin: 0 auto; padding: 48px 28px 80px; }
+
       .nav {
-        position: sticky; top: 0; z-index: 10;
-        backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-        background: rgba(11,15,26,.72);
-        border-bottom: 1px solid var(--border);
+        position: sticky; top: 0; z-index: 20;
+        backdrop-filter: blur(16px) saturate(140%); -webkit-backdrop-filter: blur(16px) saturate(140%);
+        background: rgba(11,15,26,.7);
+        border-bottom: 1px solid var(--oas-border);
       }
       .nav-inner {
-        max-width: 1200px; margin: 0 auto; padding: 0 28px; height: 60px;
+        max-width: 1180px; margin: 0 auto; padding: 0 28px; height: 60px;
         display: flex; align-items: center; justify-content: space-between; gap: 16px;
       }
-      .nav-brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text); }
+      .nav-brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: var(--oas-text); }
       .nav-logo {
-        width: 32px; height: 32px; border-radius: 9px;
+        width: 28px; height: 28px; border-radius: 8px;
         display: grid; place-items: center;
-        background: linear-gradient(135deg, #0b6cff, #7c3aed);
-        font-weight: 800; font-size: 12px; color: #fff; letter-spacing: -.5px;
+        background: linear-gradient(135deg, var(--oas-accent), var(--oas-accent-2));
+        font-weight: 800; font-size: 10.5px; color: #fff; letter-spacing: -.5px;
+        box-shadow: var(--oas-shadow-accent);
       }
-      .nav-word { font-size: 15px; font-weight: 700; letter-spacing: -.01em; }
-      .nav-right { display: inline-flex; align-items: center; gap: 14px; }
+      .nav-word { font-size: 14.5px; font-weight: 700; letter-spacing: -.01em; }
+      .nav-right { display: inline-flex; align-items: center; gap: 8px; }
       .nav-link {
-        font-size: 13.5px; color: var(--muted); text-decoration: none;
+        font-size: 13.5px; color: var(--oas-text-muted); text-decoration: none;
         display: inline-flex; align-items: center; gap: 6px;
         padding: 6px 10px; border-radius: 8px; transition: color .15s ease, background .15s ease;
       }
-      .nav-link:hover { color: var(--text); background: rgba(255,255,255,.05); }
-      .nav-link svg { width: 16px; height: 16px; }
+      .nav-link:hover { color: var(--oas-text); background: rgba(255,255,255,.05); }
+      .nav-link svg { width: 15px; height: 15px; }
       .lang-switch {
         display: inline-flex; padding: 3px;
-        background: rgba(255,255,255,.04); border: 1px solid var(--border); border-radius: 999px;
+        background: rgba(255,255,255,.04); border: 1px solid var(--oas-border); border-radius: 999px;
         font-size: 12px;
       }
       .lang-switch button {
-        appearance: none; border: 0; background: none; color: var(--muted);
+        appearance: none; border: 0; background: none; color: var(--oas-text-muted);
         padding: 4px 11px; border-radius: 999px; cursor: pointer; font: inherit;
       }
-      .lang-switch button:hover { color: var(--text); }
-      .lang-switch button[aria-pressed='true'] { background: var(--primary); color: #fff; font-weight: 600; }
+      .lang-switch button:hover { color: var(--oas-text); }
+      .lang-switch button[aria-pressed="true"] {
+        background: var(--oas-accent); color: #fff; font-weight: 600;
+        box-shadow: 0 4px 12px rgba(91,140,255,.35);
+      }
 
-      /* HERO 双栏：左文字 + 右终端 */
-      .hero { display: grid; grid-template-columns: 1.05fr 1fr; gap: 48px; align-items: center; margin-bottom: 48px; }
-      .hero .eyebrow {
+      .hero { display: grid; grid-template-columns: 1.05fr 1fr; gap: 56px; align-items: center; padding: 36px 0 72px; }
+      .hero-eyebrow {
         display: inline-flex; align-items: center; gap: 8px;
-        font-size: 13px; font-weight: 600; color: #b1c3ff;
-        background: rgba(91,140,255,.12); border: 1px solid rgba(91,140,255,.28);
-        padding: 6px 14px; border-radius: 999px; margin-bottom: 18px;
+        font-size: 12.5px; font-weight: 600; color: #b1c3ff;
+        background: rgba(91,140,255,.10); border: 1px solid rgba(91,140,255,.28);
+        padding: 6px 14px; border-radius: 999px; margin-bottom: 22px;
         letter-spacing: .01em;
       }
-      .hero .eyebrow::before {
-        content: ""; width: 7px; height: 7px; border-radius: 50%;
-        background: #5fdba0; box-shadow: 0 0 12px #5fdba0;
+      .hero-eyebrow::before {
+        content: ""; width: 6px; height: 6px; border-radius: 50%;
+        background: var(--oas-success-soft); box-shadow: 0 0 10px var(--oas-success-soft);
       }
       .hero h1 {
-        margin: 0 0 18px; font-size: 52px; font-weight: 800; line-height: 1.08;
-        letter-spacing: -.025em;
+        margin: 0 0 18px; font-size: 54px; font-weight: 800; line-height: 1.06;
+        letter-spacing: -.028em;
       }
       .hero h1 .grad {
-        background: linear-gradient(120deg, #5b8cff 0%, #b794f4 50%, #f472b6 100%);
+        background: linear-gradient(110deg, #7da0ff 0%, #a78bfa 60%, #c084fc 100%);
         -webkit-background-clip: text; background-clip: text; color: transparent;
       }
-      .hero p.lede {
-        margin: 0 0 26px; font-size: 17px; line-height: 1.65; color: var(--muted);
+      .hero .lede {
+        margin: 0 0 28px; font-size: 17px; line-height: 1.65; color: var(--oas-text-muted); max-width: 540px;
       }
-      .hero p.lede strong { color: var(--text); font-weight: 600; }
+      .hero .lede strong { color: var(--oas-text); font-weight: 600; }
 
-      /* CTA 行 */
-      .hero-ctas { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+      .anchor-strip {
+        display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+        margin-bottom: 28px; padding: 14px 4px;
+        border-top: 1px solid var(--oas-border);
+        border-bottom: 1px solid var(--oas-border);
+      }
+      .anchor { display: flex; flex-direction: column; gap: 2px; padding: 0 6px; border-left: 1px solid var(--oas-border); }
+      .anchor:first-child { border-left: 0; }
+      .anchor-num { font-size: 18px; font-weight: 800; letter-spacing: -.02em; color: var(--oas-text); font-variant-numeric: tabular-nums; }
+      .anchor-num small { font-size: 12px; color: var(--oas-text-muted); font-weight: 600; margin-left: 4px; }
+      .anchor-k { font-size: 11.5px; color: var(--oas-text-dim); letter-spacing: .02em; }
+
+      .ctas { display: flex; gap: 10px; flex-wrap: wrap; }
       .cta {
         appearance: none; border: 0; cursor: pointer; font: inherit;
         display: inline-flex; align-items: center; gap: 8px;
-        padding: 13px 22px; border-radius: 12px; font-weight: 600; font-size: 15px;
-        text-decoration: none; transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+        padding: 12px 20px; border-radius: 10px; font-weight: 600; font-size: 14.5px;
+        text-decoration: none; transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease, background .16s ease;
+        line-height: 1;
       }
-      .cta svg { width: 17px; height: 17px; }
-      .cta--primary { background: linear-gradient(135deg, #4f8bff, #7c5dff); color: #fff; box-shadow: 0 8px 28px rgba(91,140,255,.35); }
-      .cta--primary:hover { transform: translateY(-2px); box-shadow: 0 12px 34px rgba(91,140,255,.5); }
-      .cta--ghost { background: rgba(255,255,255,.04); color: var(--text); border: 1px solid var(--border2); }
-      .cta--ghost:hover { border-color: var(--primary); transform: translateY(-2px); }
+      .cta svg { width: 16px; height: 16px; }
+      .cta--primary { background: var(--oas-text); color: #0b0f1a; }
+      .cta--primary:hover { transform: translateY(-1px); box-shadow: var(--oas-shadow-md); }
+      .cta--ghost { background: rgba(255,255,255,.04); color: var(--oas-text); border: 1px solid var(--oas-border-strong); }
+      .cta--ghost:hover { border-color: var(--oas-accent); background: rgba(91,140,255,.08); }
 
-      /* 终端卡（hero 右栏） */
       .terminal {
-        background: #060b18; border: 1px solid var(--border); border-radius: var(--radius);
-        overflow: hidden; box-shadow: 0 24px 60px rgba(0,0,0,.45);
+        background: #060b18; border: 1px solid var(--oas-border);
+        border-radius: var(--oas-radius-lg); overflow: hidden; box-shadow: var(--oas-shadow-lg);
+        position: relative;
+      }
+      .terminal::before {
+        content: ""; position: absolute; inset: 0;
+        background: radial-gradient(400px 200px at 100% 0%, rgba(91,140,255,.12), transparent 60%);
+        pointer-events: none;
       }
       .terminal-bar {
-        display: flex; align-items: center; gap: 10px;
-        padding: 12px 18px; background: rgba(255,255,255,.03); border-bottom: 1px solid var(--border);
-        font-size: 13px; color: var(--muted);
+        display: flex; align-items: center; gap: 8px;
+        padding: 11px 16px; background: rgba(255,255,255,.025); border-bottom: 1px solid var(--oas-border);
+        font-size: 12.5px; color: var(--oas-text-dim); position: relative;
       }
-      .dot { width: 11px; height: 11px; border-radius: 50%; }
+      .dot { width: 10px; height: 10px; border-radius: 50%; }
       .dot-r { background: #f87171; } .dot-y { background: #fbbf24; } .dot-g { background: #34d399; }
       .terminal-title { margin-left: 6px; }
-      .terminal-body { padding: 22px 24px 26px; font-family: var(--mono); font-size: 14px; line-height: 1.85; min-height: 200px; }
-      .terminal-cmd { color: #e9edf7; white-space: pre-wrap; word-break: break-word; }
-      .terminal-cmd .prompt { color: #4d9bff; font-weight: 700; margin-right: 6px; user-select: none; }
-      .terminal-cmd .cmd { color: #c4b5fd; }
-      .terminal-out { color: var(--muted); padding-left: 18px; }
-      .terminal-ok { color: #5fdba0; padding-left: 18px; }
-      .terminal-cursor { display: inline-block; width: 8px; height: 16px; background: #5b8cff; vertical-align: middle; animation: blink 1.1s steps(2) infinite; }
+      .terminal-body {
+        padding: 20px 22px 22px; font-family: var(--oas-mono); font-size: 13.5px;
+        line-height: 1.85; min-height: 248px; position: relative;
+      }
+      .t-line { white-space: pre-wrap; word-break: break-word; min-height: 1.85em; }
+      .t-prompt { color: #4d9bff; font-weight: 700; margin-right: 6px; user-select: none; }
+      .t-cmd { color: #e9edf7; }
+      .t-out { color: var(--oas-text-dim); }
+      .t-ok { color: var(--oas-success-soft); }
+      .t-cursor {
+        display: inline-block; width: 7px; height: 14px; background: var(--oas-accent);
+        vertical-align: -2px; margin-left: 2px; animation: blink 1.05s steps(2) infinite;
+      }
       @keyframes blink { 50% { opacity: 0; } }
+    </style>
+    <style>
 
-      /* 三模板对比表 */
-      .compare {
-        margin-bottom: 80px;
+      .features { padding: 16px 0 88px; }
+      .features-head { text-align: center; margin-bottom: 36px; }
+      .features-head h2 {
+        margin: 0 0 10px; font-size: 30px; font-weight: 800; letter-spacing: -.022em;
       }
-      .compare-head { text-align: center; margin-bottom: 28px; }
-      .compare-head h2 { margin: 0 0 8px; font-size: 30px; font-weight: 800; letter-spacing: -.02em; }
-      .compare-head h2 .grad { background: linear-gradient(120deg, #5b8cff, #b794f4); -webkit-background-clip: text; background-clip: text; color: transparent; }
-      .compare-head p { margin: 0; color: var(--muted); font-size: 15px; }
-      .compare-grid {
-        display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px;
+      .features-head h2 .grad {
+        background: linear-gradient(110deg, #7da0ff, #c084fc);
+        -webkit-background-clip: text; background-clip: text; color: transparent;
       }
-      .cmp {
+      .features-head p { margin: 0; color: var(--oas-text-muted); font-size: 15px; }
+
+      .f-grid {
+        display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px;
+      }
+      .f-card {
         display: flex; flex-direction: column;
-        background: linear-gradient(180deg, var(--card), var(--card2));
-        border: 1px solid var(--border); border-radius: var(--radius);
-        padding: 22px;
-        position: relative; overflow: hidden;
-        text-decoration: none; color: inherit; cursor: pointer;
-        transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+        background: var(--oas-bg-elev-1);
+        border: 1px solid var(--oas-border); border-radius: var(--oas-radius-lg);
+        overflow: hidden; transition: border-color .16s ease, transform .16s ease;
       }
-      .cmp::before {
-        content: ""; position: absolute; inset: 0 0 auto 0; height: 2px;
-        background: linear-gradient(90deg, #5b8cff, #b794f4); opacity: 0; transition: opacity .16s ease;
+      .f-card:hover { border-color: var(--oas-border-strong); transform: translateY(-2px); }
+      .f-shot {
+        position: relative; aspect-ratio: 16 / 10;
+        background: linear-gradient(180deg, #0d1830 0%, #0a1326 100%);
+        border-bottom: 1px solid var(--oas-border);
+        overflow: hidden;
       }
-      .cmp:hover { transform: translateY(-4px); border-color: var(--border2); box-shadow: 0 16px 40px rgba(0,0,0,.4); }
-      .cmp:hover::before { opacity: 1; }
-      .cmp-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-      .cmp-name { font-size: 17px; font-weight: 700; letter-spacing: -.01em; }
-      .cmp-tag { font-size: 11px; padding: 3px 10px; border-radius: 999px; background: rgba(91,140,255,.14); color: #93b4ff; border: 1px solid rgba(91,140,255,.2); font-weight: 600; }
-      .cmp-meta { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; }
-      .cmp-row { display: flex; align-items: baseline; gap: 10px; }
-      .cmp-k { color: var(--muted2); font-size: 12px; min-width: 38px; flex-shrink: 0; }
-      .cmp-v { font-size: 14px; font-weight: 600; }
-      .cmp-v--green { color: #5fdba0; }
-      .cmp-feats { display: flex; flex-wrap: wrap; gap: 7px; margin-top: auto; padding-top: 14px; }
-      .cmp-cta { display: inline-block; margin-top: 16px; font-size: 13px; font-weight: 600; color: var(--primary); }
-      .cmp:hover .cmp-cta { text-decoration: underline; }
-      .cmp-feat {
-        font-size: 12px; padding: 4px 9px; border-radius: 6px;
-        background: rgba(255,255,255,.04); color: var(--muted); border: 1px solid var(--border);
-        display: inline-flex; align-items: center; gap: 5px;
+      .f-shot img { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block; }
+      .f-shot--fallback { display: grid; place-items: center; padding: 22px; }
+      .f-shot--fallback svg { width: 86%; height: auto; opacity: .85; }
+      .f-body { padding: 18px 20px 20px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+      .f-title { font-size: 16px; font-weight: 700; letter-spacing: -.005em; display: flex; align-items: center; gap: 8px; }
+      .f-desc { font-size: 13.5px; color: var(--oas-text-muted); line-height: 1.6; margin: 0; }
+      .f-feats { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+      .f-feat {
+        font-size: 11.5px; padding: 4px 9px; border-radius: 6px;
+        background: rgba(255,255,255,.03); color: var(--oas-text-muted);
+        border: 1px solid var(--oas-border); display: inline-flex; align-items: center; gap: 5px;
       }
-      .cmp-feat::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+      .f-feat::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--oas-success-soft); }
+      .f-link { margin-top: auto; font-size: 13px; font-weight: 600; color: var(--oas-accent); text-decoration: none; display: inline-flex; align-items: center; gap: 4px; padding-top: 4px; }
+      .f-link:hover { color: #b1c3ff; }
 
-      .foot { margin-top: 64px; text-align: center; font-size: 13px; color: var(--muted); }
-      .foot a { color: var(--muted); text-decoration: none; }
-      .foot a:hover { color: var(--text); text-decoration: underline; }
-      .foot-sep { margin: 0 8px; color: var(--muted2); }
+      .foot {
+        margin-top: 40px; padding: 28px 0 0;
+        border-top: 1px solid var(--oas-border);
+        display: flex; flex-wrap: wrap; justify-content: center; align-items: center;
+        font-size: 12.5px; color: var(--oas-text-muted);
+        text-align: center;
+      }
+      .foot a { color: var(--oas-text-muted); text-decoration: none; }
+      .foot a:hover { color: var(--oas-text); }
+      .foot-sep { margin: 0 6px; color: var(--oas-text-dim); }
 
-      @media (max-width: 980px) {
-        .hero { grid-template-columns: 1fr; gap: 36px; }
-        .hero h1 { font-size: 40px; }
-        .compare-grid { grid-template-columns: 1fr; }
+      @media (max-width: 1020px) {
+        .hero { grid-template-columns: 1fr; gap: 44px; padding-bottom: 56px; }
+        .anchor-strip { grid-template-columns: repeat(2, 1fr); gap: 12px 18px; }
+        .anchor { border-left: 0; padding-left: 0; }
+        .anchor:nth-child(3), .anchor:nth-child(4) { border-top: 1px solid var(--oas-border); padding-top: 12px; }
+        .anchor:nth-child(4) { padding-left: 18px; }
+        .f-grid { grid-template-columns: 1fr; }
       }
-      @media (max-width: 520px) {
-        .hero h1 { font-size: 32px; }
-        .terminal { font-size: 12px; }
+      @media (max-width: 560px) {
+        .wrap { padding: 32px 18px 64px; }
+        .hero h1 { font-size: 36px; }
+        .nav-word { display: none; }
+        .nav-link[data-full] { display: none; }
       }
+
+      @media (prefers-reduced-motion: reduce) {
+        .t-cursor, .cta, .f-card { animation: none; transition: none; }
+      }
+
+      /* IntersectionObserver 的 fade-in：CSS 提供 transition 兜底，防止 JS 加载失败时元素永远透明 */
+      .f-card { transition: opacity .6s ease, transform .6s ease, border-color .16s ease; }
     </style>
   </head>
   <body>
@@ -217,9 +280,9 @@
         </a>
         <div class="nav-right">
           <a class="nav-link" href="https://oas-ui.dev" target="_blank" rel="noopener" data-i18n="nav.docs">组件文档</a>
-          <a class="nav-link" href="https://github.com/openappsys/oas-ui-templates" target="_blank" rel="noopener" data-i18n="cta.github.text">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.7.5.5 5.7.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C18.5 6 19.5 6.3 19.5 6.3c.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.2c0 .3.2.7.8.6 4.6-1.5 7.9-5.8 7.9-10.9C23.5 5.7 18.3.5 12 .5z"/></svg>
-            <span>GitHub</span>
+          <a class="nav-link" href="https://github.com/openappsys/oas-ui-templates" target="_blank" rel="noopener" data-full>
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.7.5.5 5.7.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C18.5 6 19.5 6.3 19.5 6.3c.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.2c0 .3.2.7.8.6 4.6-1.5 7.9-5.8 7.9-10.9C23.5 5.7 18.3.5 12 .5z"/></svg>
+            <span data-i18n="nav.github">GitHub</span>
           </a>
           <div class="lang-switch" role="group" aria-label="Language">
             <button type="button" data-lang="zh-CN" aria-pressed="true">中</button>
@@ -230,285 +293,472 @@
     </nav>
 
     <div class="wrap">
-      <!-- HERO：左文字 + 右终端 -->
-      <div class="hero">
+      <section class="hero" aria-labelledby="hero-title">
         <div class="hero-left">
-          <div class="eyebrow" data-i18n="hero.eyebrow">原生的 Web Components · 官方模板集合</div>
-          <h1><span class="grad" data-i18n="meta.title">OAS-UI Templates</span></h1>
-          <p class="lede" data-i18n="hero.lede">基于 <strong data-i18n="intro.subtitle2">oas-ui</strong> Web Components 的官方模板集合。零框架运行时，TypeScript + Vite，三套范式覆盖<strong>绝大多数后台落地场景</strong>。</p>
-          <div class="hero-ctas">
+          <span class="hero-eyebrow" data-i18n="hero.eyebrow">Official template collection for oas-ui</span>
+          <h1 id="hero-title"><span class="grad" data-i18n="hero.title">oas-ui</span> <span data-i18n="hero.title2">official template collection</span></h1>
+          <p class="lede" data-i18n="hero.lede">Official admin templates for the <strong>oas-ui</strong> Web Components library. Zero-framework runtime · TypeScript + Vite · three delivery styles covering SPA / CDN / MPA. <strong>Pull, run, ship.</strong></p>
+          <div class="anchor-strip" aria-label="at-a-glance">
+            <div class="anchor"><span class="anchor-num">3<small data-i18n="anchor.1.u">templates</small></span><span class="anchor-k" data-i18n="anchor.1.k">范式可选</span></div>
+            <div class="anchor"><span class="anchor-num">0<small data-i18n="anchor.2.u">framework</small></span><span class="anchor-k" data-i18n="anchor.2.k">无框架运行时</span></div>
+            <div class="anchor"><span class="anchor-num">TS<small>+ Vite</small></span><span class="anchor-k" data-i18n="anchor.3.k">类型安全 + 极速 HMR</span></div>
+            <div class="anchor"><span class="anchor-num">&lt;215<small data-i18n="anchor.4.u">ms</small></span><span class="anchor-k" data-i18n="anchor.4.k">冷启动到 dev server</span></div>
+          </div>
+          <div class="ctas">
             <a class="cta cta--primary" href="./admin-pro/vanilla-html/" data-i18n="cta.live">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3" fill="currentColor" stroke="none"/></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4" fill="currentColor" stroke="none"/></svg>
               <span data-i18n="cta.live.text">在线预览</span>
             </a>
             <a class="cta cta--ghost" href="https://github.com/openappsys/oas-ui-templates" target="_blank" rel="noopener" data-i18n="cta.github">
-              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.7.5.5 5.7.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C18.5 6 19.5 6.3 19.5 6.3c.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.2c0 .3.2.7.8.6 4.6-1.5 7.9-5.8 7.9-10.9C23.5 5.7 18.3.5 12 .5z"/></svg>
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.7.5.5 5.7.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C18.5 6 19.5 6.3 19.5 6.3c.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.2c0 .3.2.7.8.6 4.6-1.5 7.9-5.8 7.9-10.9C23.5 5.7 18.3.5 12 .5z"/></svg>
               <span data-i18n="cta.github.text">GitHub</span>
             </a>
           </div>
         </div>
-        <div class="terminal">
+
+        <div class="terminal" aria-label="terminal demo">
           <div class="terminal-bar">
             <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
-            <span class="terminal-title" data-i18n="term.title">terminal — 拉取并运行</span>
+            <span class="terminal-title" data-i18n="term.title">terminal — pull &amp; run</span>
           </div>
-          <div class="terminal-body">
-            <div class="terminal-cmd"><span class="prompt">$</span><span class="cmd">npx degit openappsys/oas-ui-templates/templates/admin-pro/vanilla-html my-admin</span></div>
-            <div class="terminal-out" data-i18n="term.out1"># 已下载完整后台模版 · 零框架运行时 · 即取即用</div>
-            <div class="terminal-cmd"><span class="prompt">$</span><span class="cmd">cd my-admin && pnpm i && pnpm dev</span></div>
-            <div class="terminal-ok" data-i18n="term.out2">✓ ready in 215ms — http://localhost:5173</div>
-          </div>
+          <div class="terminal-body" id="term" aria-live="polite"></div>
         </div>
-      </div>
+      </section>
 
-      <!-- COMPARE 三模板对比表 -->
-      <div class="compare">
-        <div class="compare-head">
-          <h2><span class="grad" data-i18n="compare.title">三套范式，按需选择</span></h2>
-          <p data-i18n="compare.subtitle">同样的 oas-ui 组件库，三种交付方式覆盖从 SPA 到 MPA 的全部后台场景。</p>
+      <section class="features" aria-labelledby="features-title">
+        <div class="features-head">
+          <h2 id="features-title"><span class="grad" data-i18n="features.title">看见成品，再决定</span></h2>
+          <p data-i18n="features.sub">Same oas-ui library — how it looks under different frameworks and build styles.</p>
         </div>
-        <div class="compare-grid">
-          <a class="cmp" href="./admin-pro/vanilla-html/">
-            <div class="cmp-head">
-              <div class="cmp-name" data-i18n="cmp.vanilla.name">admin-pro / vanilla</div>
-              <div class="cmp-tag" data-i18n="cmp.vanilla.tag">首推</div>
+        <div class="f-grid">
+          <article class="f-card">
+            <div class="f-shot">
+              <div class="f-shot--fallback" aria-hidden="true">
+                <svg viewBox="0 0 320 200" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="vanilla-bg" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0" stop-color="#0d1830"/>
+                      <stop offset="1" stop-color="#0a1326"/>
+                    </linearGradient>
+                  </defs>
+                  <rect width="320" height="200" fill="url(#vanilla-bg)"/>
+                  <!-- top bar -->
+                  <rect x="0" y="0" width="320" height="22" fill="#10182c" stroke="#1d2742"/>
+                  <circle cx="12" cy="11" r="3" fill="#5b8cff"/>
+                  <rect x="22" y="7" width="56" height="8" rx="2" fill="#3a4b75"/>
+                  <rect x="248" y="6" width="58" height="10" rx="3" fill="#1d2742"/>
+                  <!-- sidebar -->
+                  <rect x="0" y="22" width="84" height="178" fill="#0f1729" stroke="#1d2742"/>
+                  <rect x="10" y="34" width="64" height="8" rx="2" fill="#5b8cff" opacity=".75"/>
+                  <rect x="10" y="52" width="44" height="5" rx="2" fill="#2a3658"/>
+                  <rect x="10" y="64" width="56" height="5" rx="2" fill="#1d2742"/>
+                  <rect x="10" y="76" width="40" height="5" rx="2" fill="#1d2742"/>
+                  <rect x="10" y="88" width="52" height="5" rx="2" fill="#1d2742"/>
+                  <rect x="10" y="100" width="36" height="5" rx="2" fill="#1d2742"/>
+                  <rect x="10" y="112" width="48" height="5" rx="2" fill="#1d2742"/>
+                  <rect x="10" y="124" width="32" height="5" rx="2" fill="#1d2742"/>
+                  <rect x="10" y="136" width="56" height="5" rx="2" fill="#1d2742"/>
+                  <!-- main area: 4 KPI cards -->
+                  <rect x="96" y="34" width="100" height="46" rx="6" fill="#10182c" stroke="#1d2742"/>
+                  <rect x="104" y="42" width="44" height="6" rx="2" fill="#3a4b75"/>
+                  <rect x="104" y="56" width="56" height="10" rx="2" fill="#5b8cff" opacity=".85"/>
+                  <rect x="104" y="70" width="34" height="4" rx="2" fill="#1d2742"/>
+                  <rect x="204" y="34" width="100" height="46" rx="6" fill="#10182c" stroke="#1d2742"/>
+                  <rect x="212" y="42" width="48" height="6" rx="2" fill="#3a4b75"/>
+                  <rect x="212" y="56" width="48" height="10" rx="2" fill="#7c5dff" opacity=".85"/>
+                  <rect x="212" y="70" width="30" height="4" rx="2" fill="#1d2742"/>
+                  <!-- chart -->
+                  <rect x="96" y="88" width="208" height="56" rx="6" fill="#10182c" stroke="#1d2742"/>
+                  <rect x="104" y="96" width="44" height="6" rx="2" fill="#3a4b75"/>
+                  <polyline points="108,134 132,124 156,128 180,112 204,118 228,104 252,108 276,96 296,100" fill="none" stroke="#5b8cff" stroke-width="1.5"/>
+                  <polyline points="108,134 132,128 156,132 180,120 204,124 228,114 252,118 276,108 296,112" fill="none" stroke="#7c5dff" stroke-width="1.5" opacity=".55"/>
+                  <!-- table -->
+                  <rect x="96" y="152" width="208" height="40" rx="6" fill="#10182c" stroke="#1d2742"/>
+                  <rect x="104" y="160" width="36" height="6" rx="2" fill="#3a4b75"/>
+                  <rect x="150" y="160" width="60" height="6" rx="2" fill="#1d2742"/>
+                  <rect x="220" y="160" width="50" height="6" rx="2" fill="#1d2742"/>
+                  <rect x="104" y="174" width="36" height="6" rx="2" fill="#1d2742"/>
+                  <rect x="150" y="174" width="60" height="6" rx="2" fill="#1d2742"/>
+                  <rect x="220" y="174" width="50" height="6" rx="2" fill="#1d2742"/>
+                  <rect x="104" y="186" width="36" height="6" rx="2" fill="#1d2742"/>
+                  <rect x="150" y="186" width="60" height="6" rx="2" fill="#1d2742"/>
+                  <rect x="220" y="186" width="50" height="6" rx="2" fill="#1d2742"/>
+                </svg>
+              </div>
             </div>
-            <div class="cmp-meta">
-              <div class="cmp-row"><span class="cmp-k" data-i18n="cmp.build">构建</span><span class="cmp-v">Vite + TS</span></div>
-              <div class="cmp-row"><span class="cmp-k" data-i18n="cmp.runtime">运行时</span><span class="cmp-v cmp-v--green">0 框架</span></div>
-              <div class="cmp-row"><span class="cmp-k" data-i18n="cmp.modules">模块</span><span class="cmp-v" data-i18n="cmp.vanilla.modules">全功能后台</span></div>
-              <div class="cmp-row"><span class="cmp-k" data-i18n="cmp.fit">适用</span><span class="cmp-v" data-i18n="cmp.vanilla.fit">中大型后台</span></div>
+            <div class="f-body">
+              <h3 class="f-title">
+                <span>admin-pro / vanilla</span>
+                <span class="m-tag" data-i18n="m.vanilla.tag">首推</span>
+              </h3>
+              <p class="f-desc" data-i18n="feat.vanilla.desc">中大型后台首选。设置中心把外观 / 布局 / 数据 / 通知四类配置拆成独立 Tab，所有偏好持久化。</p>
+              <div class="f-feats">
+                <span class="f-feat" data-i18n="feat.guard">权限守卫</span>
+                <span class="f-feat" data-i18n="feat.settings">设置中心</span>
+                <span class="f-feat" data-i18n="feat.tabs">多页签</span>
+                <span class="f-feat" data-i18n="feat.nav">可配置导航</span>
+                <span class="f-feat" data-i18n="feat.i18n">i18n</span>
+                <span class="f-feat" data-i18n="feat.theme">主题定制</span>
+              </div>
+              <a class="f-link" href="./admin-pro/vanilla-html/" data-i18n="feat.cta">查看完整后台 →</a>
             </div>
-            <div class="cmp-feats">
-              <span class="cmp-feat" data-i18n="feat.router">权限守卫</span>
-              <span class="cmp-feat" data-i18n="feat.settings">设置中心</span>
-              <span class="cmp-feat" data-i18n="feat.theme">主题定制</span>
-              <span class="cmp-feat" data-i18n="feat.i18n">i18n</span>
+          </article>
+
+          <article class="f-card">
+            <div class="f-shot f-shot--fallback" aria-hidden="true">
+              <svg viewBox="0 0 320 200" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="cdn-bg" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0" stop-color="#0d1830"/>
+                    <stop offset="1" stop-color="#0a1326"/>
+                  </linearGradient>
+                </defs>
+                <rect width="320" height="200" fill="url(#cdn-bg)"/>
+                <rect x="16" y="16" width="288" height="20" rx="4" fill="#1a2540" stroke="#2a3658"/>
+                <circle cx="28" cy="26" r="3" fill="#34d399"/>
+                <rect x="40" y="22" width="56" height="8" rx="2" fill="#3a4b75"/>
+                <rect x="16" y="46" width="80" height="138" rx="6" fill="#10182c" stroke="#1d2742"/>
+                <rect x="24" y="56" width="64" height="8" rx="2" fill="#2a3658"/>
+                <rect x="24" y="74" width="48" height="6" rx="2" fill="#1d2742"/>
+                <rect x="24" y="88" width="56" height="6" rx="2" fill="#1d2742"/>
+                <rect x="24" y="102" width="40" height="6" rx="2" fill="#1d2742"/>
+                <rect x="24" y="116" width="60" height="6" rx="2" fill="#1d2742"/>
+                <rect x="24" y="130" width="44" height="6" rx="2" fill="#1d2742"/>
+                <rect x="106" y="46" width="198" height="58" rx="6" fill="#10182c" stroke="#1d2742"/>
+                <rect x="114" y="56" width="80" height="8" rx="2" fill="#3a4b75"/>
+                <rect x="114" y="72" width="120" height="6" rx="2" fill="#1d2742"/>
+                <rect x="114" y="84" width="100" height="6" rx="2" fill="#1d2742"/>
+                <rect x="262" y="76" width="34" height="20" rx="4" fill="#5b8cff" opacity=".75"/>
+                <rect x="106" y="112" width="96" height="72" rx="6" fill="#10182c" stroke="#1d2742"/>
+                <rect x="114" y="122" width="50" height="6" rx="2" fill="#3a4b75"/>
+                <rect x="114" y="136" width="80" height="4" rx="2" fill="#1d2742"/>
+                <rect x="114" y="146" width="70" height="4" rx="2" fill="#1d2742"/>
+                <rect x="114" y="156" width="60" height="4" rx="2" fill="#1d2742"/>
+                <rect x="114" y="166" width="74" height="4" rx="2" fill="#1d2742"/>
+                <rect x="208" y="112" width="96" height="72" rx="6" fill="#10182c" stroke="#1d2742"/>
+                <rect x="216" y="122" width="50" height="6" rx="2" fill="#3a4b75"/>
+                <rect x="216" y="136" width="80" height="4" rx="2" fill="#1d2742"/>
+                <rect x="216" y="146" width="60" height="4" rx="2" fill="#1d2742"/>
+                <rect x="216" y="156" width="74" height="4" rx="2" fill="#1d2742"/>
+                <rect x="216" y="166" width="50" height="4" rx="2" fill="#1d2742"/>
+              </svg>
             </div>
-            <span class="cmp-cta" data-i18n="card.cta">→ 立即体验</span>
-          </a>
-          <a class="cmp" href="./admin-pro/cdn/">
-            <div class="cmp-head">
-              <div class="cmp-name" data-i18n="cmp.cdn.name">admin-pro / cdn</div>
-              <div class="cmp-tag" data-i18n="cmp.cdn.tag">零构建</div>
+            <div class="f-body">
+              <h3 class="f-title">
+                <span>admin-pro / cdn</span>
+                <span class="m-tag m-tag--green" data-i18n="m.cdn.tag">零构建</span>
+              </h3>
+              <p class="f-desc" data-i18n="feat.cdn.desc">通过 unpkg 引入 oas-ui，原生 JS 直写：登录、CRUD、表单、i18n 全部开箱即用，不走打包。</p>
+              <div class="f-feats">
+                <span class="f-feat" data-i18n="feat.cdn">CDN</span>
+                <span class="f-feat" data-i18n="feat.crud">CRUD</span>
+                <span class="f-feat" data-i18n="feat.i18n">i18n</span>
+                <span class="f-feat" data-i18n="feat.nobuild">零构建</span>
+                <span class="f-feat" data-i18n="feat.form">表单</span>
+              </div>
+              <a class="f-link" href="./admin-pro/cdn/" data-i18n="feat.cta">查看 cdn 版本 →</a>
             </div>
-            <div class="cmp-meta">
-              <div class="cmp-row"><span class="cmp-k" data-i18n="cmp.build">构建</span><span class="cmp-v">无</span></div>
-              <div class="cmp-row"><span class="cmp-k" data-i18n="cmp.runtime">运行时</span><span class="cmp-v cmp-v--green" data-i18n="cmp.cdn.runtime">0 框架</span></div>
-              <div class="cmp-row"><span class="cmp-k" data-i18n="cmp.modules">模块</span><span class="cmp-v" data-i18n="cmp.cdn.modules">登录+CRUD</span></div>
-              <div class="cmp-row"><span class="cmp-k" data-i18n="cmp.fit">适用</span><span class="cmp-v" data-i18n="cmp.cdn.fit">轻量演示</span></div>
+          </article>
+
+          <article class="f-card">
+            <div class="f-shot f-shot--fallback" aria-hidden="true">
+              <svg viewBox="0 0 320 200" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="mpa-bg" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0" stop-color="#0d1830"/>
+                    <stop offset="1" stop-color="#0a1326"/>
+                  </linearGradient>
+                </defs>
+                <rect width="320" height="200" fill="url(#mpa-bg)"/>
+                <rect x="20" y="20" width="200" height="160" rx="8" fill="#0f1a30" stroke="#2a3658" stroke-width="1.5"/>
+                <rect x="32" y="32" width="60" height="8" rx="2" fill="#3a4b75"/>
+                <rect x="32" y="48" width="176" height="6" rx="2" fill="#1d2742"/>
+                <rect x="32" y="60" width="140" height="6" rx="2" fill="#1d2742"/>
+                <rect x="32" y="80" width="176" height="100" rx="4" fill="#10182c" stroke="#1d2742"/>
+                <line x1="32" y1="100" x2="208" y2="100" stroke="#1d2742"/>
+                <rect x="40" y="108" width="40" height="4" rx="2" fill="#2a3658"/>
+                <rect x="40" y="120" width="100" height="4" rx="2" fill="#1d2742"/>
+                <rect x="40" y="132" width="80" height="4" rx="2" fill="#1d2742"/>
+                <rect x="40" y="144" width="120" height="4" rx="2" fill="#1d2742"/>
+                <rect x="40" y="156" width="70" height="4" rx="2" fill="#1d2742"/>
+                <rect x="40" y="168" width="90" height="4" rx="2" fill="#1d2742"/>
+                <path d="M226 100 L240 100 M236 96 L240 100 L236 104" stroke="#5b8cff" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+                <rect x="246" y="60" width="60" height="80" rx="6" fill="#0f1a30" stroke="#1d2742" opacity=".75"/>
+                <rect x="252" y="68" width="36" height="6" rx="2" fill="#3a4b75"/>
+                <rect x="252" y="80" width="48" height="4" rx="2" fill="#1d2742"/>
+                <rect x="252" y="90" width="40" height="4" rx="2" fill="#1d2742"/>
+                <rect x="252" y="100" width="46" height="4" rx="2" fill="#1d2742"/>
+                <rect x="252" y="110" width="32" height="4" rx="2" fill="#1d2742"/>
+                <rect x="252" y="122" width="40" height="8" rx="2" fill="#5b8cff" opacity=".5"/>
+              </svg>
             </div>
-            <div class="cmp-feats">
-              <span class="cmp-feat" data-i18n="feat.cdn">CDN</span>
-              <span class="cmp-feat" data-i18n="feat.crud">CRUD</span>
-              <span class="cmp-feat" data-i18n="feat.i18n">i18n</span>
-              <span class="cmp-feat" data-i18n="feat.nobuild">零构建</span>
+            <div class="f-body">
+              <h3 class="f-title">
+                <span>admin-pro / cdn-mpa</span>
+                <span class="m-tag m-tag--violet" data-i18n="m.mpa.tag">零构建 · MPA</span>
+              </h3>
+              <p class="f-desc" data-i18n="feat.mpa.desc">最朴素的多页范式：一页一 HTML、真实浏览器跳转、公共 JS 抽取复用——零运行时假设。</p>
+              <div class="f-feats">
+                <span class="f-feat" data-i18n="feat.mpa">多页应用</span>
+                <span class="f-feat" data-i18n="feat.crud">CRUD</span>
+                <span class="f-feat" data-i18n="feat.i18n">i18n</span>
+                <span class="f-feat" data-i18n="feat.nobuild">零构建</span>
+                <span class="f-feat" data-i18n="feat.form">表单</span>
+              </div>
+              <a class="f-link" href="./admin-pro/cdn-mpa/" data-i18n="feat.cta">查看 cdn-mpa 版本 →</a>
             </div>
-            <span class="cmp-cta" data-i18n="card.cta">→ 立即体验</span>
-          </a>
-          <a class="cmp" href="./admin-pro/cdn-mpa/">
-            <div class="cmp-head">
-              <div class="cmp-name" data-i18n="cmp.mpa.name">admin-pro / cdn-mpa</div>
-              <div class="cmp-tag" data-i18n="cmp.mpa.tag">零构建 · MPA</div>
-            </div>
-            <div class="cmp-meta">
-              <div class="cmp-row"><span class="cmp-k" data-i18n="cmp.build">构建</span><span class="cmp-v">无</span></div>
-              <div class="cmp-row"><span class="cmp-k" data-i18n="cmp.runtime">运行时</span><span class="cmp-v cmp-v--green" data-i18n="cmp.mpa.runtime">0 框架</span></div>
-              <div class="cmp-row"><span class="cmp-k" data-i18n="cmp.modules">模块</span><span class="cmp-v" data-i18n="cmp.mpa.modules">登录+CRUD</span></div>
-              <div class="cmp-row"><span class="cmp-k" data-i18n="cmp.fit">适用</span><span class="cmp-v" data-i18n="cmp.mpa.fit">传统 MPA</span></div>
-            </div>
-            <div class="cmp-feats">
-              <span class="cmp-feat" data-i18n="feat.mpa">多页应用</span>
-              <span class="cmp-feat" data-i18n="feat.crud">CRUD</span>
-              <span class="cmp-feat" data-i18n="feat.i18n">i18n</span>
-              <span class="cmp-feat" data-i18n="feat.nobuild">零构建</span>
-            </div>
-            <span class="cmp-cta" data-i18n="card.cta">→ 立即体验</span>
-          </a>
+          </article>
         </div>
-      </div>
+      </section>
 
       <footer class="foot">
-        <span data-i18n="foot.text">OAS-UI Templates</span>
+        <span data-i18n="foot.copy">© 2026 OpenAppSys · OAS-UI Templates</span>
+        <span class="foot-sep">·</span>
+        <a href="https://github.com/openappsys/oas-ui-templates/blob/main/LICENSE" target="_blank" rel="noopener" data-i18n="foot.license">MIT OR Apache-2.0</a>
         <span class="foot-sep">·</span>
         <a href="https://github.com/openappsys/oas-ui-templates" target="_blank" rel="noopener">GitHub</a>
-        <span class="foot-sep">·</span>
-        <a href="https://github.com/openappsys/oas-ui-templates/blob/main/LICENSE" target="_blank" rel="noopener">MIT OR Apache-2.0</a>
-        <span class="foot-sep">·</span>
-        <a href="https://oas-ui.dev" target="_blank" rel="noopener">oas-ui.dev</a>
       </footer>
     </div>
 
     <script>
       var I18N = {
-        'zh-CN': {
-          'meta.title': 'OAS-UI Templates',
-          'nav.docs': '组件文档',
-          'hero.eyebrow': '原生的 Web Components · 官方模板集合',
-          'intro.subtitle2': 'oas-ui',
-          'hero.lede': '基于 <strong data-i18n="intro.subtitle2">oas-ui</strong> Web Components 的官方模板集合。零框架运行时，TypeScript + Vite，三套范式覆盖<strong>绝大多数后台落地场景</strong>。',
-          'cta.live': '',
-          'cta.live.text': '在线预览',
-          'cta.github': '',
-          'cta.github.text': 'GitHub',
-          'shot.vanilla.name': 'admin-pro / vanilla',
-          'shot.vanilla.tag': '完整功能后台 · Vite + TS',
-          'shot.cdn.name': 'admin-pro / cdn',
-          'shot.cdn.tag': '零构建 · CDN',
-          'shot.mpa.name': 'admin-pro / cdn-mpa',
-          'shot.mpa.tag': '零构建 · MPA',
-          'term.title': 'terminal — 拉取并运行',
-          'term.out1': '# 已下载完整后台模版 · 零框架运行时 · 即取即用',
-          'term.out2': '✓ ready in 215ms — http://localhost:5173',
-          'compare.title': '三套范式，按需选择',
-          'compare.subtitle': '同样的 oas-ui 组件库，三种交付方式覆盖从 SPA 到 MPA 的全部后台场景。',
-          'cmp.build': '构建',
-          'cmp.runtime': '运行时',
-          'cmp.modules': '模块',
-          'cmp.fit': '适用',
-          'cmp.vanilla.name': 'admin-pro / vanilla',
-          'cmp.vanilla.tag': '首推',
-          'cmp.vanilla.modules': '全功能后台',
-          'cmp.vanilla.fit': '中大型后台',
-          'cmp.cdn.name': 'admin-pro / cdn',
-          'cmp.cdn.tag': '零构建',
-          'cmp.cdn.runtime': '0 框架',
-          'cmp.cdn.modules': '登录+CRUD',
-          'cmp.cdn.fit': '轻量演示',
-          'cmp.mpa.name': 'admin-pro / cdn-mpa',
-          'cmp.mpa.tag': '零构建 · MPA',
-          'cmp.mpa.runtime': '0 框架',
-          'cmp.mpa.modules': '登录+CRUD',
-          'cmp.mpa.fit': '传统 MPA',
-          'feat.router': '权限守卫',
-          'feat.settings': '设置中心',
-          'feat.theme': '主题定制',
-          'feat.i18n': 'i18n',
-          'feat.cdn': 'CDN',
-          'feat.crud': 'CRUD',
-          'feat.mpa': '多页应用',
-          'feat.nobuild': '零构建',
-          'feat.nav': '可配置导航',
-          'templates.title': '挑一个模板，上手即可',
-          'templates.subtitle': '从 vanilla 完整 SPA，到 cdn / cdn-mpa 极致轻量，按你的部署场景选。',
-          'card.adminPro.name': 'admin-pro / vanilla-html',
-          'card.adminPro.tag': '首推',
-          'card.adminPro.desc': '功能最全的后台模版：可配置导航、设置中心、i18n、权限守卫、多页签、可视化与表单。',
-          'card.cdn.name': 'admin-pro / cdn',
-          'card.cdn.tag': '零构建',
-          'card.cdn.desc': '零构建轻量后台：unpkg CDN 引入 oas-ui，登录/路由/CRUD/表单/i18n，无需打包。',
-          'card.mpa.name': 'admin-pro / cdn-mpa',
-          'card.mpa.tag': 'MPA',
-          'card.mpa.desc': '零构建多页应用：一页一 HTML、真实跳转、公共 JS 抽取——传统原始做法。',
-          'card.cta': '→ 立即体验',
-          'foot.text': 'OAS-UI Templates ·',
+        "zh-CN": {
+          "meta.title": "OAS-UI Templates",
+          "meta.desc": "基于 oas-ui Web Components 的官方后台模板集合：零框架运行时、TypeScript + Vite，三套范式覆盖 SPA / CDN / MPA。",
+          "nav.docs": "组件文档",
+          "nav.github": "GitHub",
+          "hero.eyebrow": "原生 Web Components · 官方模板集合",
+"hero.eyebrow": "面向 oas-ui 的官方模板集合",
+"hero.title": "oas-ui",
+"hero.title2": "官方模板集合",
+"hero.lede": "面向 <strong>oas-ui</strong> Web Components 组件库的官方后台模板。零框架运行时 · TypeScript + Vite · 三套范式覆盖 SPA / CDN / MPA，<strong>拉下来就能跑</strong>。",
+          "anchor.2.u": "framework", "anchor.2.k": "无框架运行时",
+          "anchor.3.k": "类型安全 + 极速 HMR",
+          "anchor.4.u": "ms", "anchor.4.k": "冷启动到 dev server",
+          "cta.live": "", "cta.live.text": "在线预览",
+          "cta.github": "", "cta.github.text": "GitHub",
+          "term.title": "terminal — pull & run",
+          "m.cta": "→ Try",
+          "m.vanilla.tag": "首推",
+          "m.vanilla.desc": "完整功能后台：可配置导航、设置中心、权限守卫、多页签、可视化、表单与请求层。",
+          "m.vanilla.s1": "Vite + TS", "m.vanilla.s2": "SPA",
+          "m.cdn.tag": "零构建",
+          "m.cdn.desc": "unpkg CDN + 原生 JS：登录 / 路由 / CRUD / 表单 / i18n，无需打包。",
+          "m.cdn.s1": "0 build", "m.cdn.s2": "SPA",
+          "m.mpa.tag": "零构建 · MPA",
+          "m.mpa.desc": "一页一 HTML、真实跳转、公共 JS 抽取——最朴素的多页应用范式。",
+          "m.mpa.s1": "0 build", "m.mpa.s2": "MPA",
+          "features.title": "看见成品，再决定",
+          "features.sub": "同一个 oas-ui 组件库，在不同框架 / 打包方式下的样子。",
+          "feat.vanilla.desc": "中大型后台首选。设置中心把外观 / 布局 / 数据 / 通知四类配置拆成独立 Tab，所有偏好持久化。",
+          "feat.cdn.desc": "通过 unpkg 引入 oas-ui，原生 JS 直写：登录、CRUD、表单、i18n 全部开箱即用，不走打包。",
+          "feat.mpa.desc": "最朴素的多页范式：一页一 HTML、真实浏览器跳转、公共 JS 抽取复用——零运行时假设。",
+          "feat.cta": "查看 →",
+          "feat.guard": "权限守卫",
+          "feat.settings": "设置中心",
+          "feat.tabs": "多页签",
+          "feat.nav": "可配置导航",
+          "feat.i18n": "i18n",
+          "feat.theme": "主题定制",
+          "feat.cdn": "CDN",
+          "feat.crud": "CRUD",
+          "feat.mpa": "多页应用",
+          "feat.nobuild": "零构建",
+          "feat.form": "表单",
+          "foot.copy": "© 2026 OpenAppSys · OAS-UI Templates",
+          "foot.license": "MIT OR Apache-2.0",
         },
         en: {
-          'meta.title': 'OAS-UI Templates',
-          'nav.docs': 'Docs',
-          'hero.eyebrow': 'Native Web Components · Official template collection',
-          'intro.subtitle2': 'oas-ui',
-          'hero.lede': 'The official template collection built on oas-ui Web Components. Zero-framework runtime, TypeScript + Vite — three delivery styles that cover <strong>almost any admin scenario</strong>.',
-          'cta.live': '',
-          'cta.live.text': 'Live Preview',
-          'cta.github': '',
-          'cta.github.text': 'GitHub',
-          'shot.vanilla.name': 'admin-pro / vanilla',
-          'shot.vanilla.tag': 'Full-featured admin · Vite + TS',
-          'shot.cdn.name': 'admin-pro / cdn',
-          'shot.cdn.tag': 'Zero-build · CDN',
-          'shot.mpa.name': 'admin-pro / cdn-mpa',
-          'shot.mpa.tag': 'Zero-build · MPA',
-          'term.title': 'terminal — pull & run',
-          'term.out1': '# full-featured admin template downloaded · zero-framework · ready to use',
-          'term.out2': '✓ ready in 215ms — http://localhost:5173',
-          'compare.title': 'Three styles, pick what fits',
-          'compare.subtitle': 'Same oas-ui component library, three flavors covering everything from SPA to MPA.',
-          'cmp.build': 'Build',
-          'cmp.runtime': 'Runtime',
-          'cmp.modules': 'Scope',
-          'cmp.fit': 'Fit for',
-          'cmp.vanilla.name': 'admin-pro / vanilla',
-          'cmp.vanilla.tag': 'Top pick',
-          'cmp.vanilla.modules': 'Full admin',
-          'cmp.vanilla.fit': 'Medium-large admin',
-          'cmp.cdn.name': 'admin-pro / cdn',
-          'cmp.cdn.tag': 'Zero-build',
-          'cmp.cdn.runtime': '0-framework',
-          'cmp.cdn.modules': 'Login+CRUD',
-          'cmp.cdn.fit': 'Lightweight demo',
-          'cmp.mpa.name': 'admin-pro / cdn-mpa',
-          'cmp.mpa.tag': 'Zero-build · MPA',
-          'cmp.mpa.runtime': '0-framework',
-          'cmp.mpa.modules': 'Login+CRUD',
-          'cmp.mpa.fit': 'Classic MPA',
-          'feat.router': 'Route guards',
-          'feat.settings': 'Settings center',
-          'feat.theme': 'Theme editor',
-          'feat.i18n': 'i18n zh/en',
-          'feat.cdn': 'CDN',
-          'feat.crud': 'CRUD',
-          'feat.mpa': 'MPA',
-          'feat.nobuild': 'Zero-build',
-          'feat.nav': 'Configurable nav',
-          'templates.title': 'Pick a template and ship',
-          'templates.subtitle': 'From a full SPA (vanilla) to ultra-light CDN variants, choose by deployment scenario.',
-          'card.adminPro.name': 'admin-pro / vanilla-html',
-          'card.adminPro.tag': 'Top pick',
-          'card.adminPro.desc': 'The most complete admin template: configurable nav, settings center, i18n, route guards, multi-tab, data viz, forms and request layer.',
-          'card.cdn.name': 'admin-pro / cdn',
-          'card.cdn.tag': 'zero-build',
-          'card.cdn.desc': 'Zero-build lightweight admin: oas-ui via unpkg CDN — login / router / CRUD / form / zh-en switch, no bundling.',
-          'card.mpa.name': 'admin-pro / cdn-mpa',
-          'card.mpa.tag': 'MPA',
-          'card.mpa.desc': 'Zero-build multi-page app: one HTML per page, real navigation, shared JS extracted — the classic, dead-simple approach.',
-          'card.cta': '→ Try it now',
-          'foot.text': 'OAS-UI Templates ·',
-        },
+          "meta.title": "OAS-UI Templates",
+          "meta.desc": "Official admin template collection on oas-ui Web Components. Zero-framework runtime, TypeScript + Vite, three delivery styles for SPA / CDN / MPA.",
+          "nav.docs": "Docs",
+          "nav.github": "GitHub",
+          "hero.eyebrow": "Native Web Components · Official template collection",
+"hero.eyebrow": "Official template collection for oas-ui",
+"hero.title": "oas-ui",
+"hero.title2": "official template collection",
+"hero.lede": "Official admin templates for the <strong>oas-ui</strong> Web Components library. Zero-framework runtime · TypeScript + Vite · three delivery styles covering SPA / CDN / MPA. <strong>Pull, run, ship.</strong>",
+          "anchor.2.u": "framework", "anchor.2.k": "no framework runtime",
+          "anchor.3.k": "typed + instant HMR",
+          "anchor.4.u": "ms", "anchor.4.k": "cold start to dev server",
+          "cta.live": "", "cta.live.text": "Live preview",
+          "cta.github": "", "cta.github.text": "GitHub",
+          "term.title": "terminal — pull & run",
+          "m.cta": "→ Try",
+          "m.vanilla.tag": "Top pick",
+          "m.vanilla.desc": "Full-featured admin: configurable nav, settings center, route guards, multi-tab, charts, forms and a request layer.",
+          "m.vanilla.s1": "Vite + TS", "m.vanilla.s2": "SPA",
+          "m.cdn.tag": "zero-build",
+          "m.cdn.desc": "oas-ui via unpkg CDN, plain JS: login / router / CRUD / form / i18n — no bundler.",
+          "m.cdn.s1": "0 build", "m.cdn.s2": "SPA",
+          "m.mpa.tag": "zero-build · MPA",
+          "m.mpa.desc": "One HTML per page, real navigation, shared JS extracted — the plainest multi-page approach.",
+          "m.mpa.s1": "0 build", "m.mpa.s2": "MPA",
+          "features.title": "See the result, then decide",
+          "features.sub": "Same oas-ui library — how it looks under different frameworks and build styles.",
+          "feat.vanilla.desc": "The default for medium-to-large admin apps. Settings center splits appearance / layout / data / notifications into independent tabs, all preferences persisted.",
+          "feat.cdn.desc": "Load oas-ui from unpkg and write plain JS — login, CRUD, forms and i18n ready out of the box, no bundler involved.",
+          "feat.mpa.desc": "The plainest multi-page style: one HTML per page, real browser navigation, shared JS extracted and reused — zero runtime assumptions.",
+          "feat.cta": "View →",
+          "feat.guard": "Route guards",
+          "feat.settings": "Settings center",
+          "feat.tabs": "Multi-tab",
+          "feat.nav": "Configurable nav",
+          "feat.i18n": "i18n zh/en",
+          "feat.theme": "Theme editor",
+          "feat.cdn": "CDN",
+          "feat.crud": "CRUD",
+          "feat.mpa": "MPA",
+          "feat.nobuild": "Zero-build",
+          "feat.form": "Forms",
+          "foot.copy": "© 2026 OpenAppSys · OAS-UI Templates",
+          "foot.license": "MIT OR Apache-2.0",
+        }
       }
-      var LOCALE_KEY = 'oas-templates.locale'
+      var LOCALE_KEY = "oas-templates.locale"
       function readSaved() {
-        try { var v = localStorage.getItem(LOCALE_KEY); return v === 'zh-CN' || v === 'en' ? v : null } catch (e) { return null }
+        try { var v = localStorage.getItem(LOCALE_KEY); return v === "zh-CN" || v === "en" ? v : null } catch (e) { return null }
       }
       function detect() {
         var saved = readSaved()
         if (saved) return saved
-        var n = (navigator.language || '').toLowerCase()
-        if (n === 'zh' || n.indexOf('zh-') === 0) return 'zh-CN'
-        return 'en'
+        var n = (navigator.language || "").toLowerCase()
+        if (n === "zh" || n.indexOf("zh-") === 0) return "zh-CN"
+        return "en"
       }
+      function dict() { var loc = document.documentElement.lang; return I18N[loc] || I18N["zh-CN"] }
       function applyLocale(loc) {
-        var dict = I18N[loc] || I18N['zh-CN']
+        var d = I18N[loc] || I18N["zh-CN"]
         document.documentElement.lang = loc
-        document.title = dict['meta.title']
-        var nodes = document.querySelectorAll('[data-i18n]')
+        document.title = d["meta.title"]
+        var meta = document.querySelector("meta[name=description]")
+        if (meta) meta.setAttribute("content", d["meta.desc"])
+        var nodes = document.querySelectorAll("[data-i18n]")
         for (var i = 0; i < nodes.length; i++) {
-          var key = nodes[i].getAttribute('data-i18n')
-          var val = dict[key]
+          var key = nodes[i].getAttribute("data-i18n")
+          var val = d[key]
           if (val === undefined) continue
-          // 支持嵌套 data-i18n 的 innerHTML（仅一层）；空值不覆盖（保留原 SVG/子节点）
-          if (key === 'hero.lede' || key === 'cta.live' || key === 'cta.github') {
-            if (val !== '' && val !== undefined) nodes[i].innerHTML = val
+          if (key === "hero.lede") {
+            if (val !== "") nodes[i].innerHTML = val
+          } else if (val === "") {
+            // parent contains other data-i18n children: keep as-is
           } else {
             nodes[i].textContent = val
           }
         }
-        var btns = document.querySelectorAll('.lang-switch [data-lang]')
+        var btns = document.querySelectorAll(".lang-switch [data-lang]")
         for (var j = 0; j < btns.length; j++) {
-          btns[j].setAttribute('aria-pressed', btns[j].getAttribute('data-lang') === loc ? 'true' : 'false')
+          btns[j].setAttribute("aria-pressed", btns[j].getAttribute("data-lang") === loc ? "true" : "false")
         }
       }
       function setLocale(loc) {
         try { localStorage.setItem(LOCALE_KEY, loc) } catch (e) {}
         applyLocale(loc)
+        if (window.__termCtl) { window.__termCtl.stop(); window.__termCtl.start() }
       }
+
+      function buildTerminal() {
+        var el = document.getElementById("term")
+        if (!el) return { stop: function(){}, start: function(){} }
+        var ctl = { stopped: false }
+        function clear() { el.innerHTML = "" }
+        function sleep(ms) { return new Promise(function(r){ setTimeout(r, ms) }) }
+        async function typeInto(node, text, speed) {
+          speed = speed || 22
+          for (var i = 0; i < text.length; i++) {
+            if (ctl.stopped) return false
+            node.textContent = text.slice(0, i + 1)
+            await sleep(speed)
+          }
+          return true
+        }
+        function line(cls, html) {
+          var d = document.createElement("div")
+          d.className = "t-line " + (cls || "")
+          d.innerHTML = html
+          el.appendChild(d)
+        }
+        async function runOnce(opts) {
+          // opts.loop: 兼容老调用；现在始终只跑一遍，停在 idle prompt
+          clear()
+          var isZh = (document.documentElement.lang === "zh-CN")
+          // line 1
+          var l1 = document.createElement("div")
+          l1.className = "t-line"
+          l1.innerHTML = "<span class=\"t-prompt\">$</span><span class=\"t-cmd\"></span><span class=\"t-cursor\"></span>"
+          el.appendChild(l1)
+          var cmdNode = l1.querySelector(".t-cmd")
+          var ok = await typeInto(cmdNode, "npx degit openappsys/oas-ui-templates/templates/admin-pro/vanilla-html my-admin", 18)
+          if (!ok) return
+          var cur = l1.querySelector(".t-cursor"); if (cur) cur.remove()
+          await sleep(280)
+          // line 2 (output)
+          line("t-out", "# " + (isZh ? "已下载完整后台模版 · 零框架运行时 · 即取即用" : "full-featured admin template downloaded · zero-framework · ready to use"))
+          await sleep(220)
+          // line 3: cd + pnpm install（不报时间——初次安装是几秒级，不能谎报 215ms）
+          var l3 = document.createElement("div")
+          l3.className = "t-line"
+          l3.innerHTML = "<span class=\"t-prompt\">$</span><span class=\"t-cmd\"></span><span class=\"t-cursor\"></span>"
+          el.appendChild(l3)
+          var cmd2 = l3.querySelector(".t-cmd")
+          ok = await typeInto(cmd2, "cd my-admin && pnpm install", 20)
+          if (!ok) return
+          var cur2 = l3.querySelector(".t-cursor"); if (cur2) cur2.remove()
+          await sleep(280)
+          // line 4: pnpm dev
+          var l4 = document.createElement("div")
+          l4.className = "t-line"
+          l4.innerHTML = "<span class=\"t-prompt\">$</span><span class=\"t-cmd\"></span><span class=\"t-cursor\"></span>"
+          el.appendChild(l4)
+          var cmd3 = l4.querySelector(".t-cmd")
+          ok = await typeInto(cmd3, "pnpm dev", 18)
+          if (!ok) return
+          var cur3 = l4.querySelector(".t-cursor"); if (cur3) cur3.remove()
+          await sleep(360)
+          // line 5 (ok)：215ms 专指 vite dev 起步，不指 pnpm install
+          line("t-ok", "✓ vite ready in 215ms → http://localhost:5173")
+          await sleep(200)
+          // line 5 (idle prompt)
+          var idle = document.createElement("div")
+          idle.className = "t-line"
+          idle.innerHTML = "<span class=\"t-prompt\">$</span><span class=\"t-cursor\"></span>"
+          el.appendChild(idle)
+        }
+        ctl.start = function() { ctl.stopped = false; runOnce() }
+        ctl.stop = function() { ctl.stopped = true }
+        return ctl
+      }
+
       applyLocale(detect())
-      document.querySelector('.lang-switch').addEventListener('click', function (e) {
+      var termCtl = buildTerminal()
+      window.__termCtl = termCtl
+      termCtl.start()
+
+      document.querySelector(".lang-switch").addEventListener("click", function (e) {
         var t = e.target
-        if (t && t.hasAttribute && t.hasAttribute('data-lang')) {
-          setLocale(t.getAttribute('data-lang'))
+        if (t && t.hasAttribute && t.hasAttribute("data-lang")) {
+          setLocale(t.getAttribute("data-lang"))
         }
       })
+
+      if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches && "IntersectionObserver" in window) {
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (en) {
+            if (en.isIntersecting) {
+              en.target.style.transition = "opacity .6s ease, transform .6s ease"
+              en.target.style.opacity = "1"
+              en.target.style.transform = "none"
+              io.unobserve(en.target)
+            }
+          })
+        }, { threshold: 0.12 })
+        document.querySelectorAll(".f-card").forEach(function (c, i) {
+          c.style.opacity = "0"
+          c.style.transform = "translateY(12px)"
+          c.style.transitionDelay = (i * 80) + "ms"
+          io.observe(c)
+        })
+      }
     </script>
   </body>
 </html>
