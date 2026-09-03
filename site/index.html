@@ -3,14 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0b0f1a" />
+    <meta name="theme-color" content="#0F172A" />
+    <meta name="color-scheme" content="dark" />
     <title data-i18n="meta.title">OAS-UI Templates</title>
-    <meta name="description" data-i18n="meta.desc" content="基于 oas-ui Web Components 的官方后台模板集合：零框架运行时、TypeScript + Vite，三套范式覆盖 SPA / CDN / MPA。" />
+    <meta name="description" data-i18n="meta.desc" content="Official admin template collection for the oas-ui Web Components library. Zero-framework runtime, TypeScript + Vite, three delivery styles." />
     <link rel="canonical" href="./" />
     <link rel="alternate" hreflang="zh-CN" href="./" />
     <link rel="alternate" hreflang="en" href="./" />
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Cdefs%3E%3ClinearGradient id=%22g%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22%3E%3Cstop offset=%220%22 stop-color=%22%230b6cff%22/%3E%3Cstop offset=%221%22 stop-color=%22%237c3aed%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width=%2264%22 height=%2264%22 rx=%2214%22 fill=%22url(%23g)%22/%3E%3Ctext x=%2250%25%22 y=%2254%25%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22 font-family=%22ui-sans-serif,system-ui%22 font-weight=%22800%22 font-size=%2222%22 fill=%22white%22 letter-spacing=%22-1%22%3EOAS%3C/text%3E%3C/svg%3E" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Cdefs%3E%3ClinearGradient id=%22g%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22%3E%3Cstop offset=%220%22 stop-color=%22%234F46E5%22/%3E%3Cstop offset=%221%22 stop-color=%22%238183C4%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width=%2264%22 height=%2264%22 rx=%2214%22 fill=%22%234F46E5%22/%3E%3Ctext x=%2250%25%22 y=%2254%25%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22 font-family=%22ui-sans-serif,system-ui%22 font-weight=%22800%22 font-size=%2222%22 fill=%22white%22 letter-spacing=%22-1%22%3EOAS%3C/text%3E%3C/svg%3E" />
     <link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/index.css" />
+    <!-- Typography: pro-max Developer Mono pairing (IBM Plex Sans + JetBrains Mono) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" />
     <script>
       (function () {
         var KEY = "oas-templates.locale"
@@ -26,72 +31,107 @@
       })()
     </script>
     <style>
+      /* ===== ui-ux-pro-max 推荐的 Design System/Component Library 调色 ===== */
       :root {
-        --oas-bg-page: #0b0f1a;
-        --oas-bg-elev-1: #0f1729;
-        --oas-bg-elev-2: #131c33;
-        --oas-border: #1d2742;
-        --oas-border-strong: #2a3658;
-        --oas-text: #eaf0fb;
-        --oas-text-muted: #8b96b3;
-        --oas-text-dim: #6a7592;
-        --oas-accent: #5b8cff;
-        --oas-accent-2: #7c5dff;
-        --oas-success: #22c55e;
-        --oas-success-soft: #5fdba0;
-        --oas-radius: 14px;
-        --oas-radius-lg: 18px;
-        --oas-shadow-sm: 0 1px 2px rgba(0,0,0,.35);
-        --oas-shadow-md: 0 12px 32px rgba(0,0,0,.35);
-        --oas-shadow-lg: 0 24px 60px rgba(0,0,0,.45);
-        --oas-shadow-accent: 0 10px 30px rgba(91,140,255,.25);
-        --oas-font: system-ui, -apple-system, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
-        --oas-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+        /* 颜色 token（不写 raw hex） */
+        --oas-bg: #0F172A;
+        --oas-surface-1: #111C2E;
+        --oas-surface-2: #1B2438;
+        --oas-surface-3: #232F44;
+        --oas-border: #1E293B;
+        --oas-border-strong: #334155;
+        --oas-text: #F1F5F9;
+        --oas-text-muted: #94A3B8;
+        --oas-text-dim: #64748B;
+        --oas-primary: #4F46E5;
+        --oas-primary-soft: #A5B4FC;
+        --oas-primary-hover: #4338CA;
+        --oas-on-primary: #FFFFFF;
+        --oas-success: #22C55E;
+        --oas-success-soft: #4ADE80;
+        --oas-ring: #818CF8;
+        /* 排版 token（weight-hierarchy：700/600/500/400） */
+        --oas-font-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+        --oas-font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+        --oas-fs-eyebrow: 12px;
+        --oas-fs-label: 12.5px;
+        --oas-fs-body: 15px;
+        --oas-fs-lede: 17px;
+        --oas-fs-h3: 18px;
+        --oas-fs-h2: 22px;
+        --oas-fs-h1: 40px;
+        --oas-fs-stat: 22px;
+        --oas-fs-stat-sub: 12px;
+        /* 间距 token（Swiss-style 4/8/16/24/32/48/64） */
+        --oas-sp-1: 4px;
+        --oas-sp-2: 8px;
+        --oas-sp-3: 12px;
+        --oas-sp-4: 16px;
+        --oas-sp-5: 24px;
+        --oas-sp-6: 32px;
+        --oas-sp-7: 48px;
+        --oas-sp-8: 64px;
+        /* 圆角 / 阴影 token */
+        --oas-radius-sm: 8px;
+        --oas-radius: 12px;
+        --oas-radius-lg: 16px;
+        --oas-shadow-sm: 0 1px 2px rgba(0,0,0,.4);
+        --oas-shadow-md: 0 8px 24px rgba(0,0,0,.35);
+        --oas-shadow-lg: 0 24px 60px rgba(0,0,0,.5);
+        --oas-shadow-primary: 0 6px 18px rgba(79,70,229,.32);
+        /* 动效 token */
+        --oas-ease: cubic-bezier(.2,.6,.2,1);
+        --oas-dur-fast: 140ms;
+        --oas-dur-base: 200ms;
       }
       * { box-sizing: border-box; }
       html, body { margin: 0; padding: 0; }
+      html { background: var(--oas-bg); scrollbar-color: var(--oas-border-strong) var(--oas-bg); }
       body {
         min-height: 100vh;
-        font-family: var(--oas-font);
+        font-family: var(--oas-font-sans);
+        font-size: var(--oas-fs-body);
+        line-height: 1.6;
         color: var(--oas-text);
         background:
-          radial-gradient(1100px 720px at 50% -160px, rgba(91,140,255,.14), transparent 70%),
-          radial-gradient(800px 520px at 100% 12%, rgba(124,58,237,.10), transparent 70%),
-          var(--oas-bg-page);
+          radial-gradient(900px 520px at 50% -120px, rgba(79,70,229,.16), transparent 70%),
+          var(--oas-bg);
         -webkit-font-smoothing: antialiased;
         text-rendering: optimizeLegibility;
       }
       a { color: inherit; }
-      ::selection { background: rgba(91,140,255,.35); color: var(--oas-text); }
-
-      .wrap { max-width: 1180px; margin: 0 auto; padding: 48px 28px 80px; }
-
+      ::selection { background: rgba(79,70,229,.35); color: var(--oas-text); }
+      .wrap { max-width: 1180px; margin: 0 auto; padding: var(--oas-sp-7) var(--oas-sp-5) var(--oas-sp-8); }
+      /* ===== NAV ===== */
       .nav {
         position: sticky; top: 0; z-index: 20;
-        backdrop-filter: blur(16px) saturate(140%); -webkit-backdrop-filter: blur(16px) saturate(140%);
-        background: rgba(11,15,26,.7);
+        backdrop-filter: blur(16px) saturate(140%);
+        -webkit-backdrop-filter: blur(16px) saturate(140%);
+        background: rgba(15,23,42,.72);
         border-bottom: 1px solid var(--oas-border);
       }
       .nav-inner {
-        max-width: 1180px; margin: 0 auto; padding: 0 28px; height: 60px;
-        display: flex; align-items: center; justify-content: space-between; gap: 16px;
+        max-width: 1180px; margin: 0 auto;
+        padding: 0 var(--oas-sp-5); height: 60px;
+        display: flex; align-items: center; justify-content: space-between; gap: var(--oas-sp-4);
       }
-      .nav-brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: var(--oas-text); }
+      .nav-brand { display: inline-flex; align-items: center; gap: var(--oas-sp-3); text-decoration: none; color: var(--oas-text); cursor: pointer; }
       .nav-logo {
-        width: 28px; height: 28px; border-radius: 8px;
+        width: 28px; height: 28px; border-radius: var(--oas-radius-sm);
         display: grid; place-items: center;
-        background: linear-gradient(135deg, var(--oas-accent), var(--oas-accent-2));
-        font-weight: 800; font-size: 10.5px; color: #fff; letter-spacing: -.5px;
-        box-shadow: var(--oas-shadow-accent);
+        background: var(--oas-primary);
+        font-weight: 700; font-size: 10.5px; color: var(--oas-on-primary); letter-spacing: -.5px;
       }
-      .nav-word { font-size: 14.5px; font-weight: 700; letter-spacing: -.01em; }
-      .nav-right { display: inline-flex; align-items: center; gap: 8px; }
+      .nav-word { font-size: 14px; font-weight: 600; letter-spacing: -.005em; }
+      .nav-right { display: inline-flex; align-items: center; gap: var(--oas-sp-1); }
       .nav-link {
-        font-size: 13.5px; color: var(--oas-text-muted); text-decoration: none;
+        font-size: 13.5px; font-weight: 500; color: var(--oas-text-muted); text-decoration: none;
         display: inline-flex; align-items: center; gap: 6px;
-        padding: 6px 10px; border-radius: 8px; transition: color .15s ease, background .15s ease;
+        padding: 6px 10px; border-radius: var(--oas-radius-sm);
+        transition: color var(--oas-dur-fast) var(--oas-ease), background var(--oas-dur-fast) var(--oas-ease);
+        cursor: pointer;
       }
-      .nav-link:hover { color: var(--oas-text); background: rgba(255,255,255,.05); }
+      .nav-link:hover { color: var(--oas-text); background: rgba(255,255,255,.04); }
       .nav-link svg { width: 15px; height: 15px; }
       .lang-switch {
         display: inline-flex; padding: 3px;
@@ -100,175 +140,200 @@
       }
       .lang-switch button {
         appearance: none; border: 0; background: none; color: var(--oas-text-muted);
-        padding: 4px 11px; border-radius: 999px; cursor: pointer; font: inherit;
+        padding: 4px 11px; border-radius: 999px; cursor: pointer; font: inherit; font-weight: 500;
       }
       .lang-switch button:hover { color: var(--oas-text); }
       .lang-switch button[aria-pressed="true"] {
-        background: var(--oas-accent); color: #fff; font-weight: 600;
-        box-shadow: 0 4px 12px rgba(91,140,255,.35);
+        background: var(--oas-primary); color: var(--oas-on-primary); font-weight: 600;
+        box-shadow: var(--oas-shadow-primary);
       }
-
-      .hero { display: grid; grid-template-columns: 1.05fr 1fr; gap: 56px; align-items: center; padding: 36px 0 72px; }
+      /* ===== HERO ===== */
+      .hero {
+        display: grid; grid-template-columns: 1.05fr 1fr;
+        gap: var(--oas-sp-7); align-items: center;
+        padding: var(--oas-sp-6) 0 var(--oas-sp-8);
+      }
       .hero-eyebrow {
         display: inline-flex; align-items: center; gap: 8px;
-        font-size: 12.5px; font-weight: 600; color: #b1c3ff;
-        background: rgba(91,140,255,.10); border: 1px solid rgba(91,140,255,.28);
-        padding: 6px 14px; border-radius: 999px; margin-bottom: 22px;
-        letter-spacing: .01em;
+        font-size: var(--oas-fs-eyebrow); font-weight: 500; letter-spacing: .02em;
+        color: var(--oas-primary-soft);
+        background: rgba(79,70,229,.10); border: 1px solid rgba(79,70,229,.32);
+        padding: 5px 12px; border-radius: 999px;
+        margin-bottom: var(--oas-sp-5);
       }
       .hero-eyebrow::before {
         content: ""; width: 6px; height: 6px; border-radius: 50%;
-        background: var(--oas-success-soft); box-shadow: 0 0 10px var(--oas-success-soft);
+        background: var(--oas-success-soft); box-shadow: 0 0 8px var(--oas-success-soft);
       }
       .hero h1 {
-        margin: 0 0 18px; font-size: 54px; font-weight: 800; line-height: 1.06;
+        margin: 0 0 var(--oas-sp-5);
+        font-size: var(--oas-fs-h1); font-weight: 700; line-height: 1.08;
         letter-spacing: -.028em;
+        color: var(--oas-text);
       }
-      .hero h1 .grad {
+      .hero h1 .brand {
         background: linear-gradient(110deg, #7da0ff 0%, #a78bfa 60%, #c084fc 100%);
-        -webkit-background-clip: text; background-clip: text; color: transparent;
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
       }
       .hero .lede {
-        margin: 0 0 28px; font-size: 17px; line-height: 1.65; color: var(--oas-text-muted); max-width: 540px;
+        margin: 0 0 var(--oas-sp-6);
+        font-size: var(--oas-fs-lede); line-height: 1.65;
+        color: var(--oas-text-muted); max-width: 540px;
       }
       .hero .lede strong { color: var(--oas-text); font-weight: 600; }
-
+      /* 信任锚点带 */
       .anchor-strip {
-        display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
-        margin-bottom: 28px; padding: 14px 4px;
+        display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--oas-sp-3);
+        margin-bottom: var(--oas-sp-6); padding: var(--oas-sp-4) var(--oas-sp-1);
         border-top: 1px solid var(--oas-border);
         border-bottom: 1px solid var(--oas-border);
       }
-      .anchor { display: flex; flex-direction: column; gap: 2px; padding: 0 6px; border-left: 1px solid var(--oas-border); }
+      .anchor { display: flex; flex-direction: column; gap: 2px; padding: 0 var(--oas-sp-2); border-left: 1px solid var(--oas-border); }
       .anchor:first-child { border-left: 0; }
-      .anchor-num { font-size: 18px; font-weight: 800; letter-spacing: -.02em; color: var(--oas-text); font-variant-numeric: tabular-nums; }
-      .anchor-num small { font-size: 12px; color: var(--oas-text-muted); font-weight: 600; margin-left: 4px; }
-      .anchor-k { font-size: 11.5px; color: var(--oas-text-dim); letter-spacing: .02em; }
-
-      .ctas { display: flex; gap: 10px; flex-wrap: wrap; }
+      .anchor-num {
+        font-size: var(--oas-fs-stat); font-weight: 700; letter-spacing: -.02em;
+        color: var(--oas-text); font-variant-numeric: tabular-nums;
+        line-height: 1.1;
+      }
+      .anchor-num small { font-size: var(--oas-fs-stat-sub); color: var(--oas-text-muted); font-weight: 500; margin-left: 4px; letter-spacing: 0; }
+      .anchor-k { font-size: 11.5px; font-weight: 500; color: var(--oas-text-dim); letter-spacing: .02em; }
+      /* CTA — 实底 indigo，不用渐变 */
+      .ctas { display: flex; gap: var(--oas-sp-3); flex-wrap: wrap; }
       .cta {
-        appearance: none; border: 0; cursor: pointer; font: inherit;
-        display: inline-flex; align-items: center; gap: 8px;
-        padding: 12px 20px; border-radius: 10px; font-weight: 600; font-size: 14.5px;
-        text-decoration: none; transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease, background .16s ease;
-        line-height: 1;
+        appearance: none; border: 0; cursor: pointer; font: inherit; font-weight: 600;
+        display: inline-flex; align-items: center; gap: var(--oas-sp-2);
+        padding: 11px 20px; border-radius: var(--oas-radius-sm);
+        font-size: 14px; line-height: 1; text-decoration: none;
+        transition: background var(--oas-dur-fast) var(--oas-ease), color var(--oas-dur-fast) var(--oas-ease), border-color var(--oas-dur-fast) var(--oas-ease), filter var(--oas-dur-fast) var(--oas-ease), box-shadow var(--oas-dur-fast) var(--oas-ease);
       }
-      .cta svg { width: 16px; height: 16px; }
-      .cta--primary { background: var(--oas-text); color: #0b0f1a; }
-      .cta--primary:hover { transform: translateY(-1px); box-shadow: var(--oas-shadow-md); }
-      .cta--ghost { background: rgba(255,255,255,.04); color: var(--oas-text); border: 1px solid var(--oas-border-strong); }
-      .cta--ghost:hover { border-color: var(--oas-accent); background: rgba(91,140,255,.08); }
-
+      .cta svg { width: 14px; height: 14px; }
+      .cta:focus-visible { outline: 2px solid var(--oas-ring); outline-offset: 2px; }
+      .cta--primary { background: var(--oas-primary); color: var(--oas-on-primary); box-shadow: var(--oas-shadow-primary); }
+      .cta--primary:hover { background: var(--oas-primary-hover); }
+      .cta--ghost { background: transparent; color: var(--oas-text); border: 1px solid var(--oas-border-strong); }
+      .cta--ghost:hover { border-color: var(--oas-primary); color: var(--oas-primary-soft); }
+      /* ===== TERMINAL ===== */
       .terminal {
-        background: #060b18; border: 1px solid var(--oas-border);
-        border-radius: var(--oas-radius-lg); overflow: hidden; box-shadow: var(--oas-shadow-lg);
+        background: #0A1120; border: 1px solid var(--oas-border);
+        border-radius: var(--oas-radius-lg); overflow: hidden;
+        box-shadow: var(--oas-shadow-lg);
         position: relative;
-      }
-      .terminal::before {
-        content: ""; position: absolute; inset: 0;
-        background: radial-gradient(400px 200px at 100% 0%, rgba(91,140,255,.12), transparent 60%);
-        pointer-events: none;
       }
       .terminal-bar {
         display: flex; align-items: center; gap: 8px;
-        padding: 11px 16px; background: rgba(255,255,255,.025); border-bottom: 1px solid var(--oas-border);
-        font-size: 12.5px; color: var(--oas-text-dim); position: relative;
+        padding: 10px 14px; background: rgba(255,255,255,.02); border-bottom: 1px solid var(--oas-border);
+        font-size: 12px; font-weight: 500; color: var(--oas-text-dim);
+        font-family: var(--oas-font-sans);
       }
       .dot { width: 10px; height: 10px; border-radius: 50%; }
-      .dot-r { background: #f87171; } .dot-y { background: #fbbf24; } .dot-g { background: #34d399; }
-      .terminal-title { margin-left: 6px; }
+      .dot-r { background: #EF4444; } .dot-y { background: #F59E0B; } .dot-g { background: #22C55E; }
+      .terminal-title { margin-left: 6px; letter-spacing: .01em; }
       .terminal-body {
-        padding: 20px 22px 22px; font-family: var(--oas-mono); font-size: 13.5px;
-        line-height: 1.85; min-height: 248px; position: relative;
+        padding: 18px 20px 22px;
+        font-family: var(--oas-font-mono); font-size: 13px; line-height: 1.85;
+        min-height: 240px;
+        color: var(--oas-text);
       }
-      .t-line { white-space: pre-wrap; word-break: break-word; min-height: 1.85em; }
-      .t-prompt { color: #4d9bff; font-weight: 700; margin-right: 6px; user-select: none; }
-      .t-cmd { color: #e9edf7; }
+      .t-line { white-space: pre-wrap; word-break: break-word; min-height: 1.85em; font-variant-numeric: tabular-nums; }
+      .t-prompt { color: var(--oas-primary-soft); font-weight: 600; margin-right: 8px; user-select: none; }
+      .t-cmd { color: var(--oas-text); }
       .t-out { color: var(--oas-text-dim); }
       .t-ok { color: var(--oas-success-soft); }
       .t-cursor {
-        display: inline-block; width: 7px; height: 14px; background: var(--oas-accent);
-        vertical-align: -2px; margin-left: 2px; animation: blink 1.05s steps(2) infinite;
+        display: inline-block; width: 7px; height: 14px;
+        background: var(--oas-primary-soft); vertical-align: -2px; margin-left: 2px;
+        animation: blink 1.05s steps(2) infinite;
       }
       @keyframes blink { 50% { opacity: 0; } }
-    </style>
-    <style>
-
-      .features { padding: 16px 0 88px; }
-      .features-head { text-align: center; margin-bottom: 36px; }
+      /* ===== FEATURES ===== */
+      .features { padding: var(--oas-sp-6) 0 var(--oas-sp-8); }
+      .features-head { margin-bottom: var(--oas-sp-6); }
+      .features-eyebrow {
+        display: inline-block;
+        font-size: 11.5px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase;
+        color: var(--oas-primary-soft);
+        margin-bottom: var(--oas-sp-2);
+      }
       .features-head h2 {
-        margin: 0 0 10px; font-size: 30px; font-weight: 800; letter-spacing: -.022em;
+        margin: 0 0 var(--oas-sp-3);
+        font-size: var(--oas-fs-h2); font-weight: 700; letter-spacing: -.015em;
+        color: var(--oas-primary-soft);
       }
-      .features-head h2 .grad {
-        background: linear-gradient(110deg, #7da0ff, #c084fc);
-        -webkit-background-clip: text; background-clip: text; color: transparent;
-      }
-      .features-head p { margin: 0; color: var(--oas-text-muted); font-size: 15px; }
-
-      .f-grid {
-        display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px;
-      }
+      .features-head p { margin: 0; color: var(--oas-text-muted); font-size: 15px; line-height: 1.6; }
+      .f-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--oas-sp-4); }
       .f-card {
         display: flex; flex-direction: column;
-        background: var(--oas-bg-elev-1);
-        border: 1px solid var(--oas-border); border-radius: var(--oas-radius-lg);
-        overflow: hidden; transition: border-color .16s ease, transform .16s ease;
+        background: var(--oas-surface-1); border: 1px solid var(--oas-border);
+        border-radius: var(--oas-radius-lg); overflow: hidden;
+        transition: border-color var(--oas-dur-base) var(--oas-ease), background var(--oas-dur-base) var(--oas-ease);
       }
-      .f-card:hover { border-color: var(--oas-border-strong); transform: translateY(-2px); }
+      .f-card:hover { border-color: var(--oas-border-strong); background: var(--oas-surface-2); }
       .f-shot {
         position: relative; aspect-ratio: 16 / 10;
-        background: linear-gradient(180deg, #0d1830 0%, #0a1326 100%);
+        background: var(--oas-surface-2);
         border-bottom: 1px solid var(--oas-border);
         overflow: hidden;
       }
-      .f-shot img { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block; }
-      .f-shot--fallback { display: grid; place-items: center; padding: 22px; }
-      .f-shot--fallback svg { width: 86%; height: auto; opacity: .85; }
-      .f-body { padding: 18px 20px 20px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
-      .f-title { font-size: 16px; font-weight: 700; letter-spacing: -.005em; display: flex; align-items: center; gap: 8px; }
-      .f-desc { font-size: 13.5px; color: var(--oas-text-muted); line-height: 1.6; margin: 0; }
-      .f-feats { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+      .f-shot--fallback { display: grid; place-items: center; padding: 18px; }
+      .f-shot--fallback svg { width: 88%; height: auto; opacity: .9; }
+      .f-body { padding: var(--oas-sp-5); display: flex; flex-direction: column; gap: var(--oas-sp-3); flex: 1; }
+      .f-title {
+        font-size: var(--oas-fs-h3); font-weight: 600; letter-spacing: -.005em;
+        color: var(--oas-text); display: flex; align-items: center; gap: var(--oas-sp-2);
+      }
+      .f-desc { font-size: 14px; line-height: 1.6; color: var(--oas-text-muted); margin: 0; }
+      .f-feats { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
       .f-feat {
-        font-size: 11.5px; padding: 4px 9px; border-radius: 6px;
-        background: rgba(255,255,255,.03); color: var(--oas-text-muted);
-        border: 1px solid var(--oas-border); display: inline-flex; align-items: center; gap: 5px;
+        font-size: 11.5px; font-weight: 500; padding: 4px 9px; border-radius: 6px;
+        background: rgba(255,255,255,.04); color: var(--oas-text-muted);
+        border: 1px solid var(--oas-border);
+        display: inline-flex; align-items: center; gap: 5px;
       }
       .f-feat::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--oas-success-soft); }
-      .f-link { margin-top: auto; font-size: 13px; font-weight: 600; color: var(--oas-accent); text-decoration: none; display: inline-flex; align-items: center; gap: 4px; padding-top: 4px; }
-      .f-link:hover { color: #b1c3ff; }
-
+      .f-link {
+        margin-top: auto; padding-top: var(--oas-sp-2);
+        font-size: 13px; font-weight: 600; color: var(--oas-primary-soft); text-decoration: none;
+        display: inline-flex; align-items: center; gap: 4px;
+      }
+      .f-link:hover { color: var(--oas-text); }
+      .f-link::after { content: "→"; transition: transform var(--oas-dur-fast) var(--oas-ease); }
+      .f-card:hover .f-link::after { transform: translateX(2px); }
+      /* ===== FOOTER ===== */
       .foot {
-        margin-top: 40px; padding: 28px 0 0;
+        margin-top: var(--oas-sp-7); padding: var(--oas-sp-5) 0 0;
         border-top: 1px solid var(--oas-border);
         display: flex; flex-wrap: wrap; justify-content: center; align-items: center;
-        font-size: 12.5px; color: var(--oas-text-muted);
+        gap: var(--oas-sp-3); font-size: 12.5px; color: var(--oas-text-muted);
         text-align: center;
       }
-      .foot a { color: var(--oas-text-muted); text-decoration: none; }
+      .foot a { color: var(--oas-text-muted); text-decoration: none; cursor: pointer; }
       .foot a:hover { color: var(--oas-text); }
-      .foot-sep { margin: 0 6px; color: var(--oas-text-dim); }
-
+      .foot-sep { margin: 0 4px; color: var(--oas-text-dim); }
+      /* ===== Responsive ===== */
       @media (max-width: 1020px) {
-        .hero { grid-template-columns: 1fr; gap: 44px; padding-bottom: 56px; }
-        .anchor-strip { grid-template-columns: repeat(2, 1fr); gap: 12px 18px; }
+        .hero { grid-template-columns: 1fr; gap: var(--oas-sp-6); padding-bottom: var(--oas-sp-7); }
+        .anchor-strip { grid-template-columns: repeat(2, 1fr); gap: var(--oas-sp-3) var(--oas-sp-5); }
         .anchor { border-left: 0; padding-left: 0; }
-        .anchor:nth-child(3), .anchor:nth-child(4) { border-top: 1px solid var(--oas-border); padding-top: 12px; }
-        .anchor:nth-child(4) { padding-left: 18px; }
+        .anchor:nth-child(3), .anchor:nth-child(4) { border-top: 1px solid var(--oas-border); padding-top: var(--oas-sp-3); }
+        .anchor:nth-child(4) { padding-left: var(--oas-sp-5); }
         .f-grid { grid-template-columns: 1fr; }
       }
       @media (max-width: 560px) {
-        .wrap { padding: 32px 18px 64px; }
+        .wrap { padding: var(--oas-sp-5) var(--oas-sp-4) var(--oas-sp-7); }
         .hero h1 { font-size: 36px; }
+        .features-head h2 { font-size: 18px; }
         .nav-word { display: none; }
         .nav-link[data-full] { display: none; }
       }
-
+      /* ===== Reduced motion ===== */
       @media (prefers-reduced-motion: reduce) {
-        .t-cursor, .cta, .f-card { animation: none; transition: none; }
+        .t-cursor, .cta, .f-card, .f-link::after { animation: none; transition: none; }
+        .f-card { opacity: 1; transform: none; }
       }
-
-      /* IntersectionObserver 的 fade-in：CSS 提供 transition 兜底，防止 JS 加载失败时元素永远透明 */
-      .f-card { transition: opacity .6s ease, transform .6s ease, border-color .16s ease; }
+      /* IntersectionObserver fade-in（JS 提供 transition 兜底） */
+      .f-card { transition: opacity var(--oas-dur-base) var(--oas-ease), transform var(--oas-dur-base) var(--oas-ease), border-color var(--oas-dur-base) var(--oas-ease), background var(--oas-dur-base) var(--oas-ease); }
     </style>
   </head>
   <body>
@@ -279,7 +344,7 @@
           <span class="nav-word" data-i18n="meta.title">OAS-UI Templates</span>
         </a>
         <div class="nav-right">
-          <a class="nav-link" href="https://oas-ui.dev" target="_blank" rel="noopener" data-i18n="nav.docs">组件文档</a>
+          <a class="nav-link" href="https://oas-ui.dev" target="_blank" rel="noopener" data-i18n="nav.docs">Docs</a>
           <a class="nav-link" href="https://github.com/openappsys/oas-ui-templates" target="_blank" rel="noopener" data-full>
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.7.5.5 5.7.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C18.5 6 19.5 6.3 19.5 6.3c.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.2c0 .3.2.7.8.6 4.6-1.5 7.9-5.8 7.9-10.9C23.5 5.7 18.3.5 12 .5z"/></svg>
             <span data-i18n="nav.github">GitHub</span>
@@ -291,22 +356,21 @@
         </div>
       </div>
     </nav>
-
     <div class="wrap">
       <section class="hero" aria-labelledby="hero-title">
         <div class="hero-left">
-          <span class="hero-eyebrow" data-i18n="hero.eyebrow">Official template collection for oas-ui</span>
-          <h1 id="hero-title"><span class="grad" data-i18n="hero.title">oas-ui</span> <span data-i18n="hero.title2">official template collection</span></h1>
-          <p class="lede" data-i18n="hero.lede">Official admin templates for the <strong>oas-ui</strong> Web Components library. Zero-framework runtime · TypeScript + Vite · three delivery styles covering SPA / CDN / MPA. <strong>Pull, run, ship.</strong></p>
+          <span class="hero-eyebrow" data-i18n="hero.eyebrow">Official templates · for oas-ui</span>
+          <h1 id="hero-title"><span class="brand" data-i18n="hero.title">oas-ui</span> <span data-i18n="hero.title2">official template collection</span></h1>
+          <p class="lede" data-i18n="hero.lede">面向 <strong>oas-ui</strong> Web Components 组件库的官方后台模板。零框架运行时 · TypeScript + Vite · 三套范式覆盖 SPA / CDN / MPA，<strong>拉下来就能跑</strong>。</p>
           <div class="anchor-strip" aria-label="at-a-glance">
-            <div class="anchor"><span class="anchor-num">3<small data-i18n="anchor.1.u">templates</small></span><span class="anchor-k" data-i18n="anchor.1.k">范式可选</span></div>
+            <div class="anchor"><span class="anchor-num"><small data-i18n="anchor.1.u">templates</small></span><span class="anchor-k" data-i18n="anchor.1.k">范式可选</span></div>
             <div class="anchor"><span class="anchor-num">0<small data-i18n="anchor.2.u">framework</small></span><span class="anchor-k" data-i18n="anchor.2.k">无框架运行时</span></div>
             <div class="anchor"><span class="anchor-num">TS<small>+ Vite</small></span><span class="anchor-k" data-i18n="anchor.3.k">类型安全 + 极速 HMR</span></div>
             <div class="anchor"><span class="anchor-num">&lt;215<small data-i18n="anchor.4.u">ms</small></span><span class="anchor-k" data-i18n="anchor.4.k">冷启动到 dev server</span></div>
           </div>
           <div class="ctas">
             <a class="cta cta--primary" href="./admin-pro/vanilla-html/" data-i18n="cta.live">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4" fill="currentColor" stroke="none"/></svg>
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"/></svg>
               <span data-i18n="cta.live.text">在线预览</span>
             </a>
             <a class="cta cta--ghost" href="https://github.com/openappsys/oas-ui-templates" target="_blank" rel="noopener" data-i18n="cta.github">
@@ -315,7 +379,6 @@
             </a>
           </div>
         </div>
-
         <div class="terminal" aria-label="terminal demo">
           <div class="terminal-bar">
             <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
@@ -324,72 +387,65 @@
           <div class="terminal-body" id="term" aria-live="polite"></div>
         </div>
       </section>
-
       <section class="features" aria-labelledby="features-title">
         <div class="features-head">
-          <h2 id="features-title"><span class="grad" data-i18n="features.title">看见成品，再决定</span></h2>
-          <p data-i18n="features.sub">Same oas-ui library — how it looks under different frameworks and build styles.</p>
+          <span class="features-eyebrow" data-i18n="features.eyebrow">Templates</span>
+          <h2 id="features-title" data-i18n="features.title">Template gallery · pick by scenario</h2>
+          <p data-i18n="features.sub">同一个 oas-ui 组件库，在不同框架 / 打包方式下的样子。</p>
         </div>
         <div class="f-grid">
           <article class="f-card">
-            <div class="f-shot">
-              <div class="f-shot--fallback" aria-hidden="true">
-                <svg viewBox="0 0 320 200" xmlns="http://www.w3.org/2000/svg">
-                  <defs>
-                    <linearGradient id="vanilla-bg" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0" stop-color="#0d1830"/>
-                      <stop offset="1" stop-color="#0a1326"/>
-                    </linearGradient>
-                  </defs>
-                  <rect width="320" height="200" fill="url(#vanilla-bg)"/>
-                  <!-- top bar -->
-                  <rect x="0" y="0" width="320" height="22" fill="#10182c" stroke="#1d2742"/>
-                  <circle cx="12" cy="11" r="3" fill="#5b8cff"/>
-                  <rect x="22" y="7" width="56" height="8" rx="2" fill="#3a4b75"/>
-                  <rect x="248" y="6" width="58" height="10" rx="3" fill="#1d2742"/>
-                  <!-- sidebar -->
-                  <rect x="0" y="22" width="84" height="178" fill="#0f1729" stroke="#1d2742"/>
-                  <rect x="10" y="34" width="64" height="8" rx="2" fill="#5b8cff" opacity=".75"/>
-                  <rect x="10" y="52" width="44" height="5" rx="2" fill="#2a3658"/>
-                  <rect x="10" y="64" width="56" height="5" rx="2" fill="#1d2742"/>
-                  <rect x="10" y="76" width="40" height="5" rx="2" fill="#1d2742"/>
-                  <rect x="10" y="88" width="52" height="5" rx="2" fill="#1d2742"/>
-                  <rect x="10" y="100" width="36" height="5" rx="2" fill="#1d2742"/>
-                  <rect x="10" y="112" width="48" height="5" rx="2" fill="#1d2742"/>
-                  <rect x="10" y="124" width="32" height="5" rx="2" fill="#1d2742"/>
-                  <rect x="10" y="136" width="56" height="5" rx="2" fill="#1d2742"/>
-                  <!-- main area: 4 KPI cards -->
-                  <rect x="96" y="34" width="100" height="46" rx="6" fill="#10182c" stroke="#1d2742"/>
-                  <rect x="104" y="42" width="44" height="6" rx="2" fill="#3a4b75"/>
-                  <rect x="104" y="56" width="56" height="10" rx="2" fill="#5b8cff" opacity=".85"/>
-                  <rect x="104" y="70" width="34" height="4" rx="2" fill="#1d2742"/>
-                  <rect x="204" y="34" width="100" height="46" rx="6" fill="#10182c" stroke="#1d2742"/>
-                  <rect x="212" y="42" width="48" height="6" rx="2" fill="#3a4b75"/>
-                  <rect x="212" y="56" width="48" height="10" rx="2" fill="#7c5dff" opacity=".85"/>
-                  <rect x="212" y="70" width="30" height="4" rx="2" fill="#1d2742"/>
-                  <!-- chart -->
-                  <rect x="96" y="88" width="208" height="56" rx="6" fill="#10182c" stroke="#1d2742"/>
-                  <rect x="104" y="96" width="44" height="6" rx="2" fill="#3a4b75"/>
-                  <polyline points="108,134 132,124 156,128 180,112 204,118 228,104 252,108 276,96 296,100" fill="none" stroke="#5b8cff" stroke-width="1.5"/>
-                  <polyline points="108,134 132,128 156,132 180,120 204,124 228,114 252,118 276,108 296,112" fill="none" stroke="#7c5dff" stroke-width="1.5" opacity=".55"/>
-                  <!-- table -->
-                  <rect x="96" y="152" width="208" height="40" rx="6" fill="#10182c" stroke="#1d2742"/>
-                  <rect x="104" y="160" width="36" height="6" rx="2" fill="#3a4b75"/>
-                  <rect x="150" y="160" width="60" height="6" rx="2" fill="#1d2742"/>
-                  <rect x="220" y="160" width="50" height="6" rx="2" fill="#1d2742"/>
-                  <rect x="104" y="174" width="36" height="6" rx="2" fill="#1d2742"/>
-                  <rect x="150" y="174" width="60" height="6" rx="2" fill="#1d2742"/>
-                  <rect x="220" y="174" width="50" height="6" rx="2" fill="#1d2742"/>
-                  <rect x="104" y="186" width="36" height="6" rx="2" fill="#1d2742"/>
-                  <rect x="150" y="186" width="60" height="6" rx="2" fill="#1d2742"/>
-                  <rect x="220" y="186" width="50" height="6" rx="2" fill="#1d2742"/>
-                </svg>
-              </div>
+            <div class="f-shot f-shot--fallback" aria-hidden="true">
+              <svg viewBox="0 0 320 200" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="vanilla-bg" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0" stop-color="#111C2E"/>
+                    <stop offset="1" stop-color="#0A1120"/>
+                  </linearGradient>
+                </defs>
+                <rect width="320" height="200" fill="url(#vanilla-bg)"/>
+                <rect x="0" y="0" width="320" height="22" fill="#0F172A" stroke="#1E293B"/>
+                <circle cx="12" cy="11" r="3" fill="#4F46E5"/>
+                <rect x="22" y="7" width="56" height="8" rx="2" fill="#334155"/>
+                <rect x="248" y="6" width="58" height="10" rx="3" fill="#1E293B"/>
+                <rect x="0" y="22" width="84" height="178" fill="#0F172A" stroke="#1E293B"/>
+                <rect x="10" y="34" width="64" height="8" rx="2" fill="#4F46E5" opacity=".75"/>
+                <rect x="10" y="52" width="44" height="5" rx="2" fill="#334155"/>
+                <rect x="10" y="64" width="56" height="5" rx="2" fill="#1E293B"/>
+                <rect x="10" y="76" width="40" height="5" rx="2" fill="#1E293B"/>
+                <rect x="10" y="88" width="52" height="5" rx="2" fill="#1E293B"/>
+                <rect x="10" y="100" width="36" height="5" rx="2" fill="#1E293B"/>
+                <rect x="10" y="112" width="48" height="5" rx="2" fill="#1E293B"/>
+                <rect x="10" y="124" width="32" height="5" rx="2" fill="#1E293B"/>
+                <rect x="10" y="136" width="56" height="5" rx="2" fill="#1E293B"/>
+                <rect x="96" y="34" width="100" height="46" rx="6" fill="#0F172A" stroke="#1E293B"/>
+                <rect x="104" y="42" width="44" height="6" rx="2" fill="#334155"/>
+                <rect x="104" y="56" width="56" height="10" rx="2" fill="#4F46E5" opacity=".85"/>
+                <rect x="104" y="70" width="34" height="4" rx="2" fill="#1E293B"/>
+                <rect x="204" y="34" width="100" height="46" rx="6" fill="#0F172A" stroke="#1E293B"/>
+                <rect x="212" y="42" width="48" height="6" rx="2" fill="#334155"/>
+                <rect x="212" y="56" width="48" height="10" rx="2" fill="#818CF8" opacity=".85"/>
+                <rect x="212" y="70" width="30" height="4" rx="2" fill="#1E293B"/>
+                <rect x="96" y="88" width="208" height="56" rx="6" fill="#0F172A" stroke="#1E293B"/>
+                <rect x="104" y="96" width="44" height="6" rx="2" fill="#334155"/>
+                <polyline points="108,134 132,124 156,128 180,112 204,118 228,104 252,108 276,96 296,100" fill="none" stroke="#4F46E5" stroke-width="1.5"/>
+                <polyline points="108,134 132,128 156,132 180,120 204,124 228,114 252,118 276,108 296,112" fill="none" stroke="#818CF8" stroke-width="1.5" opacity=".55"/>
+                <rect x="96" y="152" width="208" height="40" rx="6" fill="#0F172A" stroke="#1E293B"/>
+                <rect x="104" y="160" width="36" height="6" rx="2" fill="#334155"/>
+                <rect x="150" y="160" width="60" height="6" rx="2" fill="#1E293B"/>
+                <rect x="220" y="160" width="50" height="6" rx="2" fill="#1E293B"/>
+                <rect x="104" y="174" width="36" height="6" rx="2" fill="#1E293B"/>
+                <rect x="150" y="174" width="60" height="6" rx="2" fill="#1E293B"/>
+                <rect x="220" y="174" width="50" height="6" rx="2" fill="#1E293B"/>
+                <rect x="104" y="186" width="36" height="6" rx="2" fill="#1E293B"/>
+                <rect x="150" y="186" width="60" height="6" rx="2" fill="#1E293B"/>
+                <rect x="220" y="186" width="50" height="6" rx="2" fill="#1E293B"/>
+              </svg>
             </div>
             <div class="f-body">
               <h3 class="f-title">
                 <span>admin-pro / vanilla</span>
-                <span class="m-tag" data-i18n="m.vanilla.tag">首推</span>
+                <span class="f-feat" style="border:0;background:rgba(79,70,229,.16);color:#A5B4FC" data-i18n="m.vanilla.tag">首推</span>
               </h3>
               <p class="f-desc" data-i18n="feat.vanilla.desc">中大型后台首选。设置中心把外观 / 布局 / 数据 / 通知四类配置拆成独立 Tab，所有偏好持久化。</p>
               <div class="f-feats">
@@ -400,53 +456,52 @@
                 <span class="f-feat" data-i18n="feat.i18n">i18n</span>
                 <span class="f-feat" data-i18n="feat.theme">主题定制</span>
               </div>
-              <a class="f-link" href="./admin-pro/vanilla-html/" data-i18n="feat.cta">查看完整后台 →</a>
+              <a class="f-link" href="./admin-pro/vanilla-html/" data-i18n="feat.cta">查看完整后台</a>
             </div>
           </article>
-
           <article class="f-card">
             <div class="f-shot f-shot--fallback" aria-hidden="true">
               <svg viewBox="0 0 320 200" xmlns="http://www.w3.org/2000/svg">
                 <defs>
                   <linearGradient id="cdn-bg" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0" stop-color="#0d1830"/>
-                    <stop offset="1" stop-color="#0a1326"/>
+                    <stop offset="0" stop-color="#111C2E"/>
+                    <stop offset="1" stop-color="#0A1120"/>
                   </linearGradient>
                 </defs>
                 <rect width="320" height="200" fill="url(#cdn-bg)"/>
-                <rect x="16" y="16" width="288" height="20" rx="4" fill="#1a2540" stroke="#2a3658"/>
-                <circle cx="28" cy="26" r="3" fill="#34d399"/>
-                <rect x="40" y="22" width="56" height="8" rx="2" fill="#3a4b75"/>
-                <rect x="16" y="46" width="80" height="138" rx="6" fill="#10182c" stroke="#1d2742"/>
-                <rect x="24" y="56" width="64" height="8" rx="2" fill="#2a3658"/>
-                <rect x="24" y="74" width="48" height="6" rx="2" fill="#1d2742"/>
-                <rect x="24" y="88" width="56" height="6" rx="2" fill="#1d2742"/>
-                <rect x="24" y="102" width="40" height="6" rx="2" fill="#1d2742"/>
-                <rect x="24" y="116" width="60" height="6" rx="2" fill="#1d2742"/>
-                <rect x="24" y="130" width="44" height="6" rx="2" fill="#1d2742"/>
-                <rect x="106" y="46" width="198" height="58" rx="6" fill="#10182c" stroke="#1d2742"/>
-                <rect x="114" y="56" width="80" height="8" rx="2" fill="#3a4b75"/>
-                <rect x="114" y="72" width="120" height="6" rx="2" fill="#1d2742"/>
-                <rect x="114" y="84" width="100" height="6" rx="2" fill="#1d2742"/>
-                <rect x="262" y="76" width="34" height="20" rx="4" fill="#5b8cff" opacity=".75"/>
-                <rect x="106" y="112" width="96" height="72" rx="6" fill="#10182c" stroke="#1d2742"/>
-                <rect x="114" y="122" width="50" height="6" rx="2" fill="#3a4b75"/>
-                <rect x="114" y="136" width="80" height="4" rx="2" fill="#1d2742"/>
-                <rect x="114" y="146" width="70" height="4" rx="2" fill="#1d2742"/>
-                <rect x="114" y="156" width="60" height="4" rx="2" fill="#1d2742"/>
-                <rect x="114" y="166" width="74" height="4" rx="2" fill="#1d2742"/>
-                <rect x="208" y="112" width="96" height="72" rx="6" fill="#10182c" stroke="#1d2742"/>
-                <rect x="216" y="122" width="50" height="6" rx="2" fill="#3a4b75"/>
-                <rect x="216" y="136" width="80" height="4" rx="2" fill="#1d2742"/>
-                <rect x="216" y="146" width="60" height="4" rx="2" fill="#1d2742"/>
-                <rect x="216" y="156" width="74" height="4" rx="2" fill="#1d2742"/>
-                <rect x="216" y="166" width="50" height="4" rx="2" fill="#1d2742"/>
+                <rect x="16" y="16" width="288" height="20" rx="4" fill="#1B2438" stroke="#334155"/>
+                <circle cx="28" cy="26" r="3" fill="#22C55E"/>
+                <rect x="40" y="22" width="56" height="8" rx="2" fill="#475569"/>
+                <rect x="16" y="46" width="80" height="138" rx="6" fill="#0F172A" stroke="#1E293B"/>
+                <rect x="24" y="56" width="64" height="8" rx="2" fill="#334155"/>
+                <rect x="24" y="74" width="48" height="6" rx="2" fill="#1E293B"/>
+                <rect x="24" y="88" width="56" height="6" rx="2" fill="#1E293B"/>
+                <rect x="24" y="102" width="40" height="6" rx="2" fill="#1E293B"/>
+                <rect x="24" y="116" width="60" height="6" rx="2" fill="#1E293B"/>
+                <rect x="24" y="130" width="44" height="6" rx="2" fill="#1E293B"/>
+                <rect x="106" y="46" width="198" height="58" rx="6" fill="#0F172A" stroke="#1E293B"/>
+                <rect x="114" y="56" width="80" height="8" rx="2" fill="#475569"/>
+                <rect x="114" y="72" width="120" height="6" rx="2" fill="#1E293B"/>
+                <rect x="114" y="84" width="100" height="6" rx="2" fill="#1E293B"/>
+                <rect x="262" y="76" width="34" height="20" rx="4" fill="#4F46E5" opacity=".75"/>
+                <rect x="106" y="112" width="96" height="72" rx="6" fill="#0F172A" stroke="#1E293B"/>
+                <rect x="114" y="122" width="50" height="6" rx="2" fill="#475569"/>
+                <rect x="114" y="136" width="80" height="4" rx="2" fill="#1E293B"/>
+                <rect x="114" y="146" width="70" height="4" rx="2" fill="#1E293B"/>
+                <rect x="114" y="156" width="60" height="4" rx="2" fill="#1E293B"/>
+                <rect x="114" y="166" width="74" height="4" rx="2" fill="#1E293B"/>
+                <rect x="208" y="112" width="96" height="72" rx="6" fill="#0F172A" stroke="#1E293B"/>
+                <rect x="216" y="122" width="50" height="6" rx="2" fill="#475569"/>
+                <rect x="216" y="136" width="80" height="4" rx="2" fill="#1E293B"/>
+                <rect x="216" y="146" width="60" height="4" rx="2" fill="#1E293B"/>
+                <rect x="216" y="156" width="74" height="4" rx="2" fill="#1E293B"/>
+                <rect x="216" y="166" width="50" height="4" rx="2" fill="#1E293B"/>
               </svg>
             </div>
             <div class="f-body">
               <h3 class="f-title">
                 <span>admin-pro / cdn</span>
-                <span class="m-tag m-tag--green" data-i18n="m.cdn.tag">零构建</span>
+                <span class="f-feat" style="border:0;background:rgba(34,197,94,.14);color:#4ADE80" data-i18n="m.cdn.tag">零构建</span>
               </h3>
               <p class="f-desc" data-i18n="feat.cdn.desc">通过 unpkg 引入 oas-ui，原生 JS 直写：登录、CRUD、表单、i18n 全部开箱即用，不走打包。</p>
               <div class="f-feats">
@@ -456,46 +511,45 @@
                 <span class="f-feat" data-i18n="feat.nobuild">零构建</span>
                 <span class="f-feat" data-i18n="feat.form">表单</span>
               </div>
-              <a class="f-link" href="./admin-pro/cdn/" data-i18n="feat.cta">查看 cdn 版本 →</a>
+              <a class="f-link" href="./admin-pro/cdn/" data-i18n="feat.cta">查看 cdn 版本</a>
             </div>
           </article>
-
           <article class="f-card">
             <div class="f-shot f-shot--fallback" aria-hidden="true">
               <svg viewBox="0 0 320 200" xmlns="http://www.w3.org/2000/svg">
                 <defs>
                   <linearGradient id="mpa-bg" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0" stop-color="#0d1830"/>
-                    <stop offset="1" stop-color="#0a1326"/>
+                    <stop offset="0" stop-color="#111C2E"/>
+                    <stop offset="1" stop-color="#0A1120"/>
                   </linearGradient>
                 </defs>
                 <rect width="320" height="200" fill="url(#mpa-bg)"/>
-                <rect x="20" y="20" width="200" height="160" rx="8" fill="#0f1a30" stroke="#2a3658" stroke-width="1.5"/>
-                <rect x="32" y="32" width="60" height="8" rx="2" fill="#3a4b75"/>
-                <rect x="32" y="48" width="176" height="6" rx="2" fill="#1d2742"/>
-                <rect x="32" y="60" width="140" height="6" rx="2" fill="#1d2742"/>
-                <rect x="32" y="80" width="176" height="100" rx="4" fill="#10182c" stroke="#1d2742"/>
-                <line x1="32" y1="100" x2="208" y2="100" stroke="#1d2742"/>
-                <rect x="40" y="108" width="40" height="4" rx="2" fill="#2a3658"/>
-                <rect x="40" y="120" width="100" height="4" rx="2" fill="#1d2742"/>
-                <rect x="40" y="132" width="80" height="4" rx="2" fill="#1d2742"/>
-                <rect x="40" y="144" width="120" height="4" rx="2" fill="#1d2742"/>
-                <rect x="40" y="156" width="70" height="4" rx="2" fill="#1d2742"/>
-                <rect x="40" y="168" width="90" height="4" rx="2" fill="#1d2742"/>
-                <path d="M226 100 L240 100 M236 96 L240 100 L236 104" stroke="#5b8cff" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-                <rect x="246" y="60" width="60" height="80" rx="6" fill="#0f1a30" stroke="#1d2742" opacity=".75"/>
-                <rect x="252" y="68" width="36" height="6" rx="2" fill="#3a4b75"/>
-                <rect x="252" y="80" width="48" height="4" rx="2" fill="#1d2742"/>
-                <rect x="252" y="90" width="40" height="4" rx="2" fill="#1d2742"/>
-                <rect x="252" y="100" width="46" height="4" rx="2" fill="#1d2742"/>
-                <rect x="252" y="110" width="32" height="4" rx="2" fill="#1d2742"/>
-                <rect x="252" y="122" width="40" height="8" rx="2" fill="#5b8cff" opacity=".5"/>
+                <rect x="20" y="20" width="200" height="160" rx="8" fill="#0F172A" stroke="#334155" stroke-width="1.5"/>
+                <rect x="32" y="32" width="60" height="8" rx="2" fill="#475569"/>
+                <rect x="32" y="48" width="176" height="6" rx="2" fill="#1E293B"/>
+                <rect x="32" y="60" width="140" height="6" rx="2" fill="#1E293B"/>
+                <rect x="32" y="80" width="176" height="100" rx="4" fill="#0A1120" stroke="#1E293B"/>
+                <line x1="32" y1="100" x2="208" y2="100" stroke="#1E293B"/>
+                <rect x="40" y="108" width="40" height="4" rx="2" fill="#334155"/>
+                <rect x="40" y="120" width="100" height="4" rx="2" fill="#1E293B"/>
+                <rect x="40" y="132" width="80" height="4" rx="2" fill="#1E293B"/>
+                <rect x="40" y="144" width="120" height="4" rx="2" fill="#1E293B"/>
+                <rect x="40" y="156" width="70" height="4" rx="2" fill="#1E293B"/>
+                <rect x="40" y="168" width="90" height="4" rx="2" fill="#1E293B"/>
+                <path d="M226 100 L240 100 M236 96 L240 100 L236 104" stroke="#4F46E5" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+                <rect x="246" y="60" width="60" height="80" rx="6" fill="#0F172A" stroke="#1E293B" opacity=".75"/>
+                <rect x="252" y="68" width="36" height="6" rx="2" fill="#475569"/>
+                <rect x="252" y="80" width="48" height="4" rx="2" fill="#1E293B"/>
+                <rect x="252" y="90" width="40" height="4" rx="2" fill="#1E293B"/>
+                <rect x="252" y="100" width="46" height="4" rx="2" fill="#1E293B"/>
+                <rect x="252" y="110" width="32" height="4" rx="2" fill="#1E293B"/>
+                <rect x="252" y="122" width="40" height="8" rx="2" fill="#4F46E5" opacity=".5"/>
               </svg>
             </div>
             <div class="f-body">
               <h3 class="f-title">
                 <span>admin-pro / cdn-mpa</span>
-                <span class="m-tag m-tag--violet" data-i18n="m.mpa.tag">零构建 · MPA</span>
+                <span class="f-feat" style="border:0;background:rgba(129,140,248,.14);color:#A5B4FC" data-i18n="m.mpa.tag">零构建 · MPA</span>
               </h3>
               <p class="f-desc" data-i18n="feat.mpa.desc">最朴素的多页范式：一页一 HTML、真实浏览器跳转、公共 JS 抽取复用——零运行时假设。</p>
               <div class="f-feats">
@@ -505,12 +559,11 @@
                 <span class="f-feat" data-i18n="feat.nobuild">零构建</span>
                 <span class="f-feat" data-i18n="feat.form">表单</span>
               </div>
-              <a class="f-link" href="./admin-pro/cdn-mpa/" data-i18n="feat.cta">查看 cdn-mpa 版本 →</a>
+              <a class="f-link" href="./admin-pro/cdn-mpa/" data-i18n="feat.cta">查看 cdn-mpa 版本</a>
             </div>
           </article>
         </div>
       </section>
-
       <footer class="foot">
         <span data-i18n="foot.copy">© 2026 OpenAppSys · OAS-UI Templates</span>
         <span class="foot-sep">·</span>
@@ -519,41 +572,31 @@
         <a href="https://github.com/openappsys/oas-ui-templates" target="_blank" rel="noopener">GitHub</a>
       </footer>
     </div>
-
     <script>
+      // ===== i18n dict =====
       var I18N = {
         "zh-CN": {
           "meta.title": "OAS-UI Templates",
-          "meta.desc": "基于 oas-ui Web Components 的官方后台模板集合：零框架运行时、TypeScript + Vite，三套范式覆盖 SPA / CDN / MPA。",
+          "meta.desc": "面向 oas-ui Web Components 组件库的官方后台模板集合。零框架运行时，TypeScript + Vite，三种交付方式。",
           "nav.docs": "组件文档",
           "nav.github": "GitHub",
-          "hero.eyebrow": "原生 Web Components · 官方模板集合",
-"hero.eyebrow": "面向 oas-ui 的官方模板集合",
-"hero.title": "oas-ui",
-"hero.title2": "官方模板集合",
-"hero.lede": "面向 <strong>oas-ui</strong> Web Components 组件库的官方后台模板。零框架运行时 · TypeScript + Vite · 三套范式覆盖 SPA / CDN / MPA，<strong>拉下来就能跑</strong>。",
+          "hero.eyebrow": "官方模板集合 · for oas-ui",
+          "hero.title": "oas-ui",
+          "hero.title2": "官方模板集合",
+          "hero.lede": "面向 <strong>oas-ui</strong> Web Components 组件库的官方后台模板。零框架运行时 · TypeScript + Vite · 三套范式覆盖 SPA / CDN / MPA，<strong>拉下来就能跑</strong>。",
+          "anchor.1.u": "templates", "anchor.1.k": "范式可选",
           "anchor.2.u": "framework", "anchor.2.k": "无框架运行时",
           "anchor.3.k": "类型安全 + 极速 HMR",
           "anchor.4.u": "ms", "anchor.4.k": "冷启动到 dev server",
           "cta.live": "", "cta.live.text": "在线预览",
           "cta.github": "", "cta.github.text": "GitHub",
           "term.title": "terminal — pull & run",
-          "m.cta": "→ Try",
-          "m.vanilla.tag": "首推",
-          "m.vanilla.desc": "完整功能后台：可配置导航、设置中心、权限守卫、多页签、可视化、表单与请求层。",
-          "m.vanilla.s1": "Vite + TS", "m.vanilla.s2": "SPA",
-          "m.cdn.tag": "零构建",
-          "m.cdn.desc": "unpkg CDN + 原生 JS：登录 / 路由 / CRUD / 表单 / i18n，无需打包。",
-          "m.cdn.s1": "0 build", "m.cdn.s2": "SPA",
-          "m.mpa.tag": "零构建 · MPA",
-          "m.mpa.desc": "一页一 HTML、真实跳转、公共 JS 抽取——最朴素的多页应用范式。",
-          "m.mpa.s1": "0 build", "m.mpa.s2": "MPA",
-          "features.title": "看见成品，再决定",
+          "features.title": "模板集合 · 按场景选",
           "features.sub": "同一个 oas-ui 组件库，在不同框架 / 打包方式下的样子。",
           "feat.vanilla.desc": "中大型后台首选。设置中心把外观 / 布局 / 数据 / 通知四类配置拆成独立 Tab，所有偏好持久化。",
           "feat.cdn.desc": "通过 unpkg 引入 oas-ui，原生 JS 直写：登录、CRUD、表单、i18n 全部开箱即用，不走打包。",
           "feat.mpa.desc": "最朴素的多页范式：一页一 HTML、真实浏览器跳转、公共 JS 抽取复用——零运行时假设。",
-          "feat.cta": "查看 →",
+          "feat.cta": "查看",
           "feat.guard": "权限守卫",
           "feat.settings": "设置中心",
           "feat.tabs": "多页签",
@@ -565,41 +608,34 @@
           "feat.mpa": "多页应用",
           "feat.nobuild": "零构建",
           "feat.form": "表单",
+          "m.vanilla.tag": "首推",
+          "m.cdn.tag": "零构建",
+          "m.mpa.tag": "零构建 · MPA",
           "foot.copy": "© 2026 OpenAppSys · OAS-UI Templates",
-          "foot.license": "MIT OR Apache-2.0",
+          "foot.license": "MIT OR Apache-2.0"
         },
         en: {
           "meta.title": "OAS-UI Templates",
-          "meta.desc": "Official admin template collection on oas-ui Web Components. Zero-framework runtime, TypeScript + Vite, three delivery styles for SPA / CDN / MPA.",
+          "meta.desc": "Official admin template collection for the oas-ui Web Components library. Zero-framework runtime, TypeScript + Vite, three delivery styles.",
           "nav.docs": "Docs",
           "nav.github": "GitHub",
-          "hero.eyebrow": "Native Web Components · Official template collection",
-"hero.eyebrow": "Official template collection for oas-ui",
-"hero.title": "oas-ui",
-"hero.title2": "official template collection",
-"hero.lede": "Official admin templates for the <strong>oas-ui</strong> Web Components library. Zero-framework runtime · TypeScript + Vite · three delivery styles covering SPA / CDN / MPA. <strong>Pull, run, ship.</strong>",
+          "hero.eyebrow": "Official templates · for oas-ui",
+          "hero.title": "oas-ui",
+          "hero.title2": "official template collection",
+          "hero.lede": "Official admin templates for the <strong>oas-ui</strong> Web Components library. Zero-framework runtime · TypeScript + Vite · three delivery styles covering SPA / CDN / MPA. <strong>Pull, run, ship.</strong>",
+          "anchor.1.u": "templates", "anchor.1.k": "paradigms to choose",
           "anchor.2.u": "framework", "anchor.2.k": "no framework runtime",
           "anchor.3.k": "typed + instant HMR",
           "anchor.4.u": "ms", "anchor.4.k": "cold start to dev server",
           "cta.live": "", "cta.live.text": "Live preview",
           "cta.github": "", "cta.github.text": "GitHub",
           "term.title": "terminal — pull & run",
-          "m.cta": "→ Try",
-          "m.vanilla.tag": "Top pick",
-          "m.vanilla.desc": "Full-featured admin: configurable nav, settings center, route guards, multi-tab, charts, forms and a request layer.",
-          "m.vanilla.s1": "Vite + TS", "m.vanilla.s2": "SPA",
-          "m.cdn.tag": "zero-build",
-          "m.cdn.desc": "oas-ui via unpkg CDN, plain JS: login / router / CRUD / form / i18n — no bundler.",
-          "m.cdn.s1": "0 build", "m.cdn.s2": "SPA",
-          "m.mpa.tag": "zero-build · MPA",
-          "m.mpa.desc": "One HTML per page, real navigation, shared JS extracted — the plainest multi-page approach.",
-          "m.mpa.s1": "0 build", "m.mpa.s2": "MPA",
-          "features.title": "See the result, then decide",
+          "features.title": "Template gallery · pick by scenario",
           "features.sub": "Same oas-ui library — how it looks under different frameworks and build styles.",
           "feat.vanilla.desc": "The default for medium-to-large admin apps. Settings center splits appearance / layout / data / notifications into independent tabs, all preferences persisted.",
           "feat.cdn.desc": "Load oas-ui from unpkg and write plain JS — login, CRUD, forms and i18n ready out of the box, no bundler involved.",
           "feat.mpa.desc": "The plainest multi-page style: one HTML per page, real browser navigation, shared JS extracted and reused — zero runtime assumptions.",
-          "feat.cta": "View →",
+          "feat.cta": "View",
           "feat.guard": "Route guards",
           "feat.settings": "Settings center",
           "feat.tabs": "Multi-tab",
@@ -611,8 +647,11 @@
           "feat.mpa": "MPA",
           "feat.nobuild": "Zero-build",
           "feat.form": "Forms",
+          "m.vanilla.tag": "Top pick",
+          "m.cdn.tag": "Zero-build",
+          "m.mpa.tag": "Zero-build · MPA",
           "foot.copy": "© 2026 OpenAppSys · OAS-UI Templates",
-          "foot.license": "MIT OR Apache-2.0",
+          "foot.license": "MIT OR Apache-2.0"
         }
       }
       var LOCALE_KEY = "oas-templates.locale"
@@ -626,7 +665,6 @@
         if (n === "zh" || n.indexOf("zh-") === 0) return "zh-CN"
         return "en"
       }
-      function dict() { var loc = document.documentElement.lang; return I18N[loc] || I18N["zh-CN"] }
       function applyLocale(loc) {
         var d = I18N[loc] || I18N["zh-CN"]
         document.documentElement.lang = loc
@@ -641,7 +679,7 @@
           if (key === "hero.lede") {
             if (val !== "") nodes[i].innerHTML = val
           } else if (val === "") {
-            // parent contains other data-i18n children: keep as-is
+            // parent contains other data-i18n children
           } else {
             nodes[i].textContent = val
           }
@@ -656,7 +694,7 @@
         applyLocale(loc)
         if (window.__termCtl) { window.__termCtl.stop(); window.__termCtl.start() }
       }
-
+      // ===== Terminal type-on (单次，不循环) =====
       function buildTerminal() {
         var el = document.getElementById("term")
         if (!el) return { stop: function(){}, start: function(){} }
@@ -678,74 +716,55 @@
           d.innerHTML = html
           el.appendChild(d)
         }
-        async function runOnce(opts) {
-          // opts.loop: 兼容老调用；现在始终只跑一遍，停在 idle prompt
+        function promptLine() {
+          var div = document.createElement("div")
+          div.className = "t-line"
+          div.innerHTML = "<span class=\"t-prompt\">$</span><span class=\"t-cmd\"></span><span class=\"t-cursor\"></span>"
+          el.appendChild(div)
+          return div.querySelector(".t-cmd")
+        }
+        async function runOnce() {
           clear()
           var isZh = (document.documentElement.lang === "zh-CN")
-          // line 1
-          var l1 = document.createElement("div")
-          l1.className = "t-line"
-          l1.innerHTML = "<span class=\"t-prompt\">$</span><span class=\"t-cmd\"></span><span class=\"t-cursor\"></span>"
-          el.appendChild(l1)
-          var cmdNode = l1.querySelector(".t-cmd")
-          var ok = await typeInto(cmdNode, "npx degit openappsys/oas-ui-templates/templates/admin-pro/vanilla-html my-admin", 18)
+          var ok
+          var l1 = promptLine()
+          ok = await typeInto(l1, "npx degit openappsys/oas-ui-templates/templates/admin-pro/vanilla-html my-admin", 18)
           if (!ok) return
-          var cur = l1.querySelector(".t-cursor"); if (cur) cur.remove()
-          await sleep(280)
-          // line 2 (output)
+          l1.parentNode.querySelector(".t-cursor").remove()
+          await sleep(260)
           line("t-out", "# " + (isZh ? "已下载完整后台模版 · 零框架运行时 · 即取即用" : "full-featured admin template downloaded · zero-framework · ready to use"))
           await sleep(220)
-          // line 3: cd + pnpm install（不报时间——初次安装是几秒级，不能谎报 215ms）
-          var l3 = document.createElement("div")
-          l3.className = "t-line"
-          l3.innerHTML = "<span class=\"t-prompt\">$</span><span class=\"t-cmd\"></span><span class=\"t-cursor\"></span>"
-          el.appendChild(l3)
-          var cmd2 = l3.querySelector(".t-cmd")
-          ok = await typeInto(cmd2, "cd my-admin && pnpm install", 20)
+          var l3 = promptLine()
+          ok = await typeInto(l3, "cd my-admin && pnpm install", 18)
           if (!ok) return
-          var cur2 = l3.querySelector(".t-cursor"); if (cur2) cur2.remove()
-          await sleep(280)
-          // line 4: pnpm dev
-          var l4 = document.createElement("div")
-          l4.className = "t-line"
-          l4.innerHTML = "<span class=\"t-prompt\">$</span><span class=\"t-cmd\"></span><span class=\"t-cursor\"></span>"
-          el.appendChild(l4)
-          var cmd3 = l4.querySelector(".t-cmd")
-          ok = await typeInto(cmd3, "pnpm dev", 18)
+          l3.parentNode.querySelector(".t-cursor").remove()
+          await sleep(260)
+          var l4 = promptLine()
+          ok = await typeInto(l4, "pnpm dev", 18)
           if (!ok) return
-          var cur3 = l4.querySelector(".t-cursor"); if (cur3) cur3.remove()
+          l4.parentNode.querySelector(".t-cursor").remove()
           await sleep(360)
-          // line 5 (ok)：215ms 专指 vite dev 起步，不指 pnpm install
           line("t-ok", "✓ vite ready in 215ms → http://localhost:5173")
-          await sleep(200)
-          // line 5 (idle prompt)
-          var idle = document.createElement("div")
-          idle.className = "t-line"
-          idle.innerHTML = "<span class=\"t-prompt\">$</span><span class=\"t-cursor\"></span>"
-          el.appendChild(idle)
         }
         ctl.start = function() { ctl.stopped = false; runOnce() }
         ctl.stop = function() { ctl.stopped = true }
         return ctl
       }
-
       applyLocale(detect())
       var termCtl = buildTerminal()
       window.__termCtl = termCtl
       termCtl.start()
-
       document.querySelector(".lang-switch").addEventListener("click", function (e) {
         var t = e.target
         if (t && t.hasAttribute && t.hasAttribute("data-lang")) {
           setLocale(t.getAttribute("data-lang"))
         }
       })
-
+      // ===== IntersectionObserver fade-in (pre-checklist: reduced-motion 已兜底) =====
       if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches && "IntersectionObserver" in window) {
         var io = new IntersectionObserver(function (entries) {
           entries.forEach(function (en) {
             if (en.isIntersecting) {
-              en.target.style.transition = "opacity .6s ease, transform .6s ease"
               en.target.style.opacity = "1"
               en.target.style.transform = "none"
               io.unobserve(en.target)
@@ -754,8 +773,8 @@
         }, { threshold: 0.12 })
         document.querySelectorAll(".f-card").forEach(function (c, i) {
           c.style.opacity = "0"
-          c.style.transform = "translateY(12px)"
-          c.style.transitionDelay = (i * 80) + "ms"
+          c.style.transform = "translateY(8px)"
+          c.style.transitionDelay = (i * 60) + "ms"
           io.observe(c)
         })
       }
