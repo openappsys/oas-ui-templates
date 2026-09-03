@@ -1,3 +1,4 @@
+import './analytics'
 import './components/registry'
 import './styles/app.css'
 import { initI18n } from './i18n'
@@ -12,3 +13,4 @@ const root = document.querySelector<HTMLDivElement>('#app')!
 mountApp(root)
 applySettings()
 initRouter(root.querySelector<HTMLElement>('#view')!)
+

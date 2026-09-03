@@ -21,24 +21,14 @@
         }
       })()
     </script>
-    <script>
-      // 统计仅在非 localhost（生产/部署域名）加载；本地 dev / 测试(e2e)不采集
-      if (location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-        window.dataLayer = window.dataLayer || []
-        function gtag() {
-          dataLayer.push(arguments)
-        }
-        gtag('js', new Date())
-        gtag('config', 'G-RXJ8JG9R19')
-        var s = document.createElement('script')
-        s.async = true
-        s.src = 'https://www.googletagmanager.com/gtag/js?id=G-RXJ8JG9R19'
-        document.head.appendChild(s)
-      }
-    </script>
+    <!-- GA 已挪到 src/analytics.ts（main.ts 顶部 import），由 vite 构建期 import.meta.env.PROD
+         静态门控：仅 prod 构建产物包含并采集；dev / preview / staging / 本地构建均不采，
+         与 oas-ui 文档站 (packages/docs/docs/.vitepress/config.ts:213) 策略一致。 -->
   </head>
   <body>
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
+
+
