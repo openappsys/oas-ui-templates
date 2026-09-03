@@ -231,9 +231,9 @@
       .dot-r { background: #EF4444; } .dot-y { background: #F59E0B; } .dot-g { background: #22C55E; }
       .terminal-title { margin-left: 6px; letter-spacing: .01em; }
       .terminal-body {
-        padding: 18px 20px 22px;
-        font-family: var(--oas-font-mono); font-size: 13px; line-height: 1.85;
-        min-height: 240px;
+        padding: 14px 18px 18px;
+        font-family: var(--oas-font-mono); font-size: 13px; line-height: 1.55;
+        min-height: 200px;
         color: var(--oas-text);
       }
       .t-line { white-space: pre-wrap; word-break: break-word; min-height: 1.85em; font-variant-numeric: tabular-nums; }
@@ -264,12 +264,24 @@
       .features-head p { margin: 0; color: var(--oas-text-muted); font-size: 15px; line-height: 1.6; }
       .f-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--oas-sp-4); }
       .f-card {
+        position: relative;
         display: flex; flex-direction: column;
         background: var(--oas-surface-1); border: 1px solid var(--oas-border);
         border-radius: var(--oas-radius-lg); overflow: hidden;
+        text-decoration: none; color: inherit;
+        cursor: pointer;
         transition: border-color var(--oas-dur-base) var(--oas-ease), background var(--oas-dur-base) var(--oas-ease);
       }
+      a.f-card:focus-visible { outline: 2px solid var(--oas-ring); outline-offset: 2px; }
+      .f-card::before {
+        content: ""; position: absolute; inset: 0 0 auto 0; height: 2px;
+        background: linear-gradient(110deg, #7da0ff 0%, #a78bfa 60%, #c084fc 100%);
+        opacity: .55;
+        transition: opacity var(--oas-dur-base) var(--oas-ease);
+        pointer-events: none;
+      }
       .f-card:hover { border-color: var(--oas-border-strong); background: var(--oas-surface-2); }
+      .f-card:hover::before { opacity: 1; }
       .f-shot {
         position: relative; aspect-ratio: 16 / 10;
         background: var(--oas-surface-2);
@@ -279,6 +291,11 @@
       .f-shot--fallback { display: grid; place-items: center; padding: 18px; }
       .f-shot--fallback svg { width: 88%; height: auto; opacity: .9; }
       .f-body { padding: var(--oas-sp-5); display: flex; flex-direction: column; gap: var(--oas-sp-3); flex: 1; }
+      .f-fit {
+        font-size: 12.5px; font-weight: 600; letter-spacing: .01em;
+        color: var(--oas-primary-soft);
+        margin: 0;
+      }
       .f-title {
         font-size: var(--oas-fs-h3); font-weight: 600; letter-spacing: -.005em;
         color: var(--oas-text); display: flex; align-items: center; gap: var(--oas-sp-2);
@@ -292,14 +309,7 @@
         display: inline-flex; align-items: center; gap: 5px;
       }
       .f-feat::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--oas-success-soft); }
-      .f-link {
-        margin-top: auto; padding-top: var(--oas-sp-2);
-        font-size: 13px; font-weight: 600; color: var(--oas-primary-soft); text-decoration: none;
-        display: inline-flex; align-items: center; gap: 4px;
-      }
-      .f-link:hover { color: var(--oas-text); }
-      .f-link::after { content: "→"; transition: transform var(--oas-dur-fast) var(--oas-ease); }
-      .f-card:hover .f-link::after { transform: translateX(2px); }
+
       /* ===== FOOTER ===== */
       .foot {
         margin-top: var(--oas-sp-7); padding: var(--oas-sp-5) 0 0;
@@ -329,7 +339,7 @@
       }
       /* ===== Reduced motion ===== */
       @media (prefers-reduced-motion: reduce) {
-        .t-cursor, .cta, .f-card, .f-link::after { animation: none; transition: none; }
+        .t-cursor, .cta, .f-card { animation: none; transition: none; }
         .f-card { opacity: 1; transform: none; }
       }
       /* IntersectionObserver fade-in（JS 提供 transition 兜底） */
@@ -394,7 +404,7 @@
           <p data-i18n="features.sub">同一个 oas-ui 组件库，在不同框架 / 打包方式下的样子。</p>
         </div>
         <div class="f-grid">
-          <article class="f-card">
+          <a class="f-card" href="./admin-pro/vanilla-html/">
             <div class="f-shot f-shot--fallback" aria-hidden="true">
               <svg viewBox="0 0 320 200" xmlns="http://www.w3.org/2000/svg">
                 <defs>
@@ -443,6 +453,7 @@
               </svg>
             </div>
             <div class="f-body">
+              <p class="f-fit" data-i18n="fit.vanilla">完整后台框架</p>
               <h3 class="f-title">
                 <span>admin-pro / vanilla</span>
                 <span class="f-feat" style="border:0;background:rgba(79,70,229,.16);color:#A5B4FC" data-i18n="m.vanilla.tag">首推</span>
@@ -456,10 +467,9 @@
                 <span class="f-feat" data-i18n="feat.i18n">i18n</span>
                 <span class="f-feat" data-i18n="feat.theme">主题定制</span>
               </div>
-              <a class="f-link" href="./admin-pro/vanilla-html/" data-i18n="feat.cta">查看完整后台</a>
-            </div>
-          </article>
-          <article class="f-card">
+              </div>
+          </a>
+          <a class="f-card" href="./admin-pro/cdn/">
             <div class="f-shot f-shot--fallback" aria-hidden="true">
               <svg viewBox="0 0 320 200" xmlns="http://www.w3.org/2000/svg">
                 <defs>
@@ -499,6 +509,7 @@
               </svg>
             </div>
             <div class="f-body">
+              <p class="f-fit" data-i18n="fit.cdn">完整后台框架</p>
               <h3 class="f-title">
                 <span>admin-pro / cdn</span>
                 <span class="f-feat" style="border:0;background:rgba(34,197,94,.14);color:#4ADE80" data-i18n="m.cdn.tag">零构建</span>
@@ -511,10 +522,9 @@
                 <span class="f-feat" data-i18n="feat.nobuild">零构建</span>
                 <span class="f-feat" data-i18n="feat.form">表单</span>
               </div>
-              <a class="f-link" href="./admin-pro/cdn/" data-i18n="feat.cta">查看 cdn 版本</a>
-            </div>
-          </article>
-          <article class="f-card">
+              </div>
+          </a>
+          <a class="f-card" href="./admin-pro/cdn-mpa/">
             <div class="f-shot f-shot--fallback" aria-hidden="true">
               <svg viewBox="0 0 320 200" xmlns="http://www.w3.org/2000/svg">
                 <defs>
@@ -547,6 +557,7 @@
               </svg>
             </div>
             <div class="f-body">
+              <p class="f-fit" data-i18n="fit.mpa">完整后台框架</p>
               <h3 class="f-title">
                 <span>admin-pro / cdn-mpa</span>
                 <span class="f-feat" style="border:0;background:rgba(129,140,248,.14);color:#A5B4FC" data-i18n="m.mpa.tag">零构建 · MPA</span>
@@ -559,9 +570,8 @@
                 <span class="f-feat" data-i18n="feat.nobuild">零构建</span>
                 <span class="f-feat" data-i18n="feat.form">表单</span>
               </div>
-              <a class="f-link" href="./admin-pro/cdn-mpa/" data-i18n="feat.cta">查看 cdn-mpa 版本</a>
-            </div>
-          </article>
+              </div>
+          </a>
         </div>
       </section>
       <footer class="foot">
@@ -593,10 +603,12 @@
           "term.title": "terminal — pull & run",
           "features.title": "模板集合 · 按场景选",
           "features.sub": "同一个 oas-ui 组件库，在不同框架 / 打包方式下的样子。",
+          "fit.vanilla": "完整后台框架",
           "feat.vanilla.desc": "中大型后台首选。设置中心把外观 / 布局 / 数据 / 通知四类配置拆成独立 Tab，所有偏好持久化。",
+          "fit.cdn": "零配置，一键跑",
           "feat.cdn.desc": "通过 unpkg 引入 oas-ui，原生 JS 直写：登录、CRUD、表单、i18n 全部开箱即用，不走打包。",
+          "fit.mpa": "页面独立，无 JS 路由",
           "feat.mpa.desc": "最朴素的多页范式：一页一 HTML、真实浏览器跳转、公共 JS 抽取复用——零运行时假设。",
-          "feat.cta": "查看",
           "feat.guard": "权限守卫",
           "feat.settings": "设置中心",
           "feat.tabs": "多页签",
@@ -632,10 +644,12 @@
           "term.title": "terminal — pull & run",
           "features.title": "Template gallery · pick by scenario",
           "features.sub": "Same oas-ui library — how it looks under different frameworks and build styles.",
+          "fit.vanilla": "Full admin framework",
           "feat.vanilla.desc": "The default for medium-to-large admin apps. Settings center splits appearance / layout / data / notifications into independent tabs, all preferences persisted.",
+          "fit.cdn": "Zero-config, one-line setup",
           "feat.cdn.desc": "Load oas-ui from unpkg and write plain JS — login, CRUD, forms and i18n ready out of the box, no bundler involved.",
+          "fit.mpa": "Page-per-route, no JS routing",
           "feat.mpa.desc": "The plainest multi-page style: one HTML per page, real browser navigation, shared JS extracted and reused — zero runtime assumptions.",
-          "feat.cta": "View",
           "feat.guard": "Route guards",
           "feat.settings": "Settings center",
           "feat.tabs": "Multi-tab",
@@ -781,3 +795,13 @@
     </script>
   </body>
 </html>
+
+
+
+
+
+
+
+
+
+
