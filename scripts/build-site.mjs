@@ -33,6 +33,11 @@ function safeRm(p) {
 mkdirSync(outDir, { recursive: true })
 
 cpSync(join(siteDir, 'index.html'), join(outDir, 'index.html'))
+// 门户静态资源（OG 社交预览图等）随 index.html 一起发布到 dist 顶层
+for (const staticFile of ['og.png']) {
+  const src = join(siteDir, staticFile)
+  if (existsSync(src)) cpSync(src, join(outDir, staticFile))
+}
 
 const deployed = []
 for (const family of families) {
