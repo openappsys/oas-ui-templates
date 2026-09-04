@@ -13,10 +13,10 @@
     "size": "node scripts/size.mjs"
   },
   "dependencies": {
-    "@oas-ui/i18n": "^2.3.2",
-    "@oas-ui/icons": "^2.3.2",
-    "@oas-ui/theme": "^2.3.2",
-    "@oas-ui/ui": "^2.3.2"
+    "@oas-ui/i18n": "^2.4.0",
+    "@oas-ui/icons": "^2.4.0",
+    "@oas-ui/theme": "^2.4.0",
+    "@oas-ui/ui": "^2.4.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",

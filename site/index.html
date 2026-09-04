@@ -217,7 +217,7 @@
       /* ===== TERMINAL ===== */
       .terminal {
         background: #0A1120; border: 1px solid var(--oas-border);
-        border-radius: var(--oas-radius-lg); overflow: hidden;
+        border-radius: var(--oas-radius-lg); overflow: hidden; text-decoration: none; color: inherit; cursor: pointer;
         box-shadow: var(--oas-shadow-lg);
         position: relative;
       }
@@ -277,8 +277,9 @@
         transition: opacity var(--oas-dur-base) var(--oas-ease);
         pointer-events: none;
       }
-      .f-card:hover { border-color: var(--oas-border-strong); background: var(--oas-surface-2); }
+      .f-card:hover { border-color: var(--oas-border-strong); background: var(--oas-surface-2); transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0,0,0,.35); }
       .f-card:hover::before { opacity: 1; }
+      a.f-card:focus-visible { outline: 2px solid var(--oas-ring); outline-offset: 2px; }
       .f-shot {
         position: relative; aspect-ratio: 16 / 10;
         background: var(--oas-surface-2);
@@ -306,14 +307,6 @@
         display: inline-flex; align-items: center; gap: 5px;
       }
       .f-feat::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--oas-success-soft); }
-      .f-link {
-        margin-top: auto; padding-top: var(--oas-sp-2);
-        font-size: 13px; font-weight: 600; color: var(--oas-primary-soft); text-decoration: none;
-        display: inline-flex; align-items: center; gap: 4px;
-      }
-      .f-link:hover { color: var(--oas-text); }
-      .f-link::after { content: "→"; transition: transform var(--oas-dur-fast) var(--oas-ease); }
-      .f-card:hover .f-link::after { transform: translateX(2px); }
       /* ===== FOOTER ===== */
       .foot {
         margin-top: var(--oas-sp-7); padding: var(--oas-sp-5) 0 0;
@@ -343,11 +336,11 @@
       }
       /* ===== Reduced motion ===== */
       @media (prefers-reduced-motion: reduce) {
-        .t-cursor, .cta, .f-card, .f-link::after { animation: none; transition: none; }
+        .t-cursor, .cta, .f-card { animation: none; transition: none; }
         .f-card { opacity: 1; transform: none; }
       }
       /* IntersectionObserver fade-in（JS 提供 transition 兜底） */
-      .f-card { transition: opacity var(--oas-dur-base) var(--oas-ease), transform var(--oas-dur-base) var(--oas-ease), border-color var(--oas-dur-base) var(--oas-ease), background var(--oas-dur-base) var(--oas-ease); }
+      .f-card { transition: opacity var(--oas-dur-base) var(--oas-ease), transform var(--oas-dur-base) var(--oas-ease), border-color var(--oas-dur-base) var(--oas-ease), background var(--oas-dur-base) var(--oas-ease), box-shadow var(--oas-dur-base) var(--oas-ease); }
     </style>
   </head>
   <body>
@@ -408,7 +401,7 @@
           <p data-i18n="features.sub">同一个 oas-ui 组件库，在不同框架 / 打包方式下的样子。</p>
         </div>
         <div class="f-grid">
-          <article class="f-card">
+          <a class="f-card" href="./admin-pro/vanilla-html/">
             <div class="f-shot f-shot--fallback" aria-hidden="true">
               <svg viewBox="0 0 320 200" xmlns="http://www.w3.org/2000/svg">
                 <defs>
@@ -471,10 +464,9 @@
                 <span class="f-feat" data-i18n="feat.i18n">i18n</span>
                 <span class="f-feat" data-i18n="feat.theme">主题定制</span>
               </div>
-              <a class="f-link" href="./admin-pro/vanilla-html/" data-i18n="feat.cta">查看完整后台</a>
             </div>
-          </article>
-          <article class="f-card">
+          </a>
+          <a class="f-card" href="./admin-pro/cdn/">
             <div class="f-shot f-shot--fallback" aria-hidden="true">
               <svg viewBox="0 0 320 200" xmlns="http://www.w3.org/2000/svg">
                 <defs>
@@ -527,10 +519,9 @@
                 <span class="f-feat" data-i18n="feat.nobuild">零构建</span>
                 <span class="f-feat" data-i18n="feat.form">表单</span>
               </div>
-              <a class="f-link" href="./admin-pro/cdn/" data-i18n="feat.cta">查看 cdn 版本</a>
             </div>
-          </article>
-          <article class="f-card">
+          </a>
+          <a class="f-card" href="./admin-pro/cdn-mpa/">
             <div class="f-shot f-shot--fallback" aria-hidden="true">
               <svg viewBox="0 0 320 200" xmlns="http://www.w3.org/2000/svg">
                 <defs>
@@ -576,9 +567,8 @@
                 <span class="f-feat" data-i18n="feat.nobuild">零构建</span>
                 <span class="f-feat" data-i18n="feat.form">表单</span>
               </div>
-              <a class="f-link" href="./admin-pro/cdn-mpa/" data-i18n="feat.cta">查看 cdn-mpa 版本</a>
             </div>
-          </article>
+          </a>
         </div>
       </section>
       <footer class="foot">

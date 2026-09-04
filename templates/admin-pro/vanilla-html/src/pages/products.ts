@@ -1,6 +1,6 @@
 import { message } from '@oas-ui/ui/feedback/message'
 import type { OASTable, TableColumn } from '@oas-ui/ui/data/table'
-import '@oas-ui/ui/data/masonry'
+import '@oas-ui/ui/layout/masonry'
 import { onLocaleChange, t } from '../i18n'
 import { navigate } from '../router/mode'
 import { listCategories } from '../data/categories'

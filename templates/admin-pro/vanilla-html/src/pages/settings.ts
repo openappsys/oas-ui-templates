@@ -1,7 +1,7 @@
 import '../styles/pages/settings.css'
 import '@oas-ui/ui/form/color-picker'
 import '@oas-ui/ui/form/slider'
-import '@oas-ui/ui/floating/theme-editor'
+import '@oas-ui/ui/framework/theme-editor'
 import { message } from '@oas-ui/ui/feedback/message'
 import { modal } from '@oas-ui/ui/feedback/modal'
 import { t } from '../i18n'
