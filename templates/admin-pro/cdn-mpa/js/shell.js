@@ -28,6 +28,11 @@ export function initShell({ active }) {
     setLocale(currentLocale() === 'en' ? 'zh-CN' : 'en')
     location.reload()
   })
+  document.querySelector('#nav-toggle').addEventListener('click', () => {
+    const nav = document.querySelector('#nav')
+    if (nav.hasAttribute('drawer-open')) nav.closeDrawer()
+    else nav.openDrawer()
+  })
   document.querySelector('#logout').addEventListener('click', () => {
     clearSession()
     location.href = './index.html'

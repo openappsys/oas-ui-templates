@@ -12,6 +12,7 @@
   <body>
     <oas-layout class="app" viewport>
       <header class="app-header" slot="header">
+          <button id="nav-toggle" class="nav-toggle" type="button" aria-label="打开菜单">☰</button>
         <span class="logo" data-i18n="app.title">OAS Admin CDN · MPA</span>
         <span class="spacer"></span>
         <button id="lang-toggle" data-testid="lang-toggle" class="icon-btn" type="button" data-i18n="header.lang">English</button>
@@ -34,7 +35,7 @@
             </div>
           </oas-card>
           <oas-modal data-testid="user-form-modal" no-footer>
-            <div style="padding: var(--oas-space-4); min-width: 320px">
+            <div style="padding: var(--oas-space-4); min-width: 0">
               <h2 id="form-title" style="margin:0 0 var(--oas-space-3); font-size:16px" data-i18n="users.formNew">新建用户</h2>
               <oas-input data-testid="uf-name" data-i18n-attr='{"placeholder":"users.th.name"}' placeholder="姓名"></oas-input>
               <oas-input data-testid="uf-email" data-i18n-attr='{"placeholder":"users.th.email"}' placeholder="邮箱" style="margin-top: var(--oas-space-2)"></oas-input>

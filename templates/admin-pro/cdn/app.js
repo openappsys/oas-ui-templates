@@ -60,6 +60,7 @@ function renderShell() {
   app.innerHTML = `
     <oas-layout class="app" viewport>
       <header class="app-header" slot="header">
+        <button id="nav-toggle" class="nav-toggle" type="button" aria-label="打开菜单">☰</button>
         <span class="logo">${t('app.title')}</span>
         <span class="spacer"></span>
         <button id="lang-toggle" data-testid="lang-toggle" class="icon-btn" type="button">${t('header.lang')}</button>
@@ -76,6 +77,11 @@ function renderShell() {
   app.querySelector('#logout').addEventListener('click', () => {
     localStorage.removeItem(SESSION_KEY)
     location.hash = '#/login'
+  })
+  app.querySelector('#nav-toggle').addEventListener('click', () => {
+    const nav = app.querySelector('#nav')
+    if (nav.hasAttribute('drawer-open')) nav.closeDrawer()
+    else nav.openDrawer()
   })
   app.querySelector('#nav').addEventListener('oas-select', (e) => {
     const value = e.detail?.value

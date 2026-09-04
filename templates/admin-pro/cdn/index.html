@@ -75,7 +75,7 @@
         align-items: center;
         margin-bottom: var(--oas-space-3);
       }
-      .toolbar oas-input { width: 240px; }
+      .toolbar oas-input { max-width: 240px; width: 100%; }
       .table-foot { display: flex; justify-content: flex-end; margin-top: var(--oas-space-3); }
       .form-grid { display: grid; gap: var(--oas-space-3); grid-template-columns: repeat(2, 1fr); margin-bottom: var(--oas-space-3); }
       .login-wrap {
@@ -85,7 +85,8 @@
         background: radial-gradient(800px 500px at 50% -100px, color-mix(in srgb, var(--oas-color-primary) 14%, transparent), transparent 70%), var(--oas-color-bg);
       }
       .login-card {
-        width: 360px;
+        max-width: 360px;
+        width: calc(100% - 32px);
         padding: var(--oas-space-6);
         background: var(--oas-color-bg-elevated);
         border: 1px solid var(--oas-color-border);
@@ -96,6 +97,49 @@
       .login-card .sub { margin: 0 0 var(--oas-space-5); font-size: 13px; color: var(--oas-color-text-secondary); }
       .login-card oas-input, .login-card oas-button { width: 100%; margin-bottom: var(--oas-space-3); }
       .login-tip { margin: var(--oas-space-2) 0 0; font-size: 12px; color: var(--oas-color-text-secondary); text-align: center; }
+
+      @media (max-width: 640px) {
+        .form-grid { grid-template-columns: 1fr; }
+        .toolbar { flex-wrap: wrap; }
+      }
+
+.nav-toggle {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--oas-color-text-primary);
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  padding: 0;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+@media (max-width: 768px) {
+  .nav-toggle {
+    display: inline-flex;
+  }
+  @media (pointer: coarse) {
+    .nav-toggle {
+      width: 44px;
+      height: 44px;
+    }
+  }
+  /* 隐藏 oas-sidebar 自带 fixed 定位的 trigger，避免它浮在 logo 上 */
+  oas-sidebar::part(trigger) {
+    display: none !important;
+  }
+  /* 移动端：oas-sider 收为 0，避免左侧空白站位 */
+  oas-sider,
+  oas-sider[collapsed] {
+    width: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+}
     </style>
   </head>
   <body>
