@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "node scripts/serve.mjs",
     "build": "node scripts/build.mjs",
-    "test": "echo no unit tests (e2e only)",
+    "test": "echo no-unit-tests-e2e-only",
     "test:e2e": "playwright test"
   },
   "devDependencies": {
