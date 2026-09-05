@@ -87,6 +87,7 @@ declare module 'react/jsx-runtime' {
         placement?: string
         size?: string
         open?: boolean
+        visible?: boolean
         'no-footer'?: boolean
         onOasClose?: (e: Event) => void
         onOasOk?: (e: Event) => void
@@ -98,6 +99,77 @@ declare module 'react/jsx-runtime' {
         checked?: boolean
         disabled?: boolean
         onOasChange?: (e: Event) => void
+      }
+      'oas-layout': OasBase & {
+        viewport?: boolean
+        side?: string
+      }
+      'oas-sider': OasBase
+      'oas-sidebar': OasBase & {
+        items?: string
+        active?: string
+        collapsed?: boolean
+        onOasSelect?: (e: Event) => void
+        onOasCollapse?: (e: Event) => void
+      }
+      'oas-menubar': OasBase & {
+        items?: string
+        value?: string
+        orientation?: string
+        trigger?: string
+        onOasSelect?: (e: Event) => void
+      }
+      'oas-navigation-menu': OasBase & {
+        items?: string
+        value?: string
+        orientation?: string
+        onOasSelect?: (e: Event) => void
+      }
+      'oas-tabs': OasBase & {
+        active?: string
+        type?: string
+        'hide-content'?: boolean
+        'context-menu'?: boolean
+        onOasChange?: (e: Event) => void
+        onOasClose?: (e: Event) => void
+        onOasAdd?: (e: Event) => void
+      }
+      'oas-tab-panel': OasBase & {
+        value?: string
+      }
+      'oas-breadcrumb': OasBase & {
+        items?: string
+      }
+      'oas-command': OasBase & {
+        items?: string
+        open?: boolean
+        hotkey?: string
+        'close-on-select'?: string
+        onOasSelect?: (e: Event) => void
+        onOasOpenChange?: (e: Event) => void
+      }
+      'oas-badge': OasBase & {
+        value?: string
+        size?: string
+        offset?: string
+      }
+      'oas-dropdown': OasBase & {
+        items?: string
+        value?: string
+        placement?: string
+        trigger?: string
+        'arrow-point-at-center'?: boolean
+        onOasSelect?: (e: Event) => void
+      }
+      'oas-avatar': OasBase & {
+        size?: string | number
+        text?: string
+      }
+      'oas-list': OasBase & {
+        split?: boolean
+      }
+      'oas-list-item': OasBase & {
+        title?: string
       }
     }
   }

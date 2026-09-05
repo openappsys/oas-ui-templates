@@ -15,7 +15,7 @@ initI18n()
 enableFakeFetch()
 applySettings()
 
-createRoot(document.getElementById('root')!).render(
+createRoot(document.getElementById('app')!).render(
   <StrictMode>
     <App />
   </StrictMode>,
