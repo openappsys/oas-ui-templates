@@ -8,10 +8,11 @@ import './styles/app.css'
 import { initI18n } from './i18n'
 import { enableFakeFetch } from './api/http'
 import { applySettings } from './settings-init'
+import { router } from './router'
 import App from './App.vue'
 
 initI18n()
 enableFakeFetch()
 applySettings()
 
-createApp(App).mount('#app')
+createApp(App).use(router).mount('#app')

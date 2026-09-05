@@ -15,6 +15,25 @@ declare module 'vue' {
     'oas-modal': any
     'oas-drawer': any
     'oas-switch': any
+    'oas-radio': any
+    'oas-color-picker': any
+    'oas-slider': any
+    'oas-segmented': any
+    'oas-theme-editor': any
+    'oas-layout': any
+    'oas-sider': any
+    'oas-sidebar': any
+    'oas-menubar': any
+    'oas-navigation-menu': any
+    'oas-tabs': any
+    'oas-tab-panel': any
+    'oas-breadcrumb': any
+    'oas-command': any
+    'oas-badge': any
+    'oas-dropdown': any
+    'oas-avatar': any
+    'oas-list': any
+    'oas-list-item': any
   }
 }
 export {}
