@@ -100,6 +100,37 @@ declare module 'react/jsx-runtime' {
         disabled?: boolean
         onOasChange?: (e: Event) => void
       }
+      'oas-radio': OasBase & {
+        name?: string
+        value?: string
+        checked?: boolean
+        disabled?: boolean
+        onOasChange?: (e: Event) => void
+      }
+      'oas-color-picker': OasBase & {
+        value?: string
+        disabled?: boolean
+        onOasChange?: (e: Event) => void
+      }
+      'oas-slider': OasBase & {
+        min?: string | number
+        max?: string | number
+        step?: string | number
+        value?: string | number
+        disabled?: boolean
+        onOasChange?: (e: Event) => void
+      }
+      'oas-segmented': OasBase & {
+        options?: string
+        value?: string
+        disabled?: boolean
+        onOasChange?: (e: Event) => void
+      }
+      'oas-theme-editor': OasBase & {
+        token?: string
+        preset?: string
+        onOasChange?: (e: Event) => void
+      }
       'oas-layout': OasBase & {
         viewport?: boolean
         side?: string
@@ -128,6 +159,7 @@ declare module 'react/jsx-runtime' {
       'oas-tabs': OasBase & {
         active?: string
         type?: string
+        'tab-position'?: string
         'hide-content'?: boolean
         'context-menu'?: boolean
         onOasChange?: (e: Event) => void
@@ -136,6 +168,7 @@ declare module 'react/jsx-runtime' {
       }
       'oas-tab-panel': OasBase & {
         value?: string
+        label?: string
       }
       'oas-breadcrumb': OasBase & {
         items?: string
