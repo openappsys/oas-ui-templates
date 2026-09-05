@@ -53,7 +53,7 @@ const router = useRouter()
 
 ---
 
-### Task V1: 工程脚手架 + 纯 TS 层复制（合并任务）
+### Task 1: 工程脚手架 + 纯 TS 层复制（合并任务）
 
 **Files:**
 - Create: `templates/admin-pro/vue/package.json`、`vite.config.ts`、`tsconfig.json`、`index.html`、`playwright.config.ts`、`src/main.ts`、`src/App.vue`（占位）、`scripts/size.mjs`（从 vanilla 复制）
@@ -176,7 +176,7 @@ git commit -m "feat(admin-vue): 工程脚手架 + 纯 TS 层从 react 模版复�
 
 ---
 
-### Task V2: Vue 集成封装层（GlobalComponents 类型 / useT / appMessage）
+### Task 2: Vue 集成封装层（GlobalComponents 类型 / useT / appMessage）
 
 **Files:**
 - Create: `src/oas-components.d.ts`（`declare module 'vue' { interface GlobalComponents { ... } }`，覆盖用到的 oas-* 标签）
@@ -241,7 +241,7 @@ git add templates/admin-pro/vue && git commit -m "feat(admin-vue): 集成封装�
 
 ---
 
-### Task V3: 路由层（routes 表 + guard + tabs + vue-router 组装）
+### Task 3: 路由层（routes 表 + guard + tabs + vue-router 组装）
 
 **Files:**
 - Create: `src/router/routes.ts`（AppRoute 类型 + 11 页路由表，meta 与 react 版 `routes.tsx` 逐字对齐）
@@ -312,7 +312,7 @@ git add templates/admin-pro/vue && git commit -m "feat(admin-vue): 路由层（r
 
 ---
 
-### Task V4: AppShell 布局壳 + 设置中心页
+### Task 4: AppShell 布局壳 + 设置中心页
 
 **Files:**
 - Create: `src/components/app-shell.vue`（含 `<router-view/>`、页签栏、面包屑、footer）
@@ -335,7 +335,7 @@ git add templates/admin-pro/vue && git commit -m "feat(admin-vue): AppShell 布�
 
 ---
 
-### Task V5: 页面第一批——login + dashboard
+### Task 5: 页面第一批——login + dashboard
 
 **Files:**
 - Create: `src/pages/login.vue`、`src/pages/dashboard.vue`（替换占位）
@@ -354,7 +354,7 @@ git add templates/admin-pro/vue && git commit -m "feat(admin-vue): login + dashb
 
 ---
 
-### Task V6: 页面第二批——products + product-edit
+### Task 6: 页面第二批——products + product-edit
 
 **Files:**
 - Create: `src/pages/products.vue`、`src/pages/product-edit.vue`、`src/pages/product-columns.ts`（从 react 复制 + 测试）、`src/styles/pages/products.css`（从 vanilla 复制）
@@ -374,7 +374,7 @@ git add templates/admin-pro/vue && git commit -m "feat(admin-vue): products CRUD
 
 ---
 
-### Task V7: 页面第三批——advanced-form / data-board / users / profile / forbidden / not-found
+### Task 7: 页面第三批——advanced-form / data-board / users / profile / forbidden / not-found
 
 **Files:**
 - Create: 六个 `.vue` 页面（替换占位）+ `src/styles/pages/{advanced-form,data-board}.css`（从 vanilla 复制）
@@ -394,7 +394,7 @@ git add templates/admin-pro/vue && git commit -m "feat(admin-vue): advanced-form
 
 ---
 
-### Task V8: e2e 移植 + 整站构建验证
+### Task 8: e2e 移植 + 整站构建验证
 
 **Files:**
 - Create: `e2e/smoke.spec.ts`、`e2e/tabs.spec.ts`、`e2e/settings.spec.ts`、`e2e/products.spec.ts`
