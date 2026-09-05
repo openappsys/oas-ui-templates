@@ -184,7 +184,7 @@ git commit -m "feat(admin-vue): 工程脚手架 + 纯 TS 层从 react 模版复�
 - Create: `src/lib/app-message.ts`
 
 **Interfaces:**
-- Consumes: V1 的 i18n 接口
+- Consumes: Task 1 的 i18n 接口
 - Produces:
   - `useT(): { t: typeof t; locale: Ref<AppLocale>; setLocale: (l: AppLocale) => void }`——`locale` 是 `ref`，由 `onLocaleChange` 驱动更新
   - `appMessage`：`export { message as appMessage } from '@oas-ui/ui'`（+ 中文注释：window.OASMessage 不存在）
@@ -301,7 +301,7 @@ router.beforeEach((to) => {
 })
 ```
 
-注意 `appRoutes` 的 `Component` 在 vue 版为 `() => import('../pages/xxx.vue')` 懒加载函数。**本任务为全部 11 个页面建占位 `.vue` 文件**（模板只含 `<div class="page" />`），否则懒加载指向不存在文件导致 build 失败；后续任务逐个替换（settings→V4、login/dashboard→V5、products/product-edit→V6、其余→V7）。AppShell 本任务建占位（只含 `<router-view />`）。
+注意 `appRoutes` 的 `Component` 在 vue 版为 `() => import('../pages/xxx.vue')` 懒加载函数。**本任务为全部 11 个页面建占位 `.vue` 文件**（模板只含 `<div class="page" />`），否则懒加载指向不存在文件导致 build 失败；后续任务逐个替换（settings→Task 4、login/dashboard→Task 5、products/product-edit→Task 6、其余→Task 7）。AppShell 本任务建占位（只含 `<router-view />`）。
 
 - [ ] **Step 3: 验证 + Commit**
 
@@ -399,7 +399,7 @@ git add templates/admin-pro/vue && git commit -m "feat(admin-vue): advanced-form
 **Files:**
 - Create: `e2e/smoke.spec.ts`、`e2e/tabs.spec.ts`、`e2e/settings.spec.ts`、`e2e/products.spec.ts`
 
-**移植规则：** 与 react 计划 Task 10 相同——断言语义逐条对齐 vanilla spec；类名/DOM 结构已在 V4-V7 对齐；若 react 版 e2e 已完成，可直接对照 react 版 spec 复制（两者断言应几乎逐字一致，这是两端对齐的验收手段）。
+**移植规则：** 与 react 计划 Task 10 相同——断言语义逐条对齐 vanilla spec；类名/DOM 结构已在 Task 4-7 对齐；若 react 版 e2e 已完成，可直接对照 react 版 spec 复制（两者断言应几乎逐字一致，这是两端对齐的验收手段）。
 
 - [ ] **Step 1: smoke.spec.ts**
 - [ ] **Step 2: tabs.spec.ts**
