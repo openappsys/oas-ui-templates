@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OAS Admin Pro</title>
+    <script>
+      // 入口页防 FOUC：<head> 内同步决定 <html lang>，与 i18n.initI18n 判定逻辑保持完全一致
+      // 优先级：localStorage 已保存 → navigator.language 嗅探（zh 系列 → zh-CN，其余一律 en）
+      (function () {
+        try {
+          var saved = localStorage.getItem('oas-admin.locale')
+          if (saved === 'zh-CN' || saved === 'en') {
+            document.documentElement.lang = saved
+            return
+          }
+          var nav = (navigator.language || '').toLowerCase()
+          document.documentElement.lang = nav === 'zh' || nav.indexOf('zh-') === 0 ? 'zh-CN' : 'en'
+        } catch (e) {
+          /* 无 storage / noop */
+        }
+      })()
+    </script>
+    <!-- GA 已挪到 src/analytics.ts（main.ts 顶部 import），由 vite 构建期 import.meta.env.PROD
+         静态门控：仅 prod 构建产物包含并采集；dev / preview / staging / 本地构建均不采，
+         与 oas-ui 文档站 (packages/docs/docs/.vitepress/config.ts:213) 策略一致。 -->
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
+
+
