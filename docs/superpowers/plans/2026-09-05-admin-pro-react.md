@@ -104,7 +104,7 @@ export default function ForbiddenPage() {
     "happy-dom": "^20.11.2",
     "typescript": "^7.0.2",
     "vite": "^8.2.1",
-    "vitest": "^4.1.10"
+    "vitest": "^5.0.0"
   }
 }
 ```
