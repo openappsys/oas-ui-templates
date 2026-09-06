@@ -25,6 +25,7 @@ export interface AppRoute {
 }
 
 export const appRoutes: AppRoute[] = [
+
   {
     path: '/dashboard',
     meta: {
@@ -46,21 +47,6 @@ export const appRoutes: AppRoute[] = [
     Component: lazy(() => import('../pages/orders')),
   },
   {
-    path: '/order-detail',
-    meta: { titleKey: 'nav.orderDetail', icon: 'calendar', hidden: true, parent: '/orders' },
-    Component: lazy(() => import('../pages/order-detail')),
-  },
-  {
-    path: '/result',
-    meta: { titleKey: 'nav.result', icon: 'check', hidden: true, parent: '/form' },
-    Component: lazy(() => import('../pages/result')),
-  },
-  {
-    path: '/login',
-    meta: { titleKey: 'login.welcome', icon: 'lock', hidden: true },
-    Component: lazy(() => import('../pages/login')),
-  },
-  {
     path: '/products',
     meta: {
       titleKey: 'nav.products',
@@ -70,37 +56,6 @@ export const appRoutes: AppRoute[] = [
       group: 'nav.business',
     },
     Component: lazy(() => import('../pages/products')),
-  },
-  {
-    path: '/products/edit',
-    meta: {
-      titleKey: 'nav.products',
-      icon: 'edit',
-      roles: ['admin'],
-      hidden: true,
-      parent: '/products',
-    },
-    Component: lazy(() => import('../pages/product-edit')),
-  },
-  {
-    path: '/advanced-form',
-    meta: {
-      titleKey: 'nav.advancedForm',
-      icon: 'menu',
-      iconColor: 'var(--oas-tint-cyan)',
-      group: 'nav.demo',
-    },
-    Component: lazy(() => import('../pages/advanced-form')),
-  },
-  {
-    path: '/data-board',
-    meta: {
-      titleKey: 'nav.dataBoard',
-      icon: 'eye',
-      iconColor: 'var(--oas-color-primary)',
-      group: 'nav.output',
-    },
-    Component: lazy(() => import('../pages/data-board')),
   },
   {
     path: '/users',
@@ -114,6 +69,16 @@ export const appRoutes: AppRoute[] = [
     Component: lazy(() => import('../pages/users')),
   },
   {
+    path: '/data-board',
+    meta: {
+      titleKey: 'nav.dataBoard',
+      icon: 'eye',
+      iconColor: 'var(--oas-color-primary)',
+      group: 'nav.output',
+    },
+    Component: lazy(() => import('../pages/data-board')),
+  },
+  {
     path: '/profile',
     meta: {
       titleKey: 'nav.profile',
@@ -125,15 +90,24 @@ export const appRoutes: AppRoute[] = [
     Component: lazy(() => import('../pages/profile')),
   },
   {
-    path: '/system/category',
+    path: '/form',
     meta: {
-      titleKey: 'nav.category',
-      icon: 'tree',
-      iconColor: 'var(--oas-tint-violet)',
-      roles: ['admin'],
-      group: 'nav.system',
+      titleKey: 'nav.createOrder',
+      icon: 'plus',
+      iconColor: 'var(--oas-color-warning)',
+      group: 'nav.business',
     },
-    Component: lazy(() => import('../pages/category')),
+    Component: lazy(() => import('../pages/form')),
+  },
+  {
+    path: '/order-detail',
+    meta: { titleKey: 'nav.orderDetail', icon: 'calendar', hidden: true, parent: '/orders' },
+    Component: lazy(() => import('../pages/order-detail')),
+  },
+  {
+    path: '/result',
+    meta: { titleKey: 'nav.result', icon: 'check', hidden: true, parent: '/form' },
+    Component: lazy(() => import('../pages/result')),
   },
   {
     path: '/system/roles',
@@ -169,6 +143,17 @@ export const appRoutes: AppRoute[] = [
     Component: lazy(() => import('../pages/dept')),
   },
   {
+    path: '/system/category',
+    meta: {
+      titleKey: 'nav.category',
+      icon: 'tree',
+      iconColor: 'var(--oas-tint-violet)',
+      roles: ['admin'],
+      group: 'nav.system',
+    },
+    Component: lazy(() => import('../pages/category')),
+  },
+  {
     path: '/system/dict',
     meta: {
       titleKey: 'nav.dict',
@@ -178,26 +163,6 @@ export const appRoutes: AppRoute[] = [
       group: 'nav.system',
     },
     Component: lazy(() => import('../pages/dict')),
-  },
-  {
-    path: '/form',
-    meta: {
-      titleKey: 'nav.createOrder',
-      icon: 'plus',
-      iconColor: 'var(--oas-color-warning)',
-      group: 'nav.business',
-    },
-    Component: lazy(() => import('../pages/form')),
-  },
-  {
-    path: '/basic-form',
-    meta: {
-      titleKey: 'nav.basicForm',
-      icon: 'form',
-      iconColor: 'var(--oas-color-success)',
-      group: 'nav.demo',
-    },
-    Component: lazy(() => import('../pages/basic-form')),
   },
   {
     path: '/system/logs',
@@ -219,6 +184,17 @@ export const appRoutes: AppRoute[] = [
       group: 'nav.system',
     },
     Component: lazy(() => import('../pages/settings')),
+  },
+  {
+    path: '/products/edit',
+    meta: {
+      titleKey: 'nav.products',
+      icon: 'edit',
+      roles: ['admin'],
+      hidden: true,
+      parent: '/products',
+    },
+    Component: lazy(() => import('../pages/product-edit')),
   },
   {
     path: '/forbidden',
@@ -249,6 +225,31 @@ export const appRoutes: AppRoute[] = [
       group: 'nav.demo',
     },
     Component: lazy(() => import('../pages/server-error')),
+  },
+  {
+    path: '/basic-form',
+    meta: {
+      titleKey: 'nav.basicForm',
+      icon: 'form',
+      iconColor: 'var(--oas-color-success)',
+      group: 'nav.demo',
+    },
+    Component: lazy(() => import('../pages/basic-form')),
+  },
+  {
+    path: '/advanced-form',
+    meta: {
+      titleKey: 'nav.advancedForm',
+      icon: 'menu',
+      iconColor: 'var(--oas-tint-cyan)',
+      group: 'nav.demo',
+    },
+    Component: lazy(() => import('../pages/advanced-form')),
+  },
+  {
+    path: '/login',
+    meta: { titleKey: 'login.welcome', icon: 'lock', hidden: true },
+    Component: lazy(() => import('../pages/login')),
   },
 ]
 

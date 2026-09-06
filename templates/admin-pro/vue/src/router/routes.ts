@@ -27,6 +27,7 @@ export interface AppRoute {
 }
 
 export const appRoutes: AppRoute[] = [
+
   {
     path: '/dashboard',
     meta: {
@@ -36,11 +37,6 @@ export const appRoutes: AppRoute[] = [
       group: 'nav.output',
     },
     Component: () => import('../pages/dashboard.vue'),
-  },
-  {
-    path: '/login',
-    meta: { titleKey: 'login.welcome', icon: 'lock', hidden: true },
-    Component: () => import('../pages/login.vue'),
   },
   {
     path: '/orders',
@@ -64,45 +60,15 @@ export const appRoutes: AppRoute[] = [
     Component: () => import('../pages/products.vue'),
   },
   {
-    path: '/form',
+    path: '/users',
     meta: {
-      titleKey: 'nav.createOrder',
-      icon: 'plus',
-      iconColor: 'var(--oas-color-warning)',
+      titleKey: 'nav.users',
+      icon: 'user',
+      iconColor: 'var(--oas-color-success)',
+      roles: ['admin', 'viewer'],
       group: 'nav.business',
     },
-    Component: () => import('../pages/form.vue'),
-  },
-  {
-    path: '/products/edit',
-    meta: {
-      titleKey: 'nav.products',
-      icon: 'edit',
-      roles: ['admin'],
-      hidden: true,
-      parent: '/products',
-    },
-    Component: () => import('../pages/product-edit.vue'),
-  },
-  {
-    path: '/basic-form',
-    meta: {
-      titleKey: 'nav.basicForm',
-      icon: 'form',
-      iconColor: 'var(--oas-color-success)',
-      group: 'nav.demo',
-    },
-    Component: () => import('../pages/basic-form.vue'),
-  },
-  {
-    path: '/advanced-form',
-    meta: {
-      titleKey: 'nav.advancedForm',
-      icon: 'menu',
-      iconColor: 'var(--oas-tint-cyan)',
-      group: 'nav.demo',
-    },
-    Component: () => import('../pages/advanced-form.vue'),
+    Component: () => import('../pages/users.vue'),
   },
   {
     path: '/data-board',
@@ -113,27 +79,6 @@ export const appRoutes: AppRoute[] = [
       group: 'nav.output',
     },
     Component: () => import('../pages/data-board.vue'),
-  },
-  {
-    path: '/order-detail',
-    meta: { titleKey: 'nav.orderDetail', icon: 'calendar', hidden: true, parent: '/orders' },
-    Component: () => import('../pages/order-detail.vue'),
-  },
-  {
-    path: '/result',
-    meta: { titleKey: 'nav.result', icon: 'check', hidden: true, parent: '/form' },
-    Component: () => import('../pages/result.vue'),
-  },
-  {
-    path: '/users',
-    meta: {
-      titleKey: 'nav.users',
-      icon: 'user',
-      iconColor: 'var(--oas-color-success)',
-      roles: ['admin', 'viewer'],
-      group: 'nav.business',
-    },
-    Component: () => import('../pages/users.vue'),
   },
   {
     path: '/profile',
@@ -147,15 +92,24 @@ export const appRoutes: AppRoute[] = [
     Component: () => import('../pages/profile.vue'),
   },
   {
-    path: '/system/category',
+    path: '/form',
     meta: {
-      titleKey: 'nav.category',
-      icon: 'tree',
-      iconColor: 'var(--oas-tint-violet)',
-      roles: ['admin'],
-      group: 'nav.system',
+      titleKey: 'nav.createOrder',
+      icon: 'plus',
+      iconColor: 'var(--oas-color-warning)',
+      group: 'nav.business',
     },
-    Component: () => import('../pages/category.vue'),
+    Component: () => import('../pages/form.vue'),
+  },
+  {
+    path: '/order-detail',
+    meta: { titleKey: 'nav.orderDetail', icon: 'calendar', hidden: true, parent: '/orders' },
+    Component: () => import('../pages/order-detail.vue'),
+  },
+  {
+    path: '/result',
+    meta: { titleKey: 'nav.result', icon: 'check', hidden: true, parent: '/form' },
+    Component: () => import('../pages/result.vue'),
   },
   {
     path: '/system/roles',
@@ -191,6 +145,17 @@ export const appRoutes: AppRoute[] = [
     Component: () => import('../pages/dept.vue'),
   },
   {
+    path: '/system/category',
+    meta: {
+      titleKey: 'nav.category',
+      icon: 'tree',
+      iconColor: 'var(--oas-tint-violet)',
+      roles: ['admin'],
+      group: 'nav.system',
+    },
+    Component: () => import('../pages/category.vue'),
+  },
+  {
     path: '/system/dict',
     meta: {
       titleKey: 'nav.dict',
@@ -223,6 +188,17 @@ export const appRoutes: AppRoute[] = [
     Component: () => import('../pages/settings.vue'),
   },
   {
+    path: '/products/edit',
+    meta: {
+      titleKey: 'nav.products',
+      icon: 'edit',
+      roles: ['admin'],
+      hidden: true,
+      parent: '/products',
+    },
+    Component: () => import('../pages/product-edit.vue'),
+  },
+  {
     path: '/forbidden',
     meta: {
       titleKey: 'nav.forbidden',
@@ -251,6 +227,31 @@ export const appRoutes: AppRoute[] = [
       group: 'nav.demo',
     },
     Component: () => import('../pages/server-error.vue'),
+  },
+  {
+    path: '/basic-form',
+    meta: {
+      titleKey: 'nav.basicForm',
+      icon: 'form',
+      iconColor: 'var(--oas-color-success)',
+      group: 'nav.demo',
+    },
+    Component: () => import('../pages/basic-form.vue'),
+  },
+  {
+    path: '/advanced-form',
+    meta: {
+      titleKey: 'nav.advancedForm',
+      icon: 'menu',
+      iconColor: 'var(--oas-tint-cyan)',
+      group: 'nav.demo',
+    },
+    Component: () => import('../pages/advanced-form.vue'),
+  },
+  {
+    path: '/login',
+    meta: { titleKey: 'login.welcome', icon: 'lock', hidden: true },
+    Component: () => import('../pages/login.vue'),
   },
 ]
 
