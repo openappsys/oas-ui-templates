@@ -15,7 +15,7 @@
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useT } from '../composables/use-t'
-import { session } from '../store/session'
+import { useSessionStore } from '../stores/session'
 import { appRoutes } from '../router/routes'
 
 type LoginStyle = 'split' | 'glass'
@@ -50,7 +50,7 @@ function requestSubmit(): void {
 // 登录即本地直登 + 手动跳转（replace 对齐 react 版 navigate(..., { replace: true })）
 function onSubmit(e: Event): void {
   const { values } = (e as CustomEvent<LoginSubmitDetail>).detail
-  session.login(values.name || '用户', values.role === 'viewer' ? 'viewer' : 'admin')
+  useSessionStore().login(values.name || '用户', values.role === 'viewer' ? 'viewer' : 'admin')
   void router.replace(appRoutes[0].path)
 }
 

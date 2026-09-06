@@ -10,9 +10,9 @@
 //    导出按钮原生 click 直绑 @click
 import '../styles/pages/logs.css'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import { listLogs } from '../data/logs'
 import type { LogEntry, LogLevel } from '../data/logs'
 import { useT } from '../composables/use-t'
+import { useLogsList } from '../composables/use-logs'
 import { appMessage } from '../lib/app-message'
 import LogsDetailModal from './logs-detail-modal.vue'
 import LogsStats from './logs-stats.vue'
@@ -60,11 +60,8 @@ function buildDateGroups(list: LogEntry[]): Array<{ date: string; label: string;
   return groups
 }
 
-const rows = ref<LogEntry[]>([])
-const filtered = ref<LogEntry[]>([])
-const level = ref<LogLevel | 'all'>('all')
-const keyword = ref('')
-const dateRange = ref<[string, string] | null>(null)
+// 日志数据：composable（全量 + 筛选 + 条件状态）
+const { rows, filtered, level, keyword, dateRange, load, applyFilter } = useLogsList()
 const selected = ref<LogEntry | null>(null)
 const detailOpen = ref(false)
 
@@ -111,17 +108,9 @@ watch(
 )
 
 // watch 派生，锚点/统计/空态由 computed 派生）
-async function applyFilter(): Promise<void> {
-  filtered.value = await listLogs({
-    level: level.value,
-    keyword: keyword.value,
-    dateRange: dateRange.value ?? undefined,
-  })
-}
 
 onMounted(async () => {
-  rows.value = await listLogs()
-  await applyFilter()
+  await load()
 })
 
 function updateAnchorActive(): void {

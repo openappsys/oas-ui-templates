@@ -1,29 +1,10 @@
 <script setup lang="ts">
 // src/pages/settings/notification-tab.vue —— 通知 Tab：3 类通知 × 2 渠道开关矩阵
-// 本模版用受控 checks ref 防止 locale 切换等无关重渲染把开关打回挂载初值。
-import { ref } from 'vue'
+// 读写走 Pinia settings store 的 notifChecks 状态（键 = 行.渠道，$subscribe 持久化键名不变）。
+import { storeToRefs } from 'pinia'
 import { useT } from '../../composables/use-t'
-import { NOTIF_PREFIX, readBool } from '../../settings-init'
-
-const NOTIF_ROWS: Array<{ key: string; labelKey: string }> = [
-  { key: 'orders', labelKey: 'settings.notif.orders' },
-  { key: 'inventory', labelKey: 'settings.notif.inventory' },
-  { key: 'system', labelKey: 'settings.notif.system' },
-]
-const NOTIF_CHANNELS: Array<{ key: string; labelKey: string }> = [
-  { key: 'inapp', labelKey: 'settings.notif.inapp' },
-  { key: 'email', labelKey: 'settings.notif.email' },
-]
-
-function readChecks(): Record<string, boolean> {
-  const map: Record<string, boolean> = {}
-  for (const row of NOTIF_ROWS) {
-    for (const c of NOTIF_CHANNELS) {
-      map[`${row.key}.${c.key}`] = readBool(`${NOTIF_PREFIX}${row.key}.${c.key}`, true)
-    }
-  }
-  return map
-}
+import { useSettingsStore } from '../../stores/settings'
+import { NOTIF_CHANNELS, NOTIF_ROWS } from '../../settings-init'
 
 const { t: tt, locale } = useT()
 /** 模板文案函数：读 locale.value 建立响应式依赖，切语言时重渲 */
@@ -32,15 +13,15 @@ function t(key: string, params?: Record<string, string | number>): string {
   return tt(key, params)
 }
 
-const checks = ref<Record<string, boolean>>(readChecks())
+// 开关矩阵状态在 store（locale 切换等无关重渲染不会打回挂载初值）
+const { notifChecks: checks } = storeToRefs(useSettingsStore())
 
 function onMatrixChange(e: Event): void {
   const sw = e.composedPath()[0] as HTMLElement
   const key = sw.getAttribute('data-key')
   if (!key) return
   const { checked } = (e as CustomEvent<{ checked: boolean }>).detail
-  localStorage.setItem(NOTIF_PREFIX + key, String(checked))
-  checks.value[key] = checked
+  useSettingsStore().setNotif(key, checked)
 }
 </script>
 

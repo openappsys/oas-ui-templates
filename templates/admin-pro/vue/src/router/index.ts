@@ -4,7 +4,7 @@
 // 路由模式：按 localStorage（oas-admin.router-mode）二选一 hash/history（设置中心可切换，
 // 切换二次确认后整页刷新，此处模块加载时一次性定型）
 import { createRouter, createWebHashHistory, createWebHistory } from 'vue-router'
-import { session } from '../store/session'
+import { useSessionStore } from '../stores/session'
 import { guard } from './guard'
 import { ROUTER_BASENAME, routerMode } from './mode'
 import { appRoutes } from './routes'
@@ -45,7 +45,8 @@ router.beforeEach((to) => {
   // 用户一律 false，语义逐字对齐 react 版不可改），未登录走到 /forbidden 又弹回 /login 会死循环
   // （react 版无此问题——未登录分支路由树只挂 /login，不经 Guarded）
   if (to.path === '/login') return true
-  const result = guard(to.path, session.user)
+  // 会话从 Pinia store 取（守卫回调在 app.use(pinia) 之后才执行，懒取实例）
+  const result = guard(to.path, useSessionStore().user)
   if (!result.ok && result.reason === 'login') return '/login'
   if (!result.ok && result.reason === 'not-found') return '/not-found'
   if (!result.ok && result.reason === 'forbidden') return '/forbidden'

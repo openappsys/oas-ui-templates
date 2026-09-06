@@ -9,7 +9,6 @@
 import { computed, ref } from 'vue'
 import type { TableColumn } from '@oas-ui/ui/data/table'
 import type { OrderRow } from '../data/orders'
-import { readPageSize } from '../settings-init'
 import { useT } from '../composables/use-t'
 
 const props = defineProps<{
@@ -26,6 +25,7 @@ const { t: tt, locale } = useT()
 
 const tableRef = ref<HTMLElement | null>(null)
 
+// 每页条数：挂载时一次性读取持久化值（本表格回落 8，与 users-table 的 5 不同）
 const pageSize = (() => {
   const raw = localStorage.getItem('oas-admin.settings.page-size')
   return raw ? Number(raw) || 8 : 8

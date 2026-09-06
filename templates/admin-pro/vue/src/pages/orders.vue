@@ -12,10 +12,9 @@
 // 8. 布尔 attribute 存在性语义：drawer visible/scope hidden/loading 走 `cond ? '' : null`
 //    表格 current 复位经子组件 resetPage 的 setAttribute 通道
 import { computed, onMounted, ref } from 'vue'
-import { listOrders, updateOrderStatus } from '../data/orders'
-import type { OrderRow, OrderStatus } from '../data/orders'
-import { session } from '../store/session'
+import type { OrderStatus } from '../data/orders'
 import { useT } from '../composables/use-t'
+import { useOrderFlow, useOrdersList } from '../composables/use-orders'
 import { appMessage } from '../lib/app-message'
 import OrdersDrawer from './orders-drawer.vue'
 import OrdersTable from './orders-table.vue'
@@ -36,30 +35,15 @@ function t(key: string, params?: Record<string, string | number>): string {
   return tt(key, params)
 }
 
-const rows = ref<OrderRow[]>([])
+// 订单数据：composable（列表 + viewer 只看自己 + 状态流转），会话从 Pinia store 取
+const { rows, loading, scopeVisible, refresh } = useOrdersList()
 const keyword = ref('')
 const status = ref<TabValue>('all')
 const selectedId = ref<string | null>(null)
 const drawerOpen = ref(false)
-const scopeVisible = ref(false)
-const loading = ref(false)
-const flowing = ref(false)
 
 const tableRef = ref<InstanceType<typeof OrdersTable> | null>(null)
 
-async function refresh(): Promise<void> {
-  loading.value = true
-  let list = await listOrders()
-  const u = session.user
-  if (u?.role === 'viewer') {
-    list = list.filter((r) => r.creator === u.name)
-    scopeVisible.value = true
-  } else {
-    scopeVisible.value = false
-  }
-  rows.value = list
-  loading.value = false
-}
 onMounted(() => void refresh())
 
 const filtered = computed(() => {
@@ -108,19 +92,11 @@ function onRowClick(id: string): void {
 const selectedRow = computed(() => rows.value.find((r) => r.id === selectedId.value) ?? null)
 const flowTo = computed(() => (selectedRow.value ? FLOW_TO[selectedRow.value.status] ?? null : null))
 
-// 在点击时读 button.textContent 的取值时机
-async function onFlow(to: OrderStatus): Promise<void> {
-  if (!selectedId.value) return
-  const actionLabel = t(`orders.flow.${selectedRow.value?.status ?? ''}`)
-  flowing.value = true
-  const updated = await updateOrderStatus(selectedId.value, to)
-  flowing.value = false
-  if (!updated) {
-    appMessage.error(tt('orders.notFound'))
-    return
-  }
-  appMessage.success(tt('orders.flowApplied', { action: actionLabel }))
-  await refresh()
+// 状态流转：composable（flowing 状态 + 提示 + 刷新在 composable 内）
+const { flowing, flow } = useOrderFlow({ refresh, selectedId, selectedRow })
+
+function onFlow(to: OrderStatus): void {
+  void flow(to)
 }
 
 function onExport(): void {

@@ -6,15 +6,15 @@
 //    等纯函数留在本文件（跨子组件共享的派生逻辑单一出处）
 //    本模版经子组件 defineExpose 的 resetPage/clearFilterValues 走同一 attribute 通道
 //    本模版 useT() 订阅后整页重渲染，columns（子组件内）/displayRows/规则/选项随 locale 重算
-// 6. session 为模块级状态（登录后页面重挂载才变），canMutate 非响应式取值（dashboard.vue 同款）
+// 6. session 走 Pinia store（登录后页面重挂载才变），canMutate 非响应式取值（dashboard.vue 同款）
 import { computed, onMounted, ref } from 'vue'
-import { listUsers, removeUser } from '../data/users'
+import { removeUser } from '../data/users'
 import type { UserRow, UserRole } from '../data/users'
-import { listRoles, treeMenus } from '../data/system'
-import type { MenuTree, RoleRow } from '../data/system'
-import { session } from '../store/session'
+import type { MenuTree } from '../data/system'
 import { useT } from '../composables/use-t'
+import { useUsersList } from '../composables/use-users'
 import { appMessage } from '../lib/app-message'
+import { useSessionStore } from '../stores/session'
 import UsersTable from './users-table.vue'
 import type { UserDisplayRow } from './users-table.vue'
 import UserForm from './user-form.vue'
@@ -34,17 +34,15 @@ function t(key: string, params?: Record<string, string | number>): string {
   return tt(key, params)
 }
 
-const canMutate = session.user?.role !== 'viewer'
+// 会话/数据：会话从 Pinia store 快照取值；列表数据走 useUsersList composable
+const canMutate = useSessionStore().user?.role !== 'viewer'
 
-const rows = ref<UserRow[]>([])
-const roles = ref<RoleRow[]>([])
-const roleMap = ref<Map<number, RoleRow>>(new Map())
-const menuTree = ref<MenuTree[]>([])
 const keyword = ref('')
-const loading = ref(false)
 const editingId = ref<number | null>(null)
 const formOpen = ref(false)
 const detailOpen = ref(false)
+
+const { rows, roles, roleMap, menuTree, loading, refresh } = useUsersList()
 
 const searchRef = ref<HTMLElement | null>(null)
 const tableRef = ref<InstanceType<typeof UsersTable> | null>(null)
@@ -68,15 +66,6 @@ function roleName(target: UserRow): string {
   return tt(`users.role.${target.role}`)
 }
 
-async function refresh(): Promise<void> {
-  loading.value = true
-  const [list, roleList, tree] = await Promise.all([listUsers(), listRoles(), treeMenus()])
-  rows.value = list
-  roles.value = roleList
-  roleMap.value = new Map(roleList.map((r) => [r.id, r]))
-  menuTree.value = tree
-  loading.value = false
-}
 onMounted(() => void refresh())
 
 const filtered = computed(() => {

@@ -4,10 +4,11 @@
 // 文案重渲靠 t() 包装函数读 locale.value 建立响应式依赖
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
 import { useT } from '../composables/use-t'
 import { logoutNavigate } from '../lib/session-actions'
 import { toggleTheme } from '../lib/theme'
-import { session, type User } from '../store/session'
+import { useSessionStore } from '../stores/session'
 import { LANG_ITEMS, userMenuItems } from './nav-items'
 
 const props = defineProps<{ notifCount: number }>()
@@ -26,15 +27,8 @@ function t(key: string, params?: Record<string, string | number>): string {
   return tt(key, params)
 }
 
-// 会话用户：session 是裸模块（带 subscribe），本地 ref + 订阅驱动重渲
-const user = ref<User | null>(session.user)
-let unsubSession: (() => void) | undefined
-onMounted(() => {
-  unsubSession = session.subscribe(() => {
-    user.value = session.user
-  })
-})
-onUnmounted(() => unsubSession?.())
+// 会话用户：Pinia store 响应式状态（storeToRefs 解构保持响应性），登录/登出自动重渲
+const { user } = storeToRefs(useSessionStore())
 
 // 全屏态同步（Esc 退出等浏览器侧变更也要回写 aria-pressed / is-fullscreen）
 const isFullscreen = ref(false)

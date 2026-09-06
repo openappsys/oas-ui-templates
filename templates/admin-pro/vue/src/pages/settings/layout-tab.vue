@@ -5,9 +5,11 @@
 // Vue 化差异：矩阵单元格是模版渲染的原生 button，@click 直绑容器（事件委托）；
 // modal.confirm 的确认动作走 onOk 选项（库内部直绑），无需也不应手动绑事件。
 import { computed, ref } from 'vue'
+import { storeToRefs } from 'pinia'
 import { modal } from '@oas-ui/ui'
 import { useT } from '../../composables/use-t'
 import { appMessage } from '../../lib/app-message'
+import { useSettingsStore } from '../../stores/settings'
 import {
   canPosition,
   navConfig,
@@ -17,7 +19,6 @@ import {
   type MenuStyle,
 } from '../../layout-config'
 import { applyRouterMode, routerMode, type RouterMode } from '../../router/mode'
-import { TABS_BAR_KEY, applySettings, readTabsBar } from '../../settings-init'
 
 const MENU_STYLES_META: Array<{ value: MenuStyle; labelKey: string }> = [
   { value: 'sidebar', labelKey: 'menuStyleSidebar' },
@@ -39,14 +40,13 @@ function t(key: string, params?: Record<string, string | number>): string {
 }
 
 const nav = ref(navConfig())
-const tabsBar = ref(readTabsBar())
+// 多页签栏：Pinia settings store（动作内即时生效，$subscribe 持久化键名不变）
+const { tabsBar } = storeToRefs(useSettingsStore())
 const mode = ref<RouterMode>(routerMode())
 
 function onTabsBarChange(e: Event): void {
   const { checked } = (e as CustomEvent<{ checked: boolean }>).detail
-  localStorage.setItem(TABS_BAR_KEY, String(checked))
-  applySettings()
-  tabsBar.value = checked
+  useSettingsStore().setTabsBar(checked)
   appMessage.success(tt('common.saved'))
 }
 

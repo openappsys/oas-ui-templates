@@ -3,11 +3,11 @@
 import type { Router } from 'vue-router'
 import { t } from '../i18n'
 import { appRoutes } from '../router/routes'
-import { session } from '../store/session'
+import { useSessionStore } from '../stores/session'
 import { appMessage } from './app-message'
 
 export function logoutFlow(navigate: (path: string) => void): void {
-  session.logout()
+  useSessionStore().logout()
   appMessage.info(t('header.loggedOut'))
   // 登出后守卫会把受保护路径重定向到 /login，先把路径归位首页避免残留受保护路径
   navigate(appRoutes[0].path)

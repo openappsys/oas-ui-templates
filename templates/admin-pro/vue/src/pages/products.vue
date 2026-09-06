@@ -18,23 +18,16 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import '../styles/pages/products.css'
-import { listCategories } from '../data/categories'
-import {
-  listProducts,
-  removeProduct,
-  stockLevel,
-  toggleProductStatus,
-  updateProduct,
-} from '../data/products'
+import { stockLevel } from '../data/products'
 import type { ProductRow } from '../data/products'
 import { useT } from '../composables/use-t'
+import { useProductMutations, useProductsList } from '../composables/use-products'
 import { appMessage } from '../lib/app-message'
 import { readFormMode, readPageSize } from '../settings-init'
-import { session } from '../store/session'
+import { useSessionStore } from '../stores/session'
 import { readProductColumns } from './product-columns'
 import type { ProductColumnKey } from './product-columns'
 import ProductForm from './product-form.vue'
-import type { Option } from './product-form.vue'
 import ProductsBatchBar from './products-batch-bar.vue'
 import ProductsColumnsModal from './products-columns-modal.vue'
 import ProductsTable from './products-table.vue'
@@ -67,33 +60,36 @@ function t(key: string, params?: Record<string, string | number>): string {
 
 const router = useRouter()
 
-const rows = ref<ProductRow[]>([])
-const categories = ref<Option[]>([])
-const keyword = ref('')
 const category = ref('')
+const keyword = ref('')
 const editingId = ref<number | null>(null)
 const page = ref(1)
 const view = ref<ViewMode>(readView())
-const formMode = readFormMode()
-const pageSize = readPageSizeNum()
 const selected = ref<number[]>([])
 const columnKeys = ref<ProductColumnKey[]>(readProductColumns())
 const surfaceOpen = ref(false)
 const columnsOpen = ref(false)
 
-// session 为模块级状态（登录后页面重挂载才变），与 dashboard.vue 同款非响应式取值
-const canMutate = session.user?.role !== 'viewer'
+// 会话：Pinia store 快照取值（登录后页面重挂载才变）
+// 表单模式/每页条数：页面挂载时一次性读取（设置中心经 store 写入 localStorage，
+// 此处读取器快照与带外写入语义与原实现一致）
+const canMutate = useSessionStore().user?.role !== 'viewer'
+const formMode = readFormMode()
+const pageSize = readPageSizeNum()
+
+// 商品数据：composable（列表 + 分类 + 变更动作），refresh 后失效分类回落空
+const { rows, categories, refresh } = useProductsList({ category })
+const { toggleStatus, inlineEdit, batchStatus, batchDelete } = useProductMutations({
+  refresh,
+  rows,
+  selected,
+  canMutate,
+  clearSelection,
+})
 
 const tableCompRef = ref<InstanceType<typeof ProductsTable> | null>(null)
 const pagerRef = ref<HTMLElement | null>(null)
 
-async function refresh(): Promise<void> {
-  const [list, cats] = await Promise.all([listProducts(), listCategories()])
-  rows.value = list
-  const opts = cats.map((c) => ({ label: c.name, value: c.name }))
-  categories.value = opts
-  if (category.value && !opts.some((c) => c.value === category.value)) category.value = ''
-}
 onMounted(() => void refresh())
 
 const filtered = computed(() => {
@@ -141,59 +137,9 @@ function openForm(row: ProductRow | null): void {
   surfaceOpen.value = true
 }
 
-async function toggleStatus(id: number): Promise<void> {
-  const updated = await toggleProductStatus(id)
-  if (!updated) {
-    appMessage.error(tt('products.notFound'))
-    return
-  }
-  appMessage.success(
-    updated.status === 'on' ? tt('products.status.on') : tt('products.status.off'),
-  )
-  void refresh()
-}
-
-function inlineEdit(id: number, column: 'price' | 'stock', value: number): void {
-  void updateProduct(id, { [column]: value }).then((updated) => {
-    if (!updated) appMessage.error(tt('products.notFound'))
-    else appMessage.success(tt('common.saved'))
-    void refresh()
-  })
-}
-
 function clearSelection(): void {
   selected.value = []
   tableCompRef.value?.clearSelected()
-}
-
-async function batchStatus(target: 'on' | 'off'): Promise<void> {
-  if (!canMutate) {
-    appMessage.error(tt('common.noPerm'))
-    return
-  }
-  let changed = 0
-  for (const id of selected.value) {
-    const row = rows.value.find((r) => r.id === id)
-    if (!row || row.status === target) continue
-    if (await toggleProductStatus(id)) changed++
-  }
-  clearSelection()
-  appMessage.success(tt('products.batch.statusDone', { count: changed }))
-  void refresh()
-}
-
-async function batchDelete(): Promise<void> {
-  if (!canMutate) {
-    appMessage.error(tt('common.noPerm'))
-    return
-  }
-  let removed = 0
-  for (const id of selected.value) {
-    if (await removeProduct(id)) removed++
-  }
-  clearSelection()
-  appMessage.success(tt('products.batch.deleted', { count: removed }))
-  void refresh()
 }
 
 function onSearchInput(e: Event): void {

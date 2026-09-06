@@ -9,13 +9,14 @@ import { useRoute, useRouter } from 'vue-router'
 import { useT } from '../composables/use-t'
 import { logoutNavigate } from '../lib/session-actions'
 import { setTheme, toggleTheme } from '../lib/theme'
-import { session } from '../store/session'
+import { useSessionStore } from '../stores/session'
 import { buildCommandItems } from './nav-items'
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits<{ 'open-change': [open: boolean] }>()
 
 const { locale, setLocale } = useT()
+const sessionStore = useSessionStore()
 const route = useRoute()
 const router = useRouter()
 
@@ -59,7 +60,7 @@ function execCommand(value: string): void {
 function onGlobalKeydown(e: KeyboardEvent): void {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
     e.preventDefault()
-    if (session.user) emit('open-change', !props.open)
+    if (sessionStore.user) emit('open-change', !props.open)
     return
   }
   if (e.key !== '/' || e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return
@@ -67,7 +68,7 @@ function onGlobalKeydown(e: KeyboardEvent): void {
   if (target?.closest('input, textarea, select, [contenteditable="true"], oas-input, oas-select'))
     return
   e.preventDefault()
-  if (session.user) emit('open-change', true)
+  if (sessionStore.user) emit('open-change', true)
 }
 onMounted(() => document.addEventListener('keydown', onGlobalKeydown))
 onUnmounted(() => document.removeEventListener('keydown', onGlobalKeydown))

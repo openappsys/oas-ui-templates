@@ -8,7 +8,7 @@
 //    本模版以 :style 条件绑定保留同一行为以对齐 DOM
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { session } from '../store/session'
+import { useSessionStore } from '../stores/session'
 import { useT } from '../composables/use-t'
 import { appMessage } from '../lib/app-message'
 import { logoutNavigate } from '../lib/session-actions'
@@ -21,7 +21,8 @@ function t(key: string, params?: Record<string, string | number>): string {
 }
 
 const router = useRouter()
-const user = session.user!
+const sessionStore = useSessionStore()
+const user = sessionStore.user!
 
 const roleLabel = computed(() =>
   user.role === 'admin' ? t('users.role.admin') : t('profile.roleViewer'),
@@ -29,7 +30,7 @@ const roleLabel = computed(() =>
 const avatarText = user.name.charAt(0).toUpperCase()
 
 const loginAtLabel = computed(() => {
-  const n = session.loginAt
+  const n = sessionStore.loginAt
   if (!n) return '-'
   const tag = locale.value === 'en' ? 'en-US' : 'zh-CN'
   return new Intl.DateTimeFormat(tag, {

@@ -1,3 +1,6 @@
+// src/settings-init.ts —— 设置域常量 + 类型 + localStorage 纯读取器
+// 「读 localStorage + 直接写 DOM」的生效与持久化已上收至 stores/settings.ts（Pinia），
+// 本文件只保留键名常量、类型与 store 初始化所需的一次性读取器
 export const CUSTOM_TOKENS_KEY = 'oas-admin.settings.custom-tokens'
 export const FORM_MODE_KEY = 'oas-admin.form-mode'
 export const DENSITY_KEY = 'oas-admin.settings.table-density'
@@ -20,6 +23,17 @@ export const FONT_SIZE_OPTIONS: Array<{ value: FontSize; scale: number }> = [
   { value: 'md', scale: 1 },
   { value: 'lg', scale: 1.0625 },
   { value: 'xl', scale: 1.125 },
+]
+
+/** 通知矩阵行（通知类型）与列（渠道）：store 初始化与设置页渲染共用 */
+export const NOTIF_ROWS: Array<{ key: string; labelKey: string }> = [
+  { key: 'orders', labelKey: 'settings.notif.orders' },
+  { key: 'inventory', labelKey: 'settings.notif.inventory' },
+  { key: 'system', labelKey: 'settings.notif.system' },
+]
+export const NOTIF_CHANNELS: Array<{ key: string; labelKey: string }> = [
+  { key: 'inapp', labelKey: 'settings.notif.inapp' },
+  { key: 'email', labelKey: 'settings.notif.email' },
 ]
 
 export function readFormMode(): FormMode {
@@ -45,11 +59,6 @@ export function readTabsBar(): boolean {
   return readBool(TABS_BAR_KEY, true)
 }
 
-export function readRadius(): number {
-  const n = Number(localStorage.getItem(RADIUS_KEY))
-  return Number.isFinite(n) && n > 0 ? n : DEFAULT_RADIUS
-}
-
 export function readBool(key: string, fallback: boolean): boolean {
   const v = localStorage.getItem(key)
   if (v === 'true') return true
@@ -59,54 +68,4 @@ export function readBool(key: string, fallback: boolean): boolean {
 
 export function currentTheme(): 'light' | 'dark' {
   return document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light'
-}
-
-export function readColor(): string {
-  const stored = localStorage.getItem(`${THEME_PREFIX}${currentTheme()}`)
-  if (stored) return stored
-  const live = getComputedStyle(document.documentElement)
-    .getPropertyValue('--oas-color-primary')
-    .trim()
-  return live || DEFAULT_COLOR
-}
-
-const DENSITY_PAD: Record<Density, string> = { compact: '6px', default: '12px', large: '16px' }
-
-export function applyDensity(): void {
-  document.documentElement.style.setProperty(
-    '--oas-table-cell-padding-block',
-    DENSITY_PAD[readDensity()],
-  )
-}
-
-export function applyFontSize(): void {
-  const size = readFontSize()
-  const scale = FONT_SIZE_OPTIONS.find((o) => o.value === size)?.scale ?? 1
-  document.documentElement.style.setProperty('--app-font-scale', String(scale))
-}
-
-export function applySettings(): void {
-  const theme = currentTheme()
-  const color = localStorage.getItem(`${THEME_PREFIX}${theme}`)
-  if (color) document.documentElement.style.setProperty('--oas-color-primary', color)
-  const radius = localStorage.getItem(RADIUS_KEY)
-  if (radius) document.documentElement.style.setProperty('--oas-radius-md', `${radius}px`)
-  applyDensity()
-  applyFontSize()
-  applyCustomTokens()
-  document.documentElement.dataset.tabsBar = readTabsBar() ? 'on' : 'off'
-}
-
-/** 主题编辑器（oas-theme-editor）写入的自定义 token 持久化：启动时重放 */
-export function applyCustomTokens(): void {
-  try {
-    const raw = localStorage.getItem(CUSTOM_TOKENS_KEY)
-    if (!raw) return
-    const map = JSON.parse(raw) as Record<string, string>
-    for (const [k, v] of Object.entries(map)) {
-      document.documentElement.style.setProperty(k, v)
-    }
-  } catch {
-    /* 忽略损坏数据 */
-  }
 }

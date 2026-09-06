@@ -1,16 +1,13 @@
 <script setup lang="ts">
 // src/pages/settings/data-tab.vue —— 数据与列表 Tab：表单呈现方式/每页条数
+// 读写走 Pinia settings store（$subscribe 持久化键名不变）。
 // Vue 化差异：oas-change 模板直绑；radio 组在组容器上委托、composedPath[0] 取实际变动的 radio。
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useT } from '../../composables/use-t'
 import { appMessage } from '../../lib/app-message'
-import {
-  FORM_MODE_KEY,
-  PAGE_SIZE_KEY,
-  type FormMode,
-  readFormMode,
-  readPageSize,
-} from '../../settings-init'
+import { useSettingsStore } from '../../stores/settings'
+import type { FormMode } from '../../settings-init'
 
 const FORM_MODE_OPTIONS: Array<{ value: FormMode; labelKey: string; descKey: string }> = [
   {
@@ -35,24 +32,22 @@ function t(key: string, params?: Record<string, string | number>): string {
   return tt(key, params)
 }
 
-const formMode = ref(readFormMode())
-const pageSize = ref(readPageSize())
+const store = useSettingsStore()
+const { formMode, pageSize } = storeToRefs(store)
 
 function onFormModeChange(e: Event): void {
   const radio = e.composedPath()[0] as HTMLElement
   if (!radio.hasAttribute('checked')) return
   const v = radio.getAttribute('value') as FormMode | null
   if (!v) return
-  localStorage.setItem(FORM_MODE_KEY, v)
-  formMode.value = v
+  store.setFormMode(v)
   appMessage.success(tt('common.saved'))
 }
 
 function onPageSizeChange(e: Event): void {
   const { value } = (e as CustomEvent<{ value: string }>).detail
   if (!value) return
-  localStorage.setItem(PAGE_SIZE_KEY, value)
-  pageSize.value = value
+  store.setPageSize(value)
   appMessage.success(tt('common.saved'))
 }
 

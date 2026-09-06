@@ -11,7 +11,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useT } from '../composables/use-t'
 import { appMessage } from '../lib/app-message'
 import { routeHref } from '../components/nav-items'
-import { session } from '../store/session'
+import { useSessionStore } from '../stores/session'
 import { listProducts } from '../data/products'
 import { orderBreakdown, recentOrders, trendDays, trendSeries } from '../data/dashboard'
 
@@ -52,7 +52,8 @@ function t(key: string, params?: Record<string, string | number>): string {
   return tt(key, params)
 }
 
-const user = session.user
+// 会话用户：登录后页面重挂载才变，非响应式快照取值（products/users/orders 同款）
+const user = useSessionStore().user
 const name = user?.name ?? ''
 const isAdmin = user?.role === 'admin'
 
