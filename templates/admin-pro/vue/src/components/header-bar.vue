@@ -109,18 +109,16 @@ function onSearchKeydown(e: KeyboardEvent): void {
       :aria-label="t('header.openMenu')"
       @click="emit('nav-toggle')"
     />
-    <!-- 增强（偏离 vanilla）：vanilla 的 logo 是纯展示 span；此处可点，点击回首页 -->
-    <span
+    <!-- 增强（偏离 vanilla）：vanilla 的 logo 是纯展示 span；此处为链接，点击回站点首页（门户 /）。
+         用原生 <a href="/"> 而非路由内跳转——目标是「离开模版回到门户」，不是模版内路由 -->
+    <a
       class="oas-logo"
-      role="link"
-      tabindex="0"
-      style="cursor: pointer"
-      @click="router.push('/dashboard')"
-      @keydown.enter="router.push('/dashboard')"
+      href="/"
+      style="cursor: pointer; text-decoration: none; color: inherit"
     >
       <span class="oas-logo-badge">OAS</span>
       <span class="oas-logo-word">OAS Admin Pro</span>
-    </span>
+    </a>
     <!-- top-head 位置时塞在 logo 与搜索框之间的菜单节点 -->
     <slot name="header-menu" />
     <span class="spacer" />
