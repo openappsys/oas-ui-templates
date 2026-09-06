@@ -61,7 +61,8 @@ function renderShell() {
     <oas-layout class="app" viewport>
       <header class="app-header" slot="header">
         <button id="nav-toggle" class="nav-toggle" type="button" aria-label="打开菜单">☰</button>
-        <span class="logo">${t('app.title')}</span>
+        <!-- logo 可点：回站点首页（门户 /） -->
+        <a class="logo" href="/" style="text-decoration:none;color:inherit;cursor:pointer">${t('app.title')}</a>
         <span class="spacer"></span>
         <button id="lang-toggle" data-testid="lang-toggle" class="icon-btn" type="button">${t('header.lang')}</button>
         <button id="logout" class="icon-btn" type="button">${t('header.logout')}</button>
