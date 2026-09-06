@@ -47,6 +47,20 @@ declare module 'vue' {
     'oas-page-header': any
     'oas-progress': any
     'oas-chart': any
+    'oas-auto-complete': any
+    'oas-cascader': any
+    'oas-combobox': any
+    'oas-pin-input': any
+    'oas-rate': any
+    'oas-dynamic-tags': any
+    'oas-tree-select': any
+    'oas-transfer': any
+    'oas-watermark': any
+    'oas-number-animation': any
+    'oas-statistic': any
+    'oas-descriptions': any
+    'oas-descriptions-item': any
+    'oas-divider': any
   }
 }
 export {}
