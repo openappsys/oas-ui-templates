@@ -109,7 +109,15 @@ function onSearchKeydown(e: KeyboardEvent): void {
       :aria-label="t('header.openMenu')"
       @click="emit('nav-toggle')"
     />
-    <span class="oas-logo">
+    <!-- 增强（偏离 vanilla）：vanilla 的 logo 是纯展示 span；此处可点，点击回首页 -->
+    <span
+      class="oas-logo"
+      role="link"
+      tabindex="0"
+      style="cursor: pointer"
+      @click="router.push('/dashboard')"
+      @keydown.enter="router.push('/dashboard')"
+    >
       <span class="oas-logo-badge">OAS</span>
       <span class="oas-logo-word">OAS Admin Pro</span>
     </span>

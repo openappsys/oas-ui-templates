@@ -89,6 +89,7 @@ export function HeaderBar({
 }: HeaderBarProps) {
   const { t, locale, setLocale } = useT()
   const navigate = useNavigate()
+  const goHome = () => navigate('/dashboard')
   const user = useSyncExternalStore(session.subscribe, () => session.user)
   const langMenuRef = useRef<HTMLElement>(null)
   const userMenuRef = useRef<HTMLElement>(null)
@@ -136,7 +137,8 @@ export function HeaderBar({
         aria-label={t('header.openMenu')}
         onClick={onNavToggle}
       />
-      <span className="oas-logo">
+      {/* 增强（偏离 vanilla）：vanilla 的 logo 是纯展示 span；此处包一层可点区域，点击回首页 */}
+      <span className="oas-logo" role="link" tabIndex={0} style={{ cursor: 'pointer' }} onClick={goHome} onKeyDown={(e) => e.key === 'Enter' && goHome()}>
         <span className="oas-logo-badge">OAS</span>
         <span className="oas-logo-word">OAS Admin Pro</span>
       </span>
