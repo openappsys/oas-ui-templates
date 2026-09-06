@@ -34,6 +34,11 @@ declare module 'vue' {
     'oas-avatar': any
     'oas-list': any
     'oas-list-item': any
+    'oas-skeleton': any
+    'oas-empty': any
+    'oas-table': any
+    'oas-progress': any
+    'oas-chart': any
   }
 }
 export {}
