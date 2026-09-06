@@ -1,9 +1,5 @@
 // src/pages/forbidden.tsx —— 403 无权访问页
-// 行为事实来源：vanilla-html/src/pages/forbidden.ts（逐块对齐）。
-// 偏差记录（因果链）：
-// 1. 路由：vanilla 用自研 navigate()；本模版用 react-router 的 useNavigate，
 //    回退逻辑（history.length > 1 → back，否则去 /dashboard）逐字保留
-// 2. 文案刷新：vanilla onLocaleChange(draw) 整体重绘；本模版 useT() 订阅 locale 后重渲染
 // 3. 事件：两个按钮均为 light DOM 原生 click，直绑 onClick（不在 drawer/modal panel 内）
 import { useNavigate } from 'react-router'
 import { useT } from '../hooks/use-t'

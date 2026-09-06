@@ -1,5 +1,4 @@
 // src/pages/settings/data-tab.tsx —— 数据与列表 Tab：表单呈现方式/每页条数
-// 逐项对齐 vanilla settings.ts 数据段：仅持久化（FORM_MODE_KEY/PAGE_SIZE_KEY）+ appMessage.success。
 import { useRef, useState } from 'react'
 import { useOasEvent } from '../../hooks/use-oas-event'
 import { useT } from '../../hooks/use-t'

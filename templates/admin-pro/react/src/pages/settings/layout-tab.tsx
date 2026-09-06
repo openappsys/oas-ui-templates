@@ -1,8 +1,6 @@
 // src/pages/settings/layout-tab.tsx —— 布局与导航 Tab：菜单形态矩阵（置顶）/多页签栏/路由模式（底部）
-// 逐项对齐 vanilla settings.ts 布局段：
 //   矩阵点击调 setMenuStyle/setMenuPosition 并派 'oas:navconfig-change'（AppShell 订阅重建壳）；
 //   多页签栏写 TABS_BAR_KEY 后 applySettings()；路由模式 modal.confirm 二次确认后 applyRouterMode 整页刷新。
-// 事件差异（因果链）：矩阵单元格是 React 渲染的原生 button，原生 click 走 React onClick
 // （非 oas-modal/oas-drawer panel，不命中 AGENTS.md 第 2 条例外）；
 // modal.confirm 的确认按钮在 oas-modal panel 内，其原生 click 被 stopPropagation——
 // 但确认动作走 modal.confirm 的 onOk 选项（库内部直绑），无需也不应手动绑事件。

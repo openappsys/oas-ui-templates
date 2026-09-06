@@ -1,21 +1,12 @@
 // src/pages/form.tsx —— 创建订单向导（三步 steps + 逐步校验 + 摘要确认 + 提交跳结果页）
-// 行为事实来源：vanilla-html/src/pages/form.ts（402 行，逐块对齐）。
-// 偏差记录（因果链）：
-// 1. 渲染模型：vanilla 用 innerHTML 拼装 + onLocaleChange(refreshText) 逐节点刷文案；本模版
 //    声明式 JSX，useT() 订阅 locale 后整页重渲染（steps/steps 标题/label 随 locale 重算）
 // 2. 状态：customer/phone/note/products/quantity/urgent/expectDate/confirmed 全部 useState；
-//    vanilla 手写 state 对象 + 逐事件同步，本模版等价拆分为受控 state
-// 3. 校验错误：vanilla setError/clearErrors 命令式切 .form-error 的 hidden/textContent 与
 //    aria-invalid；本模版由 errors state 派生（data-testid 保留，可观察结果一致）
-// 4. 面板/按钮显隐：vanilla 命令式 hidden 与 style.display 切换；本模版由 step 派生
 //    （oas-button 基类 :host([hidden]) 生效，orders-drawer 同款）
 // 5. steps 越级点击：oas-change handler 里目标步大于当前步时先校验，失败则命令式把 current
-//    拨回当前步（vanilla setAttribute('current', state.step) 同款——组件 goto 已自写 current，
 //    React vdom 值未变不会自动回写，必须命令式复位）
 // 6. checkbox-group 的 oas-change 会收到内部 checkbox 冒泡的同名事件，必须过滤
-//    ev.target === 宿主（vanilla if (e.target !== productsGroup) return 同款守卫）
 // 7. 提交：createOrder → sessionStorage 'form-result'（键名与时机逐字一致）→ navigate('/result')
-//    （react-router 等价 vanilla hash navigate）
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { listProducts } from '../data/products'
@@ -210,7 +201,12 @@ export default function FormPage() {
           current={step}
           clickable
         />
-        <div className="form-step" data-testid="form-step1" data-index="0" hidden={step !== 0 || undefined}>
+        <div
+          className="form-step"
+          data-testid="form-step1"
+          data-index="0"
+          hidden={step !== 0 || undefined}
+        >
           <div className="form-field">
             <label className="form-label">
               {t('form.label.customer')}
@@ -223,7 +219,11 @@ export default function FormPage() {
               clearable
               aria-invalid={errors['form-error-customer'] ? 'true' : undefined}
             />
-            <div className="form-error" data-testid="form-error-customer" hidden={!errors['form-error-customer'] || undefined}>
+            <div
+              className="form-error"
+              data-testid="form-error-customer"
+              hidden={!errors['form-error-customer'] || undefined}
+            >
               {errors['form-error-customer'] ?? ''}
             </div>
           </div>
@@ -239,7 +239,11 @@ export default function FormPage() {
               clearable
               aria-invalid={errors['form-error-phone'] ? 'true' : undefined}
             />
-            <div className="form-error" data-testid="form-error-phone" hidden={!errors['form-error-phone'] || undefined}>
+            <div
+              className="form-error"
+              data-testid="form-error-phone"
+              hidden={!errors['form-error-phone'] || undefined}
+            >
               {errors['form-error-phone'] ?? ''}
             </div>
           </div>
@@ -253,7 +257,12 @@ export default function FormPage() {
             />
           </div>
         </div>
-        <div className="form-step" data-testid="form-step2" data-index="1" hidden={step !== 1 || undefined}>
+        <div
+          className="form-step"
+          data-testid="form-step2"
+          data-index="1"
+          hidden={step !== 1 || undefined}
+        >
           <div className="form-field">
             <label className="form-label">
               {t('form.label.products')}
@@ -273,7 +282,11 @@ export default function FormPage() {
                 </oas-checkbox>
               ))}
             </oas-checkbox-group>
-            <div className="form-error" data-testid="form-error-products" hidden={!errors['form-error-products'] || undefined}>
+            <div
+              className="form-error"
+              data-testid="form-error-products"
+              hidden={!errors['form-error-products'] || undefined}
+            >
               {errors['form-error-products'] ?? ''}
             </div>
           </div>
@@ -300,7 +313,12 @@ export default function FormPage() {
             <oas-date-picker ref={dateRef} data-testid="form-date" min={today()} />
           </div>
         </div>
-        <div className="form-step" data-testid="form-step3" data-index="2" hidden={step !== 2 || undefined}>
+        <div
+          className="form-step"
+          data-testid="form-step3"
+          data-index="2"
+          hidden={step !== 2 || undefined}
+        >
           <oas-descriptions data-testid="form-summary" column="1">
             <oas-descriptions-item label={t('form.summary.customer')}>
               {customer.trim() || '-'}
@@ -348,7 +366,11 @@ export default function FormPage() {
               <oas-checkbox ref={confirmRef} data-testid="form-confirm">
                 {t('form.confirm')}
               </oas-checkbox>
-              <div className="form-error" data-testid="form-error-confirm" hidden={!errors['form-error-confirm'] || undefined}>
+              <div
+                className="form-error"
+                data-testid="form-error-confirm"
+                hidden={!errors['form-error-confirm'] || undefined}
+              >
                 {errors['form-error-confirm'] ?? ''}
               </div>
             </div>

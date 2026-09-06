@@ -1,15 +1,10 @@
 // src/pages/products-table.tsx —— 商品列表视图（oas-table + 空态 + 行内编辑 + 行事件委托）
-// 行为事实来源：vanilla-html/src/pages/products.ts 的 TABLE_COLUMNS/cellXxx/renderTableBody 段。
-// 偏差记录（因果链）：
 // 1. columns 含 render 函数（返回真实 DOM 节点），JSON 序列化会丢函数，故走 property 通道：
 //    React 19 对自定义元素上存在的 property 直接赋值（oas-table 的 columns/data setter
-//    双通道均支持，见组件源码注释）；columns 用 useMemo 按 locale 重建（对齐 vanilla
 //    refreshText 里 renderColumns 的时机），避免每次渲染重设 property 触发整表重绘
 // 2. 行内编辑/勾选/开关：oas-edit/oas-check/oas-change 自定义事件全部 useOasEvent
 //   （AGENTS.md 第 1 条）；编辑按钮的原生 click 是 composed 事件，能冒泡出 oas-table
 //    shadow 到 React 根委托（oas-table 不在 drawer/modal 例外之列），故用容器 onClick +
-//    composedPath 匹配 .product-edit（对齐 vanilla fromPath 的 matches 语义）
-// 3. 空态：vanilla 手动切换 table-hidden 类与 empty 节点 hidden；本模版由 empty prop 派生
 import { useMemo } from 'react'
 import type { TableColumn } from '@oas-ui/ui/data/table'
 import { stockLevel } from '../data/products'

@@ -1,18 +1,11 @@
 // src/pages/login.tsx —— 登录页：双版式（split/glass）+ oas-form 本地直登
-// DOM 结构/类名逐块对齐 vanilla-html/src/pages/login.ts（app.css 登录页样式依赖这些类名）
-// 偏差记录（因果链）：
-// 1. 版式读取/切换：vanilla 读 location.search、切换时整页刷新；本模版经 react-router 的
 //    useSearchParams 读写（HashRouter 模式下查询串在 hash 内，location.search 恒为空），
 //    setSearchParams 触发重渲染切换版式，不整页刷新
-// 2. 事件绑定：vanilla 在 render 后直接 addEventListener；本模版 oas-submit/oas-enter 走
 //    useOasEvent 绑在**页面根 div** 上（两事件均 bubbles+composed，见 @oas-ui/core emit），
 //    根 div 在 split/glass 切换时被 React 复用（同位置同类型只换 className），监听器不丢；
 //    若绑在 oas-form 上，切换版式后元素重挂载而 ref 对象不变，useEffect 不会重绑
-// 3. 跨 shadow 提交：与 vanilla 一致——formRef 改从根 div 实时 querySelector('#login-form')，
 //    取其 shadowRoot 内 <form> requestSubmit()（playground 实测模式）
-// 4. 文案刷新：vanilla 用 onLocaleChange(refreshText) 逐节点替换；本模版 useT() 订阅 locale
 //    后整页重渲染，rules/options 等 JSON attribute 随之重算
-// 5. 登录后跳转：与 vanilla 一致——session.login() 后手动 navigate(appRoutes[0].path)。
 //    实测（Playwright 全流程）：路由层**不会**自动跳走——session.login() 触发 AppRouter
 //    切到已登录分支后，当前 URL 仍是 /login，而已登录路由表不含 /login（匹配落空，
 //    react-router 警告 "No routes matched location /login"，页面空白），必须手动 navigate

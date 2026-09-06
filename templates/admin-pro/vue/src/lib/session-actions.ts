@@ -1,5 +1,4 @@
 // src/lib/session-actions.ts —— 登出闭环：清会话 + 提示 + 回首页
-// 头部用户菜单与命令面板共用（对齐 vanilla app-shell.ts userMenu/execCommand 的 logout 分支）
 // 与 react 版逐字一致；navigate 由调用方包一层 vue-router 的 push（返回 Promise，此处按 void 语义）
 import type { Router } from 'vue-router'
 import { t } from '../i18n'

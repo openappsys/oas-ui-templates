@@ -1,5 +1,4 @@
 // src/components/tabs-bar.tsx —— 页签栏：oas-tabs + 右键批量关闭 + 自定义关闭钮
-// 语义对齐 vanilla app-shell.ts 页签段 + e2e/tabs.spec 断言：
 //   oas-change 切路由；oas-close 微任务合批（组件「关闭其他/全部」会连发多个 oas-close）；
 //   [data-ptab-close] 关闭钮捕获阶段拦截（click + Enter/Space）；首页页签不可关
 import { useEffect, useRef } from 'react'

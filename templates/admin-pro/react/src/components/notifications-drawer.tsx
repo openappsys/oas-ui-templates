@@ -1,8 +1,6 @@
 // src/components/notifications-drawer.tsx —— 通知中心抽屉 + 通知数据状态 hook
-// 对齐 vanilla app-shell.ts 通知段：抽屉右出、列表项点击已读、底部「全部已读」、徽标数同步
 // 状态由 AppShell 经 useNotifications() 持有一份，badge（header-bar）与抽屉共享
 // 注意：oas-drawer 内部 panel 对 click stopPropagation（mask 点击关闭的配套），
-// 抽屉内按钮/列表的 click 无法冒泡到 React 根委托——必须像 vanilla 一样在元素上直接 addEventListener
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { listNotifications, markAllRead, markRead, type Notification } from '../data/notifications'
 import { useOasEvent } from '../hooks/use-oas-event'

@@ -1,13 +1,8 @@
 // src/pages/products-columns-modal.tsx —— 商品列设置弹窗（显隐列 + 偏好持久化）
-// 行为事实来源：vanilla-html/src/pages/products.ts 的 columnsModal 段（oas-change 勾选 /
 // 重置按钮 / 完成按钮 / writeProductColumns 持久化）。
-// 偏差记录（因果链）：
-// 1. visible 受控：vanilla 靠组件自闭（遮罩/Esc 时组件自摘 visible 属性）；本模版 visible 由
 //    父组件 React state 单一持有，必须监听 oas-close 回写，否则组件自闭后与 state 失同步
 // 2. 重置/完成按钮位于 oas-modal panel 内，panel 对原生 click stopPropagation（AGENTS.md
-//    第 2 条原生事件例外），与 vanilla 一样在元素上直绑 addEventListener；
 //    checkbox 的 oas-change / 弹窗的 oas-close 自定义事件仍走 useOasEvent
-// 3. 持久化：勾选/重置后立即 writeProductColumns（与 vanilla 同一时机），列集合经
 //    onChange 回写父组件 state 驱动表格 column-keys 重算
 import { useEffect, useRef } from 'react'
 import { useOasEvent } from '../hooks/use-oas-event'

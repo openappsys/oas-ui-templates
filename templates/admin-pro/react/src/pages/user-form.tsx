@@ -1,14 +1,7 @@
 // src/pages/user-form.tsx —— 用户表单弹窗（新建/编辑，modal 形态）
-// 行为事实来源：vanilla-html/src/pages/users.ts 的 RULES/fillForm/oas-submit 段。
-// 偏差记录（因果链）：
-// 1. 回填：vanilla fillForm 逐字段 setAttribute；本模版在 open 边沿的 useEffect 里做同样的事
-//   （表单字段非受控，value 全走 attribute，与 vanilla 同一通道；product-form 同款模式）
 // 2. 取消/保存按钮：位于 oas-modal 的 panel 内，panel 对原生 click stopPropagation
-//   （AGENTS.md 原生事件例外条款），故与 vanilla 一样在元素上直绑 addEventListener；
 //    oas-submit/oas-close 自定义事件仍走 useOasEvent
-// 3. visible 受控：vanilla 靠组件自闭（遮罩/Esc 时组件自摘 visible 属性）；本模版 visible 由
 //    React state 单一持有，监听 oas-close 回写 state
-// 4. 角色选项：vanilla refresh() 里 setAttribute('options')；本模版 options 走声明式 JSON
 //    attribute 随 roles state 重算，回填仅写 value attribute
 import { useEffect, useMemo, useRef } from 'react'
 import type { UserRow, UserRole, UserStatus } from '../data/users'

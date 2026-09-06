@@ -1,7 +1,4 @@
 // src/pages/roles.tsx —— 角色管理（表格 CRUD + 抽屉表单 + 数据权限单选 + 部门 transfer）
-// 行为事实来源：vanilla-html/src/pages/roles.ts（352 行，逐块对齐）。
-// 偏差记录（因果链）：
-// 1. 渲染模型：vanilla 全程 imperative（innerHTML + setAttribute 回写 + onLocaleChange 逐节点
 //    刷文案）；本模版声明式——roles/deptList/editingId/dataScope/deptIds/drawerOpen 全部
 //    useState，抽屉标题/customField 显隐全部由 state 派生；useT() 订阅后整页重渲染，
 //    rules/labels/radio 选项文案随 locale 自动重算
@@ -11,12 +8,8 @@
 //    onClick；抽屉面板内取消/保存按钮按第 2 条例外直绑 addEventListener（panel 对原生事件
 //    stopPropagation，React 根委托收不到）
 // 3. columns 含 render 函数（scopeCell/actionCell 返回真实 DOM 节点）→ property 通道
-//   （AGENTS.md 第 3 条例外），列定义按 locale 重建（vanilla renderTable 每次重设同款时机）
-// 4. 表单回填：vanilla fillForm 在打开时机逐字段 setAttribute（含 transfer 的 value）；
 //    本模版在 open 边沿的 useEffect 做同样的事（transfer value 只在回填时写，切换数据权限
-//    不清空其可见勾选——对齐 vanilla 只读 state.deptIds 的怪癖）；radio 的 checked 属性在
 //    effect 里命令式同步（setRadioChecked 同款通道，避免与组件 excludeSameName 打架）
-// 5. visible 受控：vanilla 靠组件自闭；本模版 visible 由 React state 单一持有，监听 oas-close
 //    回写 state（product-form 同款）
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { TableColumn } from '@oas-ui/ui/data/table'
@@ -317,7 +310,9 @@ export default function RolesPage() {
         ref={drawerRef}
         data-testid="role-form-drawer"
         title={
-          editingId == null ? t('roles.new') : t('roles.editRole').replace('#{id}', String(editingId))
+          editingId == null
+            ? t('roles.new')
+            : t('roles.editRole').replace('#{id}', String(editingId))
         }
         placement="right"
         size="medium"

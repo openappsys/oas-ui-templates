@@ -1,5 +1,4 @@
 // src/lib/session-actions.ts —— 登出闭环：清会话 + 提示 + 回首页
-// 头部用户菜单与命令面板共用（对齐 vanilla app-shell.ts userMenu/execCommand 的 logout 分支）
 import { t } from '../i18n'
 import { appRoutes } from '../router/routes'
 import { session } from '../store/session'

@@ -1,28 +1,17 @@
 // src/pages/menus.tsx —— 权限管理（左树右详情 + 抽屉表单，纯内存树）
-// 行为事实来源：vanilla-html/src/pages/menus.ts（505 行，逐块对齐）。
-// 偏差记录（因果链）：
-// 1. 渲染模型：vanilla 全程 imperative（innerHTML + setAttribute 回写 + onLocaleChange 逐节点
 //    刷文案）；本模版声明式——tree/selectedId/editingId/formType/drawerOpen 全部 useState，
 //    树的 data/expanded/selected、详情区、抽屉标题全部由 state 派生；useT() 订阅后整页重渲染
 // 2. 事件绑定：oas-tree 的 oas-select、radio 组的 oas-change、path 输入的 oas-input、oas-form
 //    的 oas-submit、oas-drawer 的 oas-close 走 useOasEvent（AGENTS.md 第 1 条）；页头新建按钮
 //    为 light DOM 原生 click 直绑 onClick；抽屉面板内取消/保存按钮按第 2 条例外直绑
 //    addEventListener（panel 对原生事件 stopPropagation，React 根委托收不到）
-// 3. vanilla 死代码不复刻：vanilla 监听 tree 的 'node-render'（oas-tree 实际派发
-//   'oas-node-render'，该监听永不触发），因此 vanilla 可观察行为中树节点并无类型图标/标签
 //    定制；本模版不加该定制，可观察结果一致
-// 4. 表单回填：vanilla fillMenuForm/openForm 时逐字段 setAttribute（含父级 tree-select 的
 //    value）；本模版在 open 边沿的 useEffect 做同样的事（「新增子菜单」的父级预置经
-//    formParentId state 对齐 vanilla openForm(null, parentOverride)）；vanilla 的父级选项树
 //    在 init 与每次提交后重建（buildParentOptions），本模版改为 open 边沿重建——选项内容
-//    等价（打开时树已是最新），且与 vanilla 一样不随 locale 单独重建
 // 5. syncMenuType 拆解：提示文案（perms-hint/path 必填星号）由 formType state 派生声明式
 //    渲染；C 类型 perms 自动补全（autoPerms）保持命令式（open 边沿/类型切换/path 输入，
-//    与 vanilla 三个调用点一致）
-// 6. visible 受控：vanilla 靠组件自闭；本模版 visible 由 React state 单一持有，监听 oas-close
 //    回写 state（product-form 同款）；radio 的 checked 属性在 effect 里命令式同步
 //   （setTypeRadio/setRadioChecked 同款通道，避免与组件 excludeSameName 的命令式互斥打架）
-// 7. 树为纯内存数据（vanilla 同款：改动不持久化，刷新即回种子）；提交/删除对树原地变更后
 //    以 setTree([...tree]) 触发重渲染
 // 8. 子组件拆分（单文件 ≤400 行纪律）：详情卡 ./menus-detail.tsx
 import { useEffect, useMemo, useRef, useState } from 'react'

@@ -1,5 +1,3 @@
-// src/router/tabs.ts —— 页签纯函数状态机，逐字移植自 vanilla-html/src/router/tabs.ts
-// 适配点仅类型与路由表 import：vanilla 的 Route/routes 换为本地 AppRoute/appRoutes
 import { appRoutes, matchRoute } from './routes'
 import type { AppRoute } from './routes'
 

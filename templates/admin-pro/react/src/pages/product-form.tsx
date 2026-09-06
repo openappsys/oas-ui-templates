@@ -1,14 +1,7 @@
 // src/pages/product-form.tsx —— 商品表单（dialog/drawer 双形态，page 形态见 product-edit.tsx）
-// 行为事实来源：vanilla-html/src/pages/products.ts 的 FORM_BODY/fillForm/openForm/oas-submit 段。
-// 偏差记录（因果链）：
-// 1. 回填：vanilla openForm 时 fillForm 逐字段 setAttribute；本模版在 open 边沿的 useEffect 里
-//    做同样的事（表单字段非受控，value 全走 attribute，与 vanilla 同一通道）
 // 2. 取消/保存按钮：位于 oas-modal/oas-drawer 的 panel 内，panel 对原生 click stopPropagation
-//   （AGENTS.md 原生事件例外条款），故与 vanilla 一样在元素上直绑 addEventListener；
 //    oas-submit/oas-close 自定义事件仍走 useOasEvent
-// 3. visible 受控：vanilla 靠组件自闭（遮罩/Esc 时组件自摘 visible 属性）；本模版 visible 由
 //    React state 单一持有，必须监听 oas-close 回写 state，否则组件自闭后与 state 失同步
-// 4. 分类选项：vanilla applyCategoryOptions 里 setAttribute('options')；本模版 options 走
 //    声明式 JSON attribute 随 categories state 重算，回填仅写 value attribute
 import { useEffect, useRef } from 'react'
 import type { ProductRow } from '../data/products'

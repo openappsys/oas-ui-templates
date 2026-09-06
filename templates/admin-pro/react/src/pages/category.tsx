@@ -1,7 +1,4 @@
 // src/pages/category.tsx —— 商品分类（表格 + 搜索 + modal 表单 + popconfirm 删除）
-// 行为事实来源：vanilla-html/src/pages/category.ts（317 行，逐块对齐）。
-// 偏差记录（因果链）：
-// 1. 渲染模型：vanilla 全程 imperative（innerHTML + setAttribute 回写）；本模版声明式——
 //    rows/keyword/editingId/modalOpen 全部 useState，过滤/空态/弹窗标题全部由 state 派生；
 //    refresh() 仅重拉数据 setRows，重渲染即最新
 // 2. 事件绑定：search 的 oas-input/oas-clear、form 的 oas-submit、popconfirm 的 oas-ok、
@@ -9,14 +6,8 @@
 //    click 直绑 onClick；弹窗面板内取消/保存按钮按第 2 条例外在元素上直绑 addEventListener
 //   （panel 对原生事件 stopPropagation，React 根委托收不到）
 // 3. columns 含 render 函数（cellTag/cellAction 返回真实 DOM 节点），走 property 通道
-//   （AGENTS.md 第 3 条例外）；columns 按 locale 重建（对齐 vanilla renderTable 每次重设）
-// 4. 表单回填：vanilla fillForm 在打开时机逐字段 setAttribute；本模版在 open 边沿的
-//    useEffect 做同样的事（字段非受控，value 全走 attribute，与 vanilla 同一通道）
-// 5. visible 受控：vanilla 靠组件自闭；本模版 visible 由 React state 单一持有，监听
 //    oas-close 回写 state（product-form 同款）
-// 6. 文案刷新：vanilla onLocaleChange(refreshText) 逐节点替换；本模版 useT() 订阅后整页
 //    重渲染，rules/labels/placeholders/columns 随 locale 自动重算
-// 7. 样式：dict.css 从 vanilla 逐字复制（vanilla category.ts 同款 import 关系；dict 页
 //    已落地并复用本副本）
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { TableColumn } from '@oas-ui/ui/data/table'

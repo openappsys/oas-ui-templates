@@ -1,5 +1,4 @@
 // src/pages/logs-shared.ts —— 日志中心页的纯函数助手与行模板（从 logs.tsx 拆出，
-// 内容与 vanilla-html/src/pages/logs.ts 的模块级助手段逐字对齐）
 import type { LogEntry, LogLevel } from '../data/logs'
 
 export type TFunc = (key: string, params?: Record<string, string | number>) => string

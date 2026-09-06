@@ -1,6 +1,4 @@
 // src/components/app-shell.tsx —— 布局壳：oas-layout + 头部 + 三形态导航 + 页签栏 + 面包屑 + footer
-// 组装与 vanilla-html/src/components/app-shell.ts 的 mountApp() 逐块对齐；
-// 差异：vanilla 在 oas:navconfig-change 里手动重建 DOM，React 侧 setState 重渲染 +
 // NavMenu key 重挂载（保证 useOasEvent 绑定到新元素）；no-chrome 由路由层未登录分支天然接管
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { Outlet, useLocation } from 'react-router'

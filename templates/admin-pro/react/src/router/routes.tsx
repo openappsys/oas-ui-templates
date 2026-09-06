@@ -1,6 +1,4 @@
 // src/router/routes.tsx —— 路由表事实来源
-// path/meta 与 vanilla-html/src/router/routes.ts 中对应页面逐字对齐（本模版取 23 条）
-// 例外：/login 在 vanilla 路由表中不存在（vanilla 未登录时由 router 直接渲染登录页），
 // 本模版为 HashRouter 组装需要补入，meta 为本模版新增（titleKey 取 i18n 已存在的 login.welcome）
 import { lazy, type ComponentType, type LazyExoticComponent } from 'react'
 
@@ -25,7 +23,6 @@ export interface AppRoute {
 }
 
 export const appRoutes: AppRoute[] = [
-
   {
     path: '/dashboard',
     meta: {

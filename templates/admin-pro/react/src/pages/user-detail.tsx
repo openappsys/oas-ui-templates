@@ -1,13 +1,9 @@
 // src/pages/user-detail.tsx —— 用户详情弹窗（descriptions + 权限标识 + 编辑/删除）
-// 行为事实来源：vanilla-html/src/pages/users.ts 的 oas-row-click 详情段/renderPerms/delete-popconfirm 段。
-// 偏差记录（因果链）：
-// 1. 详情内容：vanilla 每次打开时 desc.innerHTML 重建 + 逐节点 textContent 回写；本模版
 //    声明式——user/roleName/perms 由父组件 state 派生，重渲染即最新（oas-descriptions
 //    的 items 走默认 slot，light DOM 子节点变化自然生效，见组件源码 template）
 // 2. 编辑/删除按钮：位于 oas-modal 的 panel 内，panel 对原生 click stopPropagation
 //   （AGENTS.md 原生事件例外条款），故直绑 addEventListener；popconfirm 的 oas-ok 与
 //    modal 的 oas-close 自定义事件仍走 useOasEvent
-// 3. visible 受控：vanilla 靠组件自闭；本模版 visible 由 React state 单一持有，oas-close 回写
 import { useEffect, useRef } from 'react'
 import type { UserRow } from '../data/users'
 import { useOasEvent } from '../hooks/use-oas-event'

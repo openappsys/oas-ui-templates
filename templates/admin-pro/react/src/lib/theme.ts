@@ -1,5 +1,4 @@
 // src/lib/theme.ts —— 主题切换：写 <html data-theme> 并派发 themechange
-// 逐字对齐 vanilla-html/src/components/app-shell.ts 的 applyTheme()/setTheme()
 export function applyTheme(next: string): void {
   document.documentElement.dataset.theme = next
   document.dispatchEvent(new CustomEvent('themechange', { detail: { theme: next } }))

@@ -1,29 +1,20 @@
 // src/pages/products.tsx —— 商品管理（卡片/列表双视图 + 三表单模式 + 批量操作 + 列设置持久化）
-// 行为事实来源：vanilla-html/src/pages/products.ts（755 行，逐块对齐）。
-// 偏差记录（因果链）：
-// 1. 渲染模型：vanilla 全程 imperative（innerHTML + setAttribute 回写）；本模版声明式——
 //    rows/keyword/category/page/view/selected/columnKeys 全部 useState，表格切片/空态/批量栏
 //    显隐/分页属性全部由 state 派生；refresh() 仅重拉数据 setRows，重渲染即最新
 // 2. 事件绑定：oas-input/oas-select/oas-segmented/oas-pagination 的 oas-* 自定义事件一律
 //    useOasEvent（AGENTS.md 第 1 条）；工具栏按钮为 light DOM 原生 click 直绑 onClick；
-//    卡片编辑按钮在 oas-masonry 的 light DOM 子节点上，onClick 委托即可（vanilla 同款
 //    closest 匹配）；批量栏/列设置弹窗的事件接线见 ./products-batch-bar.tsx /
 //    ./products-columns-modal.tsx 头注释（popconfirm oas-ok 走 useOasEvent，modal panel
 //    内按钮原生 click 按第 2 条例外直绑）
 // 3. visible 受控同步：表单容器/列设置弹窗的 visible 由 state 持有，组件侧关闭（遮罩/Esc）
-//    经 oas-close 回写 state（vanilla 靠组件自摘属性，无此问题）
-// 4. 手动分页：vanilla 超页时静默 state.page = maxPage；本模版派生 current = min(page, maxPage)
 //    不回头改 state（显示结果一致，避免渲染期 setState）
-// 5. 文案刷新：vanilla onLocaleChange(refreshText) 逐节点替换；本模版 useT() 订阅后整页
 //    重渲染，rules/options/columns/标签随 locale 自动重算（dashboard 同款模式）
 // 6. 子组件拆分（主体 ≤400 行纪律；本文件加分页器 hidden 补写逻辑与头注释后贴线 408 行）：表格 ./products-table.tsx、表单 ./product-form.tsx、
 //    批量栏 ./products-batch-bar.tsx、列设置弹窗 ./products-columns-modal.tsx；
-//    page 形态跳 /products/edit（sessionStorage 键 product-edit-id 与 vanilla 逐字一致）
 // 7. oas-pagination 的 hidden 声明式失效：组件 update() 在非 hide-on-single 路径无条件
 //    removeAttribute("hidden")（node_modules/@oas-ui/ui/dist/navigation/pagination/
 //    oas-pagination.js:93），hidden 不在 observedAttributes（补写不回环）。后果：total/
 //    current 任一变更（卡片视图搜索、切视图且 page≠1、表格搜空）及组件基类语言自刷
-//    都会把 React 声明式写入的 hidden 摘掉。解法对齐 vanilla（products.ts:378-393,570
 //    在 setAttribute total/current 之后命令式赋 pager.hidden）与 vue 版（watch flush:post）：
 //    保留 JSX 声明式 hidden 作首渲染兜底，useEffect 在提交后（晚于 React 的 attribute 补丁
 //    与组件同步 update）以 pager.hidden 属性赋值命令式补写，依赖覆盖 hidden 全部输入

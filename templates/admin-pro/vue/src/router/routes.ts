@@ -1,7 +1,4 @@
 // src/router/routes.ts —— 路由表事实来源
-// path/meta 与 vanilla-html/src/router/routes.ts 对应条目逐字对齐（react 版同期并行，
-// 未落地的页面以 vanilla 为准）；/login 为本模版组装新增（见下方原注释）
-// 例外：/login 在 vanilla 路由表中不存在（vanilla 未登录时由 router 直接渲染登录页），
 // 本模版为 hash 路由组装需要补入，meta 为本模版新增（titleKey 取 i18n 已存在的 login.welcome）
 import type { RouteComponent } from 'vue-router'
 
@@ -27,7 +24,6 @@ export interface AppRoute {
 }
 
 export const appRoutes: AppRoute[] = [
-
   {
     path: '/dashboard',
     meta: {

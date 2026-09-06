@@ -1,13 +1,8 @@
 // src/pages/advanced-form.tsx —— 高级表单（17 种控件组合 + 校验）
-// 行为事实来源：vanilla-html/src/pages/advanced-form.ts（逐块对齐）。
-// 偏差记录（因果链）：
-// 1. 渲染模型：vanilla 用 innerHTML 拼装 + onLocaleChange(refreshText) 逐节点 setAttribute；
 //    本模版声明式 JSX，useT() 订阅 locale 后整页重渲染，rules/options/placeholder 等
 //    JSON attribute 随之重算（dashboard 同款模式）
 // 2. 事件：oas-form 的 oas-submit 自定义事件走 useOasEvent（AGENTS.md 第 1 条）；
 //    提交/重置按钮为 light DOM 原生 click，直绑 onClick；提交经 shadowRoot 内原生 form
-//    的 requestSubmit()，重置经其 reset()（与 vanilla 同一通道）
-// 3. formValues：vanilla 提交后仅存局部变量且未消费（void formValues）；本模版不保留该死状态，
 //    仅保留 message.success 提示（可观察行为一致）
 import { useRef } from 'react'
 import '../styles/pages/advanced-form.css'

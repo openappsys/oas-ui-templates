@@ -1,9 +1,5 @@
 // src/pages/menus-detail.tsx —— 权限详情卡（选中节点描述/操作按钮）
-// 行为事实来源：vanilla-html/src/pages/menus.ts 的 renderDetail 段（父组件 menus.tsx 持有
 // 数据与状态，删除编排也在父组件）。
-// 偏差记录（因果链）：
-// 1. 渲染模型：vanilla renderDetail 每次重建 innerHTML 并逐按钮 addEventListener；本模版
-//    声明式 JSX 由 node prop 派生，父组件重渲染即最新；未选中节点渲染 oas-empty（vanilla
 //    renderDetail 空态分支同款）
 // 2. 事件绑定：详情区位于 oas-card 的 light DOM（非 drawer/modal panel），原生 click 可达
 //    React 根委托——编辑/新增子部门按钮直接 onClick；删除 popconfirm 的 oas-ok 自定义事件走

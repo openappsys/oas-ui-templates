@@ -1,11 +1,6 @@
 // src/pages/data-board.tsx —— 数据看板（水印 + 数字动画统计卡 + 三图表 + 季度目标进度）
-// 行为事实来源：vanilla-html/src/pages/data-board.ts（逐块对齐）。
-// 偏差记录（因果链）：
-// 1. 渲染模型：vanilla draw() 一次性 innerHTML + onLocaleChange(refreshText) 逐节点回写；
 //    本模版声明式 JSX，useT() 订阅 locale 后整页重渲染，图表 data/aria-label/progress
 //    value 等 attribute 随之重算（数据全部来自 boardData() 纯函数，无异步）
-// 2. oas-progress 的 value 属性名与 vanilla 逐字一致（vanilla 即传 value 而非 percent，
-//    渲染结果与 vanilla 相同，不做「顺手修复」）
 import '../styles/pages/data-board.css'
 import { boardData } from '../data/board'
 import { useT } from '../hooks/use-t'

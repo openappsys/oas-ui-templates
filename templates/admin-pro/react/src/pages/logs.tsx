@@ -1,23 +1,11 @@
 // src/pages/logs.tsx —— 日志中心（虚拟列表 + 日期锚点 + 统计卡 + 多条件过滤 + CSV 导出）
-// 行为事实来源：vanilla-html/src/pages/logs.ts（402 行，逐块对齐）。
-// 偏差记录（因果链）：
-// 1. 渲染模型：vanilla 全程 imperative；本模版声明式——rows/filtered/level/keyword/dateRange/
-//    selected 全部 useState；过滤经 effect 调 listLogs（异步过滤，与 vanilla applyFilter 同编排），
 //    统计/锚点分组/空态全部由 state 派生
 // 2. 事件绑定：level/keyword/date 的 oas-change/oas-input/oas-clear、虚拟列表 oas-item/oas-scroll、
 //    锚点 oas-click、modal oas-cancel 走 useOasEvent（AGENTS.md 第 1 条）；导出按钮为 light DOM
 //    原生 click 直绑 onClick；虚拟列表行 click 在 oas-item 回调里对 element 直绑（element 为
-//    组件在 shadow 内克隆的节点，只能命令式绑定，vanilla 同款）
-// 3. 虚拟列表数据：vanilla (vlist).items = filtered（property 通道）；本模版 useEffect 在
 //    filtered/locale 变化时赋同一 property（setter 内部 slice + update，同引用也会重渲，
-//    对齐 vanilla refreshText 里重设 items 刷新行内标签的行为）；行模板 slot=item 以
 //    dangerouslySetInnerHTML 注入同款内容（见 ./logs-shared.ts）
-// 4. 锚点：vanilla 维护 dateIndexMap/hrefDateMap；本模版以 useMemo 派生分组数组，oas-click 时
-//    按 href 反查（同语义）；direction 随 768px 断点切换走 state（vanilla matchMedia 监听同款）
-// 5. 文案刷新：vanilla onLocaleChange(refreshText)；本模版 useT() 订阅整页重渲染，统计卡/
 //    锚点标题/表头/选项随 locale 重算，过滤条件与滚动位置不动
-// 6. 样式：logs.css 从 vanilla 逐字复制；组件注册走 main.tsx 的 '@oas-ui/ui' 全量导入
-//   （vanilla logs.ts 的 virtual-list/anchor 侧效 import 在此不需要）
 // 7. 子组件拆分（单文件 ≤400 行纪律）：纯函数助手与行模板 ./logs-shared.ts
 // 8. oas-virtual-list 的 buffer 属性必须走 setAttribute：React 19 的 property 通道会覆写
 //    组件原型方法 buffer()（字符串赋值），实测崩溃；详见挂载 effect 处注释

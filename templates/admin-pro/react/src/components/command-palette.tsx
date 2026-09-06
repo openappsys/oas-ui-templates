@@ -1,7 +1,5 @@
 // src/components/command-palette.tsx —— 命令面板：Ctrl/Cmd+K、/ 唤起；页面 + 操作 + 主题组
-// 对齐 vanilla app-shell.ts buildCommandItems()/execCommand()/openCommand()/toggleCommand()
 // open 状态由 AppShell 持有（头部搜索框也要唤起）。
-// 关键差异（vs vanilla）：close-on-select="false"，选中后由 React 自己关面板——
 // 实测组件在 oas-select 同一同步栈里自行 close() 时，open-change 派发的 setState 与
 // execCommand 内 navigate() 触发的同步渲染交错，更新会被 React 丢弃（状态滞留 true 而
 // 属性已被组件移除，永久失同步）。改为：select handler 里先 onOpenChange(false) 再 execCommand，

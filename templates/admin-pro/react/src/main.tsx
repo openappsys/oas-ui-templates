@@ -1,4 +1,3 @@
-// src/main.tsx —— 初始化顺序与 vanilla main.ts 对齐：
 // 副作用注册 → i18n → 假后端 → 设置重放 → 挂载
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'

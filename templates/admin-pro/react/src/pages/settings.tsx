@@ -1,6 +1,4 @@
 // src/pages/settings.tsx —— 设置中心（外观 / 布局与导航 / 数据与列表 / 通知 四 Tab）
-// 行为事实来源：vanilla-html/src/pages/settings.ts（逐项对齐）。
-// 结构差异（因果链）：vanilla 用字符串 innerHTML + addEventListener 拼装；
 // 本模版 JSX + useState 受控值（初始化自 settings-init 的 readXxx()），
 // oas-change 自定义事件一律走 useOasEvent（React 19 不绑 kebab 事件，见 AGENTS.md），
 // 四个 Tab 面板拆为 ./settings/*-tab.tsx 子组件（单文件控制在 400 行内）。

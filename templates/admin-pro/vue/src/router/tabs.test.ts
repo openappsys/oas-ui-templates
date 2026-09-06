@@ -1,6 +1,4 @@
-// 移植自 vanilla-html/src/router/tabs.test.ts
 // 适配点：用例中的路由路径换为本模版路由表（routes.tsx）中存在的条目
-// （vanilla 的 /orders→/products、/order-detail→/products/edit；/result、/500 不在本模版路由表中，相关断言改写）
 import { describe, expect, it } from 'vitest'
 import { HOME_PATH, closeAll, closeKeys, closeTab, tabKeyOf, visit } from './tabs'
 import type { TabsView } from './tabs'

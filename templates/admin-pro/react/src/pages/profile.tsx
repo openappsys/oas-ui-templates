@@ -1,16 +1,7 @@
 // src/pages/profile.tsx —— 个人中心（账户信息 + 外观主题预览 + 退出登录）
-// 行为事实来源：vanilla-html/src/pages/profile.ts（逐块对齐）。
-// 偏差记录（因果链）：
-// 1. 渲染模型：vanilla innerHTML 拼装 + onLocaleChange(refreshText) 逐节点回写；本模版
 //    声明式 JSX，useT() 订阅 locale 后重渲染，descriptions 的 label/登录时间随之重算
-// 2. 主题选中态：vanilla syncPreviewSelection 手动切 is-selected 类 + document 级
-//    themechange 监听（未摘监听，vanilla 页面不重挂载故无泄漏）；本模版 theme 收为 state，
 //    useEffect 挂/摘 themechange 监听，is-selected 由 state 派生
-// 3. applyTheme：vanilla profile 页本地实现（system=删 data-theme + 提示，其余=写值），
-//    与 src/lib/theme.ts 的 applyTheme（恒写值）语义不同——此处逐字对齐 vanilla profile
-// 4. 退出登录：vanilla session.logout() + navigate(routes[0].path) + resolve()；本模版走
 //    src/lib/session-actions.ts 的 logoutFlow(navigate)（头部用户菜单同一条闭环）
-// 5. admin 头像的 --oas-color-primary 自引用：vanilla 原样保留（计算期无效、无副作用），
 //    此处照抄不「顺手修复」
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'

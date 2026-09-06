@@ -1,6 +1,4 @@
 // src/pages/menu-tree.ts —— 菜单页树辅助函数（menus.vue 与 menu-form-drawer.vue 共用）
-// 逐字对齐 vanilla-html/src/pages/menus.ts 顶部的纯函数段；
-// removeNode/insertChild 会原地变更树数组（vanilla 同为原地变更，语义保持一致）
 import type { MenuTree, MenuType } from '../data/system'
 
 // 抽屉上抛的提交载荷（menus.vue 校验与树变更时消费）

@@ -1,5 +1,4 @@
 // src/components/nav-menu.tsx —— 导航菜单：sidebar / menubar / navigation 三形态 × 位置分派
-// 对齐 vanilla app-shell.ts menuHTML()/bindNav()/applyNavActive()：
 //   高亮三机制——sidebar 用 active 属性；menubar 用 value 属性（radio ✓ 高亮）；
 //   navigation 用 items 内 active 字段（value 必须留空，否则 findItem 落空面板空白）
 // 形态/位置切换由调用方用 key 重挂载本组件，保证 useOasEvent 绑定到新元素

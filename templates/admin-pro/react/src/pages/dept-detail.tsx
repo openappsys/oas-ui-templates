@@ -1,19 +1,11 @@
 // src/pages/dept-detail.tsx —— 部门详情卡（选中节点描述/操作按钮/子部门表）
-// 行为事实来源：vanilla-html/src/pages/dept.ts 的 renderDetail/renderSubTable/SUB_COLUMNS/
 // subActionCell/onSubClick/onSubDelete 段（父组件 dept.tsx 持有数据与状态）。
-// 偏差记录（因果链）：
-// 1. 渲染模型：vanilla renderDetail 每次重建 innerHTML 并逐按钮 addEventListener；本模版
-//    声明式 JSX 由 node prop 派生，父组件重渲染即最新；未选中节点渲染 oas-empty（vanilla
 //    renderDetail 空态分支同款）
 // 2. 事件绑定：详情区位于 oas-card 的 light DOM（非 drawer/modal panel），原生 click 可达
-//    React 根委托——详情区编辑/新增子部门按钮与子表行内编辑按钮都经容器 onClick（vanilla
 //    composedPath 匹配 [data-edit] 同款）；popconfirm 的 oas-ok 自定义事件走 useOasEvent
 //   （AGENTS.md 第 1 条）：详情删除 popconfirm（#md-del-pop，无 data-del）与子表 popconfirm
-//   （带 data-del）在容器上统一监听、按 detail.source 区分——与 vanilla「md-del-pop 直绑 +
 //    detailEl 冒泡监听过滤 data-del」两条监听的可观察行为一致
 // 3. 子表 columns 含 render 函数 → property 通道（AGENTS.md 第 3 条例外），列定义按 locale
-//    重建（vanilla renderSubTable 每次重设 columns 同款时机）；children 为空时渲染空态文案，
-//    非空才渲染表格（vanilla renderSubTable 的 innerHTML 替换/hidden 切换同款结果）
 import { useMemo, useRef } from 'react'
 import type { TableColumn } from '@oas-ui/ui/data/table'
 import type { DeptTree } from '../data/system'

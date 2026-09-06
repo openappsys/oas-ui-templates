@@ -1,7 +1,4 @@
 // src/pages/dept.tsx —— 部门管理（左树右详情 + 抽屉表单 + 子部门表）
-// 行为事实来源：vanilla-html/src/pages/dept.ts（445 行，逐块对齐）。
-// 偏差记录（因果链）：
-// 1. 渲染模型：vanilla 全程 imperative（innerHTML + setAttribute 回写 + onLocaleChange 逐节点
 //    刷文案）；本模版声明式——tree/flat/selectedId/editingId/drawerOpen 全部 useState，树的
 //    data/expanded/selected、详情区、抽屉标题全部由 state 派生；useT() 订阅后整页重渲染，
 //    rules/label/placeholder/rules 文案随 locale 自动重算（dashboard 同款模式）
@@ -9,12 +6,7 @@
 //    oas-close 走 useOasEvent（AGENTS.md 第 1 条）；页头新建按钮为 light DOM 原生 click 直绑
 //    onClick；抽屉面板内取消/保存按钮按第 2 条例外直绑 addEventListener（panel 对原生事件
 //    stopPropagation，React 根委托收不到）
-// 3. 表单回填：vanilla openForm 时 fillForm 逐字段 setAttribute（含父级 tree-select 的
 //    options/expanded/value）；本模版在 open 边沿的 useEffect 做同样的事（字段非受控，value
-//    全走 attribute 与 vanilla 同一通道；「新增子部门」的父级预置经 formParentId state 对齐
-//    vanilla openForm(null, parent) 的 parentOverride 参数）；父级选项不随 locale 重建——
-//    vanilla refreshText 同样不调 refreshParentOptions（下次打开才重建）
-// 4. visible 受控：vanilla 靠组件自闭；本模版 visible 由 React state 单一持有，监听 oas-close
 //    回写 state（product-form 同款）
 // 5. 命令式 API 规避（批次 A oas-virtual-list.buffer 崩溃教训）：React 19 property 通道会遮蔽
 //    custom element 原型成员；本页对 oas-tree/oas-tree-select 只用 attribute（data 虽有

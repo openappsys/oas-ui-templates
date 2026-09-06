@@ -1,5 +1,4 @@
 // src/pages/settings/appearance-tab.tsx —— 外观 Tab：主题色/圆角/字体大小/表格密度/主题编辑器/重置
-// 逐项对齐 vanilla settings.ts 外观段：
 //   主题色即时写 --oas-color-primary 并按明暗分键（oas-admin.settings.theme.{light|dark}）存储，
 //   监听 document 'themechange' 换色；圆角写 --oas-radius-md；字号/密度调 applyFontSize()/applyDensity()；
 //   主题编辑器 token 变更持久化到 CUSTOM_TOKENS_KEY；重置清 4 键并 removeProperty。

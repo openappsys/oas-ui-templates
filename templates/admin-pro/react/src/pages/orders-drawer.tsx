@@ -1,19 +1,11 @@
 // src/pages/orders-drawer.tsx —— 订单快捷详情抽屉（orders 页行点击弹出）
-// 行为事实来源：vanilla-html/src/pages/orders.ts 的 drawer markup/fillDesc/renderAction/
 // openDrawer/order-detail-link/order-detail-action 段。
-// 偏差记录（因果链）：
-// 1. 渲染模型：vanilla 命令式填充（openDrawer 时逐节点写 textContent/innerHTML）；本模版
-//    声明式——抽屉内容由 row prop 派生，父组件 refresh 后 row 更新即自动重渲（对齐 vanilla
 //    「flow 后 refresh 再回填 tag/action」的可观察结果）
 // 2. 面板内原生 click 例外直绑（AGENTS.md 第 2 条）：「查看完整详情」链接与流程按钮位于
 //    oas-drawer panel 内，panel 对原生事件 stopPropagation，React 根委托收不到，故与
-//    vanilla 一样在元素上 addEventListener；handler 用 ref 持最新闭包，挂载时绑一次
-// 3. 跳转：vanilla 链接 href="#/order-detail"（hash 跳转）+ click 时写 sessionStorage
 //    'order-detail-id'；本模版路由支持 hash/history 双模式，改 preventDefault + react-router
 //    navigate('/order-detail')，sessionStorage 键名与写入时机逐字一致
-// 4. visible 受控：vanilla 靠组件自闭（遮罩/Esc 时自摘 visible）；本模版 visible 由 React
 //    state 单一持有，监听 oas-close 回写 state（product-form 同款）
-// 5. 操作按钮显隐：vanilla 命令式 hidden 属性切换；本模版由 flow 有无派生（oas-button 基类
 //    :host([hidden]) 生效，可观察结果一致）
 import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router'

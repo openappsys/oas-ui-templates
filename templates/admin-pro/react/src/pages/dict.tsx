@@ -1,21 +1,11 @@
 // src/pages/dict.tsx —— 字典管理（左类型列表 + 右键值表 + 双弹窗表单）
-// 行为事实来源：vanilla-html/src/pages/dict.ts（439 行，逐块对齐）。
-// 偏差记录（因果链）：
-// 1. 渲染模型：vanilla 全程 imperative（innerHTML + setAttribute 回写 + onLocaleChange 逐节点
 //    刷文案）；本模版声明式——types/counts/selectedTypeId/editingTypeId/editingItemId/
 //    loadedItems/modalOpen 全部 useState，类型列表/pane 标题/空态/弹窗标题全部由 state 派生；
 //    useT() 订阅后整页重渲染，rules/labels/placeholders/columns 随 locale 自动重算
 // 2. 事件绑定：oas-form 的 oas-submit、oas-modal 的 oas-close、popconfirm 的 oas-ok 走
 //    useOasEvent（AGENTS.md 第 1 条）；类型列表点击与表格行内编辑为 light DOM/composed 原生
-//    click 经容器 onClick 匹配（vanilla closest/composedPath 同款）；两个弹窗面板内的取消/
 //    保存按钮按第 2 条例外直绑 addEventListener（panel 对原生事件 stopPropagation）
 // 3. columns 含 render 函数（cellAction 返回真实 DOM 节点）→ property 通道（AGENTS.md 第 3 条
-//    例外），列定义按 locale 重建（vanilla renderItems 每次重设 columns 同款时机）
-// 4. 表单回填：vanilla openXxxForm 时逐字段 setAttribute；本模版在 open 边沿的 useEffect 做
-//    同样的事（字段非受控，value 全走 attribute，与 vanilla 同一通道）
-// 5. visible 受控：vanilla 靠组件自闭；本模版 visible 由 React state 单一持有，监听 oas-close
-//    回写 state（category 同款）；两个表单共用一个 saving 防抖（vanilla 同一个 saving 变量）
-// 6. 数据刷新编排：refresh 拉全量类型 + 逐类型计数后调 refreshItems（vanilla refresh 同序）；
 //    refreshItems 以显式 typeId 参数避免 React 异步闭包读到旧 selectedTypeId
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { TableColumn } from '@oas-ui/ui/data/table'
@@ -193,9 +183,7 @@ export default function DictPage() {
     for (const [cancel, save, form] of pairs) {
       const onCancel = () => setTypeModalOpen(false)
       const onSave = () => {
-        ;(
-          form?.shadowRoot?.querySelector('form') as HTMLFormElement | null
-        )?.requestSubmit()
+        ;(form?.shadowRoot?.querySelector('form') as HTMLFormElement | null)?.requestSubmit()
       }
       cancel?.addEventListener('click', onCancel)
       save?.addEventListener('click', onSave)
@@ -395,7 +383,9 @@ export default function DictPage() {
       <oas-modal ref={typeModalRef} data-testid="dict-type-modal" no-footer visible={typeModalOpen}>
         <div className="modal-body">
           <h2 id="dict-type-title">
-            {editingTypeId == null ? t('dict.newType') : t('dict.editType', { name: editingType?.name ?? '' })}
+            {editingTypeId == null
+              ? t('dict.newType')
+              : t('dict.editType', { name: editingType?.name ?? '' })}
           </h2>
           <oas-form ref={typeFormRef} rules={typeRules}>
             <div className="dict-form-body">
@@ -439,7 +429,9 @@ export default function DictPage() {
       <oas-modal ref={itemModalRef} data-testid="dict-item-modal" no-footer visible={itemModalOpen}>
         <div className="modal-body">
           <h2 id="dict-item-title">
-            {editingItemId == null ? t('dict.newItem') : t('dict.editItem', { label: editingItem?.label ?? '' })}
+            {editingItemId == null
+              ? t('dict.newItem')
+              : t('dict.editItem', { label: editingItem?.label ?? '' })}
           </h2>
           <oas-form ref={itemFormRef} rules={itemRules}>
             <div className="dict-form-body">

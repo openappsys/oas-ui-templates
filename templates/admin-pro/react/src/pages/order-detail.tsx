@@ -1,19 +1,10 @@
 // src/pages/order-detail.tsx —— 订单详情页（步骤条 + 描述列表 + 时间线 + 状态流转）
-// 行为事实来源：vanilla-html/src/pages/order-detail.ts（230 行，逐块对齐）。
-// 偏差记录（因果链）：
-// 1. 订单 id 获取：vanilla 的跳转方（orders 页抽屉「查看完整详情」链接）点击时写
 //    sessionStorage('order-detail-id') 后经 href="#/order-detail" 跳转（URL 不带 id 参数，
 //    hidden+parent 路由仅用于面包屑）；本模版 orders-drawer 以同键同时机写入 + navigate
-//   （'/order-detail'），URL 形态与 vanilla 一致，可观察行为逐字对齐
-// 2. 渲染模型：vanilla 命令式（load 后 renderAll 逐节点回填）；本模版声明式——order 状态
 //    驱动全部动态区（标题/标签/步骤/描述/时间线/操作），flow 成功后 setOrder(updated) 即最新
 // 3. 事件绑定：操作按钮位于 oas-card 内容区（非 drawer/modal panel），原生 click 用 React
-//    onClick；按钮 loading 属性在 handler 内人工 set/removeAttribute（vanilla 同款通道）
-// 4. 返回链接：vanilla 写死 href="#/orders"；本模版用 react-router 的 Link（hash/history
 //    双模式均正确，product-edit 同款）
-// 5. 文案刷新：vanilla onLocaleChange(refreshText) 逐节点替换；本模版 useT() 订阅后整页
 //    重渲染，步骤/描述/时间线/操作随 locale 自动重算
-// 6. load 竞态：effect 带 cancelled 守卫（StrictMode 双挂载下后到者生效，与 vanilla 单次
 //    load 语义一致）
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'

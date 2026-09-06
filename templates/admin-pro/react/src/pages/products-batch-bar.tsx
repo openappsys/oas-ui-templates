@@ -1,12 +1,9 @@
 // src/pages/products-batch-bar.tsx —— 商品批量操作栏（表格多选后出现：批量上下架 + 批量删除）
-// 行为事实来源：vanilla-html/src/pages/products.ts 的 batchBar 显隐段 / batchStatus / 批量删除
 // popconfirm oas-ok 段。
-// 偏差记录（因果链）：
 // 1. 执行逻辑（toggleProductStatus/removeProduct 循环、clearSelection、appMessage、refresh）
 //    留在父组件——它们依赖 rows/selected/refresh；本组件只负责呈现与事件接线
 // 2. 事件绑定：上下架按钮在 light DOM，原生 click 用 React onClick；oas-popconfirm 的
 //    oas-ok 是自定义事件，走 useOasEvent（AGENTS.md 第 1 条）
-// 3. 显隐：vanilla 手动切 hidden；本模版由父组件派生 hidden prop
 import { useRef } from 'react'
 import { useOasEvent } from '../hooks/use-oas-event'
 import { useT } from '../hooks/use-t'

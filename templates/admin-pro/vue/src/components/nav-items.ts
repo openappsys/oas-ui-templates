@@ -1,7 +1,5 @@
 // src/components/nav-items.ts —— 壳层菜单/命令面板 items 推导
-// 逐块对齐 vanilla-html/src/components/app-shell.ts 的 sidebarItems()/groupMenuItems()/userMenuItems()/buildCommandItems()
 // （与 react 版 src/components/nav-items.ts 逐字对齐，唯一差异：routeHref 改由 router/mode.ts
-//  提供、按路由双模式生成——react 版固定 hash 是双模式落地前的遗留，此处对齐 vanilla href()）
 import { currentLocale, t } from '../i18n'
 import { routeHref } from '../router/mode'
 import { appRoutes, type RouteGroup } from '../router/routes'

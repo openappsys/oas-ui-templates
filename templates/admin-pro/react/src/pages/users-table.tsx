@@ -1,15 +1,10 @@
 // src/pages/users-table.tsx —— 用户列表（oas-table + 空态覆盖层 + 行事件委托）
-// 行为事实来源：vanilla-html/src/pages/users.ts 的 COLUMNS/cellAction/renderTable/setEmpty 段。
-// 偏差记录（因果链）：
 // 1. columns 含 render 函数（返回真实 DOM 节点），JSON 序列化会丢函数，故走 property 通道
 //   （oas-table 的 columns setter 双通道均支持，AGENTS.md 第 3 条例外）；columns 用 useMemo
-//    按 locale + roles 重建（对齐 vanilla refreshText 里 renderTable 重设列的时机——
 //    角色筛选选项来自 roles，文案来自 t）
 // 2. 行事件：oas-row-click 自定义事件走 useOasEvent（AGENTS.md 第 1 条）；编辑按钮的原生
 //    click 是 composed 事件，能冒泡出 oas-table shadow 到 React 根委托（oas-table 不在
 //    drawer/modal 例外之列），故用容器 onClick + composedPath 匹配 .user-row-edit
-//   （对齐 vanilla fromPath 的 matches 语义）
-// 3. 空态：vanilla setEmpty 手动切 table-hidden 类与 overlay 的 hidden；本模版由 empty
 //    prop 派生（is-empty/table-hidden/hidden 三处同一事实来源）
 import { useMemo } from 'react'
 import type { TableColumn } from '@oas-ui/ui/data/table'

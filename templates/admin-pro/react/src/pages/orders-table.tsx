@@ -1,14 +1,9 @@
 // src/pages/orders-table.tsx —— 订单列表（oas-table + 空态覆盖层 + 行事件）
-// 行为事实来源：vanilla-html/src/pages/orders.ts 的 TABLE_COLUMNS/statusCell/moneyCell/
 // itemSummary/renderTable/setEmpty 段。
-// 偏差记录（因果链）：
 // 1. columns 含 render 函数（返回真实 DOM 节点），JSON 序列化会丢函数，故走 property 通道
 //   （oas-table 的 columns setter 双通道均支持，AGENTS.md 第 3 条例外）；columns 用 useMemo
-//    按 locale 重建（对齐 vanilla renderTable 每次重设 columns 的时机——文案来自 t）
-// 2. 空态：vanilla setEmpty 手动切 is-empty 类、data='[]' 与 overlay 的 hidden；本模版由
 //    empty prop 派生（is-empty/hidden 两处同一事实来源，data 由父组件传入的 dataJson 表达）
 // 3. 行事件：oas-row-click 自定义事件走 useOasEvent（AGENTS.md 第 1 条），detail.row 即
-//    完整 OrderRow（vanilla data 通道写入的就是原始行）
 // 4. 清筛选按钮为 light DOM 原生 click，直绑 onClick
 import { useMemo } from 'react'
 import type { TableColumn } from '@oas-ui/ui/data/table'

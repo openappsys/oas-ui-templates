@@ -1,15 +1,10 @@
 // src/pages/users.tsx —— 用户管理（表格 + 搜索 + 详情 descriptions + modal 表单 + 角色权限）
-// 行为事实来源：vanilla-html/src/pages/users.ts（553 行，逐块对齐）。
-// 偏差记录（因果链）：
-// 1. 渲染模型：vanilla 全程 imperative（innerHTML + setAttribute 回写）；本模版声明式——
 //    rows/roles/menuTree/keyword/editingId/formOpen/detailOpen 全部 useState，表格 data/
 //    空态/按钮禁用全部由 state 派生；refresh() 仅重拉数据 setState，重渲染即最新
 // 2. 事件绑定：oas-input 的 oas-input/oas-clear 自定义事件走 useOasEvent（AGENTS.md 第 1 条）；
 //    新建/刷新/清筛选按钮为 light DOM 原生 click，直绑 onClick；表格行事件与两个弹窗的
 //    事件接线见 ./users-table.tsx / ./user-form.tsx / ./user-detail.tsx 头注释
-// 3. 表格 current/filter-values/loading 属性：vanilla 直接 setAttribute/removeAttribute
 //   （组件受控集合外的人工复位），本模版经 tableRef 做同样的事，不纳入 state
-// 4. 文案刷新：vanilla onLocaleChange(refreshText) 逐节点替换；本模版 useT() 订阅后整页
 //    重渲染，columns/options/标签随 locale 自动重算（dashboard 同款模式）
 // 5. 子组件拆分（单文件 ≤400 行纪律）：表格 ./users-table.tsx、表单弹窗 ./user-form.tsx、
 //    详情弹窗 ./user-detail.tsx

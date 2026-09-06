@@ -1,10 +1,7 @@
 // src/router/mode.ts —— 路由模式：'hash'（默认，#/path）或 'history'（/path，需服务器 SPA 回退）
-// 移植自 vanilla-html/src/router/mode.ts，localStorage 键名逐字一致（oas-admin.router-mode）。
-// 差异（因果链）：vanilla 是自研路由器，navigate/href/onRouteChange 都走本模块；
 // 本模版用 vue-router，本模块保留「读/写模式 + 链接 href 生成 + 切换后整页刷新」，
 // 由 router/index.ts 在创建时按存储值二选一 createWebHashHistory/createWebHistory。
 // 另：react 版 nav-items.routeHref 固定 hash 是双模式落地前的遗留，本模版 routeHref 即按模式
-// 生成（对齐 vanilla href()，history 模式下面包屑/navigation 卡片链接才能指对）。
 export type RouterMode = 'hash' | 'history'
 
 const KEY = 'oas-admin.router-mode'

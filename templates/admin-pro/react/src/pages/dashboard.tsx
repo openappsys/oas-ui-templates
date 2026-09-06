@@ -1,18 +1,10 @@
 // src/pages/dashboard.tsx —— 仪表盘：统计卡 + 趋势/订单构成图表 + 最近订单 + 热销 Top5 + 快捷操作
-// 行为事实来源：vanilla-html/src/pages/dashboard.ts（逐块对齐）。
-// DOM 结构/类名与 vanilla 产出的 DOM 对齐（app.css 仪表盘样式依赖这些类名）。
-// 偏差记录（因果链）：
-// 1. 渲染模型：vanilla 用 innerHTML 拼装 + 手动 setTrendData/setDonutData/setRecentOrders 回写；
 //    本模版改为「range 状态 → 派生 JSON attribute」的声明式渲染，7/14/30 切换只 setRange，
 //    图表 data、订单表 data、donut 图例随重渲染自动联动（oas-chart/oas-table 的 data setter
 //    均接受 JSON 字符串，见组件源码 normalizeData/set data）
-// 2. 刷新按钮：vanilla 手动重跑三个回写函数；本模版数据全部由 state 派生，重渲染即最新，
-//    故仅保留 appMessage.success 提示（vanilla 的刷新也不重新拉 Top5，保持一致）
 // 3. 事件绑定：oas-segmented 的 oas-change 走 useOasEvent（React 19 不绑 kebab 事件，见 AGENTS.md）；
 //    刷新/导出/查看全部为原生 click，直绑 onClick（目标不在 drawer/modal panel 内）
-// 4. 快捷操作 href：vanilla 硬编码 '#/xxx'；本模版经 routeHref()（router/mode.ts，
 //    hash/history 双模式按存储值生成），与壳层导航同一出处
-// 5. 文案刷新：vanilla 用 onLocaleChange(refreshText) 逐节点替换；本模版 useT() 订阅 locale
 //    后整页重渲染，rules/columns/options 等 JSON attribute 随之重算
 import { useEffect, useRef, useState } from 'react'
 import { useOasEvent } from '../hooks/use-oas-event'

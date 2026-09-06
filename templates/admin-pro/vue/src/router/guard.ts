@@ -1,5 +1,3 @@
-// src/router/guard.ts —— 守卫三态，语义对齐 vanilla router.ts 的 guard()
-// 差异：vanilla 直接读模块级 session.user；本实现把 user 作为入参，便于 Vue 侧以订阅值驱动
 import { hasAccess, type User } from '../store/session'
 import { appRoutes } from './routes'
 

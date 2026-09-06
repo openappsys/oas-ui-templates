@@ -1,16 +1,9 @@
 // src/pages/product-edit.tsx —— 商品编辑页（page 表单模式：oas-page-header + 表单）
-// 行为事实来源：vanilla-html/src/pages/product-edit.ts（186 行，逐块对齐）。
-// 偏差记录（因果链）：
-// 1. 渲染模型：vanilla innerHTML + init() 异步回填（setAttribute 逐字段）；本模版声明式
 //    结构 + 数据就绪边沿的 useEffect 做同款 setAttribute 回填（表单字段非受控，
-//    value 全走 attribute，与 vanilla 同一通道）
 // 2. 事件绑定：pe-save/pe-cancel 按钮在 light DOM（非 drawer/modal panel），原生 click
 //    用 React onClick；oas-submit 自定义事件走 useOasEvent（AGENTS.md 第 1 条）
-// 3. 返回链接：vanilla 写死 href="#/products"；本模版路由支持 hash/history 双模式，
 //    改用 react-router 的 Link（to="/products"），两模式均正确
-// 4. 文案刷新：vanilla onLocaleChange(refreshText) 逐节点替换；本模版 useT() 订阅后
 //    整页重渲染，title/rules/placeholder/标签随 locale 自动重算（products 同款模式）
-// 5. 取消按钮：vanilla location.hash='/products'；本模版 navigate('/products')
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import '../styles/pages/products.css'

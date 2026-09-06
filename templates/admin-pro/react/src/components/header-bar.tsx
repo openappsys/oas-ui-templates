@@ -1,5 +1,4 @@
 // src/components/header-bar.tsx —— 顶栏：☰/logo/（top-head 菜单槽）/搜索/全屏/主题点/语言/通知 badge/用户菜单
-// 结构、id、类名逐字对齐 vanilla app-shell.ts 的 <header class="app-header"> 模板
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useNavigate } from 'react-router'
 import { useOasEvent } from '../hooks/use-oas-event'
@@ -138,7 +137,11 @@ export function HeaderBar({
       />
       {/* 增强（偏离 vanilla）：vanilla 的 logo 是纯展示 span；此处包一层链接，点击回站点首页（门户 /）。
           用 <a href="/"> 而非路由内跳转——目标是「离开模版回到门户」，不是模版内路由 */}
-      <a className="oas-logo" href="/" style={{ cursor: 'pointer', textDecoration: 'none', color: 'inherit' }}>
+      <a
+        className="oas-logo"
+        href="/"
+        style={{ cursor: 'pointer', textDecoration: 'none', color: 'inherit' }}
+      >
         <span className="oas-logo-badge">OAS</span>
         <span className="oas-logo-word">OAS Admin Pro</span>
       </a>
