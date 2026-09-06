@@ -15,12 +15,7 @@ import { createOrder } from '../data/orders'
 import { useOasEvent } from '../hooks/use-oas-event'
 import { useT } from '../hooks/use-t'
 import { appMessage } from '../lib/app-message'
-import {
-  FormStepBasic,
-  FormStepConfirm,
-  FormStepProducts,
-  formatMoney,
-} from './form-steps'
+import { FormStepBasic, FormStepConfirm, FormStepProducts, formatMoney } from './form-steps'
 
 const PHONE_RE = /^1\d{10}$/
 

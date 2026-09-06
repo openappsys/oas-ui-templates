@@ -65,11 +65,7 @@ export function toTreeNodes(nodes: MenuTree[]): Array<Record<string, unknown>> {
 }
 
 /** vanilla insertChild */
-export function insertChild(
-  nodes: MenuTree[],
-  parentId: number | null,
-  child: MenuTree,
-): void {
+export function insertChild(nodes: MenuTree[], parentId: number | null, child: MenuTree): void {
   if (parentId == null) {
     nodes.push(child)
     return

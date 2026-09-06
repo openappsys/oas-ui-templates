@@ -35,10 +35,12 @@ test('admin 订单管理：tabs 筛选只显对应状态 + 抽屉状态流转', 
   await expect(page.getByTestId('orders-tabs')).toHaveAttribute('active', 'pending')
   const rows = page.getByTestId('orders-list').locator('tbody tr[part="row"]')
   // oas-table 的 data 属性重渲染为异步——等行集全部变为「待支付」后再取行数（替代裸 count 竞态）
-  await expect.poll(async () => {
-    const texts = await rows.allTextContents()
-    return texts.length > 0 && texts.every((t) => t.includes('待支付'))
-  }).toBe(true)
+  await expect
+    .poll(async () => {
+      const texts = await rows.allTextContents()
+      return texts.length > 0 && texts.every((t) => t.includes('待支付'))
+    })
+    .toBe(true)
   const count = await rows.count()
   expect(count).toBeGreaterThan(0)
   for (let i = 0; i < count; i++) {
@@ -80,10 +82,7 @@ test('admin 隐藏路由归属父级页签：订单详情不新增独立页签',
   await expect(page.getByTestId('page-tabs')).toHaveAttribute('active', '/orders')
   await expect(page.getByTestId('page-tabs').locator('[role="tab"]')).toHaveCount(2)
   await expect(
-    page
-      .getByTestId('page-tabs')
-      .locator('[role="tab"]')
-      .filter({ hasText: '订单管理' }),
+    page.getByTestId('page-tabs').locator('[role="tab"]').filter({ hasText: '订单管理' }),
   ).toHaveAttribute('aria-selected', 'true')
   expect(errors).toEqual([])
 })

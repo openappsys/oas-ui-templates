@@ -199,7 +199,10 @@ export function MenusFormDrawer({
       no-footer
       visible={open}
     >
-      <oas-form ref={formRef} rules={JSON.stringify({ name: [{ required: true, message: t('menus.rule.name') }] })}>
+      <oas-form
+        ref={formRef}
+        rules={JSON.stringify({ name: [{ required: true, message: t('menus.rule.name') }] })}
+      >
         <div className="menu-form-body">
           <div className="form-field">
             <label className="form-label">
