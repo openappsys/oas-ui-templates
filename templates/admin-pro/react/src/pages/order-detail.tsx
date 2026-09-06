@@ -6,10 +6,10 @@
 //    双模式均正确，product-edit 同款）
 //    重渲染，步骤/描述/时间线/操作随 locale 自动重算
 //    load 语义一致）
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router'
-import { getOrder, updateOrderStatus } from '../data/orders'
 import type { OrderRow, OrderStatus } from '../data/orders'
+import { useOrder, useOrderStatusMutation } from '../hooks/use-orders'
 import { useT } from '../hooks/use-t'
 import { appMessage } from '../lib/app-message'
 import { statusLabel, tagTypeFor } from './orders-table'
@@ -73,22 +73,12 @@ function buildTimeline(order: OrderRow, t: TFunc): TimelineNode[] {
 export default function OrderDetailPage() {
   const { t } = useT()
   const [id] = useState(() => sessionStorage.getItem('order-detail-id') ?? '')
-  const [order, setOrder] = useState<OrderRow | null>(null)
-  const [missing, setMissing] = useState(false)
 
-  useEffect(() => {
-    let cancelled = false
-    void (async () => {
-      const row = await getOrder(id)
-      if (cancelled) return
-      if (!row) setMissing(true)
-      else setOrder(row)
-    })()
-    return () => {
-      cancelled = true
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id])
+  // 详情数据走 query 缓存：状态流转 mutation 成功后失效订单域，重取即最新
+  const { data, isSuccess } = useOrder(id)
+  const order: OrderRow | null = data ?? null
+  const missing = isSuccess && order === null
+  const flowMutation = useOrderStatusMutation()
 
   const onAction = async (e: React.MouseEvent) => {
     if (!order) return
@@ -96,14 +86,13 @@ export default function OrderDetailPage() {
     const target = button.dataset.target as OrderStatus | undefined
     if (!target) return
     button.setAttribute('loading', '')
-    const updated = await updateOrderStatus(order.id, target)
+    const updated = await flowMutation.mutateAsync({ id: order.id, target })
     button.removeAttribute('loading')
     if (!updated) {
       appMessage.error(t('orders.notFound'))
       return
     }
     appMessage.success(t('orders.flowApplied', { action: button.textContent }))
-    setOrder(updated)
   }
 
   const flow = order ? flowFor(order.status, t) : undefined

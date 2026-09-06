@@ -1,7 +1,8 @@
 // src/pages/dept.tsx —— 部门管理（左树右详情 + 抽屉表单 + 子部门表）
-//    刷文案）；本模版声明式——tree/flat/selectedId/editingId/drawerOpen 全部 useState，树的
-//    data/expanded/selected、详情区、抽屉标题全部由 state 派生；useT() 订阅后整页重渲染，
-//    rules/label/placeholder/rules 文案随 locale 自动重算（dashboard 同款模式）
+//    本模版声明式——平铺列表/树走 useDeptList/useDeptTree（TanStack Query 缓存），
+//    selectedState/editingId/drawerOpen 全部 useState，树的 data/expanded/selected、详情区、
+//    抽屉标题全部由 state 派生；useT() 订阅后整页重渲染，rules/label/placeholder 文案随
+//    locale 自动重算（dashboard 同款模式）；CRUD 走 mutation 失效后自动重取
 // 2. 事件绑定：oas-tree 的 oas-select/oas-node-render、oas-form 的 oas-submit、oas-drawer 的
 //    oas-close 走 useOasEvent页头新建按钮为 light DOM 原生 click 直绑
 //    onClick；抽屉面板内取消/保存按钮按第 2 条例外直绑 addEventListener（panel 对原生事件
@@ -12,11 +13,11 @@
 //    custom element 原型成员；本页对 oas-tree/oas-tree-select 只用 attribute（data 虽有
 //    property setter 但其实现就是 setAttribute 反射），不触碰任何命令式成员
 // 6. 子组件拆分（单文件 ≤400 行纪律）：详情卡 ./dept-detail.tsx（描述/操作/子部门表）
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import '../styles/pages/dept.css'
-import { createDept, listDepts, removeDept, treeDepts, updateDept } from '../data/system'
 import type { DeptNode, DeptTree } from '../data/system'
 import { useOasEvent } from '../hooks/use-oas-event'
+import { useDeptList, useDeptMutations, useDeptTree } from '../hooks/use-system'
 import { useT } from '../hooks/use-t'
 import { appMessage } from '../lib/app-message'
 import { DeptDetail } from './dept-detail'
@@ -114,9 +115,7 @@ function buildParentOptions(
 
 export default function DeptPage() {
   const { t } = useT()
-  const [tree, setTree] = useState<DeptTree[]>([])
-  const [flat, setFlat] = useState<DeptNode[]>([])
-  const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [selectedState, setSelectedState] = useState<number | null>(null)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [formParentId, setFormParentId] = useState<number | null>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -131,16 +130,13 @@ export default function DeptPage() {
   const cancelRef = useRef<HTMLElement | null>(null)
   const saveRef = useRef<HTMLElement | null>(null)
 
-  const refresh = useCallback(async () => {
-    const [rows, tr] = await Promise.all([listDepts(), treeDepts()])
-    setFlat(rows)
-    setTree(tr)
-    setSelectedId((prev) => (prev != null && findNode(tr, prev) ? prev : (tr[0]?.id ?? null)))
-  }, [])
-
-  useEffect(() => {
-    void refresh()
-  }, [refresh])
+  // 平铺列表/树走 query 缓存（变更后双 key 一并失效重取）
+  const flat = useDeptList().data ?? []
+  const tree = useDeptTree().data ?? []
+  // 选中节点派生：state 选中已不存在（被删）则回落第一个
+  const selectedId =
+    selectedState != null && findNode(tree, selectedState) ? selectedState : (tree[0]?.id ?? null)
+  const mutations = useDeptMutations()
 
   const selectedNode = selectedId != null ? findNode(tree, selectedId) : null
   const editingNode = editingId != null ? findNode(tree, editingId) : null
@@ -203,18 +199,17 @@ export default function DeptPage() {
       appMessage.error(t('dept.hasChildren'))
       return
     }
-    const ok = await removeDept(id)
+    const ok = await mutations.remove.mutateAsync(id)
     if (!ok) {
       appMessage.error(t('dept.notFound'))
       return
     }
     appMessage.success(t('common.deleted'))
-    setSelectedId(null)
-    void refresh()
+    setSelectedState(null)
   }
 
   useOasEvent<{ key: string }>(treeRef, 'oas-select', (d) => {
-    setSelectedId(Number(d.key))
+    setSelectedState(Number(d.key))
   })
   useOasEvent<{ node: DeptTreeNode; element: HTMLElement }>(treeRef, 'oas-node-render', (d) => {
     const badge = d.element.querySelector<HTMLElement>('.dept-member-badge')
@@ -238,15 +233,17 @@ export default function DeptPage() {
         return
       }
       if (editingId == null) {
-        await createDept({ name, parentId, members })
+        await mutations.create.mutateAsync({ name, parentId, members })
         appMessage.success(t('common.created'))
       } else {
-        const updated = await updateDept(editingId, { name, parentId, members })
+        const updated = await mutations.update.mutateAsync({
+          id: editingId,
+          data: { name, parentId, members },
+        })
         if (!updated) appMessage.error(t('dept.notFound'))
         else appMessage.success(t('common.saved'))
       }
       setDrawerOpen(false)
-      void refresh()
     } finally {
       savingRef.current = false
     }

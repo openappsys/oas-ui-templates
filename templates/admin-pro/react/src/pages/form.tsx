@@ -7,12 +7,12 @@
 //    current 复位（组件 goto 已自写 current，React vdom 值未变不会自动回写）
 // 4. checkbox-group 的 oas-change 会收到内部 checkbox 冒泡的同名事件，须按 ev.target 过滤
 // 5. 提交：createOrder → sessionStorage 'form-result' → navigate('/result')
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
-import { listProducts } from '../data/products'
 import type { ProductRow } from '../data/products'
-import { createOrder } from '../data/orders'
 import { useOasEvent } from '../hooks/use-oas-event'
+import { useCreateOrderMutation } from '../hooks/use-orders'
+import { useProductsList } from '../hooks/use-products'
 import { useT } from '../hooks/use-t'
 import { appMessage } from '../lib/app-message'
 import { FormStepBasic, FormStepConfirm, FormStepProducts, formatMoney } from './form-steps'
@@ -40,8 +40,12 @@ export default function FormPage() {
   const [urgent, setUrgent] = useState(false)
   const [expectDate, setExpectDate] = useState('')
   const [confirmed, setConfirmed] = useState(false)
-  const [productsData, setProductsData] = useState<ProductRow[]>([])
   const [errors, setErrors] = useState<Record<string, string>>({})
+
+  // 商品清单走 query 缓存（与商品页同一份 key），按价格升序派生
+  const { data } = useProductsList()
+  const productsData = useMemo(() => [...(data ?? [])].sort((a, b) => a.price - b.price), [data])
+  const createOrderMutation = useCreateOrderMutation()
 
   const stepsRef = useRef<HTMLElement | null>(null)
   const customerRef = useRef<HTMLElement | null>(null)
@@ -53,12 +57,6 @@ export default function FormPage() {
   const dateRef = useRef<HTMLElement | null>(null)
   const confirmRef = useRef<HTMLElement | null>(null)
   const submitRef = useRef<HTMLElement | null>(null)
-
-  useEffect(() => {
-    void listProducts().then((rows) => {
-      setProductsData([...rows].sort((a, b) => a.price - b.price))
-    })
-  }, [])
 
   const productById = (id: string): ProductRow | undefined =>
     productsData.find((p) => p.id === Number(id))
@@ -134,7 +132,7 @@ export default function FormPage() {
     const amount = items.reduce((sum, p) => sum + p.price, 0) * quantity
     submitRef.current?.setAttribute('loading', '')
     try {
-      const order = await createOrder({
+      const order = await createOrderMutation.mutateAsync({
         customer: customer.trim(),
         amount,
         status: 'pending',

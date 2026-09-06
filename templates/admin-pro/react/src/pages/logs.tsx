@@ -11,9 +11,9 @@
 //    组件原型方法 buffer()（字符串赋值），实测崩溃；详见挂载 effect 处注释
 import { useEffect, useMemo, useRef, useState } from 'react'
 import '../styles/pages/logs.css'
-import { listLogs } from '../data/logs'
 import type { LogEntry, LogLevel } from '../data/logs'
 import { useOasEvent } from '../hooks/use-oas-event'
+import { useLogsAll, useLogsFiltered } from '../hooks/use-logs'
 import { useT } from '../hooks/use-t'
 import { appMessage } from '../lib/app-message'
 import {
@@ -29,8 +29,6 @@ import {
 
 export default function LogsPage() {
   const { t, locale } = useT()
-  const [rows, setRows] = useState<LogEntry[]>([])
-  const [filtered, setFiltered] = useState<LogEntry[]>([])
   const [level, setLevel] = useState<LogLevel | 'all'>('all')
   const [keyword, setKeyword] = useState('')
   const [dateRange, setDateRange] = useState<[string, string] | null>(null)
@@ -45,25 +43,11 @@ export default function LogsPage() {
   const anchorRef = useRef<HTMLElement | null>(null)
   const modalRef = useRef<HTMLElement | null>(null)
 
-  useEffect(() => {
-    let cancelled = false
-    void listLogs().then((list) => {
-      if (!cancelled) setRows(list)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  useEffect(() => {
-    let cancelled = false
-    void listLogs({ level, keyword, dateRange: dateRange ?? undefined }).then((list) => {
-      if (!cancelled) setFiltered(list)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [level, keyword, dateRange, rows])
+  // 全量（统计卡）与过滤集（虚拟列表）拆两个查询：过滤条件进 key，变化即换 key 重查
+  const { data: allRows } = useLogsAll()
+  const { data: filteredData } = useLogsFiltered({ level, keyword, dateRange: dateRange ?? undefined })
+  const rows = allRows ?? []
+  const filtered = filteredData ?? []
 
   useEffect(() => {
     const vlist = vlistRef.current as (HTMLElement & { items?: LogEntry[] }) | null

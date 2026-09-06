@@ -5,8 +5,8 @@
 //    声明式 JSON attribute 随 categories state 重算，回填仅写 value attribute
 import { useEffect, useRef } from 'react'
 import type { ProductRow } from '../data/products'
-import { createProduct, updateProduct } from '../data/products'
 import { useOasEvent } from '../hooks/use-oas-event'
+import { useProductMutations } from '../hooks/use-products'
 import { useT } from '../hooks/use-t'
 import { appMessage } from '../lib/app-message'
 
@@ -49,6 +49,7 @@ export function ProductForm({
   onSaved,
 }: ProductFormProps) {
   const { t } = useT()
+  const { create, update } = useProductMutations()
   const surfaceRef = useRef<HTMLElement | null>(null)
   const formRef = useRef<HTMLElement | null>(null)
   const nameRef = useRef<HTMLElement | null>(null)
@@ -121,10 +122,10 @@ export function ProductForm({
         created: dateRef.current?.getAttribute('value') || today(),
       }
       if (editingId == null) {
-        await createProduct(payload)
+        await create.mutateAsync(payload)
         appMessage.success(t('common.created'))
       } else {
-        await updateProduct(editingId, payload)
+        await update.mutateAsync({ id: editingId, payload })
         appMessage.success(t('common.saved'))
       }
       onSaved()

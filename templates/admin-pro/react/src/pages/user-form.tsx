@@ -5,9 +5,9 @@
 //    attribute 随 roles state 重算，回填仅写 value attribute
 import { useEffect, useMemo, useRef } from 'react'
 import type { UserRow, UserRole, UserStatus } from '../data/users'
-import { createUser, updateUser } from '../data/users'
 import type { RoleRow } from '../data/system'
 import { useOasEvent } from '../hooks/use-oas-event'
+import { useUserMutations } from '../hooks/use-users'
 import { useT } from '../hooks/use-t'
 import { appMessage } from '../lib/app-message'
 
@@ -38,6 +38,7 @@ function roleEnumFor(roleRow: RoleRow | undefined): UserRole {
 
 export function UserForm({ open, editingId, editing, roles, onClose, onSaved }: UserFormProps) {
   const { t } = useT()
+  const { create, update } = useUserMutations()
   const surfaceRef = useRef<HTMLElement | null>(null)
   const formRef = useRef<HTMLElement | null>(null)
   const nameRef = useRef<HTMLElement | null>(null)
@@ -96,7 +97,7 @@ export function UserForm({ open, editingId, editing, roles, onClose, onSaved }: 
       const roleRow = roleId != null ? roleMap.get(roleId) : undefined
       const role = roleEnumFor(roleRow)
       if (editingId == null) {
-        await createUser({
+        await create.mutateAsync({
           name: values.name,
           email: values.email,
           role,
@@ -105,12 +106,15 @@ export function UserForm({ open, editingId, editing, roles, onClose, onSaved }: 
         })
         appMessage.success(t('common.created'))
       } else {
-        const updated = await updateUser(editingId, {
-          name: values.name,
-          email: values.email,
-          role,
-          roleId,
-          status: values.status,
+        const updated = await update.mutateAsync({
+          id: editingId,
+          data: {
+            name: values.name,
+            email: values.email,
+            role,
+            roleId,
+            status: values.status,
+          },
         })
         if (!updated) {
           appMessage.error(t('users.notFound'))

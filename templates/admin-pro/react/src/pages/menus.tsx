@@ -1,16 +1,18 @@
 // src/pages/menus.tsx —— 权限管理（左树右详情 + 抽屉表单，纯内存树）
-// 1. 状态：tree/selectedId/editingId/formParentId/drawerOpen 全部 useState，树的
-//    data/expanded/selected、详情区、抽屉标题全部由 state 派生；useT() 订阅后整页重渲染
+// 1. 数据：初始树走 useMenuTree（TanStack Query 缓存，users 页权限面板共享同一份）；
+//    selectedId/editingId/formParentId/drawerOpen 全部 useState，树的 data/expanded/
+//    selected、详情区、抽屉标题全部由 state 派生；useT() 订阅后整页重渲染
 // 2. 事件绑定：oas-tree 的 oas-select 走 useOasEvent；页头新建按钮为 light DOM 原生
 //    click 直绑 onClick；抽屉表单的 radio 切换/perms 自动补全/取消保存接线在
 //    ./menus-form-drawer.tsx，本页只做提交校验与树变更编排（校验失败不关抽屉）
-// 3. 树数据为纯内存可变结构：变更后以 setTree([...tree]) 触发重渲染
+// 3. 树数据为纯内存可变结构：变更后以 setTree([...tree]) 触发重渲染（本页无服务端
+//    持久化，故不走 mutation/invalidate，仅初载进缓存）
 // 4. 子组件拆分（单文件 ≤400 行纪律）：树助手 ./menus-tree.ts、抽屉表单
 //    ./menus-form-drawer.tsx、详情卡 ./menus-detail.tsx
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { treeMenus } from '../data/system'
-import type { MenuTree, MenuType } from '../data/system'
+import type { MenuTree } from '../data/system'
 import { useOasEvent } from '../hooks/use-oas-event'
+import { useMenuTree } from '../hooks/use-system'
 import { useT } from '../hooks/use-t'
 import { appMessage } from '../lib/app-message'
 import { MenusDetail } from './menus-detail'
@@ -31,12 +33,13 @@ export default function MenusPage() {
 
   const treeRef = useRef<HTMLElement | null>(null)
 
+  // 初载/缓存命中即播种本地可变树（本页树变更为纯内存操作，不回写缓存）
+  const { data } = useMenuTree()
   useEffect(() => {
-    void treeMenus().then((rows) => {
-      setTree(rows)
-      setSelectedId(rows[0]?.id ?? null)
-    })
-  }, [])
+    if (!data) return
+    setTree(data)
+    setSelectedId(data[0]?.id ?? null)
+  }, [data])
 
   const selectedNode = selectedId != null ? findNode(tree, selectedId) : null
   const editingNode = editingId != null ? findNode(tree, editingId) : null

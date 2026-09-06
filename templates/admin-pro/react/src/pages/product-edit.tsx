@@ -3,20 +3,14 @@
 // 2. 事件绑定：pe-save/pe-cancel 按钮在 light DOM（非 drawer/modal panel），原生 click
 //    用 React onClick；oas-submit 自定义事件走 useOasEvent//    改用 react-router 的 Link（to="/products"），两模式均正确
 //    整页重渲染，title/rules/placeholder/标签随 locale 自动重算（products 同款模式）
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import '../styles/pages/products.css'
-import { listCategories } from '../data/categories'
-import { createProduct, getProduct, updateProduct } from '../data/products'
 import type { ProductRow } from '../data/products'
 import { useOasEvent } from '../hooks/use-oas-event'
+import { useCategories, useProduct, useProductMutations } from '../hooks/use-products'
 import { useT } from '../hooks/use-t'
 import { appMessage } from '../lib/app-message'
-
-interface Option {
-  label: string
-  value: string
-}
 
 interface FormValues {
   name: string
@@ -37,8 +31,16 @@ export default function ProductEditPage() {
     const rawId = sessionStorage.getItem('product-edit-id')
     return rawId ? Number(rawId) : null
   })
-  const [editing, setEditing] = useState<ProductRow | null>(null)
-  const [catOptions, setCatOptions] = useState<Option[]>([])
+
+  // 分类/商品详情/保存全部走 query/mutation 缓存层
+  const { data: cats } = useCategories()
+  const catOptions = useMemo(
+    () => (cats ?? []).map((c) => ({ label: c.name, value: c.name })),
+    [cats],
+  )
+  const productQuery = useProduct(id)
+  const editing: ProductRow | null = productQuery.data ?? null
+  const { create, update } = useProductMutations()
 
   const formRef = useRef<HTMLElement | null>(null)
   const nameRef = useRef<HTMLElement | null>(null)
@@ -48,33 +50,22 @@ export default function ProductEditPage() {
   const dateRef = useRef<HTMLElement | null>(null)
   const savingRef = useRef(false)
 
+  // 数据就绪边沿回填（字段非受控，与原异步加载完成后的 setAttribute 同时机）：
+  // 新建=分类就绪即填；编辑=分类与商品详情都就绪再填
   useEffect(() => {
-    let cancelled = false
-    void (async () => {
-      const cats = await listCategories()
-      if (cancelled) return
-      const opts = cats.map((c) => ({ label: c.name, value: c.name }))
-      setCatOptions(opts)
-      let row: ProductRow | null = null
-      if (id && Number.isFinite(id)) {
-        row = await getProduct(id)
-        if (cancelled) return
-        if (!row) appMessage.error(t('products.notFound'))
-      }
-      setEditing(row)
-      const fallbackCat =
-        row && opts.some((c) => c.value === row.category) ? row.category : (opts[0]?.value ?? '')
-      nameRef.current?.setAttribute('value', row?.name ?? '')
-      catRef.current?.setAttribute('value', fallbackCat)
-      priceRef.current?.setAttribute('value', row ? String(row.price) : '')
-      stockRef.current?.setAttribute('value', row ? String(row.stock) : '')
-      dateRef.current?.setAttribute('value', row?.created ?? today())
-    })()
-    return () => {
-      cancelled = true
-    }
+    if (!catOptions.length) return
+    if (id != null && productQuery.isPending) return
+    const row = editing
+    if (id != null && productQuery.isSuccess && !row) appMessage.error(t('products.notFound'))
+    const fallbackCat =
+      row && catOptions.some((c) => c.value === row.category) ? row.category : (catOptions[0]?.value ?? '')
+    nameRef.current?.setAttribute('value', row?.name ?? '')
+    catRef.current?.setAttribute('value', fallbackCat)
+    priceRef.current?.setAttribute('value', row ? String(row.price) : '')
+    stockRef.current?.setAttribute('value', row ? String(row.stock) : '')
+    dateRef.current?.setAttribute('value', row?.created ?? today())
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id])
+  }, [catOptions, productQuery.status])
 
   const onSave = () => {
     ;(formRef.current?.shadowRoot?.querySelector('form') as HTMLFormElement | null)?.requestSubmit()
@@ -99,11 +90,11 @@ export default function ProductEditPage() {
         created: dateRef.current?.getAttribute('value') || today(),
       }
       if (editing) {
-        const updated = await updateProduct(editing.id, payload)
+        const updated = await update.mutateAsync({ id: editing.id, payload })
         if (!updated) appMessage.error(t('products.notFound'))
         else appMessage.success(t('common.saved'))
       } else {
-        await createProduct(payload)
+        await create.mutateAsync(payload)
         appMessage.success(t('common.created'))
       }
       navigate('/products')

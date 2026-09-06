@@ -19,19 +19,13 @@
 //    保留 JSX 声明式 hidden 作首渲染兜底，useEffect 在提交后（晚于 React 的 attribute 补丁
 //    与组件同步 update）以 pager.hidden 属性赋值命令式补写，依赖覆盖 hidden 全部输入
 //    （view/filtered.length/current）+ locale（基类切语言自刷 update 同样摘 hidden）
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import '../styles/pages/products.css'
-import { listCategories } from '../data/categories'
-import {
-  listProducts,
-  removeProduct,
-  stockLevel,
-  toggleProductStatus,
-  updateProduct,
-} from '../data/products'
+import { stockLevel } from '../data/products'
 import type { ProductRow } from '../data/products'
 import { useOasEvent } from '../hooks/use-oas-event'
+import { useCategories, useProductMutations, useProductsList } from '../hooks/use-products'
 import { useT } from '../hooks/use-t'
 import { appMessage } from '../lib/app-message'
 import { readFormMode, readPageSize } from '../settings-init'
@@ -40,7 +34,6 @@ import { session } from '../store/session'
 import { readProductColumns } from './product-columns'
 import type { ProductColumnKey } from './product-columns'
 import { ProductForm } from './product-form'
-import type { Option } from './product-form'
 import { ProductsBatchBar } from './products-batch-bar'
 import { ProductsColumnsModal } from './products-columns-modal'
 import { ProductsTable } from './products-table'
@@ -67,8 +60,6 @@ function formatMoney(n: number): string {
 export default function ProductsPage() {
   const { t, locale } = useT()
   const navigate = useNavigate()
-  const [rows, setRows] = useState<ProductRow[]>([])
-  const [categories, setCategories] = useState<Option[]>([])
   const [keyword, setKeyword] = useState('')
   const [category, setCategory] = useState('')
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -90,17 +81,20 @@ export default function ProductsPage() {
   const tableRef = useRef<HTMLElement | null>(null)
   const pagerRef = useRef<HTMLElement | null>(null)
 
-  const refresh = useCallback(async () => {
-    const [list, cats] = await Promise.all([listProducts(), listCategories()])
-    setRows(list)
-    const opts = cats.map((c) => ({ label: c.name, value: c.name }))
-    setCategories(opts)
-    setCategory((prev) => (prev && !opts.some((c) => c.value === prev) ? '' : prev))
-  }, [])
+  // 列表/分类走 query 缓存；变更走 mutation（成功后失效商品缓存自动重取）
+  const { data: rowsData } = useProductsList()
+  const rows = rowsData ?? []
+  const { data: catsData } = useCategories()
+  const categories = useMemo(
+    () => (catsData ?? []).map((c) => ({ label: c.name, value: c.name })),
+    [catsData],
+  )
+  const mutations = useProductMutations()
 
+  // 分类被删后回落到「全部分类」（与原 refresh 内的复位等价，由 query 数据变化驱动）
   useEffect(() => {
-    void refresh()
-  }, [refresh])
+    setCategory((prev) => (prev && !categories.some((c) => c.value === prev) ? '' : prev))
+  }, [categories])
 
   const filtered = useMemo(() => {
     const kw = keyword.trim().toLowerCase()
@@ -137,21 +131,18 @@ export default function ProductsPage() {
   }
 
   const toggleStatus = async (id: number) => {
-    const updated = await toggleProductStatus(id)
+    const updated = await mutations.toggleStatus.mutateAsync(id)
     if (!updated) {
       appMessage.error(t('products.notFound'))
       return
     }
     appMessage.success(updated.status === 'on' ? t('products.status.on') : t('products.status.off'))
-    void refresh()
   }
 
-  const inlineEdit = (id: number, column: 'price' | 'stock', value: number) => {
-    void updateProduct(id, { [column]: value }).then((updated) => {
-      if (!updated) appMessage.error(t('products.notFound'))
-      else appMessage.success(t('common.saved'))
-      void refresh()
-    })
+  const inlineEdit = async (id: number, column: 'price' | 'stock', value: number) => {
+    const updated = await mutations.update.mutateAsync({ id, payload: { [column]: value } })
+    if (!updated) appMessage.error(t('products.notFound'))
+    else appMessage.success(t('common.saved'))
   }
 
   const clearSelection = () => {
@@ -168,11 +159,10 @@ export default function ProductsPage() {
     for (const id of selected) {
       const row = rows.find((r) => r.id === id)
       if (!row || row.status === target) continue
-      if (await toggleProductStatus(id)) changed++
+      if (await mutations.toggleStatus.mutateAsync(id)) changed++
     }
     clearSelection()
     appMessage.success(t('products.batch.statusDone', { count: changed }))
-    void refresh()
   }
 
   const batchDelete = async () => {
@@ -182,11 +172,10 @@ export default function ProductsPage() {
     }
     let removed = 0
     for (const id of selected) {
-      if (await removeProduct(id)) removed++
+      if (await mutations.remove.mutateAsync(id)) removed++
     }
     clearSelection()
     appMessage.success(t('products.batch.deleted', { count: removed }))
-    void refresh()
   }
 
   // 工具栏事件（全部 oas-* 自定义事件 → useOasEvent）
@@ -371,10 +360,7 @@ export default function ProductsPage() {
           editing={rows.find((r) => r.id === editingId) ?? null}
           categories={categories}
           onClose={() => setSurfaceOpen(false)}
-          onSaved={() => {
-            setSurfaceOpen(false)
-            void refresh()
-          }}
+          onSaved={() => setSurfaceOpen(false)}
         />
       )}
       <ProductsColumnsModal

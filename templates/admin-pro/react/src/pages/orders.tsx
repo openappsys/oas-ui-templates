@@ -1,16 +1,16 @@
 // src/pages/orders.tsx —— 订单管理（统计卡 + 状态 tabs + 表格 + 快捷详情抽屉 + CSV 导出）
-// 1. 状态：rows/keyword/status/selectedId 全部 useState，过滤/统计/空态/tabs 徽标全部由
-//    state 派生；refresh() 仅重拉数据 setRows，重渲染即最新；tabs/统计/表格列随 locale
-//    自动重算（users/dashboard 同款模式）
+// 1. 状态：keyword/status/selectedId 全部 useState，列表数据走 useOrdersList（TanStack
+//    Query 缓存），过滤/统计/空态/tabs 徽标全部由 query data 派生；状态流转 mutation 成功
+//    后失效订单缓存自动重取，页面不再持有手动 refresh；tabs/统计/表格列随 locale 自动重算
 // 2. 事件绑定：search 的 oas-input/oas-clear、tabs 的 oas-change、table 的 oas-row-click
 //    走 useOasEvent；导出/清筛选按钮为 light DOM 原生 click 直绑 onClick；抽屉内链接与
 //    流程按钮的接线见 ./orders-drawer.tsx 头注释
 // 3. 搜索/切 tab 后 tableRef.setAttribute('current','1') 人工复位首屏
 // 4. 子组件拆分（单文件 ≤400 行纪律）：表格 ./orders-table.tsx、快捷详情抽屉 ./orders-drawer.tsx
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { listOrders, updateOrderStatus } from '../data/orders'
 import type { OrderRow, OrderStatus } from '../data/orders'
 import { useOasEvent } from '../hooks/use-oas-event'
+import { useOrdersList, useOrderStatusMutation } from '../hooks/use-orders'
 import { useT } from '../hooks/use-t'
 import { appMessage } from '../lib/app-message'
 import { PAGE_SIZE_KEY } from '../settings-init'
@@ -58,12 +58,10 @@ function buildTabs(
 
 export default function OrdersPage() {
   const { t } = useT()
-  const [rows, setRows] = useState<OrderRow[]>([])
   const [keyword, setKeyword] = useState('')
   const [status, setStatus] = useState<'all' | OrderStatus>('all')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
   const [pageSize] = useState(readPageSizeNum)
 
   const tableRef = useRef<HTMLElement | null>(null)
@@ -72,25 +70,17 @@ export default function OrdersPage() {
 
   const isViewer = session.user?.role === 'viewer'
 
-  const refresh = useCallback(async () => {
-    setLoading(true)
-    let list = await listOrders()
-    const u = session.user
-    if (u?.role === 'viewer') list = list.filter((r) => r.creator === u.name)
-    setRows(list)
-    setLoading(false)
-  }, [])
-
-  useEffect(() => {
-    void refresh()
-  }, [refresh])
+  // 列表数据/加载态全部来自 query 缓存（isFetching 覆盖首拉与失效重取）
+  const { data, isFetching } = useOrdersList()
+  const rows = data ?? []
+  const flowMutation = useOrderStatusMutation()
 
   useEffect(() => {
     const table = tableRef.current
     if (!table) return
-    if (loading) table.setAttribute('loading', '')
+    if (isFetching) table.setAttribute('loading', '')
     else table.removeAttribute('loading')
-  }, [loading])
+  }, [isFetching])
 
   const filtered = useMemo(() => {
     const kw = keyword.trim().toLowerCase()
@@ -175,7 +165,7 @@ export default function OrdersPage() {
   const applyFlow = useCallback(
     async (id: string, target: OrderStatus) => {
       const prev = rows.find((r) => r.id === id)
-      const updated = await updateOrderStatus(id, target)
+      const updated = await flowMutation.mutateAsync({ id, target })
       if (!updated) {
         appMessage.error(t('orders.notFound'))
         return
@@ -183,9 +173,8 @@ export default function OrdersPage() {
       appMessage.success(
         t('orders.flowApplied', { action: prev ? t(`orders.flow.${prev.status}`) : '' }),
       )
-      await refresh()
     },
-    [rows, t, refresh],
+    [rows, t, flowMutation],
   )
 
   const tabs = buildTabs(t)

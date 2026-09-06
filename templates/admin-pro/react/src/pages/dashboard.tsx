@@ -6,13 +6,13 @@
 //    刷新/导出/查看全部为原生 click，直绑 onClick（目标不在 drawer/modal panel 内）
 //    hash/history 双模式按存储值生成），与壳层导航同一出处
 //    后整页重渲染，rules/columns/options 等 JSON attribute 随之重算
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useOasEvent } from '../hooks/use-oas-event'
 import { useT } from '../hooks/use-t'
 import { appMessage } from '../lib/app-message'
 import { routeHref } from '../router/mode'
 import { session } from '../store/session'
-import { listProducts } from '../data/products'
+import { useProductsList } from '../hooks/use-products'
 import { orderBreakdown, recentOrders, trendDays, trendSeries } from '../data/dashboard'
 
 interface StatDef {
@@ -53,12 +53,6 @@ const DONUT_COLORS = [
   'var(--oas-color-danger)',
 ]
 
-interface Top5Row {
-  name: string
-  category: string
-  sold: number
-}
-
 function todayLabel(locale: string): string {
   const tag = locale === 'en' ? 'en-US' : 'zh-CN'
   return new Intl.DateTimeFormat(tag, { year: 'numeric', month: 'long', day: 'numeric' }).format(
@@ -96,7 +90,6 @@ export default function DashboardPage() {
 
   const [statsReady, setStatsReady] = useState(false)
   const [range, setRange] = useState('7')
-  const [top5, setTop5] = useState<Top5Row[] | null>(null)
   const segmentedRef = useRef<HTMLElement | null>(null)
 
   useEffect(() => {
@@ -104,22 +97,16 @@ export default function DashboardPage() {
     return () => clearTimeout(timer)
   }, [])
 
-  useEffect(() => {
-    let alive = true
-    void listProducts().then((products) => {
-      if (!alive) return
-      setTop5(
-        products
-          .filter((p) => p.sold != null)
-          .sort((a, b) => (b.sold ?? 0) - (a.sold ?? 0))
-          .slice(0, 5)
-          .map((p) => ({ name: p.name, category: p.category, sold: p.sold ?? 0 })),
-      )
-    })
-    return () => {
-      alive = false
-    }
-  }, [])
+  // 热销 Top5：与商品列表同源缓存，商品变更失效后此处自动联动
+  const { data: products } = useProductsList()
+  const top5 = useMemo(() => {
+    if (!products) return null
+    return products
+      .filter((p) => p.sold != null)
+      .sort((a, b) => (b.sold ?? 0) - (a.sold ?? 0))
+      .slice(0, 5)
+      .map((p) => ({ name: p.name, category: p.category, sold: p.sold ?? 0 }))
+  }, [products])
 
   // 天数切换联动：oas-segmented 的 oas-change 走 useOasEvent
   useOasEvent<{ value: string }>(segmentedRef, 'oas-change', (detail) => {

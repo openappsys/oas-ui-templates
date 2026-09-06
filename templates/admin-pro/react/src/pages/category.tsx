@@ -1,6 +1,6 @@
 // src/pages/category.tsx —— 商品分类（表格 + 搜索 + modal 表单 + popconfirm 删除）
-//    rows/keyword/editingId/modalOpen 全部 useState，过滤/空态/弹窗标题全部由 state 派生；
-//    refresh() 仅重拉数据 setRows，重渲染即最新
+//    rows 来自 useCategories（TanStack Query 缓存），keyword/editingId/modalOpen 全部
+//    useState，过滤/空态/弹窗标题全部由 state 派生；CRUD 走 mutation 失效后自动重取
 // 2. 事件绑定：search 的 oas-input/oas-clear、form 的 oas-submit、popconfirm 的 oas-ok、
 //    modal 的 oas-close 走 useOasEvent新建按钮为 light DOM 原生
 //    click 直绑 onClick；弹窗面板内取消/保存按钮按第 2 条例外在元素上直绑 addEventListener
@@ -9,12 +9,12 @@
 //    oas-close 回写 state（product-form 同款）
 //    重渲染，rules/labels/placeholders/columns 随 locale 自动重算
 //    已落地并复用本副本）
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { TableColumn } from '@oas-ui/ui/data/table'
 import '../styles/pages/dict.css'
-import { createCategory, listCategories, removeCategory, updateCategory } from '../data/categories'
 import type { CategoryRow } from '../data/categories'
 import { useOasEvent } from '../hooks/use-oas-event'
+import { useCategories, useCategoryMutations } from '../hooks/use-products'
 import { useT } from '../hooks/use-t'
 import { appMessage } from '../lib/app-message'
 
@@ -99,7 +99,6 @@ interface FormValues {
 
 export default function CategoryPage() {
   const { t, locale } = useT()
-  const [rows, setRows] = useState<CategoryRow[]>([])
   const [keyword, setKeyword] = useState('')
   const [editingId, setEditingId] = useState<number | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
@@ -117,13 +116,10 @@ export default function CategoryPage() {
   const saveRef = useRef<HTMLElement | null>(null)
   const savingRef = useRef(false)
 
-  const refresh = useCallback(async () => {
-    setRows(await listCategories())
-  }, [])
-
-  useEffect(() => {
-    void refresh()
-  }, [refresh])
+  // 列表走 query 缓存，CRUD 走 mutation（成功失效后自动重取）
+  const { data } = useCategories()
+  const rows = data ?? []
+  const { create, update, remove } = useCategoryMutations()
 
   const filtered = useMemo(() => {
     const kw = keyword.trim()
@@ -198,10 +194,9 @@ export default function CategoryPage() {
     )
     if (id == null || !Number.isFinite(id)) return
     void (async () => {
-      await removeCategory(id)
+      await remove.mutateAsync(id)
       setEditingId(null)
       appMessage.success(t('common.deleted'))
-      void refresh()
     })()
   })
 
@@ -217,15 +212,14 @@ export default function CategoryPage() {
       const status = values.status === 'off' ? 'off' : 'on'
       const desc = values.desc?.trim() ?? ''
       if (editingId == null) {
-        await createCategory({ name, code, sort, status, desc })
+        await create.mutateAsync({ name, code, sort, status, desc })
         appMessage.success(t('common.created'))
       } else {
-        await updateCategory(editingId, { name, code, sort, status, desc })
+        await update.mutateAsync({ id: editingId, data: { name, code, sort, status, desc } })
         appMessage.success(t('common.saved'))
       }
       setEditingId(null)
       setModalOpen(false)
-      void refresh()
     } finally {
       savingRef.current = false
     }

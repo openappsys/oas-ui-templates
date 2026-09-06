@@ -11,11 +11,11 @@
 //    本模版在 open 边沿的 useEffect 做同样的事（transfer value 只在回填时写，切换数据权限
 //    effect 里命令式同步（setRadioChecked 同款通道，避免与组件 excludeSameName 打架）
 //    回写 state（product-form 同款）
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { TableColumn } from '@oas-ui/ui/data/table'
-import { createRole, listRoles, removeRole, treeDepts, updateRole } from '../data/system'
 import type { DataScope, DeptTree, RoleRow } from '../data/system'
 import { useOasEvent } from '../hooks/use-oas-event'
+import { useDeptTree, useRoleMutations, useRolesList } from '../hooks/use-system'
 import { useT } from '../hooks/use-t'
 import { appMessage } from '../lib/app-message'
 
@@ -114,8 +114,6 @@ interface FormValues {
 
 export default function RolesPage() {
   const { t, locale } = useT()
-  const [roles, setRoles] = useState<RoleRow[]>([])
-  const [deptList, setDeptList] = useState<DeptTree[]>([])
   const [editingId, setEditingId] = useState<number | null>(null)
   const [dataScope, setDataScope] = useState<DataScope>(1)
   const [deptIds, setDeptIds] = useState<number[]>([])
@@ -132,15 +130,11 @@ export default function RolesPage() {
   const cancelRef = useRef<HTMLElement | null>(null)
   const saveRef = useRef<HTMLElement | null>(null)
 
-  const refresh = useCallback(async () => {
-    const [rows, deptTree] = await Promise.all([listRoles(), treeDepts()])
-    setRoles(rows)
-    setDeptList(flatten(deptTree))
-  }, [])
-
-  useEffect(() => {
-    void refresh()
-  }, [refresh])
+  // 角色/部门树走 query 缓存，CRUD 走 mutation（成功失效后自动重取）
+  const roles = useRolesList().data ?? []
+  const deptTree = useDeptTree().data ?? []
+  const deptList = useMemo(() => flatten(deptTree), [deptTree])
+  const mutations = useRoleMutations()
 
   const editingRow = editingId != null ? (roles.find((r) => r.id === editingId) ?? null) : null
 
@@ -205,11 +199,11 @@ export default function RolesPage() {
     const src = detail.source
     if (!src?.hasAttribute?.('data-del')) return
     const id = Number(src.getAttribute('data-del'))
-    void removeRole(id).then((ok) => {
+    void (async () => {
+      const ok = await mutations.remove.mutateAsync(id)
       if (!ok) appMessage.error(t('roles.notFound'))
       else appMessage.success(t('common.deleted'))
-      void refresh()
-    })
+    })()
   })
 
   // 组件侧关闭（遮罩/Esc/✕）→ 回写 React 状态（visible 单一事实来源）
@@ -237,15 +231,17 @@ export default function RolesPage() {
     try {
       const ids = dataScope === 2 ? deptIds : []
       if (editingId == null) {
-        await createRole({ name, code, dataScope, deptIds: ids, userCount: 0 })
+        await mutations.create.mutateAsync({ name, code, dataScope, deptIds: ids, userCount: 0 })
         appMessage.success(t('common.created'))
       } else {
-        const updated = await updateRole(editingId, { name, code, dataScope, deptIds: ids })
+        const updated = await mutations.update.mutateAsync({
+          id: editingId,
+          data: { name, code, dataScope, deptIds: ids },
+        })
         if (!updated) appMessage.error(t('roles.notFound'))
         else appMessage.success(t('common.saved'))
       }
       setDrawerOpen(false)
-      void refresh()
     } finally {
       savingRef.current = false
     }
