@@ -15,10 +15,14 @@ declare module 'vue' {
     'oas-modal': any
     'oas-drawer': any
     'oas-switch': any
+    'oas-checkbox': any
     'oas-radio': any
     'oas-color-picker': any
     'oas-slider': any
     'oas-segmented': any
+    'oas-input-number': any
+    'oas-date-picker': any
+    'oas-upload': any
     'oas-theme-editor': any
     'oas-layout': any
     'oas-sider': any
@@ -37,6 +41,10 @@ declare module 'vue' {
     'oas-skeleton': any
     'oas-empty': any
     'oas-table': any
+    'oas-masonry': any
+    'oas-pagination': any
+    'oas-popconfirm': any
+    'oas-page-header': any
     'oas-progress': any
     'oas-chart': any
   }
