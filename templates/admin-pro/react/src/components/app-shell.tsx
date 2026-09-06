@@ -10,7 +10,7 @@ import { appRoutes, matchRoute } from '../router/routes'
 import { CommandPalette } from './command-palette'
 import { HeaderBar } from './header-bar'
 import { NavMenu } from './nav-menu'
-import { routeHref } from './nav-items'
+import { routeHref } from '../router/mode'
 import { NotificationsDrawer, useNotifications } from './notifications-drawer'
 import { TabsBar } from './tabs-bar'
 

@@ -4,7 +4,7 @@
 // 路由模式：按 localStorage（oas-admin.router-mode）二选一（Task 6 设置中心可切换，
 // 切换二次确认后整页刷新，此处模块加载时一次性定型）
 import { useSyncExternalStore } from 'react'
-import { BrowserRouter, HashRouter, Navigate, Route, Routes } from 'react-router'
+import { BrowserRouter, HashRouter, Navigate, Route, Routes, useLocation } from 'react-router'
 import { AppShell } from '../components/app-shell'
 import LoginPage from '../pages/login'
 import { session } from '../store/session'
@@ -20,6 +20,15 @@ function Guarded({ route }: { route: AppRoute }) {
   if (!result.ok && result.reason === 'forbidden') return <Navigate to="/forbidden" replace />
   if (!result.ok && result.reason === 'not-found') return <Navigate to="/not-found" replace />
   return <route.Component />
+}
+
+/** 已登录兜底：未知路径 → /not-found（对齐 vue 版 /:pathMatch(.*)* 重定向）。
+ *  例外：URL 停在 /login 的登录瞬移窗口（session 更新后、login.tsx 手动 navigate 前，
+ *  见 login.tsx 偏差记录 5）保持原「匹配落空渲染 null」行为，否则兜底抢跑致登录后落错页 */
+function NotFoundRedirect() {
+  const { pathname } = useLocation()
+  if (pathname === '/login') return null
+  return <Navigate to="/not-found" replace />
 }
 
 export function AppRouter() {
@@ -44,6 +53,9 @@ export function AppRouter() {
             .map((r) => (
               <Route key={r.path} path={r.path} element={<Guarded route={r} />} />
             ))}
+          {/* 兜底：对齐 vue 版 /:pathMatch(.*)* → /not-found（React Router 匹配不到会渲染 null 白屏，
+              如 dashboard 快捷操作指向子集路由表不存在的 /form、/orders，hash/history 两模式同理） */}
+          <Route path="*" element={<NotFoundRedirect />} />
         </Route>
       </Routes>
     </Router>

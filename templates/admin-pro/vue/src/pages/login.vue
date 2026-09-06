@@ -13,8 +13,9 @@
 //    其 shadowRoot 内 <form> requestSubmit()（playground 实测模式）
 // 4. 文案刷新：vanilla 用 onLocaleChange(refreshText) 逐节点替换；本模版 useT() 订阅 locale
 //    后整页重渲染，rules/options 等 JSON attribute 随 computed 重算
-// 5. 登录后跳转：与 vanilla/react 一致——session.login() 后手动 router.push(appRoutes[0].path)
-//    （vanilla 手动 navigate；react 版实测不手动跳转会因已登录路由表无 /login 匹配而白屏）
+// 5. 登录后跳转：vanilla 手动 navigate；react 版 navigate(..., { replace: true })（实测不手动
+//    跳转会因已登录路由表无 /login 匹配而白屏）；本模版对齐 react 用 router.replace——
+//    登录页不留入历史栈，消除登录后回退又回登录页的边角 UX
 // 6. formBlock 复用：react 版共享 JSX 片段；Vue SFC 模板无法跨分支共享片段，
 //    split/glass 两分支各写一份（结构/类名逐行一致，改动需两处同步）
 import { computed, ref } from 'vue'
@@ -52,11 +53,11 @@ function requestSubmit(): void {
   form?.requestSubmit()
 }
 
-// 登录即本地直登 + 手动跳转（对齐 vanilla：navigate(routes[0].path)）
+// 登录即本地直登 + 手动跳转（replace 对齐 react 版 navigate(..., { replace: true })）
 function onSubmit(e: Event): void {
   const { values } = (e as CustomEvent<LoginSubmitDetail>).detail
   session.login(values.name || '用户', values.role === 'viewer' ? 'viewer' : 'admin')
-  void router.push(appRoutes[0].path)
+  void router.replace(appRoutes[0].path)
 }
 
 const rules = computed(() =>

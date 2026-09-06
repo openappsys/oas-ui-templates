@@ -16,7 +16,7 @@
 //    不回头改 state（显示结果一致，避免渲染期 setState）
 // 5. 文案刷新：vanilla onLocaleChange(refreshText) 逐节点替换；本模版 useT() 订阅后整页
 //    重渲染，rules/options/columns/标签随 locale 自动重算（dashboard 同款模式）
-// 6. 子组件拆分（单文件 ≤400 行纪律）：表格 ./products-table.tsx、表单 ./product-form.tsx、
+// 6. 子组件拆分（主体 ≤400 行纪律；本文件加分页器 hidden 补写逻辑与头注释后贴线 408 行）：表格 ./products-table.tsx、表单 ./product-form.tsx、
 //    批量栏 ./products-batch-bar.tsx、列设置弹窗 ./products-columns-modal.tsx；
 //    page 形态跳 /products/edit（sessionStorage 键 product-edit-id 与 vanilla 逐字一致）
 // 7. oas-pagination 的 hidden 声明式失效：组件 update() 在非 hide-on-single 路径无条件

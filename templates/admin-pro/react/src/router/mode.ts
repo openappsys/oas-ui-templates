@@ -1,8 +1,10 @@
 // src/router/mode.ts —— 路由模式：'hash'（默认，#/path）或 'history'（/path，需服务器 SPA 回退）
 // 移植自 vanilla-html/src/router/mode.ts，localStorage 键名逐字一致（oas-admin.router-mode）。
 // 差异（因果链）：vanilla 是自研路由器，navigate/href/onRouteChange 都走本模块；
-// 本模版用 react-router，本模块只保留「读/写模式 + 切换后整页刷新」，
+// 本模版用 react-router，本模块保留「读/写模式 + 链接 href 生成 + 切换后整页刷新」，
 // 由 router/index.tsx 在挂载时按存储值二选一 HashRouter/BrowserRouter。
+// routeHref 按模式生成链接（对齐 vanilla href()）：hash="#/path"、history="base/path"，
+// 壳层面包屑/dashboard 快捷操作等 <a href> 锚链接在 history 模式下才能指对。
 export type RouterMode = 'hash' | 'history'
 
 const KEY = 'oas-admin.router-mode'
@@ -43,6 +45,17 @@ export function currentPath(): string {
     return p
   }
   return window.location.hash.replace(/^#/, '') || '/'
+}
+
+/** history 模式把路由路径拼成绝对 URL 路径（带 base）；path 以 / 开头 */
+function joinBase(path: string): string {
+  if (BASE === '/') return path === '' ? '/' : path
+  return path === '' ? BASE : `${BASE}${path}`
+}
+
+/** 生成链接 href：hash="#/path"、history="base/path"（对齐 vanilla mode.ts href()） */
+export function routeHref(path: string): string {
+  return routerMode() === 'history' ? joinBase(path) : `#${path}`
 }
 
 /** 切换模式后让全局生效：把当前路径换成新模式的 URL 形态并整页刷新（replace 重新加载文档） */

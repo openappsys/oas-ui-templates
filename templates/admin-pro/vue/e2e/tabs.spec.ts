@@ -9,6 +9,10 @@
 // 3. 连续两次 nav 点击之间插入 toHaveURL 等待：vue-router 的 push 是异步导航（懒加载 chunk
 //    确认后才改路由），紧贴的第二次点击会取代第一次进行中的导航（页面从不经过 /products，
 //    页签少一个）；vanilla 自研 hash 路由同步处理无此窗口。等待首次导航落定后断言不变
+// 4. 「隐藏路由归属父级页签」用例的就绪断言：react 版点击「商品管理」后以
+//    expect(product-create).toBeVisible() 等页面就绪；本模版改用
+//    expect(tabs).toHaveAttribute('active', '/products')——tabs 的 active 随路由提交更新，
+//    等价确认导航落定（与第 3 条同一异步窗口），随后点击 product-create 由自动重试兜底
 import { expect, test, type Page } from '@playwright/test'
 
 async function noConsoleErrors(page: Page): Promise<string[]> {

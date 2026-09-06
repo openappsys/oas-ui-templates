@@ -15,7 +15,7 @@
 //    不回头改 state（显示结果一致，避免渲染期写状态）
 // 5. 文案刷新：vanilla onLocaleChange(refreshText) 逐节点替换；本模版 useT() 订阅后整页
 //    重渲染，rules/options/columns/标签随 locale 自动重算（dashboard 同款模式）
-// 6. 子组件拆分（单文件 ≤400 行纪律）：表格 ./products-table.vue、表单 ./product-form.vue、
+// 6. 子组件拆分（主体 ≤400 行纪律；本文件加分页器 hidden 补写逻辑与头注释后贴线 401 行）：表格 ./products-table.vue、表单 ./product-form.vue、
 //    批量栏 ./products-batch-bar.vue、列设置弹窗 ./products-columns-modal.vue；
 //    page 形态跳 /products/edit（sessionStorage 键 product-edit-id 与 vanilla 逐字一致）
 // 7. 布尔 attribute 一律存在性语义（:checked="cond ? '' : null"，AGENTS.md 第 2 条）；

@@ -10,15 +10,15 @@
 //    故仅保留 appMessage.success 提示（vanilla 的刷新也不重新拉 Top5，保持一致）
 // 3. 事件绑定：oas-segmented 的 oas-change 走 useOasEvent（React 19 不绑 kebab 事件，见 AGENTS.md）；
 //    刷新/导出/查看全部为原生 click，直绑 onClick（目标不在 drawer/modal panel 内）
-// 4. 快捷操作 href：vanilla 硬编码 '#/xxx'；本模版经 routeHref()（固定 HashRouter，恒为 `#${path}`，
-//    见 components/nav-items.ts），与壳层导航同一出处
+// 4. 快捷操作 href：vanilla 硬编码 '#/xxx'；本模版经 routeHref()（router/mode.ts，
+//    hash/history 双模式按存储值生成），与壳层导航同一出处
 // 5. 文案刷新：vanilla 用 onLocaleChange(refreshText) 逐节点替换；本模版 useT() 订阅 locale
 //    后整页重渲染，rules/columns/options 等 JSON attribute 随之重算
 import { useEffect, useRef, useState } from 'react'
 import { useOasEvent } from '../hooks/use-oas-event'
 import { useT } from '../hooks/use-t'
 import { appMessage } from '../lib/app-message'
-import { routeHref } from '../components/nav-items'
+import { routeHref } from '../router/mode'
 import { session } from '../store/session'
 import { listProducts } from '../data/products'
 import { orderBreakdown, recentOrders, trendDays, trendSeries } from '../data/dashboard'

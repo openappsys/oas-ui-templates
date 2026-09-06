@@ -1,4 +1,4 @@
-import { ref, onUnmounted } from 'vue'
+import { ref } from 'vue'
 import { currentLocale, onLocaleChange, setLocale, t, type AppLocale } from '../i18n'
 
 // 模块级共享 locale ref，组件库 i18n 变化时同步（多个 useT 调用共享同一响应式源）
