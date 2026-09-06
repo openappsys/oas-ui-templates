@@ -11,6 +11,7 @@
 //    react-router 警告 "No routes matched location /login"，页面空白），必须手动 navigate
 import { useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
+import './login.css'
 import { useOasEvent } from '../hooks/use-oas-event'
 import { useT } from '../hooks/use-t'
 import { session } from '../store/session'

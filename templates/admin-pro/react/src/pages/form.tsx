@@ -10,6 +10,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import type { ProductRow } from '../data/products'
+import './form.css'
 import { useOasEvent } from '../hooks/use-oas-event'
 import { useCreateOrderMutation } from '../hooks/use-orders'
 import { useProductsList } from '../hooks/use-products'

@@ -14,7 +14,7 @@
 //    property setter 但其实现就是 setAttribute 反射），不触碰任何命令式成员
 // 6. 子组件拆分（单文件 ≤400 行纪律）：详情卡 ./dept-detail.tsx（描述/操作/子部门表）
 import { useEffect, useMemo, useRef, useState } from 'react'
-import '../styles/pages/dept.css'
+import './dept.css'
 import type { DeptNode, DeptTree } from '../data/system'
 import { useOasEvent } from '../hooks/use-oas-event'
 import { useDeptList, useDeptMutations, useDeptTree } from '../hooks/use-system'

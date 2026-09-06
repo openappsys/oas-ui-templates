@@ -3,7 +3,7 @@
 // oas-change 自定义事件一律走 useOasEvent（React 19 不绑 kebab 事件），
 // 四个 Tab 面板拆为 ./settings/*-tab.tsx 子组件（单文件控制在 400 行内）。
 import { useRef, useState } from 'react'
-import '../styles/pages/settings.css'
+import './settings.css'
 import { useOasEvent } from '../hooks/use-oas-event'
 import { useT } from '../hooks/use-t'
 import { AppearanceTab } from './settings/appearance-tab'

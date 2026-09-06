@@ -6,6 +6,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { destroyAll } from '@oas-ui/ui/feedback/message'
+import './result.css'
 import { useT } from '../hooks/use-t'
 
 interface FormResult {

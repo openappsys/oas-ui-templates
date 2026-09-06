@@ -2,6 +2,7 @@
 // 状态由 AppShell 经 useNotifications() 持有一份，badge（header-bar）与抽屉共享
 // 注意：oas-drawer 内部 panel 对 click stopPropagation（mask 点击关闭的配套），
 import { useCallback, useEffect, useRef, useState } from 'react'
+import './notifications-drawer.css'
 import { listNotifications, markAllRead, markRead, type Notification } from '../data/notifications'
 import { useOasEvent } from '../hooks/use-oas-event'
 import { useT } from '../hooks/use-t'

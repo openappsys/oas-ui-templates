@@ -9,6 +9,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
 import type { OrderRow, OrderStatus } from '../data/orders'
+import './orders.css'
 import { useOrder, useOrderStatusMutation } from '../hooks/use-orders'
 import { useT } from '../hooks/use-t'
 import { appMessage } from '../lib/app-message'

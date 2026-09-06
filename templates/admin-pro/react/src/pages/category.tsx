@@ -11,7 +11,8 @@
 //    已落地并复用本副本）
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { TableColumn } from '@oas-ui/ui/data/table'
-import '../styles/pages/dict.css'
+import './category.css'
+import './dict.css'
 import type { CategoryRow } from '../data/categories'
 import { useOasEvent } from '../hooks/use-oas-event'
 import { useCategories, useCategoryMutations } from '../hooks/use-products'

@@ -7,6 +7,7 @@
 //    hash/history 双模式按存储值生成），与壳层导航同一出处
 //    后整页重渲染，rules/columns/options 等 JSON attribute 随之重算
 import { useEffect, useMemo, useRef, useState } from 'react'
+import './dashboard.css'
 import { useOasEvent } from '../hooks/use-oas-event'
 import { useT } from '../hooks/use-t'
 import { appMessage } from '../lib/app-message'

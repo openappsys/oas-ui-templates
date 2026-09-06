@@ -9,7 +9,7 @@
 // 4. CRUD 全部走 useDictMutations：成功后失效字典域缓存，计数/条目/列表联动重取
 import { useMemo, useRef, useState } from 'react'
 import type { TableColumn } from '@oas-ui/ui/data/table'
-import '../styles/pages/dict.css'
+import './dict.css'
 import type { DictItem } from '../data/system'
 import { useOasEvent } from '../hooks/use-oas-event'
 import { useDictCounts, useDictItems, useDictMutations, useDictTypes } from '../hooks/use-system'
@@ -127,7 +127,10 @@ export default function DictPage() {
         await mutations.createType.mutateAsync({ name, code })
         appMessage.success(t('common.created'))
       } else {
-        const updated = await mutations.updateType.mutateAsync({ id: editingTypeId, data: { name, code } })
+        const updated = await mutations.updateType.mutateAsync({
+          id: editingTypeId,
+          data: { name, code },
+        })
         if (!updated) appMessage.error(t('dict.notFoundType'))
         else appMessage.success(t('common.saved'))
       }

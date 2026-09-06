@@ -3,6 +3,7 @@
 //   [data-ptab-close] 关闭钮捕获阶段拦截（click + Enter/Space）；首页页签不可关
 import { useEffect, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router'
+import './tabs-bar.css'
 import { useOasEvent } from '../hooks/use-oas-event'
 import { useT } from '../hooks/use-t'
 import { matchRoute } from '../router/routes'

@@ -1,0 +1,50 @@
+/* src/components/tabs-bar.css —— 页签栏样式（由 tabs-bar.tsx import）：
+   .tabs-bar 容器、内嵌 oas-tabs 微调、自定义页签（.ptab）与关闭钮（[data-ptab-close]）。
+   类名被 e2e 断言依赖（.ptab/[data-ptab-close]），必须保持原样。 */
+
+.tabs-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: stretch;
+  gap: var(--oas-space-2);
+  min-width: 0;
+  padding: var(--oas-space-2) var(--oas-space-3) 0;
+  background: var(--oas-color-bg);
+  border-bottom: 1px solid var(--oas-color-border);
+}
+html[data-tabs-bar="off"] .tabs-bar {
+  display: none;
+}
+.tabs-bar oas-tabs {
+  flex: 1;
+  min-width: 0;
+}
+.tabs-bar oas-tabs::part(nav) {
+  border-bottom: none;
+}
+
+.ptab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--oas-space-1_5);
+  min-width: 0;
+}
+.ptab-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  margin-inline-end: calc(-1 * var(--oas-space-1));
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--oas-color-text-secondary);
+}
+.ptab-close:hover {
+  color: var(--oas-color-text-primary);
+  background: var(--oas-color-bg-hover);
+}
+.ptab-close:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+}

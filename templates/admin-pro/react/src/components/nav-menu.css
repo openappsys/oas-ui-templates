@@ -1,0 +1,50 @@
+/* src/components/nav-menu.css —— 导航菜单样式（由 nav-menu.tsx import）：
+   sidebar 形态的 oas-sider 轨道（宽度/折叠/过渡）与 oas-sidebar 部件微调。
+   宿主槽容器（.nav-sider/.top-nav-bar/.menu-popover）归 app-shell.css。 */
+
+oas-sider {
+  width: 200px;
+  padding: 0;
+}
+oas-sidebar {
+  --oas-control-height-lg: 32px;
+  height: 100%;
+}
+oas-sidebar::part(panel) {
+  min-height: 0;
+}
+
+oas-sidebar::part(toggle) {
+  margin: 0;
+}
+
+oas-sider {
+  transition:
+    width var(--oas-transition-base, 180ms) var(--oas-ease-out, cubic-bezier(0.2, 0, 0.2, 1)),
+    padding var(--oas-transition-base, 180ms) var(--oas-ease-out, cubic-bezier(0.2, 0, 0.2, 1));
+}
+oas-sider[collapsed] {
+  padding: 0;
+  width: 64px;
+}
+
+oas-sidebar::part(trigger) {
+  display: none;
+}
+
+oas-sidebar::part(item):hover {
+  background: color-mix(in srgb, var(--oas-color-text-primary) 6%, transparent);
+}
+oas-sidebar[collapsed]::part(group) {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  /* 移动端：sidebar 走自身抽屉，轨道收窄为 0（menubar/navigation 整容器隐藏见 app-shell.css） */
+  oas-sider,
+  oas-sider[collapsed] {
+    width: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+}

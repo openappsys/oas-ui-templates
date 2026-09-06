@@ -10,7 +10,7 @@
 // 8. oas-virtual-list 的 buffer 属性必须走 setAttribute：React 19 的 property 通道会覆写
 //    组件原型方法 buffer()（字符串赋值），实测崩溃；详见挂载 effect 处注释
 import { useEffect, useMemo, useRef, useState } from 'react'
-import '../styles/pages/logs.css'
+import './logs.css'
 import type { LogEntry, LogLevel } from '../data/logs'
 import { useOasEvent } from '../hooks/use-oas-event'
 import { useLogsAll, useLogsFiltered } from '../hooks/use-logs'
@@ -45,7 +45,11 @@ export default function LogsPage() {
 
   // 全量（统计卡）与过滤集（虚拟列表）拆两个查询：过滤条件进 key，变化即换 key 重查
   const { data: allRows } = useLogsAll()
-  const { data: filteredData } = useLogsFiltered({ level, keyword, dateRange: dateRange ?? undefined })
+  const { data: filteredData } = useLogsFiltered({
+    level,
+    keyword,
+    dateRange: dateRange ?? undefined,
+  })
   const rows = allRows ?? []
   const filtered = filteredData ?? []
 

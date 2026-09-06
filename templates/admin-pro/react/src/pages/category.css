@@ -1,0 +1,10 @@
+/* src/pages/category.css —— 类目管理页样式（由 category.tsx import）：
+   顶部搜索框（.category-search）高度修正。 */
+
+.category-search {
+  width: 280px;
+  max-width: 100%;
+}
+.category-search::part(input) {
+  height: 32px;
+}

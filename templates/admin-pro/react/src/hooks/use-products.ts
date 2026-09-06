@@ -10,12 +10,7 @@ import {
   toggleProductStatus,
   updateProduct,
 } from '../data/products'
-import {
-  createCategory,
-  listCategories,
-  removeCategory,
-  updateCategory,
-} from '../data/categories'
+import { createCategory, listCategories, removeCategory, updateCategory } from '../data/categories'
 import type { CategoryRow } from '../data/categories'
 import type { ProductRow } from '../data/products'
 

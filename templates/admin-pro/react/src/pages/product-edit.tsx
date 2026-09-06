@@ -5,7 +5,7 @@
 //    整页重渲染，title/rules/placeholder/标签随 locale 自动重算（products 同款模式）
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-import '../styles/pages/products.css'
+import './products.css'
 import type { ProductRow } from '../data/products'
 import { useOasEvent } from '../hooks/use-oas-event'
 import { useCategories, useProduct, useProductMutations } from '../hooks/use-products'
@@ -58,7 +58,9 @@ export default function ProductEditPage() {
     const row = editing
     if (id != null && productQuery.isSuccess && !row) appMessage.error(t('products.notFound'))
     const fallbackCat =
-      row && catOptions.some((c) => c.value === row.category) ? row.category : (catOptions[0]?.value ?? '')
+      row && catOptions.some((c) => c.value === row.category)
+        ? row.category
+        : (catOptions[0]?.value ?? '')
     nameRef.current?.setAttribute('value', row?.name ?? '')
     catRef.current?.setAttribute('value', fallbackCat)
     priceRef.current?.setAttribute('value', row ? String(row.price) : '')

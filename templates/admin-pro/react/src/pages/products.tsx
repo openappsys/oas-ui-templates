@@ -21,7 +21,7 @@
 //    （view/filtered.length/current）+ locale（基类切语言自刷 update 同样摘 hidden）
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
-import '../styles/pages/products.css'
+import './products.css'
 import { stockLevel } from '../data/products'
 import type { ProductRow } from '../data/products'
 import { useOasEvent } from '../hooks/use-oas-event'

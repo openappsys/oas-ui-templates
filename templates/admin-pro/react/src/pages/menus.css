@@ -1,0 +1,51 @@
+/* src/pages/menus.css —— 菜单管理域样式（由 menus.tsx import）：
+   主布局（.menu-layout 340px 左树右详情）、树卡片、详情头，表单抽屉体（.menu-form-body，
+   menus-form-drawer.tsx），及窄屏（≤992px）单列降级。 */
+
+.menu-layout {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: var(--oas-space-3);
+  margin-bottom: var(--oas-space-3);
+}
+.menu-tree-card::part(body) {
+  padding: 0;
+}
+.menu-tree-card oas-tree {
+  padding: var(--oas-space-2);
+}
+.menu-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-4);
+}
+.menu-detail-head {
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-2);
+}
+.menu-detail-title {
+  font-size: 16px;
+  font-weight: 650;
+  color: var(--oas-color-text-primary);
+}
+.menu-detail-actions {
+  display: flex;
+  gap: var(--oas-space-2);
+  align-items: center;
+}
+
+.menu-form-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-4);
+}
+.menu-form-body oas-tree-select {
+  width: 100%;
+}
+
+@media (max-width: 992px) {
+  .menu-layout {
+    grid-template-columns: 1fr;
+  }
+}

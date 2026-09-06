@@ -1,0 +1,18 @@
+/* src/pages/roles.css —— 角色管理域样式（由 roles.tsx import）：
+   表单体（.role-form-body）与穿梭框（oas-transfer）撑满规则。
+   注：原 app.css 中 .role-form-body 与 .menu-form-body 共用选择器列表，
+   拆分后各自声明不变（.menu-form-body 归 menus.css）。 */
+
+.role-form-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-4);
+}
+.role-form-body oas-transfer {
+  width: 100%;
+}
+.role-form-body oas-transfer::part(panel) {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+}

@@ -11,6 +11,7 @@
 //    ./menus-form-drawer.tsx、详情卡 ./menus-detail.tsx
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { MenuTree } from '../data/system'
+import './menus.css'
 import { useOasEvent } from '../hooks/use-oas-event'
 import { useMenuTree } from '../hooks/use-system'
 import { useT } from '../hooks/use-t'

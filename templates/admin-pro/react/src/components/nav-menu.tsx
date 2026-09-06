@@ -4,6 +4,7 @@
 // 形态/位置切换由调用方用 key 重挂载本组件，保证 useOasEvent 绑定到新元素
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
+import './nav-menu.css'
 import { useOasEvent } from '../hooks/use-oas-event'
 import { readSidebarCollapsed, writeSidebarCollapsed, type MenuStyle } from '../layout-config'
 import { groupMenuItems, sidebarItems } from './nav-items'

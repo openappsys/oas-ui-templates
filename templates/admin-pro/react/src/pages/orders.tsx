@@ -9,6 +9,7 @@
 // 4. 子组件拆分（单文件 ≤400 行纪律）：表格 ./orders-table.tsx、快捷详情抽屉 ./orders-drawer.tsx
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { OrderRow, OrderStatus } from '../data/orders'
+import './orders.css'
 import { useOasEvent } from '../hooks/use-oas-event'
 import { useOrdersList, useOrderStatusMutation } from '../hooks/use-orders'
 import { useT } from '../hooks/use-t'

@@ -2,6 +2,7 @@
 // NavMenu key 重挂载（保证 useOasEvent 绑定到新元素）；no-chrome 由路由层未登录分支天然接管
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { Outlet, useLocation } from 'react-router'
+import './app-shell.css'
 import { useT } from '../hooks/use-t'
 import { navConfig, type NavConfig } from '../layout-config'
 import { appRoutes, matchRoute } from '../router/routes'

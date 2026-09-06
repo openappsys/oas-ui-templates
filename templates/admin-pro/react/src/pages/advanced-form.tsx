@@ -4,7 +4,7 @@
 // 2. 事件：oas-form 的 oas-submit 自定义事件走 useOasEvent//    提交/重置按钮为 light DOM 原生 click，直绑 onClick；提交经 shadowRoot 内原生 form
 //    仅保留 message.success 提示（可观察行为一致）
 import { useRef } from 'react'
-import '../styles/pages/advanced-form.css'
+import './advanced-form.css'
 import { advFormData } from '../data/adv-form'
 import { useOasEvent } from '../hooks/use-oas-event'
 import { useT } from '../hooks/use-t'

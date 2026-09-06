@@ -5,6 +5,7 @@
 //    此处照抄不「顺手修复」
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
+import './profile.css'
 import { useT } from '../hooks/use-t'
 import { appMessage } from '../lib/app-message'
 import { logoutFlow } from '../lib/session-actions'

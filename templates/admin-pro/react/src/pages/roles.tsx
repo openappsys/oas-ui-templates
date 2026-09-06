@@ -14,6 +14,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { TableColumn } from '@oas-ui/ui/data/table'
 import type { DataScope, DeptTree, RoleRow } from '../data/system'
+import './roles.css'
 import { useOasEvent } from '../hooks/use-oas-event'
 import { useDeptTree, useRoleMutations, useRolesList } from '../hooks/use-system'
 import { useT } from '../hooks/use-t'

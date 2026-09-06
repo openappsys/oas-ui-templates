@@ -1,0 +1,24 @@
+/* src/pages/result.css —— 结果页样式（由 result.tsx import）：
+   居中布局（.result-page/.result-wrap）、描述等宽字体、操作按钮组。 */
+
+.result-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+}
+.result-wrap {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.result-page oas-result::part(description) {
+  font-family: var(--app-mono);
+}
+.result-actions {
+  display: flex;
+  gap: var(--oas-space-3);
+  justify-content: center;
+  margin-top: var(--oas-space-4);
+}

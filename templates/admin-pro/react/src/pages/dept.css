@@ -62,3 +62,11 @@
 .dept-form-body oas-input-number {
   width: 100%;
 }
+
+/* ---- 以下规则自 app.css 迁入（.tree-node-label 当前仅 dept.tsx 使用） ---- */
+.tree-node-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--oas-space-1);
+  min-width: 0;
+}
