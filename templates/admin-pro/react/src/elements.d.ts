@@ -204,6 +204,30 @@ declare module 'react/jsx-runtime' {
       'oas-list-item': OasBase & {
         title?: string
       }
+      'oas-chart': OasBase & {
+        type?: string
+        /** 图表数据（JSON 字符串；React 19 对自定义元素上存在的 property 会走 property 通道，两通道组件均支持） */
+        data?: string
+        options?: string
+      }
+      'oas-skeleton': OasBase & {
+        active?: boolean
+        rows?: string | number
+      }
+      'oas-empty': OasBase & {
+        description?: string
+      }
+      'oas-table': OasBase & {
+        columns?: string
+        data?: string
+        'row-key'?: string
+        onOasSortChange?: (e: Event) => void
+      }
+      'oas-progress': OasBase & {
+        percent?: string | number
+        'show-text'?: string | boolean
+        status?: string
+      }
     }
   }
 }
