@@ -41,7 +41,14 @@
         padding: 0 var(--oas-space-4);
         border-bottom: 1px solid var(--oas-color-border);
       }
-      .logo { font-weight: 700; font-size: 15px; }
+      .oas-logo { display: inline-flex; align-items: center; gap: var(--oas-space-2); white-space: nowrap; }
+      .oas-logo-badge {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 28px; height: 28px; border-radius: 8px;
+        background: var(--oas-color-primary); color: #fff;
+        font-family: ui-monospace, monospace; font-weight: 700; font-size: 11px; letter-spacing: 0.5px;
+      }
+      .oas-logo-word { font-weight: 700; font-size: 15px; }
       .spacer { flex: 1; }
       .icon-btn {
         appearance: none;

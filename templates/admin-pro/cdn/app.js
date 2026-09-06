@@ -61,8 +61,11 @@ function renderShell() {
     <oas-layout class="app" viewport>
       <header class="app-header" slot="header">
         <button id="nav-toggle" class="nav-toggle" type="button" aria-label="打开菜单">☰</button>
-        <!-- logo 可点：回站点首页（门户 /） -->
-        <a class="logo" href="/" style="text-decoration:none;color:inherit;cursor:pointer">${t('app.title')}</a>
+        <!-- logo：OAS 徽标 + 站名，点击回站点首页（门户 /） -->
+        <a class="oas-logo" href="/" style="text-decoration: none; cursor: pointer">
+          <span class="oas-logo-badge">OAS</span>
+          <span class="oas-logo-word">${t('app.title')}</span>
+        </a>
         <span class="spacer"></span>
         <button id="lang-toggle" data-testid="lang-toggle" class="icon-btn" type="button">${t('header.lang')}</button>
         <button id="logout" class="icon-btn" type="button">${t('header.logout')}</button>
@@ -132,7 +135,7 @@ window.addEventListener('hashchange', resolve)
 resolve()
 onLocaleChange(() => {
   if (!session()) return
-  app.querySelector('.logo').textContent = t('app.title')
+  app.querySelector('.oas-logo-word').textContent = t('app.title')
   app.querySelector('#lang-toggle').textContent = t('header.lang')
   app.querySelector('#logout').textContent = t('header.logout')
   syncNav()

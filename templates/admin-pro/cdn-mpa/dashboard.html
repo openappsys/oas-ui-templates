@@ -13,7 +13,10 @@
     <oas-layout class="app" viewport>
       <header class="app-header" slot="header">
           <button id="nav-toggle" class="nav-toggle" type="button" aria-label="打开菜单">☰</button>
-        <a class="logo" href="/" data-i18n="app.title" style="text-decoration:none;color:inherit;cursor:pointer">OAS Admin CDN · MPA</a>
+        <a class="oas-logo" href="/" style="text-decoration:none;cursor:pointer">
+          <span class="oas-logo-badge">OAS</span>
+          <span class="oas-logo-word" data-i18n="app.title">OAS Admin CDN · MPA</span>
+        </a>
         <span class="spacer"></span>
         <button id="lang-toggle" data-testid="lang-toggle" class="icon-btn" type="button" data-i18n="header.lang">English</button>
         <button id="logout" class="icon-btn" type="button" data-i18n="header.logout">退出</button>
