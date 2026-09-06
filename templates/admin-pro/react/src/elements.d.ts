@@ -117,6 +117,7 @@ declare module 'react/jsx-runtime' {
         onOasChange?: (e: Event) => void
       }
       'oas-slider': OasBase & {
+        name?: string
         min?: string | number
         max?: string | number
         step?: string | number
@@ -231,6 +232,10 @@ declare module 'react/jsx-runtime' {
         checkable?: boolean
         stripe?: boolean
         editable?: boolean
+        pagination?: boolean
+        'page-size'?: string | number
+        current?: string | number
+        loading?: boolean
         onOasSortChange?: (e: Event) => void
       }
       'oas-masonry': OasBase & {
@@ -287,9 +292,93 @@ declare module 'react/jsx-runtime' {
       }
       'oas-progress': OasBase & {
         percent?: string | number
+        /** vanilla data-board 页原样使用的属性名（组件当前读取 percent，此处仅为 DOM 对齐） */
+        value?: string | number
         'show-text'?: string | boolean
         status?: string
       }
+      'oas-auto-complete': OasBase & {
+        name?: string
+        value?: string
+        options?: string
+        placeholder?: string
+        disabled?: boolean
+        onOasChange?: (e: Event) => void
+      }
+      'oas-cascader': OasBase & {
+        name?: string
+        value?: string
+        options?: string
+        placeholder?: string
+        disabled?: boolean
+        onOasChange?: (e: Event) => void
+      }
+      'oas-combobox': OasBase & {
+        name?: string
+        value?: string
+        options?: string
+        placeholder?: string
+        disabled?: boolean
+        onOasChange?: (e: Event) => void
+      }
+      'oas-tree-select': OasBase & {
+        name?: string
+        value?: string
+        options?: string
+        placeholder?: string
+        disabled?: boolean
+        onOasChange?: (e: Event) => void
+      }
+      'oas-transfer': OasBase & {
+        data?: string
+        value?: string
+        onOasChange?: (e: Event) => void
+      }
+      'oas-dynamic-tags': OasBase & {
+        name?: string
+        value?: string
+        placeholder?: string
+        onOasChange?: (e: Event) => void
+      }
+      'oas-pin-input': OasBase & {
+        name?: string
+        length?: string | number
+        value?: string
+        onOasChange?: (e: Event) => void
+      }
+      'oas-rate': OasBase & {
+        name?: string
+        value?: string | number
+        disabled?: boolean
+        onOasChange?: (e: Event) => void
+      }
+      'oas-watermark': OasBase & {
+        text?: string
+        image?: string
+        opacity?: string | number
+        repeat?: boolean
+      }
+      'oas-statistic': OasBase & {
+        value?: string | number
+        precision?: string | number
+        prefix?: string
+        suffix?: string
+        'group-separator'?: string
+        loading?: boolean
+      }
+      'oas-number-animation': OasBase & {
+        value?: string | number
+        duration?: string | number
+        'to-fixed'?: string | number
+      }
+      'oas-descriptions': OasBase & {
+        column?: string | number
+        title?: string
+      }
+      'oas-descriptions-item': OasBase & {
+        label?: string
+      }
+      'oas-divider': OasBase
     }
   }
 }
