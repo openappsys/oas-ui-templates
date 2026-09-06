@@ -64,6 +64,16 @@ export const appRoutes: AppRoute[] = [
     Component: () => import('../pages/products.vue'),
   },
   {
+    path: '/form',
+    meta: {
+      titleKey: 'nav.createOrder',
+      icon: 'plus',
+      iconColor: 'var(--oas-color-warning)',
+      group: 'nav.business',
+    },
+    Component: () => import('../pages/form.vue'),
+  },
+  {
     path: '/products/edit',
     meta: {
       titleKey: 'nav.products',
@@ -73,6 +83,16 @@ export const appRoutes: AppRoute[] = [
       parent: '/products',
     },
     Component: () => import('../pages/product-edit.vue'),
+  },
+  {
+    path: '/basic-form',
+    meta: {
+      titleKey: 'nav.basicForm',
+      icon: 'form',
+      iconColor: 'var(--oas-color-success)',
+      group: 'nav.demo',
+    },
+    Component: () => import('../pages/basic-form.vue'),
   },
   {
     path: '/advanced-form',
@@ -136,6 +156,50 @@ export const appRoutes: AppRoute[] = [
       group: 'nav.system',
     },
     Component: () => import('../pages/category.vue'),
+  },
+  {
+    path: '/system/roles',
+    meta: {
+      titleKey: 'nav.roles',
+      icon: 'star-filled',
+      iconColor: 'var(--oas-tint-violet)',
+      roles: ['admin'],
+      group: 'nav.system',
+    },
+    Component: () => import('../pages/roles.vue'),
+  },
+  {
+    path: '/system/menus',
+    meta: {
+      titleKey: 'nav.menus',
+      icon: 'lock',
+      iconColor: 'var(--oas-color-primary)',
+      roles: ['admin'],
+      group: 'nav.system',
+    },
+    Component: () => import('../pages/menus.vue'),
+  },
+  {
+    path: '/system/dept',
+    meta: {
+      titleKey: 'nav.dept',
+      icon: 'organization',
+      iconColor: 'var(--oas-tint-cyan)',
+      roles: ['admin'],
+      group: 'nav.system',
+    },
+    Component: () => import('../pages/dept.vue'),
+  },
+  {
+    path: '/system/dict',
+    meta: {
+      titleKey: 'nav.dict',
+      icon: 'search',
+      iconColor: 'var(--oas-color-success)',
+      roles: ['admin'],
+      group: 'nav.system',
+    },
+    Component: () => import('../pages/dict.vue'),
   },
   {
     path: '/system/logs',

@@ -69,6 +69,10 @@ declare module 'vue' {
     'oas-result': any
     'oas-virtual-list': any
     'oas-anchor': any
+    // Task 4（dept/dict/menus/roles/basic-form/form 页）新增：同上按 vanilla 用到的标签补入
+    'oas-tree': any
+    'oas-splitter': any
+    'oas-checkbox-group': any
   }
 }
 export {}
