@@ -9,8 +9,8 @@
 | 模版 | 技术栈 | 说明 | 单测 | e2e | 状态 |
 | --- | --- | --- | --- | --- | --- |
 | `templates/admin-pro/vanilla-html` | Vite + TypeScript | 后台管理系统（零框架 · i18n / 请求层 / 权限守卫 / 多页签 / **可配置导航**（sidebar/menubar/navigation × 左/右/顶）/ **设置中心**（外观 / 布局 / 数据 / 通知）） | ✅ | ✅ | 可用 |
-| `templates/admin-pro/react` | Vite + React 19 | 同 vanilla 全机制（react-router hash/history 双模式 · useOasEvent 事件桥接 · 11 页面对齐） | ✅ | ✅ | 可用 |
-| `templates/admin-pro/vue` | Vite + Vue 3.5 | 同 vanilla 全机制（vue-router · @oas-* 模板直绑 · 11 页面对齐） | ✅ | ✅ | 可用 |
+| `templates/admin-pro/react` | Vite + React 19 | 完整后台（react-router hash/history 双模式 · useOasEvent 事件桥接 · 与 vanilla 同等功能集，独立实现） | ✅ | ✅ | 可用 |
+| `templates/admin-pro/vue` | Vite + Vue 3.5 | 完整后台（vue-router · @oas-* 模板直绑 · 与 vanilla 同等功能集，独立实现） | ✅ | ✅ | 可用 |
 | `templates/admin-pro/cdn` | 零构建（unpkg CDN + 原生 JS） | 轻量后台（登录 / 路由 / CRUD / 表单 / 中英切换） | — | ✅ | 可用 |
 | `templates/admin-pro/cdn-mpa` | 零构建（unpkg CDN + 原生 JS） | 轻量后台 MPA（一页一 HTML · 登录 / CRUD / 表单 / 中英切换） | — | ✅ | 可用 |
 
