@@ -12,7 +12,12 @@ import { guard } from './guard'
 import { ROUTER_BASENAME, routerMode } from './mode'
 import { appRoutes, type AppRoute } from './routes'
 
-const Router = routerMode() === 'history' ? BrowserRouter : HashRouter
+const ROUTER_MODE = routerMode()
+const Router = ROUTER_MODE === 'history' ? BrowserRouter : HashRouter
+// basename 仅 history 模式适用（服务端子路径）；HashRouter 的 basename 指 hash 内部路径（#/ 后的 /），
+// 传入服务端 base 会与 #/ 解析出的 pathname 永不匹配 → Router 拒绝渲染白屏
+// （门户 pnpm dev 以 --base /admin-pro/react/ 挂子路径时实测踩中）
+const BASENAME = ROUTER_MODE === 'history' ? ROUTER_BASENAME : undefined
 
 function Guarded({ route }: { route: AppRoute }) {
   const user = useSyncExternalStore(session.subscribe, () => session.user)
@@ -35,7 +40,7 @@ export function AppRouter() {
   const user = useSyncExternalStore(session.subscribe, () => session.user)
   if (!user) {
     return (
-      <Router basename={ROUTER_BASENAME}>
+      <Router basename={BASENAME}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
@@ -44,7 +49,7 @@ export function AppRouter() {
     )
   }
   return (
-    <Router basename={ROUTER_BASENAME}>
+    <Router basename={BASENAME}>
       <Routes>
         <Route element={<AppShell />}>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
