@@ -23,7 +23,8 @@
 // 8. oas-pagination 的 hidden 例外：组件 update() 会无条件自摘 hidden（为 hide-on-single
 //    预留），声明式 :hidden 会被 total/current 变更触发的同步 update 吞掉（react 版「卡片
 //    视图下搜索」场景同样会丢 hidden）。故 pager 的 hidden 改由 watch(flush:'post') 在 Vue
-//    补丁与组件同步反应落完后命令式补写（hidden 不在 observedAttributes，不会回环）
+//    补丁与组件同步反应落完后命令式补写（hidden 不在 observedAttributes，不会回环）；
+//    依赖必须含 locale——组件基类在语言切换时自刷 update() 同样会摘 hidden
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import '../styles/pages/products.css'
@@ -123,10 +124,11 @@ const pageRows = computed(() =>
   filtered.value.slice((current.value - 1) * pageSize, current.value * pageSize),
 )
 
-// oas-pagination hidden 命令式补写（原因见头注释第 8 条；依赖覆盖 total/current/hidden 全部输入）
+// oas-pagination hidden 命令式补写（原因见头注释第 8 条；依赖覆盖 total/current/hidden
+// 全部输入 + locale——切语言时组件基类自刷 update() 也会摘 hidden）
 const pagerHidden = computed(() => view.value !== 'table' || filtered.value.length === 0)
 watch(
-  [pagerHidden, current, filtered],
+  [pagerHidden, current, filtered, locale],
   () => {
     if (pagerHidden.value) pagerRef.value?.setAttribute('hidden', '')
     else pagerRef.value?.removeAttribute('hidden')

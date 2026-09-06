@@ -19,6 +19,15 @@
 // 6. 子组件拆分（单文件 ≤400 行纪律）：表格 ./products-table.tsx、表单 ./product-form.tsx、
 //    批量栏 ./products-batch-bar.tsx、列设置弹窗 ./products-columns-modal.tsx；
 //    page 形态跳 /products/edit（sessionStorage 键 product-edit-id 与 vanilla 逐字一致）
+// 7. oas-pagination 的 hidden 声明式失效：组件 update() 在非 hide-on-single 路径无条件
+//    removeAttribute("hidden")（node_modules/@oas-ui/ui/dist/navigation/pagination/
+//    oas-pagination.js:93），hidden 不在 observedAttributes（补写不回环）。后果：total/
+//    current 任一变更（卡片视图搜索、切视图且 page≠1、表格搜空）及组件基类语言自刷
+//    都会把 React 声明式写入的 hidden 摘掉。解法对齐 vanilla（products.ts:378-393,570
+//    在 setAttribute total/current 之后命令式赋 pager.hidden）与 vue 版（watch flush:post）：
+//    保留 JSX 声明式 hidden 作首渲染兜底，useEffect 在提交后（晚于 React 的 attribute 补丁
+//    与组件同步 update）以 pager.hidden 属性赋值命令式补写，依赖覆盖 hidden 全部输入
+//    （view/filtered.length/current）+ locale（基类切语言自刷 update 同样摘 hidden）
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import '../styles/pages/products.css'
@@ -65,7 +74,7 @@ function formatMoney(n: number): string {
 }
 
 export default function ProductsPage() {
-  const { t } = useT()
+  const { t, locale } = useT()
   const navigate = useNavigate()
   const [rows, setRows] = useState<ProductRow[]>([])
   const [categories, setCategories] = useState<Option[]>([])
@@ -117,6 +126,16 @@ export default function ProductsPage() {
   const maxPage = Math.max(1, Math.ceil(filtered.length / pageSize))
   const current = Math.min(page, maxPage)
   const pageRows = filtered.slice((current - 1) * pageSize, current * pageSize)
+
+  // oas-pagination hidden 命令式补写（因果链见头注释第 7 条）：
+  // 组件 update() 在 total/current 变化与语言自刷时无条件摘 hidden，声明式写入会被吞；
+  // hidden 不在 observedAttributes，补写不触发回环，故提交后赋权威值是安全的。
+  // 依赖必须含 filtered.length（即 total）——total 变化本身就触发组件摘 hidden，
+  // 即使 shouldHidePager 逻辑值未变也要补写（「卡片视图搜索」场景）
+  const shouldHidePager = view !== 'table' || filtered.length === 0
+  useEffect(() => {
+    if (pagerRef.current) pagerRef.current.hidden = shouldHidePager
+  }, [shouldHidePager, filtered.length, current, locale])
 
   // vanilla openForm：page 模式写 sessionStorage 跳编辑页；其余就地开表单容器
   const openForm = (row: ProductRow | null) => {
@@ -354,10 +373,11 @@ export default function ProductsPage() {
         onCheck={setSelected}
         onInlineEdit={inlineEdit}
       />
+      {/* hidden 声明式仅首渲染兜底，权威值由上方 useEffect 命令式补写（头注释第 7 条） */}
       <oas-pagination
         ref={pagerRef}
         data-testid="product-pager"
-        hidden={view !== 'table' || filtered.length === 0}
+        hidden={shouldHidePager}
         total={filtered.length}
         page-size={pageSize}
         current={current}
