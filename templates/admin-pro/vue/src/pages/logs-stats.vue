@@ -33,3 +33,23 @@ void locale.value
     </oas-card>
   </div>
 </template>
+
+<style scoped>
+/* 日志统计卡样式（自 logs.css 迁入）：logs.vue（主列表）/本组件/详情弹窗三处共用文件按归属拆分 */
+.logs-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--oas-space-3);
+  margin-bottom: var(--oas-space-3);
+}
+
+.logs-stats .stat-card {
+  min-height: 96px;
+}
+
+@media (max-width: 768px) {
+  .logs-stats {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

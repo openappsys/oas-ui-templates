@@ -256,3 +256,26 @@ function onClearFilters(): void {
     />
   </div>
 </template>
+
+<style scoped>
+/* 用户页样式（自 app.css 迁入）：仅本页使用的工具栏 */
+.users-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-2);
+  flex-wrap: wrap;
+}
+.users-toolbar oas-input {
+  width: 220px;
+}
+.users-toolbar oas-select {
+  width: 140px;
+}
+
+@media (max-width: 768px) {
+  .users-toolbar oas-input,
+  .users-toolbar oas-select {
+    width: 100%;
+  }
+}
+</style>

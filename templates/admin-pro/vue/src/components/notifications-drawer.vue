@@ -80,3 +80,70 @@ function onListClick(e: Event): void {
     </div>
   </oas-drawer>
 </template>
+
+<style scoped>
+/* 通知抽屉样式（自 app.css 迁入）：slot 内容（notif-desc 等）留在 light DOM，scoped 属性选择器照常命中 */
+.notif-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+.notif-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+.notif-foot {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-top: var(--oas-space-3);
+  margin-top: var(--oas-space-2);
+  border-top: 1px solid var(--oas-color-border);
+}
+.notif-item {
+  cursor: pointer;
+}
+.notif-item:hover {
+  background: var(--oas-color-bg-hover);
+}
+.notif-item.is-unread {
+  background: color-mix(in srgb, var(--oas-color-primary) 7%, transparent);
+}
+.notif-item.is-unread:hover {
+  background: color-mix(in srgb, var(--oas-color-primary) 13%, transparent);
+}
+.notif-item.is-unread::part(title) {
+  font-weight: 600;
+}
+.notif-item.is-unread::part(title)::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--oas-color-primary);
+  margin-inline-end: var(--oas-space-2);
+  vertical-align: 1px;
+}
+.notif-desc {
+  display: block;
+  margin-top: var(--oas-space-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.notif-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--oas-space-2);
+}
+.notif-time {
+  font-family: var(--app-mono);
+  font-size: var(--oas-font-size-xs);
+  color: var(--oas-color-text-secondary);
+  white-space: nowrap;
+}
+</style>

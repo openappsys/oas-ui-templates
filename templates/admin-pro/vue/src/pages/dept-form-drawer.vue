@@ -209,3 +209,16 @@ async function onSubmit(e: Event): Promise<void> {
     </oas-form>
   </oas-drawer>
 </template>
+
+<style scoped>
+/* 部门抽屉样式（自 dept.css 迁入） */
+.dept-form-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-4);
+}
+.dept-form-body oas-tree-select,
+.dept-form-body oas-input-number {
+  width: 100%;
+}
+</style>

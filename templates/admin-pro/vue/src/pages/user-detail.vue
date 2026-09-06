@@ -111,3 +111,19 @@ const statusTagType = computed(() => (props.user?.status === 'active' ? 'success
     </div>
   </oas-modal>
 </template>
+
+<style scoped>
+/* 用户详情样式（自 app.css 迁入） */
+.detail-header {
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-3);
+  margin-bottom: var(--oas-space-4);
+}
+.detail-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--oas-color-text-primary);
+  line-height: 1.4;
+}
+</style>

@@ -141,3 +141,15 @@ async function onSubmit(e: Event): Promise<void> {
     </div>
   </oas-modal>
 </template>
+
+<style scoped>
+/* 字典项弹窗样式（自 dict.css 迁入）：.dict-form-body 为三个弹窗共用的表单纵向布局，各自 scoped 持有 */
+.dict-form-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-4);
+}
+.dict-form-body oas-input-number {
+  width: 100%;
+}
+</style>

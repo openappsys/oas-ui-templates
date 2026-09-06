@@ -203,3 +203,20 @@ async function onSubmit(e: Event): Promise<void> {
     </oas-form>
   </oas-drawer>
 </template>
+
+<style scoped>
+/* 角色抽屉样式（自 app.css 迁入）：.radio-group/.form-hint 基类多组件共用留全局，仅容器布局迁入 */
+.role-form-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-4);
+}
+.role-form-body oas-transfer {
+  width: 100%;
+}
+.role-form-body oas-transfer::part(panel) {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+}
+</style>

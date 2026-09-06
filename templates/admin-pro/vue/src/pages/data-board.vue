@@ -3,7 +3,6 @@
 //    boardData() 静态数据取一次，图表 data/卡片标题/月份标签全部 computed（依赖 locale），
 //    本模版 v-if/v-else 同分支，data-testid 命名（anim-*/stat-*）逐字一致
 import { computed } from 'vue'
-import '../styles/pages/data-board.css'
 import { boardData } from '../data/board'
 import type { CategorySlice, ChannelSeries } from '../data/board'
 import { useT } from '../composables/use-t'
@@ -89,3 +88,84 @@ const stackedOptions = JSON.stringify({ showLegend: true })
     </oas-watermark>
   </div>
 </template>
+
+<style scoped>
+/* 数据看板样式（自 data-board.css 迁入）：.stat-card/.stat-label/.stat-value 在此覆盖全局基线（app.css） */
+.board-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--oas-space-4);
+  margin-bottom: var(--oas-space-4);
+}
+.stat-card {
+  padding: var(--oas-space-4);
+}
+.stat-label {
+  font-size: var(--oas-font-size-sm);
+  color: var(--oas-color-text-secondary);
+  margin-bottom: var(--oas-space-2);
+}
+.stat-value {
+  display: flex;
+  align-items: baseline;
+  gap: var(--oas-space-1);
+  font-size: var(--oas-font-size-xl);
+  font-weight: 600;
+  color: var(--oas-color-text-primary);
+}
+.stat-prefix {
+  font-size: var(--oas-font-size-lg);
+  color: var(--oas-color-text-secondary);
+}
+.board-charts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--oas-space-4);
+  margin-bottom: var(--oas-space-4);
+}
+.chart-card {
+  padding: var(--oas-space-4);
+}
+.chart-card--wide {
+  grid-column: 1 / -1;
+}
+.board-progress {
+  padding: var(--oas-space-4);
+}
+.progress-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-4);
+}
+.progress-row {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  align-items: center;
+  gap: var(--oas-space-3);
+}
+.progress-label {
+  font-size: var(--oas-font-size-sm);
+  color: var(--oas-color-text-secondary);
+  text-align: right;
+}
+@media (max-width: 900px) {
+  .board-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .board-charts {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 640px) {
+  .board-grid {
+    grid-template-columns: 1fr;
+  }
+  .progress-row {
+    grid-template-columns: 1fr;
+    gap: var(--oas-space-1);
+  }
+  .progress-label {
+    text-align: left;
+  }
+}
+</style>

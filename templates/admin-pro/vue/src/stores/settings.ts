@@ -96,7 +96,10 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   function applyDensity(): void {
-    document.documentElement.style.setProperty('--oas-table-cell-padding-block', DENSITY_PAD[density.value])
+    document.documentElement.style.setProperty(
+      '--oas-table-cell-padding-block',
+      DENSITY_PAD[density.value],
+    )
   }
 
   function applyFontSize(): void {

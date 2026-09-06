@@ -8,7 +8,6 @@
 // 3. 锚点联动：oas-scroll → 子组件 currentScrollIndex() 反查日期 → anchor active；
 // 4. 事件绑定：level/keyword/date-picker 的 oas-change/oas-input/oas-clear 模板直绑
 //    导出按钮原生 click 直绑 @click
-import '../styles/pages/logs.css'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import type { LogEntry, LogLevel } from '../data/logs'
 import { useT } from '../composables/use-t'
@@ -275,3 +274,127 @@ onUnmounted(() => {
     <LogsDetailModal :open="detailOpen" :entry="selected" @close="detailOpen = false" />
   </div>
 </template>
+
+<style scoped>
+/* 日志中心样式（自 logs.css 迁入）：统计卡在 logs-stats.vue、详情弹窗体在 logs-detail-modal.vue 各自持有。
+   oas-virtual-list 是 LogsVList 子组件根节点（继承本组件 data-v），::part 规则照常生效 */
+.logs-card::part(body) {
+  padding-top: var(--oas-space-3);
+}
+
+.logs-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-2);
+  flex-wrap: wrap;
+}
+
+.logs-toolbar oas-select {
+  width: 140px;
+}
+
+.logs-toolbar oas-input {
+  width: 220px;
+}
+
+.logs-toolbar oas-date-picker {
+  width: 260px;
+}
+
+.logs-main {
+  display: grid;
+  grid-template-columns: 1fr 160px;
+  gap: var(--oas-space-3);
+  align-items: start;
+}
+
+.logs-list-wrap {
+  min-width: 0;
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-md);
+  overflow: hidden;
+}
+
+.logs-header {
+  display: grid;
+  grid-template-columns: 120px 80px 110px 1fr 130px;
+  gap: var(--oas-space-3);
+  align-items: center;
+  padding: var(--oas-space-2) var(--oas-space-4);
+  background: var(--oas-color-bg-hover);
+  border-bottom: 1px solid var(--oas-color-border);
+  font-size: var(--oas-font-size-sm);
+  color: var(--oas-color-text-secondary);
+  font-weight: 500;
+}
+
+.logs-list-body {
+  position: relative;
+  height: 480px;
+}
+
+.logs-list-body oas-virtual-list {
+  height: 100%;
+}
+
+.logs-list-body oas-virtual-list::part(item) {
+  display: grid;
+  grid-template-columns: 120px 80px 110px 1fr 130px;
+  gap: var(--oas-space-3);
+  align-items: center;
+  padding: 0 var(--oas-space-4);
+  border-bottom: 1px solid var(--oas-color-border);
+  cursor: pointer;
+  transition: background var(--oas-transition-fast) ease;
+}
+
+.logs-list-body oas-virtual-list::part(item):hover {
+  background: var(--oas-color-bg-hover);
+}
+
+.logs-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--oas-color-bg);
+}
+
+.logs-empty[hidden] {
+  display: none;
+}
+
+.logs-anchor-wrap {
+  position: sticky;
+  top: var(--oas-space-3);
+}
+
+@media (max-width: 768px) {
+  .logs-main {
+    grid-template-columns: 1fr;
+  }
+
+  .logs-toolbar oas-select,
+  .logs-toolbar oas-input,
+  .logs-toolbar oas-date-picker {
+    width: 100%;
+  }
+
+  .logs-header {
+    grid-template-columns: 70px 56px 70px 1fr 90px;
+    padding-inline: var(--oas-space-3);
+    font-size: var(--oas-font-size-xs);
+  }
+
+  .logs-list-body oas-virtual-list::part(item) {
+    grid-template-columns: 70px 56px 70px 1fr 90px;
+    padding-inline: var(--oas-space-3);
+  }
+
+  .logs-anchor-wrap {
+    position: static;
+    order: -1;
+  }
+}
+</style>

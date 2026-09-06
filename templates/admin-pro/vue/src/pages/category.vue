@@ -6,7 +6,6 @@
 //    composed click 能冒泡出 oas-table shadow，users-table.vue 先例）
 //    从 oas-ok 事件取 source → data-del-id（v2.2.8 popconfirm 原生自驱动，无需手动 open）
 //    本模版 useT() 订阅后整页重渲染，columns（含行内标签）随 locale 自动重算
-import '../styles/pages/dict.css'
 import { computed, onMounted, ref } from 'vue'
 import type { TableColumn } from '@oas-ui/ui/data/table'
 import { listCategories, removeCategory } from '../data/categories'
@@ -182,3 +181,21 @@ function onSearchClear(): void {
     />
   </div>
 </template>
+
+<style scoped>
+/* 分类页样式（自 app.css / dict.css 迁入）：仅本页使用的搜索框与字典右栏头部 */
+.category-search {
+  width: 280px;
+  max-width: 100%;
+}
+.category-search::part(input) {
+  height: 32px;
+}
+.dict-pane-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--oas-space-2);
+  margin-bottom: var(--oas-space-2);
+}
+</style>

@@ -5,12 +5,7 @@ import { ref } from 'vue'
 import type { Ref } from 'vue'
 import { useT } from './use-t'
 import { listCategories } from '../data/categories'
-import {
-  listProducts,
-  removeProduct,
-  toggleProductStatus,
-  updateProduct,
-} from '../data/products'
+import { listProducts, removeProduct, toggleProductStatus, updateProduct } from '../data/products'
 import type { ProductRow } from '../data/products'
 import { appMessage } from '../lib/app-message'
 

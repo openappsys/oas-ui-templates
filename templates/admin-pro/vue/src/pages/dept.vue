@@ -11,7 +11,6 @@
 //    detail.source 带 data-del 反查（v2.2.8 popconfirm 原生自驱动，无需模板手动 open）；
 //    行内编辑按钮经 @click composedPath 匹配（category.vue 同款）
 //    本模版 useT() 订阅后整页重渲染，columns（含行内标签）随 locale 自动重算
-import '../styles/pages/dept.css'
 import { computed, onMounted, ref } from 'vue'
 import type { TableColumn } from '@oas-ui/ui/data/table'
 import { listDepts, removeDept, treeDepts } from '../data/system'
@@ -299,3 +298,68 @@ function onFormSaved(): void {
     />
   </div>
 </template>
+
+<style scoped>
+/* 部门页样式（自 dept.css / app.css 迁入）；.dept-form-body 在抽屉组件内持有，本页不含 */
+.dept-layout {
+  margin-bottom: var(--oas-space-3);
+}
+.dept-layout::part(pane-left),
+.dept-layout::part(pane-right) {
+  min-width: 0;
+}
+.dept-tree-card::part(body) {
+  padding: 0;
+}
+.dept-tree-card oas-tree {
+  padding: var(--oas-space-2);
+}
+.dept-member-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  margin-left: var(--oas-space-2);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--oas-color-primary) 14%, transparent);
+  color: var(--oas-color-primary);
+  font-family: var(--app-mono);
+  font-size: 11px;
+  line-height: 1;
+  vertical-align: middle;
+}
+.dept-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-4);
+}
+.dept-detail-head {
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-2);
+}
+.dept-detail-title {
+  font-size: 16px;
+  font-weight: 650;
+  color: var(--oas-color-text-primary);
+}
+.dept-detail-actions {
+  display: flex;
+  gap: var(--oas-space-2);
+  align-items: center;
+}
+.sub-dept-empty {
+  text-align: center;
+  padding: var(--oas-space-6);
+  color: var(--oas-color-text-secondary);
+  font-size: var(--oas-font-size-sm);
+}
+.tree-node-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--oas-space-1);
+  min-width: 0;
+}
+</style>

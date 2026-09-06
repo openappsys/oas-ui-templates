@@ -257,3 +257,177 @@ function onSearchKeydown(e: KeyboardEvent): void {
     </oas-dropdown>
   </header>
 </template>
+
+<style scoped>
+/* 顶栏样式（自 app.css 迁入）：scoped 仅追加 data-v 属性、不改类名 */
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-3);
+  padding: 0 var(--oas-space-4);
+  padding-left: calc(var(--oas-space-4) + var(--oas-space-3) + var(--oas-space-2));
+  height: 56px;
+  border-bottom: 1px solid var(--oas-color-border);
+}
+.spacer {
+  flex: 1;
+}
+
+.global-search {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--oas-space-2);
+  cursor: pointer;
+}
+.global-search oas-input {
+  width: 100%;
+  max-width: 400px;
+}
+.global-search:hover oas-input::part(input) {
+  border-color: var(--oas-color-primary);
+}
+.kbd-hint {
+  font-family: var(--app-mono);
+  font-size: 10px;
+  line-height: 1;
+  color: var(--oas-color-text-secondary);
+  border: 1px solid var(--oas-color-border);
+  border-radius: 4px;
+  padding: 3px 6px;
+  user-select: none;
+}
+
+.theme-dot {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+.theme-dot::before {
+  content: "";
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid var(--oas-color-border);
+  background: transparent;
+  box-shadow: inset 4px 2px 0 0 var(--oas-color-text-primary);
+}
+/* 暗色主题下的日/月切换点：conic-gradient 画月相（html 祖先选择器在 scoped 下仅主题部分生效） */
+html[data-theme="dark"] .theme-dot::before {
+  background:
+    radial-gradient(circle, var(--oas-color-text-primary) 4px, transparent 5px),
+    conic-gradient(
+      from 0deg,
+      var(--oas-color-text-primary) 0deg 12deg,
+      transparent 12deg 33deg,
+      var(--oas-color-text-primary) 33deg 45deg,
+      transparent 45deg 66deg,
+      var(--oas-color-text-primary) 66deg 78deg,
+      transparent 78deg 99deg,
+      var(--oas-color-text-primary) 99deg 111deg,
+      transparent 111deg 132deg,
+      var(--oas-color-text-primary) 132deg 144deg,
+      transparent 144deg 165deg,
+      var(--oas-color-text-primary) 165deg 177deg,
+      transparent 177deg 198deg,
+      var(--oas-color-text-primary) 198deg 210deg,
+      transparent 210deg 231deg,
+      var(--oas-color-text-primary) 231deg 243deg,
+      transparent 243deg 264deg,
+      var(--oas-color-text-primary) 264deg 276deg,
+      transparent 276deg 297deg,
+      var(--oas-color-text-primary) 297deg 309deg,
+      transparent 309deg 330deg,
+      var(--oas-color-text-primary) 330deg 342deg,
+      transparent 342deg 360deg
+    );
+  box-shadow: none;
+  border: none;
+}
+
+.icon-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  color: var(--oas-color-text-primary);
+}
+.icon-btn:hover {
+  background: var(--oas-color-bg-hover);
+}
+.icon-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+}
+
+.fullscreen-btn .fs-compress {
+  display: none;
+}
+.fullscreen-btn.is-fullscreen .fs-compress {
+  display: inline-flex;
+}
+.fullscreen-btn.is-fullscreen .fs-expand {
+  display: none;
+}
+
+/* 通知 badge 数字变化时的弹跳动画：keyframes 会被 scoped 重命名，同块内引用同步改写，行为一致 */
+#notif-badge.is-pop::part(badge) {
+  animation: notifBadgePop 300ms var(--oas-ease-out);
+}
+@keyframes notifBadgePop {
+  0% {
+    scale: 0.6;
+  }
+  60% {
+    scale: 1.15;
+  }
+  100% {
+    scale: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #notif-badge.is-pop::part(badge) {
+    animation: none;
+  }
+}
+
+/* ☰ 折叠钮：桌面隐藏，移动端显示 */
+.nav-toggle {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .app-header {
+    padding-left: var(--oas-space-4);
+  }
+  .nav-toggle {
+    display: inline-flex;
+  }
+
+  @media (pointer: coarse) {
+    .nav-toggle::part(button) {
+      min-height: 44px;
+    }
+  }
+  .global-search {
+    display: none;
+  }
+  .fullscreen-btn {
+    display: none;
+  }
+}
+</style>

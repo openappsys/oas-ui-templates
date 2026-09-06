@@ -8,7 +8,6 @@
 //    整页重渲染，title/rules/placeholder/标签随 locale 自动重算（products 同款模式）
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import '../styles/pages/products.css'
 import { listCategories } from '../data/categories'
 import { createProduct, getProduct, updateProduct } from '../data/products'
 import type { ProductRow } from '../data/products'
@@ -212,3 +211,12 @@ const catOptionsJson = computed(() => JSON.stringify(catOptions.value))
     </oas-card>
   </div>
 </template>
+
+<style scoped>
+/* 商品编辑样式（自 app.css 迁入）：.product-form 布局与 product-form 页同构，各自 scoped 持有 */
+.product-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-3);
+}
+</style>

@@ -64,3 +64,12 @@ const levelTag = computed(() => (props.entry ? LEVEL_TAG[props.entry.level] : 'd
     </div>
   </oas-modal>
 </template>
+
+<style scoped>
+/* 日志详情弹窗样式（自 logs.css 迁入） */
+.logs-detail-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-3);
+}
+</style>

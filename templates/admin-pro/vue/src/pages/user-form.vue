@@ -165,3 +165,10 @@ async function onSubmit(e: Event): Promise<void> {
     </div>
   </oas-modal>
 </template>
+
+<style scoped>
+/* 用户表单弹窗样式（自 app.css 迁入）：部门树下拉需溢出弹窗体 */
+oas-modal[data-testid="user-form-modal"]::part(body) {
+  overflow: visible;
+}
+</style>

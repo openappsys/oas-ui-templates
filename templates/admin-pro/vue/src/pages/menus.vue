@@ -220,3 +220,45 @@ function onFormSubmit(p: MenuFormPayload): void {
     />
   </div>
 </template>
+
+<style scoped>
+/* 菜单管理样式（自 app.css 迁入）；.tree-type-icon/.tree-type-tag 为历史遗留无引用（保留 app.css 原样） */
+.menu-layout {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: var(--oas-space-3);
+  margin-bottom: var(--oas-space-3);
+}
+.menu-tree-card::part(body) {
+  padding: 0;
+}
+.menu-tree-card oas-tree {
+  padding: var(--oas-space-2);
+}
+.menu-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-4);
+}
+.menu-detail-head {
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-2);
+}
+.menu-detail-title {
+  font-size: 16px;
+  font-weight: 650;
+  color: var(--oas-color-text-primary);
+}
+.menu-detail-actions {
+  display: flex;
+  gap: var(--oas-space-2);
+  align-items: center;
+}
+
+@media (max-width: 992px) {
+  .menu-layout {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

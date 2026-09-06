@@ -17,7 +17,6 @@
 //    依赖必须含 locale——组件基类在语言切换时自刷 update() 同样会摘 hidden
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import '../styles/pages/products.css'
 import { stockLevel } from '../data/products'
 import type { ProductRow } from '../data/products'
 import { useT } from '../composables/use-t'
@@ -322,3 +321,202 @@ const viewOptions = computed(() =>
     />
   </div>
 </template>
+
+<style scoped>
+/* 商品卡片视图样式（自 app.css 迁入）：卡片内元素均为模板渲染（带 data-v），可 scoped；
+   表格视图的单元格 DOM 由 products-table.vue 命令式创建（无 data-v），见下方非 scoped 块 */
+.products-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-2);
+  flex-wrap: wrap;
+  margin-bottom: var(--oas-space-3);
+}
+.products-toolbar oas-input {
+  width: 260px;
+}
+.products-toolbar oas-select {
+  width: 140px;
+}
+
+.product-card {
+  display: flex;
+  flex-direction: column;
+}
+.product-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--oas-space-2);
+}
+.product-name {
+  font-size: var(--oas-font-size-md);
+  font-weight: 600;
+  color: var(--oas-color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.product-card .cat-tag {
+  flex-shrink: 0;
+}
+.product-card .cat-tag::part(tag) {
+  background: var(--oas-color-bg-hover);
+  border-color: transparent;
+  color: var(--oas-color-text-secondary);
+}
+.product-price {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--oas-color-text-primary);
+  margin: var(--oas-space-3) 0;
+}
+.product-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--oas-space-2);
+  flex-wrap: wrap;
+}
+.product-date {
+  font-size: var(--oas-font-size-xs);
+  color: var(--oas-color-text-secondary);
+}
+.product-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--oas-space-2);
+  margin-top: var(--oas-space-4);
+}
+.product-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--oas-space-2);
+}
+.product-status-label {
+  font-size: var(--oas-font-size-sm);
+  color: var(--oas-color-text-secondary);
+}
+
+@media (max-width: 768px) {
+  .product-card .product-edit {
+    position: relative;
+  }
+  .product-card .product-edit::after {
+    content: "";
+    position: absolute;
+    inset: -12px;
+  }
+  .product-card oas-switch::part(switch) {
+    --track-w: 72px;
+    --track-h: 44px;
+    --thumb-size: 36px;
+    --thumb-offset: 4px;
+    --thumb-travel: 28px;
+  }
+}
+</style>
+
+<style>
+/* 表格视图样式（自 products.css 迁入 + app.css 的 .product-stock 系列迁入）：
+   单元格 DOM（cat-tag/product-stock 等）由 products-table.vue 用 document.createElement 命令式创建，
+   不会携带 Vue 的 data-v 属性，scoped 选择器无法命中——故保留全局选择器（等价迁移前的全局 import） */
+.products-page [hidden] {
+  display: none !important;
+}
+.products-toolbar .products-view-toggle {
+  margin-left: auto;
+}
+.products-view-toggle {
+  flex-shrink: 0;
+}
+.products-columns-btn {
+  flex-shrink: 0;
+}
+.product-batch-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--oas-space-2) var(--oas-space-3);
+  flex-wrap: wrap;
+  padding: var(--oas-space-2) var(--oas-space-3);
+  margin-bottom: var(--oas-space-3);
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-md);
+  background: var(--oas-color-bg-elevated);
+}
+.product-batch-count {
+  color: var(--oas-color-text-secondary);
+  font-size: var(--oas-font-size-sm);
+}
+.product-batch-actions {
+  margin-left: auto;
+}
+.product-columns-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--oas-space-2) var(--oas-space-4);
+  margin-bottom: var(--oas-space-4);
+}
+.product-column-check {
+  display: flex;
+  align-items: center;
+  min-height: var(--oas-control-height-md);
+}
+@media (max-width: 480px) {
+  .product-columns-list {
+    grid-template-columns: 1fr;
+  }
+}
+.products-table-wrap {
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-md);
+  overflow: auto;
+}
+.products-table-wrap oas-table {
+  min-width: 720px;
+}
+.product-list-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--oas-space-6);
+}
+.products-page oas-pagination {
+  margin-top: var(--oas-space-3);
+}
+.products-page .product-grid {
+  min-height: 120px;
+}
+.products-table-wrap .cat-tag::part(tag) {
+  background: var(--oas-color-bg-hover);
+  border-color: transparent;
+  color: var(--oas-color-text-secondary);
+}
+.products-table-wrap .product-stock.is-critical {
+  color: var(--oas-color-danger);
+  font-weight: 600;
+}
+.products-table-wrap .product-stock.is-low {
+  color: var(--oas-color-warning);
+  font-weight: 600;
+}
+.products-table-wrap .product-stock.is-ok {
+  color: var(--oas-color-text-secondary);
+}
+/* 库存文案基线（卡片视图模板元素与表格命令式单元格共用，故同样留全局选择器） */
+.product-stock {
+  font-size: var(--oas-font-size-sm);
+  color: var(--oas-color-text-secondary);
+}
+.product-stock.is-critical {
+  color: var(--oas-color-danger);
+  font-weight: 600;
+}
+.product-stock.is-low {
+  color: var(--oas-color-warning);
+  font-weight: 600;
+}
+</style>

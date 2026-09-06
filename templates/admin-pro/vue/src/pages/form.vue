@@ -374,3 +374,109 @@ function onProductsChange(e: Event): void {
     </oas-card>
   </div>
 </template>
+
+<style scoped>
+/* 分步向导样式（自 app.css 迁入）：仅本页使用；#view:has(.form-wizard) 的溢出放行在 app-shell scoped 块 */
+.form-wizard oas-steps {
+  margin-bottom: var(--oas-space-4);
+}
+
+.form-step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-4);
+}
+.form-step[hidden],
+.form-confirm[hidden] {
+  display: none;
+}
+
+.form-error {
+  color: var(--oas-color-danger);
+  font-size: var(--oas-font-size-xs);
+  margin-top: var(--oas-space-1);
+}
+.form-error[hidden] {
+  display: none;
+}
+
+.switch-line {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--oas-space-2);
+  min-height: var(--oas-control-height-md);
+}
+
+.form-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: var(--oas-space-3);
+  font-size: var(--oas-font-size-sm);
+  color: var(--oas-color-text-secondary);
+}
+.form-total .num {
+  font-family: var(--app-mono);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--oas-color-text-primary);
+}
+
+.form-items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-2);
+  margin-top: var(--oas-space-4);
+}
+.form-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--oas-space-3);
+  padding: var(--oas-space-2) var(--oas-space-3);
+  background: var(--oas-color-bg-hover);
+  border-radius: var(--oas-radius-md);
+  font-size: var(--oas-font-size-sm);
+  color: var(--oas-color-text-primary);
+}
+.form-item-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.form-item-calc {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.form-confirm {
+  margin-top: var(--oas-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-1);
+}
+
+.form-foot {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-3);
+  margin: var(--oas-space-4) calc(-1 * var(--oas-space-4)) calc(-1 * var(--oas-space-4));
+  padding: var(--oas-space-4);
+  border-top: 1px solid var(--oas-color-border);
+  background: var(--oas-color-bg);
+}
+.form-foot-summary[hidden] {
+  display: none;
+}
+/* 覆盖全局 .form-actions（app.css）的留白与分隔线：带 data-v 的复合选择器特异性更高，行为同迁移前 */
+.form-foot .form-actions {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+</style>

@@ -65,3 +65,28 @@ function go(path: string): void {
     </div>
   </div>
 </template>
+
+<style scoped>
+/* 结果页样式（自 app.css 迁入） */
+.result-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+}
+.result-wrap {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.result-page oas-result::part(description) {
+  font-family: var(--app-mono);
+}
+.result-actions {
+  display: flex;
+  gap: var(--oas-space-3);
+  justify-content: center;
+  margin-top: var(--oas-space-4);
+}
+</style>

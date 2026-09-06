@@ -138,3 +138,143 @@ const THEME_PREVIEWS = [
     </oas-card>
   </div>
 </template>
+
+<style scoped>
+/* 个人中心样式（自 app.css 迁入）：布局 + 主题预览小窗（.profile-left .body 指向 oas-card shadow 内部，
+   页面 CSS 本就不可达，保留在 app.css 原样不动） */
+.profile-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: var(--oas-space-3);
+  margin-bottom: var(--oas-space-3);
+}
+.profile-avatar-fallback {
+  font-size: 24px;
+  font-weight: 500;
+  color: var(--oas-color-text-on-primary);
+}
+.profile-logout-wrap {
+  display: flex;
+  justify-content: center;
+}
+.profile-avatar-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--oas-space-2);
+  margin: var(--oas-space-2) 0;
+}
+.profile-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--oas-color-text-primary);
+}
+.profile-theme {
+  margin-top: var(--oas-space-3);
+}
+.theme-previews {
+  display: flex;
+  gap: var(--oas-space-3);
+  flex-wrap: wrap;
+}
+.theme-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--oas-space-2);
+  padding: var(--oas-space-2);
+  border: 2px solid transparent;
+  border-radius: var(--oas-radius-md);
+  background: var(--oas-color-bg);
+  cursor: pointer;
+}
+.theme-preview.is-selected {
+  border-color: var(--oas-color-primary);
+}
+.theme-preview:hover {
+  background: var(--oas-color-bg-hover);
+}
+.preview-mini {
+  display: block;
+  width: 96px;
+  height: 64px;
+  border-radius: var(--oas-radius-sm);
+  border: 1px solid var(--oas-color-border);
+}
+.light-mini {
+  background: var(--oas-color-bg);
+  position: relative;
+}
+.light-mini::before,
+.light-mini::after {
+  content: "";
+  position: absolute;
+  background: var(--oas-color-bg-hover);
+  border-radius: 2px;
+}
+.light-mini::before {
+  top: 12px;
+  left: 10px;
+  width: 56px;
+  height: 10px;
+}
+.light-mini::after {
+  top: 28px;
+  left: 10px;
+  width: 36px;
+  height: 8px;
+}
+.dark-mini {
+  background: var(--oas-color-bg);
+  position: relative;
+}
+.dark-mini::before,
+.dark-mini::after {
+  content: "";
+  position: absolute;
+  background: var(--oas-color-text-secondary);
+  border-radius: 2px;
+}
+.dark-mini::before {
+  top: 12px;
+  left: 10px;
+  width: 56px;
+  height: 10px;
+}
+.dark-mini::after {
+  top: 28px;
+  left: 10px;
+  width: 36px;
+  height: 8px;
+}
+.system-mini {
+  background: linear-gradient(90deg, var(--oas-color-bg) 50%, var(--oas-color-text-primary) 50%);
+  position: relative;
+}
+.system-mini::before {
+  content: "";
+  position: absolute;
+  top: 12px;
+  left: 10px;
+  width: 28px;
+  height: 10px;
+  background: var(--oas-color-bg-hover);
+  border-radius: 2px;
+}
+.preview-label {
+  font-size: var(--oas-font-size-sm);
+  color: var(--oas-color-text-primary);
+}
+
+@media (max-width: 768px) {
+  .profile-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 992px) {
+  .profile-layout {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

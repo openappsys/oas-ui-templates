@@ -216,3 +216,20 @@ function onSubmit(e: Event): void {
     </oas-form>
   </oas-drawer>
 </template>
+
+<style scoped>
+/* 菜单抽屉样式（自 app.css 迁入）：.radio-group 基类多组件共用留全局，仅容器布局与行内提示迁入 */
+.menu-form-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-4);
+}
+.menu-form-body oas-tree-select {
+  width: 100%;
+}
+.form-hint-inline {
+  font-size: var(--oas-font-size-xs);
+  color: var(--oas-color-text-secondary);
+  font-weight: 400;
+}
+</style>

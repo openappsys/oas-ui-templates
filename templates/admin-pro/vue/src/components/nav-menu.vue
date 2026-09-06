@@ -104,3 +104,55 @@ onUnmounted(() => cancelAnimationFrame(rafId))
     />
   </oas-sider>
 </template>
+
+<style scoped>
+/* 导航轨道样式（自 app.css 迁入）：oas-sider/oas-sidebar 均在本组件模板内，scoped 生效 */
+/* sider 轨道：宽度由宿主 oas-sider 提供（200px），三形态共轨 */
+oas-sider {
+  width: 200px;
+  padding: 0;
+}
+/* 折叠过渡：宽/补白随 --oas-transition-base 缓动 */
+oas-sider {
+  transition:
+    width var(--oas-transition-base, 180ms) var(--oas-ease-out, cubic-bezier(0.2, 0, 0.2, 1)),
+    padding var(--oas-transition-base, 180ms) var(--oas-ease-out, cubic-bezier(0.2, 0, 0.2, 1));
+}
+oas-sider[collapsed] {
+  padding: 0;
+  width: 64px;
+}
+
+oas-sidebar {
+  --oas-control-height-lg: 32px;
+  height: 100%;
+}
+oas-sidebar::part(panel) {
+  min-height: 0;
+}
+
+oas-sidebar::part(toggle) {
+  margin: 0;
+}
+
+oas-sidebar::part(trigger) {
+  display: none;
+}
+
+oas-sidebar::part(item):hover {
+  background: color-mix(in srgb, var(--oas-color-text-primary) 6%, transparent);
+}
+oas-sidebar[collapsed]::part(group) {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  /* 移动端 sidebar 走自身 drawer：轨道收窄为 0（与 app-shell 中菜单容器的 display:none 配合） */
+  oas-sider,
+  oas-sider[collapsed] {
+    width: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+}
+</style>

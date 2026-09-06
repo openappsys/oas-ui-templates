@@ -7,7 +7,6 @@
 //    composedPath 匹配（category.vue 同款）；popconfirm 删除从 oas-ok 的
 //    detail.source 带 data-del 反查（v2.2.8 popconfirm 原生自驱动）
 //    重建；本模版 useT() 订阅后整页重渲染，columns（含行内标签）随 locale 自动重算
-import '../styles/pages/dict.css'
 import { computed, onMounted, ref } from 'vue'
 import type { TableColumn } from '@oas-ui/ui/data/table'
 import {
@@ -249,3 +248,91 @@ function onItemSaved(): void {
     />
   </div>
 </template>
+
+<style scoped>
+/* 字典页样式（自 dict.css 迁入）：.dict-form-body 在三个弹窗组件内各自 scoped 持有，本页不含 */
+.dict-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: var(--oas-space-3);
+  margin-bottom: var(--oas-space-3);
+  align-items: start;
+}
+.dict-type-card::part(body) {
+  padding: 0;
+}
+.dict-type-list {
+  padding: var(--oas-space-1);
+}
+.dict-type-item {
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-2);
+  padding: var(--oas-space-2) var(--oas-space-3);
+  border-radius: var(--oas-radius-md);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.dict-type-item:hover {
+  background: var(--oas-color-bg-hover);
+}
+.dict-type-item.is-selected {
+  background: color-mix(in srgb, var(--oas-color-primary) 12%, transparent);
+}
+.dict-type-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--oas-font-size-sm);
+  color: var(--oas-color-text-primary);
+  font-weight: 500;
+}
+.dict-type-code {
+  font-family: var(--app-mono);
+  font-size: 11px;
+  color: var(--oas-color-text-secondary);
+}
+.dict-type-count {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--oas-color-bg-hover);
+  color: var(--oas-color-text-secondary);
+  font-family: var(--app-mono);
+  font-size: 11px;
+}
+.dict-pane-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--oas-space-2);
+  margin-bottom: var(--oas-space-2);
+}
+.dict-pane-title {
+  font-size: var(--oas-font-size-sm);
+  font-weight: 600;
+  color: var(--oas-color-text-primary);
+}
+.dict-pane-sub {
+  font-size: var(--oas-font-size-xs);
+  color: var(--oas-color-text-secondary);
+}
+.dict-empty {
+  text-align: center;
+  padding: var(--oas-space-6);
+  color: var(--oas-color-text-secondary);
+  font-size: var(--oas-font-size-sm);
+}
+@media (max-width: 992px) {
+  .dict-layout {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

@@ -5,7 +5,6 @@
 // 3. 提交/重置仍走命令式：oas-form 内部 <form> 在 shadowRoot 里，
 //    requestSubmit()/reset() 跨 shadow 调用（login.vue 同款 playground 实测模式）
 import { computed, ref } from 'vue'
-import '../styles/pages/advanced-form.css'
 import { advFormData } from '../data/adv-form'
 import { useT } from '../composables/use-t'
 import { appMessage } from '../lib/app-message'
@@ -148,3 +147,20 @@ function onSubmitClick(): void {
     </oas-form>
   </div>
 </template>
+
+<style scoped>
+/* 高级表单样式（自 advanced-form.css 迁入） */
+.adv-card {
+  margin-bottom: var(--oas-space-4);
+}
+.adv-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--oas-space-4);
+}
+@media (max-width: 640px) {
+  .adv-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

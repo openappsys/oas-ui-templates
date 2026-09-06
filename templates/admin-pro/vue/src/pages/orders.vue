@@ -229,3 +229,53 @@ function onTabChange(e: Event): void {
     />
   </div>
 </template>
+
+<style scoped>
+/* 订单页样式（自 app.css 迁入）：仅本页使用的统计/工具栏/表格容器 */
+.orders-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--oas-space-3);
+  margin-bottom: var(--oas-space-3);
+}
+.orders-stats .stat-card {
+  min-height: 96px;
+}
+.orders-stats .stat-value {
+  margin: 4px 0;
+}
+.stat-progress {
+  margin-top: var(--oas-space-2);
+}
+.stat-progress::part(track) {
+  height: 6px;
+}
+.stat-progress::part(bar) {
+  border-radius: inherit;
+}
+
+.orders-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-2);
+  flex-wrap: wrap;
+}
+.orders-toolbar oas-input {
+  width: 220px;
+}
+.orders-toolbar {
+  margin-bottom: var(--oas-space-3);
+}
+
+#orders-table-wrap {
+  overflow: auto;
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-md);
+}
+
+@media (max-width: 768px) {
+  .orders-stats {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

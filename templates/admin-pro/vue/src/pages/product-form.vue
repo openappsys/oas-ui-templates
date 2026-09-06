@@ -286,3 +286,12 @@ const catOptions = computed(() => JSON.stringify(props.categories))
     </oas-form>
   </oas-drawer>
 </template>
+
+<style scoped>
+/* 商品表单样式（自 app.css 迁入）：.product-form 布局在 product-form 与 product-edit 两页同构，各自 scoped 持有 */
+.product-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-3);
+}
+</style>

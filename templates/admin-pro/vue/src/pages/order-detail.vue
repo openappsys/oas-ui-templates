@@ -207,3 +207,25 @@ async function onAction(): Promise<void> {
     </div>
   </div>
 </template>
+
+<style scoped>
+/* 订单详情页样式（自 app.css 迁入）；.order-detail-foot/.order-detail-note/.ph-extra 与订单抽屉共用留全局 */
+#order-detail-steps {
+  margin-bottom: var(--oas-space-4);
+}
+.order-steps {
+  --oas-control-height-sm: 24px;
+  --oas-font-size-xs: 12px;
+}
+
+.order-timeline-head {
+  margin-top: var(--oas-space-4);
+  margin-bottom: var(--oas-space-3);
+  font-weight: 600;
+  color: var(--oas-color-text-primary);
+}
+
+.order-detail-ph::part(title) {
+  font-family: var(--app-mono);
+}
+</style>

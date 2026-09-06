@@ -114,3 +114,53 @@ function onKeydownCapture(e: KeyboardEvent): void {
     </oas-tabs>
   </div>
 </template>
+
+<style scoped>
+/* 页签栏样式（自 app.css 迁入）：.ptab/.ptab-close 为 e2e 依赖类名，scoped 仅追加 data-v 属性 */
+.tabs-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: stretch;
+  gap: var(--oas-space-2);
+  min-width: 0;
+  padding: var(--oas-space-2) var(--oas-space-3) 0;
+  background: var(--oas-color-bg);
+  border-bottom: 1px solid var(--oas-color-border);
+}
+/* 设置页可整体关闭页签栏（html 祖先选择器在 scoped 下仅主题部分生效） */
+html[data-tabs-bar="off"] .tabs-bar {
+  display: none;
+}
+.tabs-bar oas-tabs {
+  flex: 1;
+  min-width: 0;
+}
+.tabs-bar oas-tabs::part(nav) {
+  border-bottom: none;
+}
+.ptab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--oas-space-1_5);
+  min-width: 0;
+}
+.ptab-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  margin-inline-end: calc(-1 * var(--oas-space-1));
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--oas-color-text-secondary);
+}
+.ptab-close:hover {
+  color: var(--oas-color-text-primary);
+  background: var(--oas-color-bg-hover);
+}
+.ptab-close:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+}
+</style>

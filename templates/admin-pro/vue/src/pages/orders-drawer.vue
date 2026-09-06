@@ -122,3 +122,32 @@ const detailTo = computed(() => ({
     </div>
   </oas-drawer>
 </template>
+
+<style scoped>
+/* 订单抽屉样式（自 app.css 迁入）；.order-detail-foot/.order-detail-note 与订单详情页共用留全局 */
+.order-detail-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--oas-space-3);
+  margin-bottom: var(--oas-space-4);
+}
+.order-detail-no {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--oas-color-text-primary);
+  line-height: 1.3;
+}
+.order-detail-sub {
+  font-size: var(--oas-font-size-xs);
+  color: var(--oas-color-text-secondary);
+  margin-top: 2px;
+}
+
+.order-detail-foot-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--oas-space-3);
+}
+</style>
