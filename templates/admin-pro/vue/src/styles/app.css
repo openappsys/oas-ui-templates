@@ -31,7 +31,7 @@ body {
   height: 100%;
 }
 
-/* 路由切换进度条（vanilla/react 版共用骨架，本模版暂未挂载该节点，原样保留对齐） */
+/* 路由切换进度条样式（顶部固定，类名由组件消费） */
 .oas-progress {
   position: fixed;
   top: 0;
