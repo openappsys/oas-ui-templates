@@ -1,11 +1,11 @@
 // src/pages/dept-detail.tsx —— 部门详情卡（选中节点描述/操作按钮/子部门表）
-// subActionCell/onSubClick/onSubDelete 段（父组件 dept.tsx 持有数据与状态）。
-//    renderDetail 空态分支同款）
+// 1. 数据与状态、删除编排都在父组件 dept.tsx；本组件纯展示 + 事件转发
 // 2. 事件绑定：详情区位于 oas-card 的 light DOM（非 drawer/modal panel），原生 click 可达
-//    composedPath 匹配 [data-edit] 同款）；popconfirm 的 oas-ok 自定义事件走 useOasEvent
-//   （AGENTS.md 第 1 条）：详情删除 popconfirm（#md-del-pop，无 data-del）与子表 popconfirm
-//    detailEl 冒泡监听过滤 data-del」两条监听的可观察行为一致
-// 3. 子表 columns 含 render 函数 → property 通道（AGENTS.md 第 3 条例外），列定义按 locale
+//    React 根委托——编辑/新增子部门按钮直接 onClick；行内编辑经 composedPath 匹配
+//    [data-edit]；删除 popconfirm 的 oas-ok 自定义事件走 useOasEvent
+// 3. oas-ok 监听绑定在仅 node 非空时才挂载的内层组件上：若挂在条件渲染的外层，
+//    首挂载（node 为空）时 ref 为 null 且 effect 不再重跑，监听永远不会附上
+// 4. 子表 columns 含 render 函数 → property 通道，列定义按 locale 重建
 import { useMemo, useRef } from 'react'
 import type { TableColumn } from '@oas-ui/ui/data/table'
 import type { DeptTree } from '../data/system'
@@ -61,14 +61,21 @@ function buildColumns(t: TFunc): TableColumn[] {
   ]
 }
 
-export function DeptDetail({
+export function DeptDetail(props: DeptDetailProps) {
+  const { t } = useT()
+  if (!props.node) return <oas-empty description={t('dept.empty.selectNode')} />
+  // 内层组件仅在 node 非空时挂载，保证 useOasEvent 的 effect 首跑时 ref 已就绪
+  return <DeptDetailInner {...props} node={props.node} />
+}
+
+function DeptDetailInner({
   node,
   onEdit,
   onAddChild,
   onDelete,
   onEditRow,
   onSubDelete,
-}: DeptDetailProps) {
+}: DeptDetailProps & { node: DeptTree }) {
   const { t, locale } = useT()
   const wrapRef = useRef<HTMLDivElement | null>(null)
 
@@ -82,7 +89,7 @@ export function DeptDetail({
     const src = detail.source
     if (!src?.hasAttribute) return
     if (src.hasAttribute('data-del')) onSubDelete(Number(src.getAttribute('data-del')))
-    else if (src.id === 'md-del-pop' && node) onDelete(node)
+    else if (src.id === 'md-del-pop') onDelete(node)
   })
 
   // vanilla onSubClick：composedPath 匹配行内编辑按钮
@@ -93,7 +100,6 @@ export function DeptDetail({
     if (editBtn) onEditRow(Number(editBtn.getAttribute('data-edit')))
   }
 
-  if (!node) return <oas-empty description={t('dept.empty.selectNode')} />
   const children = node.children ?? []
   return (
     <div ref={wrapRef} className="dept-detail" onClick={onWrapClick}>

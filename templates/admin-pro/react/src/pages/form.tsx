@@ -1,12 +1,12 @@
 // src/pages/form.tsx —— 创建订单向导（三步 steps + 逐步校验 + 摘要确认 + 提交跳结果页）
-//    声明式 JSX，useT() 订阅 locale 后整页重渲染（steps/steps 标题/label 随 locale 重算）
+// 1. 渲染：声明式 JSX，useT() 订阅 locale 后整页重渲染（steps/标题/label 随 locale 重算）；
+//    三个步骤面板为纯展示子组件（./form-steps.tsx），事件接线留在本页
 // 2. 状态：customer/phone/note/products/quantity/urgent/expectDate/confirmed 全部 useState；
-//    aria-invalid；本模版由 errors state 派生（data-testid 保留，可观察结果一致）
-//    （oas-button 基类 :host([hidden]) 生效，orders-drawer 同款）
-// 5. steps 越级点击：oas-change handler 里目标步大于当前步时先校验，失败则命令式把 current
-//    React vdom 值未变不会自动回写，必须命令式复位）
-// 6. checkbox-group 的 oas-change 会收到内部 checkbox 冒泡的同名事件，必须过滤
-// 7. 提交：createOrder → sessionStorage 'form-result'（键名与时机逐字一致）→ navigate('/result')
+//    校验错误不入组件（原版 setError），由 errors state 派生 aria-invalid 与 form-error 文案
+// 3. steps 越级点击：oas-change handler 里目标步大于当前步时先校验，失败则命令式把
+//    current 复位（组件 goto 已自写 current，React vdom 值未变不会自动回写）
+// 4. checkbox-group 的 oas-change 会收到内部 checkbox 冒泡的同名事件，须按 ev.target 过滤
+// 5. 提交：createOrder → sessionStorage 'form-result' → navigate('/result')
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { listProducts } from '../data/products'
@@ -15,6 +15,12 @@ import { createOrder } from '../data/orders'
 import { useOasEvent } from '../hooks/use-oas-event'
 import { useT } from '../hooks/use-t'
 import { appMessage } from '../lib/app-message'
+import {
+  FormStepBasic,
+  FormStepConfirm,
+  FormStepProducts,
+  formatMoney,
+} from './form-steps'
 
 const PHONE_RE = /^1\d{10}$/
 
@@ -25,16 +31,6 @@ function buildSteps(t: (key: string) => string): Array<{ title: string }> {
     { title: t('form.step.products') },
     { title: t('form.step.confirm') },
   ]
-}
-
-/** vanilla formatMoney */
-function formatMoney(n: number): string {
-  return `¥${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-}
-
-/** vanilla today */
-function today(): string {
-  return new Date().toISOString().slice(0, 10)
 }
 
 export default function FormPage() {
@@ -82,7 +78,7 @@ export default function FormPage() {
   // vanilla clearErrors
   const clearErrors = () => setErrors({})
 
-  // vanilla validateStep：错误写入 errors state（ setError 等价），返回是否通过
+  // vanilla validateStep：错误写入 errors state，返回是否通过
   const validateStep = (n: number): boolean => {
     const next: Record<string, string> = {}
     let ok = true
@@ -123,7 +119,7 @@ export default function FormPage() {
     clearErrors()
   }
 
-  // vanilla stepsEl oas-change 段（偏差记录 5）
+  // vanilla stepsEl oas-change 段：越级先校验，失败命令式复位 current
   useOasEvent<{ index: number }>(stepsRef, 'oas-change', (d) => {
     const target = d.index
     if (target === step) return
@@ -179,7 +175,7 @@ export default function FormPage() {
   useOasEvent<{ checked: boolean }>(urgentRef, 'oas-change', (d) => setUrgent(d.checked))
   useOasEvent<{ value: string }>(dateRef, 'oas-change', (d) => setExpectDate(d.value))
   useOasEvent<{ checked: boolean }>(confirmRef, 'oas-change', (d) => setConfirmed(d.checked))
-  // checkbox-group：内部 checkbox 的 oas-change 会冒泡，过滤只留宿主事件（偏差记录 6）
+  // checkbox-group：内部 checkbox 的 oas-change 会冒泡，过滤只留宿主事件
   useOasEvent<{ value: string[] }>(productsGroupRef, 'oas-change', (d, ev) => {
     if (ev.target !== productsGroupRef.current) return
     setProducts(d.value)
@@ -201,155 +197,36 @@ export default function FormPage() {
           current={step}
           clickable
         />
-        <div
-          className="form-step"
-          data-testid="form-step1"
-          data-index="0"
-          hidden={step !== 0 || undefined}
-        >
-          <div className="form-field">
-            <label className="form-label">
-              {t('form.label.customer')}
-              <span className="req">*</span>
-            </label>
-            <oas-input
-              ref={customerRef}
-              data-testid="form-customer"
-              placeholder={t('form.rule.customer')}
-              clearable
-              aria-invalid={errors['form-error-customer'] ? 'true' : undefined}
-            />
-            <div
-              className="form-error"
-              data-testid="form-error-customer"
-              hidden={!errors['form-error-customer'] || undefined}
-            >
-              {errors['form-error-customer'] ?? ''}
-            </div>
-          </div>
-          <div className="form-field">
-            <label className="form-label">
-              {t('form.label.phone')}
-              <span className="req">*</span>
-            </label>
-            <oas-input
-              ref={phoneRef}
-              data-testid="form-phone"
-              placeholder={t('form.rule.phone')}
-              clearable
-              aria-invalid={errors['form-error-phone'] ? 'true' : undefined}
-            />
-            <div
-              className="form-error"
-              data-testid="form-error-phone"
-              hidden={!errors['form-error-phone'] || undefined}
-            >
-              {errors['form-error-phone'] ?? ''}
-            </div>
-          </div>
-          <div className="form-field">
-            <label className="form-label">{t('form.label.note')}</label>
-            <oas-textarea
-              ref={noteRef}
-              data-testid="form-note"
-              rows="3"
-              placeholder={t('form.placeholder.note')}
-            />
-          </div>
-        </div>
-        <div
-          className="form-step"
-          data-testid="form-step2"
-          data-index="1"
-          hidden={step !== 1 || undefined}
-        >
-          <div className="form-field">
-            <label className="form-label">
-              {t('form.label.products')}
-              <span className="req">*</span>
-            </label>
-            <oas-checkbox-group
-              ref={productsGroupRef}
-              id="form-products"
-              data-testid="form-products"
-              value={JSON.stringify(products)}
-              aria-invalid={errors['form-error-products'] ? 'true' : undefined}
-            >
-              <span slot="label">{t('form.placeholder.products')}</span>
-              {productsData.map((p) => (
-                <oas-checkbox key={p.id} value={String(p.id)}>
-                  {p.name} · <span className="mono">{formatMoney(p.price)}</span>
-                </oas-checkbox>
-              ))}
-            </oas-checkbox-group>
-            <div
-              className="form-error"
-              data-testid="form-error-products"
-              hidden={!errors['form-error-products'] || undefined}
-            >
-              {errors['form-error-products'] ?? ''}
-            </div>
-          </div>
-          <div className="form-grid">
-            <div className="form-field">
-              <label className="form-label">{t('form.label.qty')}</label>
-              <oas-input-number
-                ref={qtyRef}
-                data-testid="form-qty"
-                min="1"
-                precision="0"
-                value="1"
-              />
-            </div>
-            <div className="form-field">
-              <label className="form-label">{t('form.label.urgent')}</label>
-              <div className="switch-line">
-                <oas-switch ref={urgentRef} data-testid="form-urgent" />
-              </div>
-            </div>
-          </div>
-          <div className="form-field">
-            <label className="form-label">{t('form.label.expectDate')}</label>
-            <oas-date-picker ref={dateRef} data-testid="form-date" min={today()} />
-          </div>
-        </div>
-        <div
-          className="form-step"
-          data-testid="form-step3"
-          data-index="2"
-          hidden={step !== 2 || undefined}
-        >
-          <oas-descriptions data-testid="form-summary" column="1">
-            <oas-descriptions-item label={t('form.summary.customer')}>
-              {customer.trim() || '-'}
-            </oas-descriptions-item>
-            <oas-descriptions-item label={t('form.summary.phone')}>
-              <span className="mono">{phone.trim() || '-'}</span>
-            </oas-descriptions-item>
-            <oas-descriptions-item label={t('form.label.note')}>
-              {note.trim() || '-'}
-            </oas-descriptions-item>
-            <oas-descriptions-item label={t('form.label.qty')}>
-              <span className="mono">{quantity}</span>
-            </oas-descriptions-item>
-            <oas-descriptions-item label={t('form.summary.urgent')}>
-              {urgent ? t('form.label.urgent') : t('form.summary.normalDelivery')}
-            </oas-descriptions-item>
-            <oas-descriptions-item label={t('form.label.expectDate')}>
-              <span className="mono">{expectDate || '-'}</span>
-            </oas-descriptions-item>
-          </oas-descriptions>
-          <div className="form-items" data-testid="form-items">
-            {items.map((p) => (
-              <div key={p.id} className="form-item-row">
-                <span className="form-item-name">{p.name}</span>
-                <span className="form-item-calc mono">
-                  {formatMoney(p.price)} × {quantity} = {formatMoney(p.price * quantity)}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
+        <FormStepBasic
+          t={t}
+          visible={step === 0}
+          errors={errors}
+          customerRef={customerRef}
+          phoneRef={phoneRef}
+          noteRef={noteRef}
+        />
+        <FormStepProducts
+          t={t}
+          visible={step === 1}
+          errors={errors}
+          productsData={productsData}
+          products={products}
+          productsGroupRef={productsGroupRef}
+          qtyRef={qtyRef}
+          urgentRef={urgentRef}
+          dateRef={dateRef}
+        />
+        <FormStepConfirm
+          t={t}
+          visible={step === 2}
+          customer={customer}
+          phone={phone}
+          note={note}
+          quantity={quantity}
+          urgent={urgent}
+          expectDate={expectDate}
+          items={items}
+        />
         <div className="form-foot">
           <div
             className="form-foot-summary"

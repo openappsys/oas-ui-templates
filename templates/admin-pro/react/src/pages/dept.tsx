@@ -146,7 +146,7 @@ export default function DeptPage() {
   const selectedNode = selectedId != null ? findNode(tree, selectedId) : null
   const editingNode = editingId != null ? findNode(tree, editingId) : null
 
-  // vanilla fillForm + refreshParentOptions：open 边沿逐字段 setAttribute（偏差记录 3）
+  // vanilla fillForm + refreshParentOptions：open 边沿逐字段 setAttribute
   useEffect(() => {
     if (!drawerOpen) return
     nameRef.current?.setAttribute('value', editingNode?.name ?? '')

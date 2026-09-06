@@ -2,13 +2,6 @@
 // 断言语义逐条对齐）：部门/字典/商品分类 CRUD 与校验、用户详情、操作权限与数据权限
 // 控件适配：分类删除 popconfirm 直接用 [data-testid][open] [part="ok"] 穿透 shadow 点击，
 // 行数断言用 expect.poll（替代 vanilla 的 waitForTimeout+evaluate 堆叠）
-//
-// 【BLOCKED·上游真实缺陷】部门删除用例以 test.fixme 挂起：
-// src/pages/dept-detail.tsx 在 node==null 时提前 return <oas-empty>，
-// useOasEvent(wrapRef,'oas-ok') 的 effect 首挂载时 ref 为空且依赖 [ref,type] 不再变化，
-// 详情卡条件挂载后 oas-ok 监听永远不会附上 → popconfirm 确认后 doDelete 不执行
-// （运行时探针：合成 oas-ok 无反应；手动挂 .dept-detail 的对照监听可收到事件）。
-// 修复 src/ 后把 test.fixme 改回 test 即可。
 import { expect, test, type Page } from '@playwright/test'
 
 async function noConsoleErrors(page: Page): Promise<string[]> {
@@ -31,8 +24,7 @@ async function login(page: Page, name: string, role: 'admin' | 'viewer'): Promis
   await expect(page.getByTestId('stat-visits')).toBeVisible()
 }
 
-test.fixme('admin 部门管理：新建部门入树 + 删除有子部门拦截', async ({ page }) => {
-  // BLOCKED：dept-detail oas-ok 监听未挂载（条件渲染 + useEffect 依赖不变），见文件头缺陷说明
+test('admin 部门管理：新建部门入树 + 删除有子部门拦截', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page, '张伟', 'admin')
   await page.goto('/#/system/dept')

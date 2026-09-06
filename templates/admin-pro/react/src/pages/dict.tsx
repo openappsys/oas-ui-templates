@@ -1,12 +1,12 @@
 // src/pages/dict.tsx —— 字典管理（左类型列表 + 右键值表 + 双弹窗表单）
-//    刷文案）；本模版声明式——types/counts/selectedTypeId/editingTypeId/editingItemId/
-//    loadedItems/modalOpen 全部 useState，类型列表/pane 标题/空态/弹窗标题全部由 state 派生；
-//    useT() 订阅后整页重渲染，rules/labels/placeholders/columns 随 locale 自动重算
-// 2. 事件绑定：oas-form 的 oas-submit、oas-modal 的 oas-close、popconfirm 的 oas-ok 走
-//    useOasEvent（AGENTS.md 第 1 条）；类型列表点击与表格行内编辑为 light DOM/composed 原生
-//    保存按钮按第 2 条例外直绑 addEventListener（panel 对原生事件 stopPropagation）
-// 3. columns 含 render 函数（cellAction 返回真实 DOM 节点）→ property 通道（AGENTS.md 第 3 条
-//    refreshItems 以显式 typeId 参数避免 React 异步闭包读到旧 selectedTypeId
+// 1. 状态：types/counts/selectedTypeId/editingTypeId/editingItemId/loadedItems 与两个弹窗
+//    open 全部 useState，类型列表/pane 标题/空态/弹窗标题全部由 state 派生；useT() 订阅后
+//    整页重渲染，labels/placeholders/columns 随 locale 自动重算
+// 2. 事件绑定：类型列表点击与表格行内编辑为 light DOM/composed 原生 click；表格行删除
+//    popconfirm 的 oas-ok 走 useOasEvent；弹窗表单事件见 ./dict-type-modal.tsx、
+//    ./dict-item-modal.tsx（各自关闭各自的弹窗）
+// 3. columns 含 render 函数（cellAction 返回真实 DOM 节点）→ property 通道
+// 4. refreshItems 以显式 typeId 参数避免 React 异步闭包读到旧 selectedTypeId
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { TableColumn } from '@oas-ui/ui/data/table'
 import '../styles/pages/dict.css'
@@ -23,24 +23,12 @@ import type { DictItem, DictType } from '../data/system'
 import { useOasEvent } from '../hooks/use-oas-event'
 import { useT } from '../hooks/use-t'
 import { appMessage } from '../lib/app-message'
+import { DictItemModal } from './dict-item-modal'
+import type { DictItemFormValues } from './dict-item-modal'
+import { DictTypeModal } from './dict-type-modal'
+import type { DictTypeFormValues } from './dict-type-modal'
 
 type TFunc = (key: string, params?: Record<string, string | number>) => string
-
-/** vanilla RULES_TYPE：类型名/编码必填 */
-function buildTypeRules(t: TFunc): string {
-  return JSON.stringify({
-    name: [{ required: true, message: t('dict.rule.typeName') }],
-    code: [{ required: true, message: t('dict.rule.typeCode') }],
-  })
-}
-
-/** vanilla RULES_ITEM：标签/键值必填 */
-function buildItemRules(t: TFunc): string {
-  return JSON.stringify({
-    label: [{ required: true, message: t('dict.rule.label') }],
-    value: [{ required: true, message: t('dict.rule.value') }],
-  })
-}
 
 /** vanilla itemActionCell：编辑按钮 + popconfirm 包裹的删除按钮 */
 function itemActionCell(item: DictItem, t: TFunc): HTMLElement {
@@ -78,14 +66,6 @@ function buildColumns(t: TFunc): TableColumn[] {
   ]
 }
 
-interface FormValues {
-  name?: string
-  code?: string
-  label?: string
-  value?: string
-  sort?: string
-}
-
 export default function DictPage() {
   const { t, locale } = useT()
   const [types, setTypes] = useState<DictType[]>([])
@@ -103,21 +83,8 @@ export default function DictPage() {
   selRef.current = selectedTypeId
 
   const tableRef = useRef<HTMLElement | null>(null)
-  const typeModalRef = useRef<HTMLElement | null>(null)
-  const itemModalRef = useRef<HTMLElement | null>(null)
-  const typeFormRef = useRef<HTMLElement | null>(null)
-  const itemFormRef = useRef<HTMLElement | null>(null)
-  const typeNameRef = useRef<HTMLElement | null>(null)
-  const typeCodeRef = useRef<HTMLElement | null>(null)
-  const itemLabelRef = useRef<HTMLElement | null>(null)
-  const itemValueRef = useRef<HTMLElement | null>(null)
-  const itemSortRef = useRef<HTMLElement | null>(null)
-  const typeCancelRef = useRef<HTMLElement | null>(null)
-  const typeSaveRef = useRef<HTMLElement | null>(null)
-  const itemCancelRef = useRef<HTMLElement | null>(null)
-  const itemSaveRef = useRef<HTMLElement | null>(null)
 
-  // vanilla refreshItems：拉选中类型的键值 + 更新计数（显式 typeId 参数，偏差记录 6）
+  // vanilla refreshItems：拉选中类型的键值 + 更新计数（显式 typeId 参数）
   const refreshItems = useCallback(async (typeId: number | null) => {
     if (typeId == null) {
       setLoadedItems([])
@@ -157,48 +124,6 @@ export default function DictPage() {
   const editingType = types.find((x) => x.id === editingTypeId) ?? null
   const editingItem = loadedItems.find((x) => x.id === editingItemId) ?? null
 
-  // vanilla openTypeForm/openItemForm：open 边沿逐字段 setAttribute（偏差记录 4）
-  useEffect(() => {
-    if (!typeModalOpen) return
-    typeNameRef.current?.setAttribute('value', editingType?.name ?? '')
-    typeCodeRef.current?.setAttribute('value', editingType?.code ?? '')
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [typeModalOpen, editingTypeId])
-
-  useEffect(() => {
-    if (!itemModalOpen) return
-    itemLabelRef.current?.setAttribute('value', editingItem?.label ?? '')
-    itemValueRef.current?.setAttribute('value', editingItem?.value ?? '')
-    itemSortRef.current?.setAttribute('value', editingItem ? String(editingItem.sort) : '')
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [itemModalOpen, editingItemId])
-
-  // 两个弹窗面板内取消/保存按钮：原生 click 例外直绑（AGENTS.md 第 2 条）
-  useEffect(() => {
-    const pairs: Array<[HTMLElement | null, HTMLElement | null, HTMLElement | null]> = [
-      [typeCancelRef.current, typeSaveRef.current, typeFormRef.current],
-      [itemCancelRef.current, itemSaveRef.current, itemFormRef.current],
-    ]
-    const cleanups: Array<() => void> = []
-    for (const [cancel, save, form] of pairs) {
-      const onCancel = () => setTypeModalOpen(false)
-      const onSave = () => {
-        ;(form?.shadowRoot?.querySelector('form') as HTMLFormElement | null)?.requestSubmit()
-      }
-      cancel?.addEventListener('click', onCancel)
-      save?.addEventListener('click', onSave)
-      cleanups.push(() => {
-        cancel?.removeEventListener('click', onCancel)
-        save?.removeEventListener('click', onSave)
-      })
-    }
-    return () => cleanups.forEach((fn) => fn())
-  }, [])
-
-  // 组件侧关闭（遮罩/Esc/✕）→ 回写 React 状态（visible 单一事实来源）
-  useOasEvent(typeModalRef, 'oas-close', () => setTypeModalOpen(false))
-  useOasEvent(itemModalRef, 'oas-close', () => setItemModalOpen(false))
-
   // vanilla 类型列表 click 段：closest [data-id] → 选中 + refreshItems
   const onTypeListClick = (e: React.MouseEvent) => {
     const item = (e.target as HTMLElement).closest<HTMLElement>('[data-id]')
@@ -232,13 +157,13 @@ export default function DictPage() {
     })
   })
 
-  // vanilla typeForm oas-submit 段：trim → create/update → 关闭 + 选中复位 + 全量刷新
-  useOasEvent<{ values: FormValues }>(typeFormRef, 'oas-submit', async (d) => {
+  // 类型弹窗提交（经 type 弹窗的 oas-submit 转发）：trim → create/update → 关闭 + 选中复位 + 全量刷新
+  const handleTypeSubmit = async (values: DictTypeFormValues) => {
     if (savingRef.current) return
     savingRef.current = true
     try {
-      const name = d.values.name?.trim()
-      const code = d.values.code?.trim()
+      const name = values.name?.trim()
+      const code = values.code?.trim()
       if (!name || !code) return
       if (editingTypeId == null) {
         await createDictType({ name, code })
@@ -256,18 +181,18 @@ export default function DictPage() {
     } finally {
       savingRef.current = false
     }
-  })
+  }
 
-  // vanilla itemForm oas-submit 段：trim → create/update → 关闭 + refreshItems
-  useOasEvent<{ values: FormValues }>(itemFormRef, 'oas-submit', async (d) => {
+  // 键值弹窗提交（经 item 弹窗的 oas-submit 转发）：trim → create/update → 关闭 + refreshItems
+  const handleItemSubmit = async (values: DictItemFormValues) => {
     if (savingRef.current) return
     if (selRef.current == null) return
     savingRef.current = true
     try {
-      const label = d.values.label?.trim()
-      const value = d.values.value?.trim()
+      const label = values.label?.trim()
+      const value = values.value?.trim()
       if (!label || !value) return
-      const sort = Number(d.values.sort) || 0
+      const sort = Number(values.sort) || 0
       if (editingItemId == null) {
         await createDictItem({ typeId: selRef.current, label, value, sort })
         appMessage.success(t('common.created'))
@@ -281,14 +206,11 @@ export default function DictPage() {
     } finally {
       savingRef.current = false
     }
-  })
+  }
 
   // 列定义按 locale 重建（vanilla renderItems 里重设 columns 同款时机）
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const columns = useMemo<TableColumn[]>(() => buildColumns(t), [locale])
-
-  const typeRules = buildTypeRules(t)
-  const itemRules = buildItemRules(t)
 
   return (
     <div className="page">
@@ -380,107 +302,19 @@ export default function DictPage() {
         </oas-card>
       </div>
 
-      <oas-modal ref={typeModalRef} data-testid="dict-type-modal" no-footer visible={typeModalOpen}>
-        <div className="modal-body">
-          <h2 id="dict-type-title">
-            {editingTypeId == null
-              ? t('dict.newType')
-              : t('dict.editType', { name: editingType?.name ?? '' })}
-          </h2>
-          <oas-form ref={typeFormRef} rules={typeRules}>
-            <div className="dict-form-body">
-              <div className="form-field">
-                <label className="form-label">
-                  {t('dict.form.typeName')} <span className="req">*</span>
-                </label>
-                <oas-input
-                  ref={typeNameRef}
-                  data-testid="dtf-name"
-                  name="name"
-                  placeholder={t('dict.placeholder.typeName')}
-                />
-              </div>
-              <div className="form-field">
-                <label className="form-label">
-                  {t('dict.form.typeCode')} <span className="req">*</span>
-                </label>
-                <oas-input
-                  ref={typeCodeRef}
-                  data-testid="dtf-code"
-                  name="code"
-                  placeholder={t('dict.placeholder.typeCode')}
-                />
-              </div>
-              <div className="form-actions">
-                <oas-space justify="end">
-                  <oas-button ref={typeCancelRef} data-testid="dtf-cancel">
-                    {t('common.cancel')}
-                  </oas-button>
-                  <oas-button ref={typeSaveRef} data-testid="dtf-save" type="primary">
-                    {t('common.save')}
-                  </oas-button>
-                </oas-space>
-              </div>
-            </div>
-          </oas-form>
-        </div>
-      </oas-modal>
-
-      <oas-modal ref={itemModalRef} data-testid="dict-item-modal" no-footer visible={itemModalOpen}>
-        <div className="modal-body">
-          <h2 id="dict-item-title">
-            {editingItemId == null
-              ? t('dict.newItem')
-              : t('dict.editItem', { label: editingItem?.label ?? '' })}
-          </h2>
-          <oas-form ref={itemFormRef} rules={itemRules}>
-            <div className="dict-form-body">
-              <div className="form-field">
-                <label className="form-label">
-                  {t('dict.form.label')} <span className="req">*</span>
-                </label>
-                <oas-input
-                  ref={itemLabelRef}
-                  data-testid="dif-label"
-                  name="label"
-                  placeholder={t('dict.placeholder.label')}
-                />
-              </div>
-              <div className="form-field">
-                <label className="form-label">
-                  {t('dict.form.value')} <span className="req">*</span>
-                </label>
-                <oas-input
-                  ref={itemValueRef}
-                  data-testid="dif-value"
-                  name="value"
-                  placeholder={t('dict.placeholder.value')}
-                />
-              </div>
-              <div className="form-field">
-                <label className="form-label">{t('dict.form.sort')}</label>
-                <oas-input-number
-                  ref={itemSortRef}
-                  data-testid="dif-sort"
-                  name="sort"
-                  min="0"
-                  placeholder="1"
-                />
-              </div>
-              <div className="form-actions">
-                <oas-space justify="end">
-                  <oas-button ref={itemCancelRef} data-testid="dif-cancel">
-                    {t('common.cancel')}
-                  </oas-button>
-                  <oas-button ref={itemSaveRef} data-testid="dif-save" type="primary">
-                    {t('common.save')}
-                  </oas-button>
-                </oas-space>
-              </div>
-            </div>
-          </oas-form>
-        </div>
-      </oas-modal>
+      {/* 两个弹窗各自管理自己的关闭/提交接线（type 关 type、item 关 item） */}
+      <DictTypeModal
+        open={typeModalOpen}
+        editing={editingType}
+        onClose={() => setTypeModalOpen(false)}
+        onSubmit={(values) => void handleTypeSubmit(values)}
+      />
+      <DictItemModal
+        open={itemModalOpen}
+        editing={editingItem}
+        onClose={() => setItemModalOpen(false)}
+        onSubmit={(values) => void handleItemSubmit(values)}
+      />
     </div>
   )
 }

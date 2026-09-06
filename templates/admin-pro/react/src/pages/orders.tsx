@@ -1,13 +1,12 @@
 // src/pages/orders.tsx —— 订单管理（统计卡 + 状态 tabs + 表格 + 快捷详情抽屉 + CSV 导出）
-//    rows/keyword/status/selectedId 全部 useState，过滤/统计/空态/tabs 徽标全部由 state 派生；
-//    refresh() 仅重拉数据 setRows，重渲染即最新
+// 1. 状态：rows/keyword/status/selectedId 全部 useState，过滤/统计/空态/tabs 徽标全部由
+//    state 派生；refresh() 仅重拉数据 setRows，重渲染即最新；tabs/统计/表格列随 locale
+//    自动重算（users/dashboard 同款模式）
 // 2. 事件绑定：search 的 oas-input/oas-clear、tabs 的 oas-change、table 的 oas-row-click
-//    走 useOasEvent（AGENTS.md 第 1 条）；导出/清筛选按钮为 light DOM 原生 click 直绑
-//    onClick；抽屉内链接与流程按钮的例外接线见 ./orders-drawer.tsx 头注释
-//    语义逐字对齐）；搜索/切 tab 后 tableRef.setAttribute('current','1') 人工复位首屏
-//    重渲染，tabs/统计/表格列随 locale 自动重算（users/dashboard 同款模式）
-//   （t(`orders.flow.${旧状态}`)），可观察结果一致
-// 7. 子组件拆分（单文件 ≤400 行纪律）：表格 ./orders-table.tsx、快捷详情抽屉 ./orders-drawer.tsx
+//    走 useOasEvent；导出/清筛选按钮为 light DOM 原生 click 直绑 onClick；抽屉内链接与
+//    流程按钮的接线见 ./orders-drawer.tsx 头注释
+// 3. 搜索/切 tab 后 tableRef.setAttribute('current','1') 人工复位首屏
+// 4. 子组件拆分（单文件 ≤400 行纪律）：表格 ./orders-table.tsx、快捷详情抽屉 ./orders-drawer.tsx
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { listOrders, updateOrderStatus } from '../data/orders'
 import type { OrderRow, OrderStatus } from '../data/orders'

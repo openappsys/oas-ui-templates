@@ -28,8 +28,8 @@ function Guarded({ route }: { route: AppRoute }) {
 }
 
 /** 已登录兜底：未知路径 → /not-found（对齐 vue 版 /:pathMatch(.*)* 重定向）。
- *  例外：URL 停在 /login 的登录瞬移窗口（session 更新后、login.tsx 手动 navigate 前，
- *  见 login.tsx 偏差记录 5）保持原「匹配落空渲染 null」行为，否则兜底抢跑致登录后落错页 */
+ *  例外：URL 停在 /login 的登录瞬移窗口（session 更新后、login.tsx 手动 navigate 前）
+ *  保持原「匹配落空渲染 null」行为，否则兜底抢跑致登录后落错页 */
 function NotFoundRedirect() {
   const { pathname } = useLocation()
   if (pathname === '/login') return null

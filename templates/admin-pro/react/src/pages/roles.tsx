@@ -145,7 +145,7 @@ export default function RolesPage() {
 
   const editingRow = editingId != null ? (roles.find((r) => r.id === editingId) ?? null) : null
 
-  // vanilla setRadioChecked：radio 的 checked 命令式同步（偏差记录 4）
+  // vanilla setRadioChecked：radio 的 checked 命令式同步
   const setRadioChecked = (scope: DataScope) => {
     scopeGroupRef.current?.querySelectorAll<HTMLElement>('oas-radio').forEach((radio) => {
       if (Number(radio.getAttribute('value')) === scope) radio.setAttribute('checked', '')
@@ -153,7 +153,7 @@ export default function RolesPage() {
     })
   }
 
-  // vanilla fillForm + openForm：open 边沿逐字段 setAttribute（偏差记录 4）
+  // vanilla fillForm + openForm：open 边沿逐字段 setAttribute
   useEffect(() => {
     if (!drawerOpen) return
     const row = editingRow
