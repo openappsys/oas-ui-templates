@@ -4,20 +4,21 @@
 // 1. 渲染模型：vanilla 全程 imperative（innerHTML + setAttribute 回写）；本模版声明式——
 //    rows/keyword/category/page/view/selected/columnKeys 全部 useState，表格切片/空态/批量栏
 //    显隐/分页属性全部由 state 派生；refresh() 仅重拉数据 setRows，重渲染即最新
-// 2. 事件绑定：oas-input/oas-select/oas-segmented/oas-pagination/oas-popconfirm/oas-checkbox
-//    的 oas-* 自定义事件一律 useOasEvent（AGENTS.md 第 1 条）；工具栏/批量栏按钮为 light DOM
-//    原生 click 直绑 onClick；列设置弹窗内的重置/完成按钮在 oas-modal panel 内，按第 2 条
-//    例外直绑 addEventListener；卡片编辑按钮在 oas-masonry 的 light DOM 子节点上，onClick
-//    委托即可（vanilla 同款 closest 匹配）
-// 3. visible 受控同步：列设置弹窗/表单容器的 visible 由 state 持有，组件侧关闭（遮罩/Esc）
-//    经 oas-close 回写 state（vanilla 靠组件自摘属性，无此问题）——两处 oas-close 监听是
-//    本模版新增，行为与 vanilla 一致
+// 2. 事件绑定：oas-input/oas-select/oas-segmented/oas-pagination 的 oas-* 自定义事件一律
+//    useOasEvent（AGENTS.md 第 1 条）；工具栏按钮为 light DOM 原生 click 直绑 onClick；
+//    卡片编辑按钮在 oas-masonry 的 light DOM 子节点上，onClick 委托即可（vanilla 同款
+//    closest 匹配）；批量栏/列设置弹窗的事件接线见 ./products-batch-bar.tsx /
+//    ./products-columns-modal.tsx 头注释（popconfirm oas-ok 走 useOasEvent，modal panel
+//    内按钮原生 click 按第 2 条例外直绑）
+// 3. visible 受控同步：表单容器/列设置弹窗的 visible 由 state 持有，组件侧关闭（遮罩/Esc）
+//    经 oas-close 回写 state（vanilla 靠组件自摘属性，无此问题）
 // 4. 手动分页：vanilla 超页时静默 state.page = maxPage；本模版派生 current = min(page, maxPage)
 //    不回头改 state（显示结果一致，避免渲染期 setState）
 // 5. 文案刷新：vanilla onLocaleChange(refreshText) 逐节点替换；本模版 useT() 订阅后整页
 //    重渲染，rules/options/columns/标签随 locale 自动重算（dashboard 同款模式）
-// 6. 表单：dialog/drawer 形态拆为 ./product-form.tsx；page 形态跳 /products/edit
-//   （sessionStorage 键 product-edit-id 与 vanilla 逐字一致）
+// 6. 子组件拆分（单文件 ≤400 行纪律）：表格 ./products-table.tsx、表单 ./product-form.tsx、
+//    批量栏 ./products-batch-bar.tsx、列设置弹窗 ./products-columns-modal.tsx；
+//    page 形态跳 /products/edit（sessionStorage 键 product-edit-id 与 vanilla 逐字一致）
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import '../styles/pages/products.css'
@@ -36,15 +37,12 @@ import { appMessage } from '../lib/app-message'
 import { readFormMode, readPageSize } from '../settings-init'
 import type { FormMode } from '../settings-init'
 import { session } from '../store/session'
-import {
-  PRODUCT_COLUMN_KEYS,
-  PRODUCT_COLUMN_MANDATORY,
-  readProductColumns,
-  writeProductColumns,
-} from './product-columns'
+import { readProductColumns } from './product-columns'
 import type { ProductColumnKey } from './product-columns'
 import { ProductForm } from './product-form'
 import type { Option } from './product-form'
+import { ProductsBatchBar } from './products-batch-bar'
+import { ProductsColumnsModal } from './products-columns-modal'
 import { ProductsTable } from './products-table'
 
 const VIEW_KEY = 'oas-admin.products-view'
@@ -91,10 +89,6 @@ export default function ProductsPage() {
   const gridRef = useRef<HTMLElement | null>(null)
   const tableRef = useRef<HTMLElement | null>(null)
   const pagerRef = useRef<HTMLElement | null>(null)
-  const batchDelPopRef = useRef<HTMLElement | null>(null)
-  const columnsModalRef = useRef<HTMLElement | null>(null)
-  const columnsResetRef = useRef<HTMLElement | null>(null)
-  const columnsCloseRef = useRef<HTMLElement | null>(null)
 
   // vanilla refresh()：并发拉商品 + 分类；当前筛选分类失效时清空（applyCategoryOptions 语义）
   const refresh = useCallback(async () => {
@@ -123,8 +117,6 @@ export default function ProductsPage() {
   const maxPage = Math.max(1, Math.ceil(filtered.length / pageSize))
   const current = Math.min(page, maxPage)
   const pageRows = filtered.slice((current - 1) * pageSize, current * pageSize)
-
-  const batchEnabled = canMutate && selected.length > 0
 
   // vanilla openForm：page 模式写 sessionStorage 跳编辑页；其余就地开表单容器
   const openForm = (row: ProductRow | null) => {
@@ -181,6 +173,21 @@ export default function ProductsPage() {
     void refresh()
   }
 
+  // vanilla 批量删除 popconfirm oas-ok 段：逐项删除 + 清选 + 提示 + 刷新
+  const batchDelete = async () => {
+    if (!canMutate) {
+      appMessage.error(t('common.noPerm'))
+      return
+    }
+    let removed = 0
+    for (const id of selected) {
+      if (await removeProduct(id)) removed++
+    }
+    clearSelection()
+    appMessage.success(t('products.batch.deleted', { count: removed }))
+    void refresh()
+  }
+
   // 工具栏事件（全部 oas-* 自定义事件 → useOasEvent）
   useOasEvent<{ value: string }>(searchRef, 'oas-input', (d) => {
     setKeyword(d.value)
@@ -210,56 +217,6 @@ export default function ProductsPage() {
     if (!id) return
     void toggleStatus(id)
   })
-
-  // 批量删除（vanilla popconfirm oas-ok 段）
-  useOasEvent(batchDelPopRef, 'oas-ok', async () => {
-    if (!canMutate) {
-      appMessage.error(t('common.noPerm'))
-      return
-    }
-    let removed = 0
-    for (const id of selected) {
-      if (await removeProduct(id)) removed++
-    }
-    clearSelection()
-    appMessage.success(t('products.batch.deleted', { count: removed }))
-    void refresh()
-  })
-
-  // 列设置：checkbox 勾选写偏好（vanilla columnsModal oas-change 段）；oas-close 回写受控 visible
-  useOasEvent<{ checked: boolean; value: string }>(columnsModalRef, 'oas-change', (detail) => {
-    if (!detail) return
-    const key = detail.value as ProductColumnKey
-    if (!PRODUCT_COLUMN_KEYS.includes(key) || PRODUCT_COLUMN_MANDATORY.includes(key)) return
-    setColumnKeys((prev) => {
-      const next = detail.checked
-        ? prev.includes(key)
-          ? prev
-          : [...prev, key]
-        : prev.filter((k) => k !== key)
-      writeProductColumns(next)
-      return next
-    })
-  })
-  useOasEvent(columnsModalRef, 'oas-close', () => setColumnsOpen(false))
-
-  // 列设置弹窗内按钮（panel 原生 click 例外直绑）：重置=恢复默认并持久化；完成=关闭
-  useEffect(() => {
-    const reset = columnsResetRef.current
-    const close = columnsCloseRef.current
-    const onReset = () => {
-      const next = [...PRODUCT_COLUMN_KEYS]
-      setColumnKeys(next)
-      writeProductColumns(next)
-    }
-    const onClose = () => setColumnsOpen(false)
-    reset?.addEventListener('click', onReset)
-    close?.addEventListener('click', onClose)
-    return () => {
-      reset?.removeEventListener('click', onReset)
-      close?.removeEventListener('click', onClose)
-    }
-  }, [])
 
   // 卡片视图编辑按钮：light DOM 子节点，React onClick 委托（vanilla closest 匹配同款）
   const onGridClick = (e: React.MouseEvent) => {
@@ -326,48 +283,13 @@ export default function ProductsPage() {
           {t('products.columns.title')}
         </oas-button>
       </div>
-      <div
-        className="product-batch-bar"
-        data-testid="product-batch-bar"
+      <ProductsBatchBar
         hidden={view !== 'table' || selected.length === 0}
-      >
-        <span className="product-batch-count" data-testid="product-batch-count">
-          {selected.length > 0 ? t('products.batch.selected', { count: selected.length }) : ''}
-        </span>
-        <oas-space className="product-batch-actions" justify="end">
-          <oas-button
-            data-testid="product-batch-unlist"
-            size="small"
-            disabled={!batchEnabled || undefined}
-            onClick={() => void batchStatus('off')}
-          >
-            {t('products.batch.unlist')}
-          </oas-button>
-          <oas-button
-            data-testid="product-batch-list"
-            size="small"
-            disabled={!batchEnabled || undefined}
-            onClick={() => void batchStatus('on')}
-          >
-            {t('products.batch.list')}
-          </oas-button>
-          <oas-popconfirm
-            ref={batchDelPopRef}
-            data-testid="product-batch-del-pop"
-            id="product-batch-del-pop"
-            title={t('products.batch.confirmDelete', { count: selected.length })}
-          >
-            <oas-button
-              data-testid="product-batch-delete"
-              size="small"
-              type="danger"
-              disabled={!batchEnabled || undefined}
-            >
-              {t('products.batch.delete')}
-            </oas-button>
-          </oas-popconfirm>
-        </oas-space>
-      </div>
+        selectedCount={selected.length}
+        canMutate={canMutate}
+        onBatchStatus={(target) => void batchStatus(target)}
+        onBatchDelete={() => void batchDelete()}
+      />
       <oas-masonry
         ref={gridRef}
         className="product-grid"
@@ -455,43 +377,12 @@ export default function ProductsPage() {
           }}
         />
       )}
-      <oas-modal
-        ref={columnsModalRef}
-        data-testid="product-columns-modal"
-        id="product-columns-modal"
-        title={t('products.columns.title')}
-        no-footer
-        visible={columnsOpen}
-      >
-        <div className="product-columns-list" data-testid="product-columns-list">
-          {PRODUCT_COLUMN_KEYS.map((key) => {
-            const title = key === 'category' ? t('products.category') : t(`products.th.${key}`)
-            const mandatory = PRODUCT_COLUMN_MANDATORY.includes(key)
-            return (
-              <label key={key} className="product-column-check">
-                <oas-checkbox
-                  data-testid={`product-columns-${key}`}
-                  value={key}
-                  checked={mandatory || columnKeys.includes(key) || undefined}
-                  disabled={mandatory || undefined}
-                >
-                  {title}
-                </oas-checkbox>
-              </label>
-            )
-          })}
-        </div>
-        <div className="form-actions">
-          <oas-space justify="end">
-            <oas-button ref={columnsResetRef} data-testid="product-columns-reset">
-              {t('products.columns.reset')}
-            </oas-button>
-            <oas-button ref={columnsCloseRef} data-testid="product-columns-close" type="primary">
-              {t('common.save')}
-            </oas-button>
-          </oas-space>
-        </div>
-      </oas-modal>
+      <ProductsColumnsModal
+        open={columnsOpen}
+        columnKeys={columnKeys}
+        onChange={setColumnKeys}
+        onClose={() => setColumnsOpen(false)}
+      />
     </div>
   )
 }
