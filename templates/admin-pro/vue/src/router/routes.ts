@@ -136,6 +136,16 @@ export const appRoutes: AppRoute[] = [
     },
     Component: () => import('../pages/not-found.vue'),
   },
+  {
+    path: '/500',
+    meta: {
+      titleKey: 'nav.serverError',
+      icon: 'error',
+      iconColor: 'var(--oas-color-warning)',
+      group: 'nav.demo',
+    },
+    Component: () => import('../pages/server-error.vue'),
+  },
 ]
 
 export function matchRoute(path: string): AppRoute | undefined {

@@ -134,6 +134,16 @@ export const appRoutes: AppRoute[] = [
     },
     Component: lazy(() => import('../pages/not-found')),
   },
+  {
+    path: '/500',
+    meta: {
+      titleKey: 'nav.serverError',
+      icon: 'error',
+      iconColor: 'var(--oas-color-warning)',
+      group: 'nav.demo',
+    },
+    Component: lazy(() => import('../pages/server-error')),
+  },
 ]
 
 export function matchRoute(path: string): AppRoute | undefined {
