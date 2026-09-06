@@ -17,7 +17,7 @@
 // 6. 文案刷新：vanilla onLocaleChange(refreshText) 逐节点替换；本模版 useT() 订阅后整页
 //    重渲染，rules/labels/placeholders/columns 随 locale 自动重算
 // 7. 样式：dict.css 从 vanilla 逐字复制（vanilla category.ts 同款 import 关系；dict 页
-//    Task 3 落地时复用本副本）
+//    已落地并复用本副本）
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { TableColumn } from '@oas-ui/ui/data/table'
 import '../styles/pages/dict.css'

@@ -1,5 +1,5 @@
 // src/router/routes.tsx —— 路由表事实来源
-// path/meta 与 vanilla-html/src/router/routes.ts 中对应页面逐字对齐（本模版取 17 条）
+// path/meta 与 vanilla-html/src/router/routes.ts 中对应页面逐字对齐（本模版取 23 条）
 // 例外：/login 在 vanilla 路由表中不存在（vanilla 未登录时由 router 直接渲染登录页），
 // 本模版为 HashRouter 组装需要补入，meta 为本模版新增（titleKey 取 i18n 已存在的 login.welcome）
 import { lazy, type ComponentType, type LazyExoticComponent } from 'react'
@@ -134,6 +134,70 @@ export const appRoutes: AppRoute[] = [
       group: 'nav.system',
     },
     Component: lazy(() => import('../pages/category')),
+  },
+  {
+    path: '/system/roles',
+    meta: {
+      titleKey: 'nav.roles',
+      icon: 'star-filled',
+      iconColor: 'var(--oas-tint-violet)',
+      roles: ['admin'],
+      group: 'nav.system',
+    },
+    Component: lazy(() => import('../pages/roles')),
+  },
+  {
+    path: '/system/menus',
+    meta: {
+      titleKey: 'nav.menus',
+      icon: 'lock',
+      iconColor: 'var(--oas-color-primary)',
+      roles: ['admin'],
+      group: 'nav.system',
+    },
+    Component: lazy(() => import('../pages/menus')),
+  },
+  {
+    path: '/system/dept',
+    meta: {
+      titleKey: 'nav.dept',
+      icon: 'organization',
+      iconColor: 'var(--oas-tint-cyan)',
+      roles: ['admin'],
+      group: 'nav.system',
+    },
+    Component: lazy(() => import('../pages/dept')),
+  },
+  {
+    path: '/system/dict',
+    meta: {
+      titleKey: 'nav.dict',
+      icon: 'search',
+      iconColor: 'var(--oas-color-success)',
+      roles: ['admin'],
+      group: 'nav.system',
+    },
+    Component: lazy(() => import('../pages/dict')),
+  },
+  {
+    path: '/form',
+    meta: {
+      titleKey: 'nav.createOrder',
+      icon: 'plus',
+      iconColor: 'var(--oas-color-warning)',
+      group: 'nav.business',
+    },
+    Component: lazy(() => import('../pages/form')),
+  },
+  {
+    path: '/basic-form',
+    meta: {
+      titleKey: 'nav.basicForm',
+      icon: 'form',
+      iconColor: 'var(--oas-color-success)',
+      group: 'nav.demo',
+    },
+    Component: lazy(() => import('../pages/basic-form')),
   },
   {
     path: '/system/logs',

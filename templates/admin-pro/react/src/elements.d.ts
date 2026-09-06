@@ -279,6 +279,10 @@ declare module 'react/jsx-runtime' {
         /** 日期选择器形态（single/daterange 等，logs 页 daterange 在用） */
         type?: string
         placeholder?: string
+        /** 可选最早日期（YYYY-MM-DD，form 向导页在用） */
+        min?: string
+        /** vanilla basic-form 页原样写入的属性（组件当前不渲染 label，仅为 DOM 对齐） */
+        label?: string
         disabled?: boolean
         onOasChange?: (e: Event) => void
       }
@@ -286,6 +290,8 @@ declare module 'react/jsx-runtime' {
         name?: string
         accept?: string
         'list-type'?: string
+        /** vanilla basic-form 页原样写入的属性（组件当前不渲染 label，仅为 DOM 对齐） */
+        label?: string
         disabled?: boolean
         onOasChange?: (e: Event) => void
       }
@@ -335,6 +341,9 @@ declare module 'react/jsx-runtime' {
       'oas-transfer': OasBase & {
         data?: string
         value?: string
+        'source-title'?: string
+        'target-title'?: string
+        searchable?: boolean
         onOasChange?: (e: Event) => void
       }
       'oas-dynamic-tags': OasBase & {
@@ -402,6 +411,9 @@ declare module 'react/jsx-runtime' {
         /** 步骤定义（JSON 字符串，如 [{ title: '待支付' }, …]） */
         steps?: string
         current?: string | number
+        /** 允许点击步骤跳转（form 向导页在用） */
+        clickable?: boolean
+        onOasChange?: (e: Event) => void
       }
       'oas-timeline': OasBase
       'oas-timeline-item': OasBase & {
@@ -412,6 +424,43 @@ declare module 'react/jsx-runtime' {
         status?: string
         title?: string
         description?: string
+      }
+      'oas-tree': OasBase & {
+        /** 节点数据（JSON 字符串；组件亦定义 data property，两通道均收） */
+        data?: string
+        /** 默认展开 key，逗号分隔 */
+        expanded?: string
+        /** 选中 key（单选；undefined 移除属性回退无选中态） */
+        selected?: string
+        checked?: string
+        checkable?: boolean
+        height?: string | number
+        onOasSelect?: (e: Event) => void
+        onOasNodeRender?: (e: Event) => void
+      }
+      'oas-splitter': OasBase & {
+        percent?: string | number
+        min?: string | number
+        max?: string | number
+      }
+      'oas-textarea': OasBase & {
+        name?: string
+        value?: string
+        rows?: string | number
+        placeholder?: string
+        resize?: string
+        /** vanilla basic-form 页原样写入的属性（组件当前不渲染 label，仅为 DOM 对齐） */
+        label?: string
+        disabled?: boolean
+        readonly?: boolean
+        onOasInput?: (e: Event) => void
+      }
+      'oas-checkbox-group': OasBase & {
+        name?: string
+        /** 选中值（JSON 字符串数组） */
+        value?: string
+        disabled?: boolean
+        onOasChange?: (e: Event) => void
       }
     }
   }
