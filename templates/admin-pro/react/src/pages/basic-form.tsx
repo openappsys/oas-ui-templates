@@ -43,17 +43,14 @@ export default function BasicFormPage() {
   const { t } = useT()
   const formRef = useRef<HTMLElement | null>(null)
 
-  // vanilla oas-submit 段：仅提示
   useOasEvent(formRef, 'oas-submit', () => {
     appMessage.success(t('basic.submitted'))
   })
 
-  // vanilla reset 段：原生 form reset + 提示
   const onReset = () => {
     ;(formRef.current?.shadowRoot?.querySelector('form') as HTMLFormElement | null)?.reset()
     appMessage.info(t('basic.resetDone'))
   }
-  // vanilla submit 按钮：触发内部原生 form 提交（rules 校验后发 oas-submit）
   const onSubmit = () => {
     ;(formRef.current?.shadowRoot?.querySelector('form') as HTMLFormElement | null)?.requestSubmit()
   }

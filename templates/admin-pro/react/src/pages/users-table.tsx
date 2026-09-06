@@ -1,8 +1,8 @@
 // src/pages/users-table.tsx —— 用户列表（oas-table + 空态覆盖层 + 行事件委托）
 // 1. columns 含 render 函数（返回真实 DOM 节点），JSON 序列化会丢函数，故走 property 通道
-//   （oas-table 的 columns setter 双通道均支持，AGENTS.md 第 3 条例外）；columns 用 useMemo
+//   （oas-table 的 columns setter 双通道均支持，例外）；columns 用 useMemo
 //    角色筛选选项来自 roles，文案来自 t）
-// 2. 行事件：oas-row-click 自定义事件走 useOasEvent（AGENTS.md 第 1 条）；编辑按钮的原生
+// 2. 行事件：oas-row-click 自定义事件走 useOasEvent编辑按钮的原生
 //    click 是 composed 事件，能冒泡出 oas-table shadow 到 React 根委托（oas-table 不在
 //    drawer/modal 例外之列），故用容器 onClick + composedPath 匹配 .user-row-edit
 //    prop 派生（is-empty/table-hidden/hidden 三处同一事实来源）
@@ -86,7 +86,6 @@ export function UsersTable({
 }: UsersTableProps) {
   const { t, locale } = useT()
 
-  // 列定义按 locale + roles 重建（vanilla renderTable 里 COLUMNS(roleFilters) 同款时机）
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const columns = useMemo<TableColumn[]>(
     () =>
@@ -97,13 +96,11 @@ export function UsersTable({
     [locale, roles],
   )
 
-  // 行点击 → 详情弹窗（vanilla oas-row-click 段）
   useOasEvent<{ row: Record<string, unknown> }>(tableRef, 'oas-row-click', (detail) => {
     const id = Number(detail.row.id)
     if (Number.isFinite(id)) onRowOpen(id)
   })
 
-  // 编辑按钮：composed click 冒泡出 shadow 后经 React 根委托到此（vanilla fromPath 等价）
   const onWrapClick = (e: React.MouseEvent) => {
     const btn = e.nativeEvent
       .composedPath()

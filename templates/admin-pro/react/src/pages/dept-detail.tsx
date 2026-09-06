@@ -79,11 +79,9 @@ function DeptDetailInner({
   const { t, locale } = useT()
   const wrapRef = useRef<HTMLDivElement | null>(null)
 
-  // 列定义按 locale 重建（vanilla renderSubTable 里重设 columns 同款时机）
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const columns = useMemo<TableColumn[]>(() => buildColumns(t), [locale])
 
-  // vanilla onSubDelete + md-del-pop 直绑的合并等价：source 带 data-del → 子部门删除；
   // 否则是详情删除 popconfirm（#md-del-pop）→ 删除当前选中节点
   useOasEvent<{ source: HTMLElement }>(wrapRef, 'oas-ok', (detail) => {
     const src = detail.source
@@ -92,7 +90,6 @@ function DeptDetailInner({
     else if (src.id === 'md-del-pop') onDelete(node)
   })
 
-  // vanilla onSubClick：composedPath 匹配行内编辑按钮
   const onWrapClick = (e: React.MouseEvent) => {
     const editBtn = e.nativeEvent
       .composedPath()

@@ -1,7 +1,7 @@
 // src/pages/products-columns-modal.tsx —— 商品列设置弹窗（显隐列 + 偏好持久化）
 // 重置按钮 / 完成按钮 / writeProductColumns 持久化）。
 //    父组件 React state 单一持有，必须监听 oas-close 回写，否则组件自闭后与 state 失同步
-// 2. 重置/完成按钮位于 oas-modal panel 内，panel 对原生 click stopPropagation（AGENTS.md
+// 2. 重置/完成按钮位于 oas-modal panel 内，panel 对原生 click stopPropagation；
 //    checkbox 的 oas-change / 弹窗的 oas-close 自定义事件仍走 useOasEvent
 //    onChange 回写父组件 state 驱动表格 column-keys 重算
 import { useEffect, useRef } from 'react'
@@ -39,7 +39,6 @@ export function ProductsColumnsModal({
   const onCloseRef = useRef(onClose)
   onCloseRef.current = onClose
 
-  // checkbox 勾选写偏好（vanilla columnsModal oas-change 段；强制列不可取消）
   useOasEvent<{ checked: boolean; value: string }>(modalRef, 'oas-change', (detail) => {
     if (!detail) return
     const key = detail.value as ProductColumnKey

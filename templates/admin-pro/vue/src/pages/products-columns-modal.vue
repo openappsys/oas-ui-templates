@@ -1,18 +1,12 @@
 <script setup lang="ts">
 // src/pages/products-columns-modal.vue —— 商品列设置弹窗（显隐列 + 偏好持久化）
-// 行为事实来源：vanilla-html/src/pages/products.ts 的 columnsModal 段（oas-change 勾选 /
 // 重置按钮 / 完成按钮 / writeProductColumns 持久化），react/src/pages/products-columns-modal.tsx
-// 为已验收参照。
-// 偏差记录（因果链）：
-// 1. visible 受控：vanilla 靠组件自闭（遮罩/Esc 时组件自摘 visible 属性）；本模版 visible 由
 //    父组件 state 单一持有，必须监听 oas-close 回写，否则组件自闭后与 state 失同步
-// 2. 重置/完成按钮位于 oas-modal panel 内：vanilla/react 因 panel 对原生 click
 //    stopPropagation 需直绑 addEventListener；Vue 的 @click 直绑元素本身不走根委托，
-//    不受影响（AGENTS.md 第 5 条）；checkbox 的 oas-change / 弹窗的 oas-close 自定义事件
+//    不受影响checkbox 的 oas-change / 弹窗的 oas-close 自定义事件
 //    同样模板直绑（第 1 条）
-// 3. 持久化：勾选/重置后立即 writeProductColumns（与 vanilla 同一时机），列集合经
 //    change 事件回写父组件 state 驱动表格 column-keys 重算
-// 4. checked/disabled 布尔存在性语义（AGENTS.md 第 2 条）
+// 4. checked/disabled 布尔存在性语义
 import { useT } from '../composables/use-t'
 import {
   PRODUCT_COLUMN_KEYS,
@@ -46,7 +40,6 @@ function isMandatory(key: ProductColumnKey): boolean {
   return PRODUCT_COLUMN_MANDATORY.includes(key)
 }
 
-// checkbox 勾选写偏好（vanilla columnsModal oas-change 段；强制列不可取消）
 function onCheckChange(e: Event): void {
   const detail = (e as CustomEvent<{ checked: boolean; value: string }>).detail
   if (!detail) return
@@ -61,7 +54,6 @@ function onCheckChange(e: Event): void {
   emit('change', next)
 }
 
-// 重置=恢复默认并持久化（vanilla 重置按钮 click 段）
 function onReset(): void {
   const next = [...PRODUCT_COLUMN_KEYS]
   writeProductColumns(next)

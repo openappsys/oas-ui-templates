@@ -59,7 +59,6 @@ export default function FormPage() {
   const confirmRef = useRef<HTMLElement | null>(null)
   const submitRef = useRef<HTMLElement | null>(null)
 
-  // vanilla loadProducts：价格升序（renderProductsOptions 的 sort 同款）
   useEffect(() => {
     void listProducts().then((rows) => {
       setProductsData([...rows].sort((a, b) => a.price - b.price))
@@ -75,10 +74,8 @@ export default function FormPage() {
   )
   const total = items.reduce((sum, p) => sum + p.price, 0) * quantity
 
-  // vanilla clearErrors
   const clearErrors = () => setErrors({})
 
-  // vanilla validateStep：错误写入 errors state，返回是否通过
   const validateStep = (n: number): boolean => {
     const next: Record<string, string> = {}
     let ok = true
@@ -108,7 +105,6 @@ export default function FormPage() {
     return ok
   }
 
-  // vanilla goNext/goPrev
   const goNext = () => {
     if (!validateStep(step)) return
     setStep(step + 1)
@@ -119,7 +115,6 @@ export default function FormPage() {
     clearErrors()
   }
 
-  // vanilla stepsEl oas-change 段：越级先校验，失败命令式复位 current
   useOasEvent<{ index: number }>(stepsRef, 'oas-change', (d) => {
     const target = d.index
     if (target === step) return
@@ -131,7 +126,6 @@ export default function FormPage() {
     clearErrors()
   })
 
-  // vanilla submitOrder 段：确认勾选 → 组装 → loading → createOrder → 快照 → 跳结果页
   const submitOrder = async () => {
     clearErrors()
     if (!confirmed) {

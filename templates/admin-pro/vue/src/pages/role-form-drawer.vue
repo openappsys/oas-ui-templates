@@ -1,16 +1,8 @@
 <script setup lang="ts">
 // src/pages/role-form-drawer.vue —— 角色新建/编辑抽屉（数据权限单选 + 自定义部门穿梭框）
-// 行为事实来源：vanilla-html/src/pages/roles.ts 的 RULES/fillForm/scopeGroup oas-change/
 // transfer oas-change/form oas-submit 段
-// 偏差记录（因果链）：
-// 1. 回填：vanilla fillForm 逐字段 setAttribute（transfer value 在 open 边沿写入）；
 //    本模版在 open 边沿的 watch（flush: 'post'，等 DOM 就位）做同样的事（字段非受控）
-// 2. 数据权限单选 checked：vanilla setRadioChecked 逐个切存在性 attr；本模版用响应式
-//    存在性绑定 :checked="dataScope === o.value ? '' : null"（AGENTS.md 第 2 条）；
-//    自定义范围字段 hidden 同样派生（dataScope !== 2）
-// 3. oas-submit：vanilla 在页面级做校验/持久化/提示/刷新；本模版上抛 submit(values)，
-//    父组件持有 editingId/roles 状态做持久化（语义对齐 vanilla state.editingId）
-// 4. 文案刷新：vanilla refreshText 重建单选组/替换 label/占位/rules；本模版 useT() 订阅后
+//    存在性绑定 :checked="dataScope === o.value ? '' : null"//    自定义范围字段 hidden 同样派生（dataScope !== 2）
 //    标题/label/占位/提示/单选文案/rules/穿梭框标题随 locale 自动重算
 import { computed, ref, watch } from 'vue'
 import { createRole, updateRole } from '../data/system'
@@ -50,7 +42,6 @@ const codeRef = ref<HTMLElement | null>(null)
 const transferRef = ref<HTMLElement | null>(null)
 const saving = ref(false)
 
-// vanilla state.dataScope/deptIds（抽屉内部提交态）
 const dataScope = ref<DataScope>(1)
 const deptIds = ref<number[]>([])
 
@@ -58,7 +49,6 @@ const title = computed(() =>
   props.editingId == null ? t('roles.new') : t('roles.editRole').replace('#{id}', String(props.editingId)),
 )
 
-// vanilla RULES()
 const rules = computed(() =>
   JSON.stringify({
     name: [{ required: true, message: t('roles.rule.name') }],
@@ -69,7 +59,6 @@ const rules = computed(() =>
   }),
 )
 
-// vanilla DATA_SCOPE_OPTIONS()：随 locale 重算
 const scopeOptions = computed(() => [
   { value: 1, label: t('roles.scopeOpt.1'), desc: t('roles.scopeDesc.1') },
   { value: 2, label: t('roles.scopeOpt.2'), desc: t('roles.scopeDesc.2') },
@@ -78,12 +67,10 @@ const scopeOptions = computed(() => [
   { value: 5, label: t('roles.scopeOpt.5'), desc: t('roles.scopeDesc.5') },
 ])
 
-// vanilla refresh() 的 transfer data 段：部门平铺为 {key,label}
 const transferData = computed(() =>
   JSON.stringify(props.depts.map((d) => ({ key: String(d.id), label: d.name }))),
 )
 
-// vanilla fillForm：open 边沿命令式回填（transfer value 同通道）
 watch(
   () => [props.open, props.editing],
   () => {
@@ -98,7 +85,6 @@ watch(
   { flush: 'post' },
 )
 
-// vanilla scopeGroup oas-change 段：仅新勾选的单选生效；非自定义范围清空 deptIds
 function onScopeChange(e: Event): void {
   const radio = e.composedPath()[0] as HTMLElement
   if (!radio.hasAttribute?.('checked')) return
@@ -108,7 +94,6 @@ function onScopeChange(e: Event): void {
   if (dataScope.value !== 2) deptIds.value = []
 }
 
-// vanilla transfer oas-change 段
 function onTransferChange(e: Event): void {
   deptIds.value = (e as CustomEvent<{ value: string[] }>).detail.value.map(Number)
 }
@@ -119,7 +104,6 @@ function onSave(): void {
   form?.requestSubmit()
 }
 
-// vanilla form oas-submit 段：trim 校验 → create/update → 提示 → 上抛 saved
 async function onSubmit(e: Event): Promise<void> {
   if (saving.value) return
   const values = (e as CustomEvent<{ values: FormValues }>).detail.values

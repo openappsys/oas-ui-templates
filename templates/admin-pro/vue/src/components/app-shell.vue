@@ -1,7 +1,5 @@
 <script setup lang="ts">
 // src/components/app-shell.vue —— 布局壳：oas-layout + 头部 + 三形态导航 + 页签栏 + 面包屑 + footer
-// 组装与 vanilla-html/src/components/app-shell.ts 的 mountApp() 逐块对齐（经 react 版校准）；
-// 差异：vanilla 在 oas:navconfig-change 里手动重建 DOM，Vue 侧 ref 重赋值驱动重渲染 +
 // NavMenu key 重挂载；no-chrome（未登录无壳）由路由守卫重定向 /login 天然接管
 import { computed, onMounted, onUnmounted, ref, watch, onWatcherCleanup } from 'vue'
 import { useRoute } from 'vue-router'
@@ -55,7 +53,6 @@ function t(key: string, params?: Record<string, string | number>): string {
   return tt(key, params)
 }
 
-// 菜单形态×位置：设置中心派 oas:navconfig-change → ref 重赋值重渲染（替代 vanilla 手动重建 DOM）
 const nav = ref<NavConfig>(navConfig())
 const popoverOpen = ref(false)
 const commandOpen = ref(false)
@@ -70,7 +67,6 @@ function onNavConfigChange(): void {
 onMounted(() => window.addEventListener('oas:navconfig-change', onNavConfigChange))
 onUnmounted(() => window.removeEventListener('oas:navconfig-change', onNavConfigChange))
 
-// 文档标题（vanilla refreshLocale 内同款逻辑）
 watch(
   [activePath, locale],
   () => {
@@ -81,7 +77,6 @@ watch(
 )
 
 // ☰ 单击分派：sidebar 走自身抽屉；menubar/navigation 走悬浮菜单
-// （vanilla 同款 root.querySelector('#nav')——主菜单三处分支 id 恒为 'nav'，浮层用 'nav-popover'）
 function onNavToggle(): void {
   const el = document.getElementById('nav')
   if (el?.tagName === 'OAS-SIDEBAR') {
@@ -93,7 +88,6 @@ function onNavToggle(): void {
   }
 }
 
-// 悬浮菜单：点击面板外 / Esc 关闭（vanilla 的 pointerdown + keydown 监听）
 watch(popoverOpen, (open) => {
   if (!open) return
   const onPointerDown = (e: PointerEvent) => {
@@ -118,7 +112,6 @@ const crumbs = computed(() => {
 })
 
 // 页面入场动画：首次渲染不加 page-enter，路由切换后 key 重挂载 <main> 自然重放动画
-// （vanilla playViewEnter 在 wasEmpty 首渲跳过，切换时加类、动画结束移除）
 const prevPath = ref<string | null>(null)
 const pageEnter = ref(false)
 watch(

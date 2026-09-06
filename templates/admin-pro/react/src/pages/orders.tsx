@@ -72,7 +72,6 @@ export default function OrdersPage() {
 
   const isViewer = session.user?.role === 'viewer'
 
-  // vanilla refresh()：loading 包裹；viewer 角色仅保留本人创建订单并显示范围提示
   const refresh = useCallback(async () => {
     setLoading(true)
     let list = await listOrders()
@@ -86,7 +85,6 @@ export default function OrdersPage() {
     void refresh()
   }, [refresh])
 
-  // loading → 表格 loading 属性（vanilla setAttribute/removeAttribute 同款人工通道）
   useEffect(() => {
     const table = tableRef.current
     if (!table) return
@@ -94,7 +92,6 @@ export default function OrdersPage() {
     else table.removeAttribute('loading')
   }, [loading])
 
-  // vanilla filtered()：状态精确 + 客户名小写包含
   const filtered = useMemo(() => {
     const kw = keyword.trim().toLowerCase()
     return rows.filter((r) => {
@@ -104,14 +101,12 @@ export default function OrdersPage() {
     })
   }, [rows, keyword, status])
 
-  // vanilla renderTabs 的 counts：全部 + 各状态行数
   const tabCounts = useMemo(() => {
     const counts: Partial<Record<'all' | OrderStatus, number>> = { all: rows.length }
     for (const r of rows) counts[r.status] = (counts[r.status] ?? 0) + 1
     return counts
   }, [rows])
 
-  // vanilla renderStats：待处理数 / 本月销售额 / 完成率
   const stats = useMemo(() => {
     const pending = rows.filter((r) => r.status === 'pending' || r.status === 'paid').length
     const monthPrefix = new Date().toISOString().slice(0, 7)
@@ -126,7 +121,6 @@ export default function OrdersPage() {
 
   const dataJson = useMemo(() => JSON.stringify(filtered), [filtered])
 
-  // vanilla 导出段：空列表仅提示；CSV 带 BOM，商品以 " | " 拼接
   const onExport = () => {
     const list = filtered
     if (list.length === 0) {
@@ -152,7 +146,6 @@ export default function OrdersPage() {
     appMessage.success(t('orders.exported', { count: list.length }))
   }
 
-  // vanilla 清筛选段：复位关键字/状态/搜索框/分页
   const onClearFilter = () => {
     setKeyword('')
     setStatus('all')
@@ -160,7 +153,6 @@ export default function OrdersPage() {
     searchRef.current?.setAttribute('value', '')
   }
 
-  // vanilla 搜索段：关键字变化即回第一页
   const backToFirstPage = () => tableRef.current?.setAttribute('current', '1')
   useOasEvent<{ value: string }>(searchRef, 'oas-input', (d) => {
     setKeyword(d.value)
@@ -175,13 +167,11 @@ export default function OrdersPage() {
     backToFirstPage()
   })
 
-  // vanilla openDrawer：记录选中行 + 开抽屉
   const openDrawer = (row: OrderRow) => {
     setSelectedId(row.id)
     setDrawerOpen(true)
   }
 
-  // vanilla 流程按钮段：更新状态 → 提示 → refresh（抽屉内容随 rows 派生自动更新）
   const applyFlow = useCallback(
     async (id: string, target: OrderStatus) => {
       const prev = rows.find((r) => r.id === id)

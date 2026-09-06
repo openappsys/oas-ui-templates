@@ -1,9 +1,9 @@
 // src/pages/orders-table.tsx —— 订单列表（oas-table + 空态覆盖层 + 行事件）
 // itemSummary/renderTable/setEmpty 段。
 // 1. columns 含 render 函数（返回真实 DOM 节点），JSON 序列化会丢函数，故走 property 通道
-//   （oas-table 的 columns setter 双通道均支持，AGENTS.md 第 3 条例外）；columns 用 useMemo
+//   （oas-table 的 columns setter 双通道均支持，例外）；columns 用 useMemo
 //    empty prop 派生（is-empty/hidden 两处同一事实来源，data 由父组件传入的 dataJson 表达）
-// 3. 行事件：oas-row-click 自定义事件走 useOasEvent（AGENTS.md 第 1 条），detail.row 即
+// 3. 行事件：oas-row-click 自定义事件走 useOasEventdetail.row 即
 // 4. 清筛选按钮为 light DOM 原生 click，直绑 onClick
 import { useMemo } from 'react'
 import type { TableColumn } from '@oas-ui/ui/data/table'
@@ -123,11 +123,9 @@ export function OrdersTable({
 }: OrdersTableProps) {
   const { t, locale } = useT()
 
-  // 列定义按 locale 重建（vanilla renderTable 里重设 columns 同款时机）
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const columns = useMemo<TableColumn[]>(() => buildColumns(t), [locale])
 
-  // 行点击 → 快捷详情抽屉（vanilla oas-row-click 段）
   useOasEvent<{ row: OrderRow }>(tableRef, 'oas-row-click', (detail) => {
     if (detail.row?.id) onRowOpen(detail.row)
   })

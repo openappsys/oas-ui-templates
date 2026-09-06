@@ -65,13 +65,11 @@ export function ProductForm({
   const onCloseRef = useRef(onClose)
   onCloseRef.current = onClose
 
-  // vanilla resolveCategory：非法/空值回落第一个分类
   const resolveCategory = (value?: string): string => {
     if (value && categories.some((c) => c.value === value)) return value
     return categories[0]?.value ?? ''
   }
 
-  // vanilla fillForm：open 边沿回填（编辑值/新建默认），upload 清空
   useEffect(() => {
     if (!open) return
     nameRef.current?.setAttribute('value', editing?.name ?? '')
@@ -83,7 +81,7 @@ export function ProductForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, editing, categories])
 
-  // panel 内原生 click 例外直绑（AGENTS.md 第 2 条）：取消=关闭；保存=触发内部原生 form 提交
+  // panel 内原生 click 例外直绑：取消=关闭；保存=触发内部原生 form 提交
   useEffect(() => {
     const cancel = cancelRef.current
     const save = saveRef.current
@@ -104,7 +102,6 @@ export function ProductForm({
   // 组件侧关闭（遮罩/Esc/✕）→ 回写 React 状态（visible 单一事实来源）
   useOasEvent(surfaceRef, 'oas-close', () => onCloseRef.current())
 
-  // vanilla oas-submit 段：价格校验 → 组装 payload → create/update → 关闭 + 刷新
   useOasEvent<{ values: FormValues }>(formRef, 'oas-submit', async (detail) => {
     if (savingRef.current) return
     const values = detail.values
@@ -206,7 +203,6 @@ export function ProductForm({
     </oas-form>
   )
 
-  // vanilla surfaceMarkup：dialog=oas-modal 内嵌 h2#form-title；drawer=oas-drawer title 属性
   return mode === 'dialog' ? (
     <oas-modal
       ref={surfaceRef}

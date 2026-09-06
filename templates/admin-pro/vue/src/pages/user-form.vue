@@ -1,18 +1,9 @@
 <script setup lang="ts">
 // src/pages/user-form.vue —— 用户新建/编辑弹窗（oas-modal + oas-form）
-// 行为事实来源：vanilla-html/src/pages/users.ts 的 RULES/fillForm/form-save/oas-submit 段
 // 容器形态参照 product-form.vue 先例
-// 偏差记录（因果链）：
-// 1. 回填：vanilla fillForm 逐字段 setAttribute；本模版在 open 边沿的 watch（flush: 'post'，
-//    等 DOM 就位）里做同样的事（表单字段非受控，value 全走 attribute，与 vanilla 同一通道）
-// 2. visible 受控：vanilla 靠组件自闭（遮罩/Esc 时自摘 visible）；本模版 visible 由父组件
 //    state 单一持有，监听 oas-close 上抛 close 回写（product-form.vue 同款）
-// 3. 取消/保存按钮位于 oas-modal panel 内：vanilla/react 因 panel 对原生 click
 //    stopPropagation 需直绑 addEventListener；Vue 的 @click 直绑元素本身不走根委托，
-//    不受影响（AGENTS.md 第 5 条）
-// 4. 角色选项：vanilla refresh() 里 setAttribute('options')；本模版 options 走声明式 JSON
 //    attribute 随 roles prop 重算，回填仅写 value attribute
-// 5. 文案刷新：vanilla refreshText 逐节点替换；本模版 useT() 订阅后 rules/options/标题
 //    随 locale 自动重算
 import { computed, ref, watch } from 'vue'
 import type { UserRow, UserStatus } from '../data/users'
@@ -54,7 +45,6 @@ const roleRef = ref<HTMLElement | null>(null)
 const statusRef = ref<HTMLElement | null>(null)
 const saving = ref(false)
 
-// vanilla roleEnumFor：角色行 code → 用户角色枚举
 function roleEnumFor(roleRow: RoleRow | undefined): UserRow['role'] {
   if (!roleRow) return 'viewer'
   if (roleRow.code === 'super_admin') return 'admin'
@@ -62,7 +52,6 @@ function roleEnumFor(roleRow: RoleRow | undefined): UserRow['role'] {
   return 'editor'
 }
 
-// vanilla fillForm：open 边沿回填（编辑值/新建默认取首个角色）
 watch(
   () => [props.open, props.editing, props.roles],
   () => {
@@ -85,7 +74,7 @@ const title = computed(() =>
     ? t('users.new')
     : t('users.editUser').replace('#{id}', String(props.editingId)),
 )
-// 复杂数据走 JSON attribute 通道（AGENTS.md 第 3 条），随 locale/roles 重算
+// 复杂数据走 JSON attribute 通道随 locale/roles 重算
 const rules = computed(() =>
   JSON.stringify({
     name: [{ required: true, message: t('users.rule.name') }],
@@ -111,7 +100,6 @@ function onSave(): void {
   form?.requestSubmit()
 }
 
-// vanilla oas-submit 段：roleId→角色枚举推导 → create/update → 关闭 + 刷新（失败也关，对齐 vanilla）
 async function onSubmit(e: Event): Promise<void> {
   if (saving.value) return
   saving.value = true

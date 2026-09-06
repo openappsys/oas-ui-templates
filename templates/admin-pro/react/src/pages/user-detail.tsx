@@ -2,7 +2,7 @@
 //    声明式——user/roleName/perms 由父组件 state 派生，重渲染即最新（oas-descriptions
 //    的 items 走默认 slot，light DOM 子节点变化自然生效，见组件源码 template）
 // 2. 编辑/删除按钮：位于 oas-modal 的 panel 内，panel 对原生 click stopPropagation
-//   （AGENTS.md 原生事件例外条款），故直绑 addEventListener；popconfirm 的 oas-ok 与
+//   ），故直绑 addEventListener；popconfirm 的 oas-ok 与
 //    modal 的 oas-close 自定义事件仍走 useOasEvent
 import { useEffect, useRef } from 'react'
 import type { UserRow } from '../data/users'
@@ -53,10 +53,9 @@ export function UserDetail({
   // 组件侧关闭（遮罩/Esc/✕）→ 回写 React 状态
   useOasEvent(surfaceRef, 'oas-close', onClose)
 
-  // vanilla delete-popconfirm oas-ok 段（删除闭环在父组件：权限判断/删行/关窗/提示/刷新）
   useOasEvent(popconfirmRef, 'oas-ok', () => onDelete())
 
-  // panel 内原生 click 例外直绑（AGENTS.md 第 2 条）：编辑=关详情开表单
+  // panel 内原生 click 例外直绑：编辑=关详情开表单
   useEffect(() => {
     const edit = editRef.current
     const handler = () => onEditRef.current()

@@ -55,7 +55,6 @@ export function NotificationsDrawer({
   const onReadAllRef = useRef(onReadAll)
   onReadAllRef.current = onReadAll
 
-  // 列表项点击已读（vanilla notifList.addEventListener('click') 同款事件委托）
   useEffect(() => {
     const el = listRef.current
     if (!el) return
@@ -68,7 +67,6 @@ export function NotificationsDrawer({
     return () => el.removeEventListener('click', onClick)
   }, [])
 
-  // 底部「全部已读」按钮（vanilla notifReadall 直绑）
   useEffect(() => {
     const el = readAllRef.current
     if (!el) return

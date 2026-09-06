@@ -1,19 +1,11 @@
 <script setup lang="ts">
 // src/pages/product-edit.vue —— 商品编辑页（page 表单模式：oas-page-header + 表单）
-// 行为事实来源：vanilla-html/src/pages/product-edit.ts（186 行，逐块对齐），
-// react/src/pages/product-edit.tsx 为已验收参照。
-// 偏差记录（因果链）：
-// 1. 渲染模型：vanilla innerHTML + init() 异步回填（setAttribute 逐字段）；本模版声明式
 //    结构 + onMounted 数据就绪后做同款 setAttribute 回填（表单字段非受控，value 全走
-//    attribute，与 vanilla 同一通道）
 // 2. 事件绑定：pe-save/pe-cancel 按钮在 light DOM（非 drawer/modal panel），原生 click
 //    模板直绑 @click；oas-submit 自定义事件同样模板直绑（Vue 原生支持 kebab 事件，
-//    AGENTS.md 第 1 条，无需 react 版 useOasEvent 桥接）
-// 3. 返回链接：vanilla 写死 href="#/products"；本模版改用 vue-router 的 RouterLink
+//    无需 react 版 useOasEvent 桥接）
 //    （to="/products"），hash/history 双模式均正确（react 版 Link 同款）
-// 4. 文案刷新：vanilla onLocaleChange(refreshText) 逐节点替换；本模版 useT() 订阅后
 //    整页重渲染，title/rules/placeholder/标签随 locale 自动重算（products 同款模式）
-// 5. 取消按钮：vanilla location.hash='/products'；本模版 router.push('/products')
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import '../styles/pages/products.css'
@@ -48,7 +40,6 @@ function t(key: string, params?: Record<string, string | number>): string {
 
 const router = useRouter()
 
-// vanilla：rawId 取自 sessionStorage（products 页 openForm page 模式写入，键名逐字一致）
 const id: number | null = (() => {
   const rawId = sessionStorage.getItem('product-edit-id')
   return rawId ? Number(rawId) : null
@@ -71,7 +62,6 @@ onUnmounted(() => {
   alive = false
 })
 
-// vanilla init()：并发拉分类（applyOptions）+ 编辑态取行；数据就绪后边沿回填
 onMounted(async () => {
   const cats = await listCategories()
   if (!alive) return
@@ -84,7 +74,6 @@ onMounted(async () => {
     if (!row) appMessage.error(tt('products.notFound'))
   }
   editing.value = row
-  // vanilla fillForm / 新建默认分支（setAttribute 回填，通道一致）
   const fallbackCat =
     row && opts.some((c) => c.value === row.category) ? row.category : (opts[0]?.value ?? '')
   nameRef.value?.setAttribute('value', row?.name ?? '')
@@ -94,13 +83,11 @@ onMounted(async () => {
   dateRef.value?.setAttribute('value', row?.created ?? today())
 })
 
-// vanilla pe-save click 段：触发 oas-form 内部原生 form 提交
 function onSave(): void {
   const form = formRef.value?.shadowRoot?.querySelector('form') as HTMLFormElement | null
   form?.requestSubmit()
 }
 
-// vanilla oas-submit 段：价格校验 → 组装 payload → create/update → 返回列表
 async function onSubmit(e: Event): Promise<void> {
   if (saving.value) return
   const values = (e as CustomEvent<{ values: FormValues }>).detail.values

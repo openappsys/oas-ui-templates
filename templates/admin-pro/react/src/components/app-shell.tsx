@@ -46,7 +46,6 @@ export function AppShell() {
   const location = useLocation()
   const activePath = location.pathname
 
-  // 菜单形态×位置：设置中心派 oas:navconfig-change → state 重渲染（替代 vanilla 手动重建 DOM）
   const [nav, setNav] = useState<NavConfig>(navConfig)
   const { style, position } = nav
   const navRef = useRef<HTMLElement | null>(null)
@@ -65,7 +64,6 @@ export function AppShell() {
     return () => window.removeEventListener('oas:navconfig-change', onChange)
   }, [])
 
-  // 文档标题（vanilla refreshLocale 内同款逻辑）
   useEffect(() => {
     const route = matchRoute(activePath)
     document.title = route ? `${t(route.meta.titleKey)} · ${t('app.fullname')}` : t('app.fullname')
@@ -83,7 +81,6 @@ export function AppShell() {
     }
   }
 
-  // 悬浮菜单：点击面板外 / Esc 关闭（vanilla 的 pointerdown + keydown 监听）
   useEffect(() => {
     if (!popoverOpen) return
     const onPointerDown = (e: PointerEvent) => {
@@ -105,7 +102,6 @@ export function AppShell() {
   const crumbs = useMemo(() => JSON.stringify(buildCrumbs(activePath, t)), [activePath, t])
 
   // 页面入场动画：首次渲染不加 page-enter，路由切换后 key 重挂载 <main> 自然重放动画
-  // （vanilla playViewEnter 在 wasEmpty 首渲跳过，切换时加类、动画结束移除）
   const prevPathRef = useRef<string | null>(null)
   const isRouteSwitch = prevPathRef.current !== null && prevPathRef.current !== activePath
   useEffect(() => {

@@ -1,8 +1,6 @@
 <script setup lang="ts">
 // src/components/command-palette.vue —— 命令面板：Ctrl/Cmd+K、/ 唤起；页面 + 操作 + 主题组
-// 对齐 vanilla app-shell.ts buildCommandItems()/execCommand()/openCommand()/toggleCommand()
 // open 状态由 AppShell 持有（头部搜索框也要唤起）。
-// 沿用 react 版关键差异（vs vanilla）：close-on-select="false"，选中后由模版自己关面板——
 // 组件在 oas-select 同一同步栈里自行 close() 时，open-change 派发的状态回写与 execCommand 内
 // 路由导航触发的同步渲染交错会丢更新；改为 select handler 里先 emit 关面板再 execCommand，
 // Esc/遮罩的组件自闭仍经 oas-open-change 微任务回写。
@@ -41,7 +39,6 @@ function onSelect(e: Event): void {
 
 function execCommand(value: string): void {
   if (value.startsWith('/')) {
-    // vanilla 同路径 resolve() 重渲当前页；vue-router 同路径 push 抛冗余导航错误，跳过即可
     if (value !== route.path) void router.push(value)
     return
   }

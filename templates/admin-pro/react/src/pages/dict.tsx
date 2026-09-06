@@ -84,7 +84,6 @@ export default function DictPage() {
 
   const tableRef = useRef<HTMLElement | null>(null)
 
-  // vanilla refreshItems：拉选中类型的键值 + 更新计数（显式 typeId 参数）
   const refreshItems = useCallback(async (typeId: number | null) => {
     if (typeId == null) {
       setLoadedItems([])
@@ -95,7 +94,6 @@ export default function DictPage() {
     setCounts((prev) => ({ ...prev, [typeId]: items.length }))
   }, [])
 
-  // vanilla refresh：全量类型 + 逐类型计数 → refreshItems
   const refresh = useCallback(async () => {
     const rows = await listDictTypes()
     setTypes(rows)
@@ -124,7 +122,6 @@ export default function DictPage() {
   const editingType = types.find((x) => x.id === editingTypeId) ?? null
   const editingItem = loadedItems.find((x) => x.id === editingItemId) ?? null
 
-  // vanilla 类型列表 click 段：closest [data-id] → 选中 + refreshItems
   const onTypeListClick = (e: React.MouseEvent) => {
     const item = (e.target as HTMLElement).closest<HTMLElement>('[data-id]')
     if (!item) return
@@ -133,7 +130,6 @@ export default function DictPage() {
     void refreshItems(id)
   }
 
-  // vanilla 表格 click 段：composedPath 匹配行内编辑按钮（删除由 popconfirm 自驱动）
   const onTableWrapClick = (e: React.MouseEvent) => {
     const btn = e.nativeEvent
       .composedPath()
@@ -146,7 +142,6 @@ export default function DictPage() {
     }
   }
 
-  // vanilla popconfirm oas-ok 段：detail.source 反查 data-del → 删除 → 提示 → refreshItems
   useOasEvent<{ source: HTMLElement }>(tableRef, 'oas-ok', (detail) => {
     const src = detail.source
     if (!src?.hasAttribute?.('data-del')) return
@@ -208,7 +203,6 @@ export default function DictPage() {
     }
   }
 
-  // 列定义按 locale 重建（vanilla renderItems 里重设 columns 同款时机）
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const columns = useMemo<TableColumn[]>(() => buildColumns(t), [locale])
 

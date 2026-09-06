@@ -1,11 +1,7 @@
 <script setup lang="ts">
 // src/pages/basic-form.vue —— 基础表单：输入/下拉/数字/文本域/开关/日期/上传组合
-// 行为事实来源：vanilla-html/src/pages/basic-form.ts（150 行，逐块对齐）。
-// 偏差记录（因果链）：
-// 1. 渲染模型：vanilla innerHTML 拼装 + refreshText 逐节点 setAttribute 回写；本模版声明式——
-//    rules/options 等复杂数据全部 computed JSON 字符串（AGENTS.md 第 3 条），useT() 订阅
-//    locale 后整页重渲染即等价于 vanilla onLocaleChange(refreshText)
-// 2. 事件绑定：oas-form 的 oas-submit 模板直绑（AGENTS.md 第 1 条）；提交/重置按钮原生
+//    rules/options 等复杂数据全部 computed JSON 字符串useT() 订阅
+// 2. 事件绑定：oas-form 的 oas-submit 模板直绑提交/重置按钮原生
 //    click 直绑 @click
 // 3. 提交/重置仍走命令式：oas-form 内部 <form> 在 shadowRoot 里，requestSubmit()/reset()
 //    跨 shadow 调用（advanced-form.vue 同款模式）
@@ -22,7 +18,6 @@ function t(key: string, params?: Record<string, string | number>): string {
 
 const formRef = ref<HTMLElement | null>(null)
 
-// vanilla catOptions()：随 locale 重算的 JSON attribute
 const catOptions = computed(() =>
   JSON.stringify([
     { label: t('basic.catWeb'), value: 'web' },
@@ -30,14 +25,12 @@ const catOptions = computed(() =>
     { label: t('basic.catData'), value: 'data' },
   ]),
 )
-// vanilla statusOptions()
 const statusOptions = computed(() =>
   JSON.stringify([
     { label: t('basic.stDev'), value: 'dev' },
     { label: t('basic.stLive'), value: 'live' },
   ]),
 )
-// vanilla rulesJSON()
 const rules = computed(() =>
   JSON.stringify({
     name: [{ required: true, message: t('basic.ruleName') }],
@@ -54,16 +47,13 @@ function innerForm(): HTMLFormElement | null {
   return formRef.value?.shadowRoot?.querySelector('form') as HTMLFormElement | null
 }
 
-// vanilla oas-submit 段
 function onSubmit(): void {
   appMessage.success(t('basic.submitted'))
 }
-// vanilla [data-action="reset"] 段
 function onReset(): void {
   innerForm()?.reset()
   appMessage.info(t('basic.resetDone'))
 }
-// vanilla [data-action="submit"] 段
 function onSubmitClick(): void {
   innerForm()?.requestSubmit()
 }

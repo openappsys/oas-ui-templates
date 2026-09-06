@@ -1,7 +1,7 @@
 // src/pages/orders-drawer.tsx —— 订单快捷详情抽屉（orders 页行点击弹出）
 // openDrawer/order-detail-link/order-detail-action 段。
 //    「flow 后 refresh 再回填 tag/action」的可观察结果）
-// 2. 面板内原生 click 例外直绑（AGENTS.md 第 2 条）：「查看完整详情」链接与流程按钮位于
+// 2. 面板内原生 click 例外直绑：「查看完整详情」链接与流程按钮位于
 //    oas-drawer panel 内，panel 对原生事件 stopPropagation，React 根委托收不到，故与
 //    'order-detail-id'；本模版路由支持 hash/history 双模式，改 preventDefault + react-router
 //    navigate('/order-detail')，sessionStorage 键名与写入时机逐字一致
@@ -55,7 +55,6 @@ export function OrdersDrawer({ open, row, onClose, onApplyFlow }: OrdersDrawerPr
   const onCloseRef = useRef(onClose)
   onCloseRef.current = onClose
 
-  // panel 内原生 click 例外直绑：链接=记 id + 路由跳转；按钮=状态流转（vanilla 同款编排）
   useEffect(() => {
     const link = linkRef.current
     const action = actionRef.current
@@ -111,7 +110,6 @@ export function OrdersDrawer({ open, row, onClose, onApplyFlow }: OrdersDrawerPr
             <oas-tag
               data-testid="order-detail-tag"
               id="order-detail-tag"
-              // vanilla setTagType：purple 走 color 属性、其余走 type 属性（互斥），此处声明式等价表达
               type={tagTypeFor(row.status) === 'purple' ? undefined : tagTypeFor(row.status)}
               color={tagTypeFor(row.status) === 'purple' ? 'purple' : undefined}
             >

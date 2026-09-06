@@ -112,7 +112,6 @@ export function insertChild(nodes: MenuTree[], parentId: number | null, child: M
   }
 }
 
-// vanilla nextId()：全树最大 id + 1
 export function nextIdOf(nodes: MenuTree[]): number {
   return flattenTree(nodes).reduce((m, n) => Math.max(m, n.id), 0) + 1
 }

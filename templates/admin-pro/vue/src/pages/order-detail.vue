@@ -1,18 +1,10 @@
 <script setup lang="ts">
 // src/pages/order-detail.vue —— 订单详情页（步骤条 + 描述列表 + 时间线 + 流程操作）
-// 行为事实来源：vanilla-html/src/pages/order-detail.ts（230 行，逐块对齐）。
-// 偏差记录（因果链）：
-// 1. 订单号来源：vanilla 读 sessionStorage('order-detail-id')（orders 页抽屉链接写入）；
 //    本模版改读 route.query.id（orders-drawer.vue 的 RouterLink 携带）——可观察行为一致
 //    （目标页拿到同一订单号），且 URL 可收藏/刷新后恢复，sessionStorage 通道不再使用
-// 2. 渲染模型：vanilla innerHTML + load() 异步回填（renderSteps/renderBasic/renderTimeline/
 //    renderAction 逐节点写）；本模版声明式——order ref 就绪后各区块由 computed 派生，
-//    oas-steps 的 steps 复杂数据走 JSON attribute 通道（AGENTS.md 第 3 条）
-// 3. 事件绑定：流程按钮在 light DOM（oas-card 内），原生 click 模板直绑 @click（vanilla
 //    addEventListener 同款）；按钮 loading 态用 :loading 存在性语义对齐 setAttribute('loading')
-// 4. 返回链接：vanilla 写死 href="#/orders"；本模版用 RouterLink（hash/history 双模式均正确，
 //    product-edit.vue 先例）
-// 5. 文案刷新：vanilla onLocaleChange(refreshText) 分支重建；本模版 useT() 订阅后整页重渲染，
 //    步骤/描述/时间线/操作随 locale 自动重算（加载中/缺失态同样响应式）
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
@@ -21,7 +13,6 @@ import type { OrderRow, OrderStatus } from '../data/orders'
 import { useT } from '../composables/use-t'
 import { appMessage } from '../lib/app-message'
 
-// vanilla FLOW_STEPS/FLOW_TO/STATUS_TAG
 const FLOW_STEPS: OrderStatus[] = ['pending', 'paid', 'shipping', 'done']
 const FLOW_TO: Partial<Record<OrderStatus, OrderStatus>> = {
   pending: 'paid',
@@ -49,7 +40,6 @@ function statusLabel(status: OrderStatus): string {
 
 const route = useRoute()
 
-// vanilla：render 时同步读一次（本模版取 query，'?id=' 缺省为 ''）
 const id = typeof route.query.id === 'string' ? route.query.id : ''
 
 const order = ref<OrderRow | null>(null)
@@ -62,7 +52,6 @@ onUnmounted(() => {
   alive = false
 })
 
-// vanilla load()：取单 → 缺失显示空态；就绪后整卡渲染
 onMounted(async () => {
   const row = await getOrder(id)
   if (!alive) return
@@ -73,12 +62,10 @@ onMounted(async () => {
   order.value = row
 })
 
-// vanilla formatMoney（详情版：¥ 无空格、固定两位小数）
 function formatMoney(n: number): string {
   return `¥${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
-// vanilla addDays：created 日期 + n 天（时间线节点时间）
 function addDays(dateStr: string, n: number): string {
   const [y, m, d] = dateStr.split('-').map(Number)
   const date = new Date(y, m - 1, d)
@@ -88,21 +75,18 @@ function addDays(dateStr: string, n: number): string {
   return `${date.getFullYear()}-${mm}-${dd}`
 }
 
-// 页头标题/状态标签（vanilla renderAll：ph title=订单号 + tag 配色）
 const title = computed(() => (order.value ? order.value.id : t('nav.orderDetail')))
 const statusTag = computed(() => {
   if (!order.value) return { label: t('orderDetail.loading'), type: 'default' as const }
   return { label: statusLabel(order.value.status), type: STATUS_TAG[order.value.status] }
 })
 
-// vanilla renderSteps：cancelled 或未加载隐藏；否则 4 步 + 当前步序号
 const steps = computed(() => FLOW_STEPS.map((s) => ({ title: statusLabel(s) })))
 const stepsCurrent = computed(() => (order.value ? FLOW_STEPS.indexOf(order.value.status) : -1))
 const stepsVisible = computed(
   () => !!order.value && order.value.status !== 'cancelled' && stepsCurrent.value >= 0,
 )
 
-// vanilla renderTimeline/buildTimeline：创建 + 按进度补节点；cancelled 单独一节点红色
 const timeline = computed(() => {
   const o = order.value
   if (!o) return []
@@ -121,14 +105,12 @@ const timeline = computed(() => {
   return nodes
 })
 
-// vanilla renderAction：有下一步显示按钮（文案=流程动作），否则显示终态提示
 const flowTo = computed(() => (order.value ? FLOW_TO[order.value.status] ?? null : null))
 const note = computed(() => {
   if (!order.value || flowTo.value) return ''
   return order.value.status === 'done' ? t('orders.noteDone') : t('orders.noteCancelled')
 })
 
-// vanilla action click 段：loading → updateOrderStatus → 提示 → order=updated 重渲（声明式自动）
 async function onAction(): Promise<void> {
   if (!order.value || !flowTo.value) return
   const actionLabel = t(`orders.flow.${order.value.status}`)

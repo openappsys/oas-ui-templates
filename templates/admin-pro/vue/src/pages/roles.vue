@@ -1,16 +1,11 @@
 <script setup lang="ts">
 // src/pages/roles.vue —— 角色管理：表格（数据权限标签 + 行编辑/popconfirm 删除）+ 新建/编辑抽屉
-// 行为事实来源：vanilla-html/src/pages/roles.ts（352 行，逐块对齐）。
-// 偏差记录（因果链）：
-// 1. 渲染模型：vanilla 全程 imperative（innerHTML + renderTable 手动刷表）；本模版声明式——
 //    roles/deptList/editingId/drawerOpen 全部 ref，表格数据由 state 派生
 // 2. 子组件拆分（单文件 ≤400 行纪律）：表单抽屉 ./role-form-drawer.vue（RULES/fillForm/
 //    数据权限单选/穿梭框/oas-submit 段）；表格列 render（权限标签/操作列）保留本文件
-//    （vanilla scopeCell/actionCell）
 // 3. columns 含 render 函数走 property 通道（users-table.vue 同款）；data 走 JSON 字符串
-//    通道（AGENTS.md 第 3 条）；行编辑按钮经 @click composedPath 匹配（category.vue 同款）；
+//    通道行编辑按钮经 @click composedPath 匹配（category.vue 同款）；
 //    删除从 oas-ok 的 detail.source 带 data-del 反查（v2.2.8 popconfirm 原生自驱动）
-// 4. 文案刷新：vanilla onLocaleChange(refreshText) 逐节点替换 + renderTable 重建列；
 //    本模版 useT() 订阅后整页重渲染，columns（含行内标签）随 locale 自动重算
 import { computed, onMounted, ref } from 'vue'
 import type { TableColumn } from '@oas-ui/ui/data/table'
@@ -31,7 +26,6 @@ function dataScopeLabel(scope: DataScope): string {
   return tt(`roles.scope.${scope}`)
 }
 
-// vanilla DATA_SCOPE_TAG：数据权限标签配色
 const DATA_SCOPE_TAG: Record<DataScope, string> = {
   1: 'primary',
   2: 'warning',
@@ -40,7 +34,6 @@ const DATA_SCOPE_TAG: Record<DataScope, string> = {
   5: 'default',
 }
 
-// ---- 页面状态（对齐 vanilla PageState） ----
 const roles = ref<RoleRow[]>([])
 const deptList = ref<DeptTree[]>([])
 const editingId = ref<number | null>(null)
@@ -48,7 +41,6 @@ const drawerOpen = ref(false)
 
 const editing = computed(() => roles.value.find((r) => r.id === editingId.value) ?? null)
 
-// vanilla flatten()
 function flatten(roots: DeptTree[]): DeptTree[] {
   const out: DeptTree[] = []
   const walk = (nodes: DeptTree[]) => {
@@ -61,7 +53,6 @@ function flatten(roots: DeptTree[]): DeptTree[] {
   return out
 }
 
-// vanilla scopeCell：数据权限标签
 function scopeCell(row: RoleRow): HTMLElement {
   const tag = document.createElement('oas-tag')
   tag.setAttribute('type', DATA_SCOPE_TAG[row.dataScope])
@@ -69,7 +60,6 @@ function scopeCell(row: RoleRow): HTMLElement {
   return tag
 }
 
-// vanilla actionCell：行内编辑按钮 + popconfirm 包裹的删除按钮（data-del 反查来源）
 function actionCell(row: RoleRow): HTMLElement {
   const ctx = document.createElement('div')
   ctx.className = 'action-cell'
@@ -91,7 +81,6 @@ function actionCell(row: RoleRow): HTMLElement {
   return ctx
 }
 
-// vanilla TABLE_COLUMNS()（标签/行内标签随 locale 重算）
 const columns = computed<TableColumn[]>(() => {
   void locale.value
   return [
@@ -104,10 +93,9 @@ const columns = computed<TableColumn[]>(() => {
   ]
 })
 
-// data 走 JSON 字符串通道（AGENTS.md 第 3 条）
+// data 走 JSON 字符串通道
 const rowsJson = computed(() => JSON.stringify(roles.value))
 
-// vanilla refresh()：角色 + 部门平铺
 async function refresh(): Promise<void> {
   const [rows, deptTree] = await Promise.all([listRoles(), treeDepts()])
   roles.value = rows
@@ -115,13 +103,11 @@ async function refresh(): Promise<void> {
 }
 onMounted(() => void refresh())
 
-// vanilla role-create 段：openForm(null)
 function onCreate(): void {
   editingId.value = null
   drawerOpen.value = true
 }
 
-// vanilla table click 段：composedPath 匹配行内编辑按钮 → openForm(row)
 // （v2.2.8 起行点击忽略内嵌交互控件：单元格内 popconfirm 原生自驱动，无需模板手动 open）
 function onTableClick(e: MouseEvent): void {
   const btn = e
@@ -135,7 +121,6 @@ function onTableClick(e: MouseEvent): void {
   }
 }
 
-// vanilla onDeleteOk：oas-ok 的 detail.source 带 data-del 反查来源 → 删除 → 提示 + 刷新
 function onDeleteOk(e: Event): void {
   const src = (e as CustomEvent<{ source?: HTMLElement }>).detail?.source
   if (!src?.hasAttribute?.('data-del')) return
@@ -146,7 +131,6 @@ function onDeleteOk(e: Event): void {
   })
 }
 
-// vanilla oas-submit 段收尾（持久化在抽屉子组件）：关闭抽屉 + 清编辑态 + 刷新
 function onFormSaved(): void {
   drawerOpen.value = false
   editingId.value = null

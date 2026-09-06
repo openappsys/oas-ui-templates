@@ -1,15 +1,9 @@
 <script setup lang="ts">
 // src/pages/user-detail.vue —— 用户详情弹窗（头像 + 描述列表 + 权限标识 + 编辑/删除）
-// 行为事实来源：vanilla-html/src/pages/users.ts 的 oas-row-click 段（详情回填）与
 // renderPerms/delete-popconfirm 段
-// 偏差记录（因果链）：
-// 1. 渲染模型：vanilla 每次行点击 innerHTML 重建 oas-descriptions 再逐节点回填；本模版
 //    声明式——详情字段由 user/roleName/permTags props 派生，oas-descriptions 结构静态写出
-//    （节点 id 与 vanilla 逐字一致：detail-id/detail-name2/detail-email/detail-role/
 //    detail-status-tag/detail-created）
-// 2. 权限标签：vanilla renderPerms 拼 oas-tag innerHTML；本模版 v-for 渲染，
 //    type=success/default 由 allowed 派生；空列表回落单个 users.nonePerm 标签（同款）
-// 3. 删除：vanilla popconfirm oas-ok 里做 canMutate 校验 + removeUser + 关闭 + 刷新；
 //    本模版 oas-ok 仅上抛 delete，校验/持久化/提示在父组件（编辑/新建同样父组件持有状态）
 // 4. visible 受控：oas-close 上抛 close 回写父组件 state（user-form.vue 同款）
 import { computed } from 'vue'
@@ -46,7 +40,6 @@ function t(key: string, params?: Record<string, string | number>): string {
 
 const avatarText = computed(() => props.user?.name.charAt(0).toUpperCase() ?? '')
 const statusLabel = computed(() => (props.user ? t(`users.status.${props.user.status}`) : ''))
-// vanilla tagTypeForStatus
 const statusTagType = computed(() => (props.user?.status === 'active' ? 'success' : 'danger'))
 </script>
 

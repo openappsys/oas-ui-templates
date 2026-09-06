@@ -69,14 +69,12 @@ export default function ProfilePage() {
   const roleLabel = user?.role === 'admin' ? t('users.role.admin') : t('profile.roleViewer')
   const [theme, setTheme] = useState<ThemeChoice>(readTheme)
 
-  // vanilla document.addEventListener('themechange', ...)：外部换肤（头部/命令面板）同步选中态
   useEffect(() => {
     const sync = () => setTheme(readTheme())
     document.addEventListener('themechange', sync)
     return () => document.removeEventListener('themechange', sync)
   }, [])
 
-  // vanilla applyTheme：system=删属性+提示；其余=写属性；随后派发 themechange
   const applyTheme = (next: ThemeChoice) => {
     if (next === 'system') {
       delete document.documentElement.dataset.theme

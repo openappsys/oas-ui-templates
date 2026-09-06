@@ -1,6 +1,5 @@
 <script setup lang="ts">
 // src/components/nav-menu.vue —— 导航菜单：sidebar / menubar / navigation 三形态 × 位置分派
-// 对齐 vanilla app-shell.ts menuHTML()/bindNav()/applyNavActive()：
 //   高亮三机制——sidebar 用 active 属性；menubar 用 value 属性（radio ✓ 高亮）；
 //   navigation 用 items 内 active 字段（value 必须留空，否则 findItem 落空面板空白）
 // 形态/位置切换由调用方用 key 重挂载本组件（事件随模板直绑，天然绑到新元素）
@@ -47,7 +46,6 @@ const groupJsonHref = computed(() => {
 function onSelect(e: Event): void {
   const { value } = (e as CustomEvent<{ value: string }>).detail
   if (!value) return
-  // vanilla 同路径会 resolve() 重渲当前页；vue-router 同路径 push 抛冗余导航错误，跳过即可
   if (value !== props.activePath) void router.push(value)
   emit('navigate')
 }
@@ -63,7 +61,6 @@ function onCollapse(e: Event): void {
 }
 
 // navigation 在浮层容器里首帧测量会坍缩成 0×0（oas-navigation-menu 浮层测量缺陷）：
-// 挂载稳定后重设 items 触发重新测量兜底（vanilla toggleMenuPopover 同款 rAF 重设）
 const navEl = ref<HTMLElement | null>(null)
 let rafId = 0
 onMounted(() => {

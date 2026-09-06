@@ -2,7 +2,7 @@
 //    本模版改为「range 状态 → 派生 JSON attribute」的声明式渲染，7/14/30 切换只 setRange，
 //    图表 data、订单表 data、donut 图例随重渲染自动联动（oas-chart/oas-table 的 data setter
 //    均接受 JSON 字符串，见组件源码 normalizeData/set data）
-// 3. 事件绑定：oas-segmented 的 oas-change 走 useOasEvent（React 19 不绑 kebab 事件，见 AGENTS.md）；
+// 3. 事件绑定：oas-segmented 的 oas-change 走 useOasEvent（React 19 不绑 kebab 事件）；
 //    刷新/导出/查看全部为原生 click，直绑 onClick（目标不在 drawer/modal panel 内）
 //    hash/history 双模式按存储值生成），与壳层导航同一出处
 //    后整页重渲染，rules/columns/options 等 JSON attribute 随之重算
@@ -94,11 +94,8 @@ export default function DashboardPage() {
   const name = user?.name ?? ''
   const isAdmin = user?.role === 'admin'
 
-  // 统计卡 skeleton 加载态（vanilla：300ms 后 fillStats）
   const [statsReady, setStatsReady] = useState(false)
-  // 7/14/30 天联动：vanilla currentRange 局部变量
   const [range, setRange] = useState('7')
-  // 热销 Top5：vanilla loadTop5() 异步拉取（null = 加载中，对齐 vanilla 初始空容器）
   const [top5, setTop5] = useState<Top5Row[] | null>(null)
   const segmentedRef = useRef<HTMLElement | null>(null)
 
@@ -132,7 +129,7 @@ export default function DashboardPage() {
   const days = Number(range)
   const breakdown = orderBreakdown(days)
 
-  // 复杂数据走 JSON attribute 通道（AGENTS.md 第 3 条）
+  // 复杂数据走 JSON attribute 通道
   const segmentedOptions = JSON.stringify([
     { label: t('dashboard.rangeDays', { days: '7' }), value: '7' },
     { label: t('dashboard.rangeDays', { days: '14' }), value: '14' },
@@ -171,7 +168,6 @@ export default function DashboardPage() {
     ...(isAdmin ? [{ href: routeHref('/users'), icon: 'user', label: t('nav.users') }] : []),
   ]
 
-  // 刷新：数据全部由 range/state 派生，重渲染即最新，仅保留提示（对齐 vanilla 提示行为）
   const refresh = () => appMessage.success(t('dashboard.refreshed'))
   const exportDemo = () => appMessage.info(t('dashboard.demoExport'))
   const viewAllOrders = () => appMessage.info(t('dashboard.demoOrders'))

@@ -4,7 +4,7 @@
 //    rules/labels/radio 选项文案随 locale 自动重算
 // 2. 事件绑定：表格行点击（composedPath 匹配 [data-edit]）、oas-form 的 oas-submit、popconfirm
 //    的 oas-ok、radio 组的 oas-change、oas-transfer 的 oas-change、oas-drawer 的 oas-close 走
-//    useOasEvent / 容器 onClick（AGENTS.md 第 1 条）；页头新建按钮为 light DOM 原生 click 直绑
+//    useOasEvent / 容器 onClick页头新建按钮为 light DOM 原生 click 直绑
 //    onClick；抽屉面板内取消/保存按钮按第 2 条例外直绑 addEventListener（panel 对原生事件
 //    stopPropagation，React 根委托收不到）
 // 3. columns 含 render 函数（scopeCell/actionCell 返回真实 DOM 节点）→ property 通道
@@ -132,7 +132,6 @@ export default function RolesPage() {
   const cancelRef = useRef<HTMLElement | null>(null)
   const saveRef = useRef<HTMLElement | null>(null)
 
-  // vanilla refresh()：并发拉角色 + 部门树（拍平）
   const refresh = useCallback(async () => {
     const [rows, deptTree] = await Promise.all([listRoles(), treeDepts()])
     setRoles(rows)
@@ -145,7 +144,6 @@ export default function RolesPage() {
 
   const editingRow = editingId != null ? (roles.find((r) => r.id === editingId) ?? null) : null
 
-  // vanilla setRadioChecked：radio 的 checked 命令式同步
   const setRadioChecked = (scope: DataScope) => {
     scopeGroupRef.current?.querySelectorAll<HTMLElement>('oas-radio').forEach((radio) => {
       if (Number(radio.getAttribute('value')) === scope) radio.setAttribute('checked', '')
@@ -153,7 +151,6 @@ export default function RolesPage() {
     })
   }
 
-  // vanilla fillForm + openForm：open 边沿逐字段 setAttribute
   useEffect(() => {
     if (!drawerOpen) return
     const row = editingRow
@@ -168,14 +165,13 @@ export default function RolesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drawerOpen, editingId])
 
-  // locale 变化时 radio 文案随 JSX 重算，checked 需按 dataScope 重打（vanilla refreshText 重建
   // radio 组后 setRadioChecked 同款时机）
   useEffect(() => {
     setRadioChecked(dataScope)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locale, dataScope, drawerOpen])
 
-  // panel 内原生 click 例外直绑（AGENTS.md 第 2 条）：取消=关闭；保存=触发内部原生 form 提交
+  // panel 内原生 click 例外直绑：取消=关闭；保存=触发内部原生 form 提交
   useEffect(() => {
     const cancel = cancelRef.current
     const save = saveRef.current
@@ -193,7 +189,6 @@ export default function RolesPage() {
     }
   }, [])
 
-  // vanilla 表格 click 段：composedPath 匹配行内编辑按钮（删除由 popconfirm 自驱动）
   const onTableWrapClick = (e: React.MouseEvent) => {
     const btn = e.nativeEvent
       .composedPath()
@@ -206,7 +201,6 @@ export default function RolesPage() {
     }
   }
 
-  // vanilla popconfirm oas-ok 段：detail.source 反查 data-del → 删除 → 提示 → 刷新
   useOasEvent<{ source: HTMLElement }>(tableRef, 'oas-ok', (detail) => {
     const src = detail.source
     if (!src?.hasAttribute?.('data-del')) return
@@ -221,7 +215,6 @@ export default function RolesPage() {
   // 组件侧关闭（遮罩/Esc/✕）→ 回写 React 状态（visible 单一事实来源）
   useOasEvent(drawerRef, 'oas-close', () => setDrawerOpen(false))
 
-  // vanilla scopeGroup oas-change 段：切数据权限；非自定义时清空 deptIds
   useOasEvent(scopeGroupRef, 'oas-change', (_d, ev) => {
     const radio = ev.composedPath()[0] as HTMLElement
     if (!(radio instanceof HTMLElement) || !radio.hasAttribute('checked')) return
@@ -231,12 +224,10 @@ export default function RolesPage() {
     if (val !== 2) setDeptIds([])
   })
 
-  // vanilla transfer oas-change 段
   useOasEvent<{ value: string[] }>(transferRef, 'oas-change', (d) => {
     setDeptIds(d.value.map(Number))
   })
 
-  // vanilla oas-submit 段：create/update（deptIds 仅自定义权限携带）→ 关闭 + 刷新
   useOasEvent<{ values: FormValues }>(formRef, 'oas-submit', async (d) => {
     if (savingRef.current) return
     const name = d.values.name?.trim()
@@ -260,7 +251,6 @@ export default function RolesPage() {
     }
   })
 
-  // 列定义按 locale 重建（vanilla renderTable 里重设 columns 同款时机）
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const columns = useMemo<TableColumn[]>(() => buildColumns(t), [locale])
 

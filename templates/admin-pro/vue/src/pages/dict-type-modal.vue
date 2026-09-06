@@ -1,15 +1,8 @@
 <script setup lang="ts">
 // src/pages/dict-type-modal.vue —— 字典类型新建/编辑弹窗（oas-modal + oas-form + 2 字段）
-// 行为事实来源：vanilla-html/src/pages/dict.ts 的 RULES_TYPE/openTypeForm/typeForm oas-submit 段
 // 容器形态参照 category-form-modal.vue 先例
-// 偏差记录（因果链）：
-// 1. 回填：vanilla openTypeForm 逐字段 setAttribute；本模版在 open 边沿的 watch
 //    （flush: 'post'，等 DOM 就位）做同样的事（表单字段非受控，value 全走 attribute 通道）
-// 2. visible 受控：vanilla 靠组件自闭；本模版 visible 由父组件 state 单一持有，
 //    监听 oas-close 上抛 close 回写（category-form-modal.vue 同款）
-// 3. oas-submit：vanilla 在页面级做校验/持久化/提示/刷新；本模版上抛 submit(values)，
-//    父组件持有 editingTypeId/类型列表状态做持久化（语义对齐 vanilla state.editingTypeId）
-// 4. 文案刷新：vanilla refreshText 逐节点替换；本模版 useT() 订阅后标题/label/占位/
 //    规则/按钮随 locale 自动重算
 import { computed, ref, watch } from 'vue'
 import { createDictType, updateDictType } from '../data/system'
@@ -49,7 +42,6 @@ const title = computed(() =>
   props.editing ? t('dict.editType', { name: props.editing.name }) : t('dict.newType'),
 )
 
-// vanilla RULES_TYPE()
 const rules = computed(() =>
   JSON.stringify({
     name: [{ required: true, message: t('dict.rule.typeName') }],
@@ -57,7 +49,6 @@ const rules = computed(() =>
   }),
 )
 
-// vanilla openTypeForm：open 边沿回填
 watch(
   () => [props.open, props.editing],
   () => {
@@ -75,7 +66,6 @@ function onSave(): void {
   form?.requestSubmit()
 }
 
-// vanilla typeForm oas-submit 段：trim 校验 → create/update → 提示 → 上抛 saved
 async function onSubmit(e: Event): Promise<void> {
   if (saving.value) return
   saving.value = true

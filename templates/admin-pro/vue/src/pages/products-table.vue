@@ -1,19 +1,11 @@
 <script setup lang="ts">
 // src/pages/products-table.vue —— 商品列表视图（oas-table + 空态 + 行内编辑 + 行事件）
-// 行为事实来源：vanilla-html/src/pages/products.ts 的 TABLE_COLUMNS/cellXxx/renderTableBody 段，
-// react/src/pages/products-table.tsx 为已验收参照（拆分边界/事件语义对齐）。
-// 偏差记录（因果链）：
 // 1. columns 含 render 函数（返回真实 DOM 节点），JSON 序列化会丢函数，故走 property 通道：
-//    Vue 3.5 对有 setter 的 custom element 直接 property 赋值（AGENTS.md 第 3 条，oas-table
-//    columns setter 双通道接受）；computed 按 locale 重建（对齐 vanilla refreshText 里
+//    Vue 3.5 对有 setter 的 custom element 直接 property 赋值oas-table
 //    renderColumns 的时机），避免每次渲染重设 property 触发整表重绘
-// 2. data/column-keys 传 JSON 字符串（贴近 vanilla setAttribute 通道）
-// 3. 行内编辑/勾选/开关：oas-edit/oas-check/oas-change 自定义事件模板直绑（AGENTS.md 第 1 条，
-//    无需 react 版 useOasEvent 桥接）；编辑按钮的原生 click 是 composed 事件，能冒泡出
+// 3. 行内编辑/勾选/开关：oas-edit/oas-check/oas-change 自定义事件模板直绑//    无需 react 版 useOasEvent 桥接）；编辑按钮的原生 click 是 composed 事件，能冒泡出
 //    oas-table shadow 到容器 div 的 @click（Vue 直绑元素本身，无 react 根委托问题），
-//    composedPath 匹配 .product-edit（对齐 vanilla fromPath 的 matches 语义）
-// 4. 空态：vanilla 手动切换 table-hidden 类与 empty 节点 hidden；本模版由 empty prop 派生
-// 5. editable 布尔存在性语义：:editable="canMutate ? '' : null"（AGENTS.md 第 2 条）
+// 5. editable 布尔存在性语义：:editable="canMutate ? '' : null"
 import { computed, ref } from 'vue'
 import type { TableColumn } from '@oas-ui/ui/data/table'
 import { stockLevel } from '../data/products'
@@ -53,7 +45,6 @@ function formatMoney(n: number): string {
   return `¥ ${n.toLocaleString('en-US')}`
 }
 
-// 以下 cellXxx 逐函数对齐 vanilla（render 返回 Node 走富内容挂载通道）
 function cellTag(category: string): HTMLElement {
   const tag = document.createElement('oas-tag')
   tag.className = 'cat-tag'
@@ -143,11 +134,10 @@ const columns = computed<TableColumn[]>(() => {
   void locale.value
   return buildColumns(tt)
 })
-// data/column-keys 走 JSON 字符串通道（AGENTS.md 第 3 条）
+// data/column-keys 走 JSON 字符串通道
 const rowsJson = computed(() => JSON.stringify(props.rows))
 const columnKeysJson = computed(() => JSON.stringify(props.columnKeys))
 
-// 勾选 → 批量栏（vanilla oas-check 段）
 function onCheck(e: Event): void {
   const { keys } = (e as CustomEvent<{ keys: string[] }>).detail
   emit(
@@ -156,7 +146,6 @@ function onCheck(e: Event): void {
   )
 }
 
-// 行内编辑持久化（vanilla oas-edit 段；仅 price/stock 两列）
 function onInlineEdit(e: Event): void {
   if (!props.canMutate) return
   const { key, column, value } = (
@@ -167,7 +156,6 @@ function onInlineEdit(e: Event): void {
   emit('inline-edit', id, column, Number(value))
 }
 
-// 状态开关（vanilla table oas-change 段：按 composedPath 源头识别 switch）
 function onTableChange(e: Event): void {
   const sw = e.composedPath()[0] as HTMLElement
   if (sw.getAttribute('data-testid') !== 'product-switch') return
@@ -176,7 +164,6 @@ function onTableChange(e: Event): void {
   emit('toggle-status', id)
 }
 
-// 编辑按钮：composed click 冒泡出 shadow 后到达容器（vanilla fromPath 等价）
 function onWrapClick(e: MouseEvent): void {
   const btn = e
     .composedPath()
@@ -186,7 +173,6 @@ function onWrapClick(e: MouseEvent): void {
   if (id) emit('edit-row', id)
 }
 
-// 父组件清空勾选时同步摘掉表格 selected 属性（vanilla clearSelection 同款人工复位）
 function clearSelected(): void {
   tableRef.value?.removeAttribute('selected')
 }

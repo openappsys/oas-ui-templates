@@ -93,7 +93,6 @@ export function HeaderBar({
   const userMenuRef = useRef<HTMLElement>(null)
   const badgeRef = useRef<HTMLElement>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
-  // 全屏可用性挂载时判定一次即可（vanilla: fullscreenEnabled 不支持则隐藏按钮）
   const [fsSupported] = useState(() => document.fullscreenEnabled)
 
   // 语言下拉：选择即切换 locale（useT 订阅令全壳重渲染，各 items/文案随之刷新）
@@ -114,7 +113,6 @@ export function HeaderBar({
     return () => document.removeEventListener('fullscreenchange', onChange)
   }, [])
 
-  // 未读数变化时 badge 弹跳（vanilla syncBadge 的 is-pop 重触发动画）
   const lastCountRef = useRef(-1)
   useEffect(() => {
     const el = badgeRef.current

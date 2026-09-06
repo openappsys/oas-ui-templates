@@ -30,7 +30,6 @@ export function NotificationTab() {
   const [checks, setChecks] = useState<Record<string, boolean>>(readChecks)
   const matrixRef = useRef<HTMLDivElement | null>(null)
 
-  // 矩阵内 oas-switch 的 oas-change 在矩阵容器上委托：data-key 定位持久化键（vanilla 同款）
   useOasEvent<{ checked: boolean }>(matrixRef, 'oas-change', (detail, ev) => {
     const sw = ev.composedPath()[0] as HTMLElement
     const key = sw.getAttribute('data-key')

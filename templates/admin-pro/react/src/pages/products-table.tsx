@@ -3,7 +3,7 @@
 //    React 19 对自定义元素上存在的 property 直接赋值（oas-table 的 columns/data setter
 //    refreshText 里 renderColumns 的时机），避免每次渲染重设 property 触发整表重绘
 // 2. 行内编辑/勾选/开关：oas-edit/oas-check/oas-change 自定义事件全部 useOasEvent
-//   （AGENTS.md 第 1 条）；编辑按钮的原生 click 是 composed 事件，能冒泡出 oas-table
+//   编辑按钮的原生 click 是 composed 事件，能冒泡出 oas-table
 //    shadow 到 React 根委托（oas-table 不在 drawer/modal 例外之列），故用容器 onClick +
 import { useMemo } from 'react'
 import type { TableColumn } from '@oas-ui/ui/data/table'
@@ -36,7 +36,6 @@ function formatMoney(n: number): string {
   return `¥ ${n.toLocaleString('en-US')}`
 }
 
-// 以下 cellXxx 逐函数对齐 vanilla（render 返回 Node 走富内容挂载通道）
 function cellTag(category: string): HTMLElement {
   const tag = document.createElement('oas-tag')
   tag.className = 'cat-tag'
@@ -139,12 +138,10 @@ export function ProductsTable({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const columns = useMemo<TableColumn[]>(() => buildColumns(t), [locale])
 
-  // 勾选 → 批量栏（vanilla oas-check 段）
   useOasEvent<{ keys: string[] }>(tableRef, 'oas-check', (detail) => {
     onCheck(detail.keys.map(Number).filter((n) => Number.isFinite(n)))
   })
 
-  // 行内编辑持久化（vanilla oas-edit 段；仅 price/stock 两列）
   useOasEvent<{ key: string; column: string; value: unknown }>(tableRef, 'oas-edit', (detail) => {
     if (!canMutate) return
     const id = Number(detail.key)
@@ -152,7 +149,6 @@ export function ProductsTable({
     onInlineEdit(id, detail.column, Number(detail.value))
   })
 
-  // 状态开关（vanilla table oas-change 段：按 composedPath 源头识别 switch）
   useOasEvent(tableRef, 'oas-change', (_detail, ev) => {
     const sw = ev.composedPath()[0] as HTMLElement
     if (sw.getAttribute('data-testid') !== 'product-switch') return
@@ -161,7 +157,6 @@ export function ProductsTable({
     onToggleStatus(id)
   })
 
-  // 编辑按钮：composed click 冒泡出 shadow 后经 React 根委托到此（vanilla fromPath 等价）
   const onWrapClick = (e: React.MouseEvent) => {
     const btn = e.nativeEvent
       .composedPath()

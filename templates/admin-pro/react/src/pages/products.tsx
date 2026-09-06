@@ -2,7 +2,7 @@
 //    rows/keyword/category/page/view/selected/columnKeys 全部 useState，表格切片/空态/批量栏
 //    显隐/分页属性全部由 state 派生；refresh() 仅重拉数据 setRows，重渲染即最新
 // 2. 事件绑定：oas-input/oas-select/oas-segmented/oas-pagination 的 oas-* 自定义事件一律
-//    useOasEvent（AGENTS.md 第 1 条）；工具栏按钮为 light DOM 原生 click 直绑 onClick；
+//    useOasEvent工具栏按钮为 light DOM 原生 click 直绑 onClick；
 //    closest 匹配）；批量栏/列设置弹窗的事件接线见 ./products-batch-bar.tsx /
 //    ./products-columns-modal.tsx 头注释（popconfirm oas-ok 走 useOasEvent，modal panel
 //    内按钮原生 click 按第 2 条例外直绑）
@@ -90,7 +90,6 @@ export default function ProductsPage() {
   const tableRef = useRef<HTMLElement | null>(null)
   const pagerRef = useRef<HTMLElement | null>(null)
 
-  // vanilla refresh()：并发拉商品 + 分类；当前筛选分类失效时清空（applyCategoryOptions 语义）
   const refresh = useCallback(async () => {
     const [list, cats] = await Promise.all([listProducts(), listCategories()])
     setRows(list)
@@ -103,7 +102,6 @@ export default function ProductsPage() {
     void refresh()
   }, [refresh])
 
-  // vanilla filtered()：关键字（小写包含）+ 分类精确匹配
   const filtered = useMemo(() => {
     const kw = keyword.trim().toLowerCase()
     return rows.filter((r) => {
@@ -118,7 +116,6 @@ export default function ProductsPage() {
   const current = Math.min(page, maxPage)
   const pageRows = filtered.slice((current - 1) * pageSize, current * pageSize)
 
-  // oas-pagination hidden 命令式补写（因果链见头注释第 7 条）：
   // 组件 update() 在 total/current 变化与语言自刷时无条件摘 hidden，声明式写入会被吞；
   // hidden 不在 observedAttributes，补写不触发回环，故提交后赋权威值是安全的。
   // 依赖必须含 filtered.length（即 total）——total 变化本身就触发组件摘 hidden，
@@ -128,7 +125,6 @@ export default function ProductsPage() {
     if (pagerRef.current) pagerRef.current.hidden = shouldHidePager
   }, [shouldHidePager, filtered.length, current, locale])
 
-  // vanilla openForm：page 模式写 sessionStorage 跳编辑页；其余就地开表单容器
   const openForm = (row: ProductRow | null) => {
     if (formMode === 'page') {
       if (row) sessionStorage.setItem('product-edit-id', String(row.id))
@@ -140,7 +136,6 @@ export default function ProductsPage() {
     setSurfaceOpen(true)
   }
 
-  // vanilla grid/table 开关切换段（共用）
   const toggleStatus = async (id: number) => {
     const updated = await toggleProductStatus(id)
     if (!updated) {
@@ -151,7 +146,6 @@ export default function ProductsPage() {
     void refresh()
   }
 
-  // vanilla oas-edit 行内编辑持久化段
   const inlineEdit = (id: number, column: 'price' | 'stock', value: number) => {
     void updateProduct(id, { [column]: value }).then((updated) => {
       if (!updated) appMessage.error(t('products.notFound'))
@@ -160,13 +154,11 @@ export default function ProductsPage() {
     })
   }
 
-  // vanilla clearSelection：清空选中 + 摘掉表格 selected 属性（组件受控集合外的人工复位）
   const clearSelection = () => {
     setSelected([])
     tableRef.current?.removeAttribute('selected')
   }
 
-  // vanilla batchStatus：逐项 toggle 至目标态，统计变更数
   const batchStatus = async (target: 'on' | 'off') => {
     if (!canMutate) {
       appMessage.error(t('common.noPerm'))
@@ -183,7 +175,6 @@ export default function ProductsPage() {
     void refresh()
   }
 
-  // vanilla 批量删除 popconfirm oas-ok 段：逐项删除 + 清选 + 提示 + 刷新
   const batchDelete = async () => {
     if (!canMutate) {
       appMessage.error(t('common.noPerm'))
@@ -220,7 +211,6 @@ export default function ProductsPage() {
   })
   useOasEvent<{ page: number }>(pagerRef, 'oas-change', (d) => setPage(d.page))
 
-  // 卡片视图开关（vanilla grid oas-change 段：composedPath 源头取 data-id）
   useOasEvent(gridRef, 'oas-change', (_d, ev) => {
     const sw = ev.composedPath()[0] as HTMLElement
     const id = Number(sw.getAttribute('data-id'))
@@ -228,7 +218,6 @@ export default function ProductsPage() {
     void toggleStatus(id)
   })
 
-  // 卡片视图编辑按钮：light DOM 子节点，React onClick 委托（vanilla closest 匹配同款）
   const onGridClick = (e: React.MouseEvent) => {
     const btn = (e.target as HTMLElement).closest('[data-testid="product-edit"]')
     if (!btn) return

@@ -1,8 +1,7 @@
 // src/pages/product-edit.tsx —— 商品编辑页（page 表单模式：oas-page-header + 表单）
 //    结构 + 数据就绪边沿的 useEffect 做同款 setAttribute 回填（表单字段非受控，
 // 2. 事件绑定：pe-save/pe-cancel 按钮在 light DOM（非 drawer/modal panel），原生 click
-//    用 React onClick；oas-submit 自定义事件走 useOasEvent（AGENTS.md 第 1 条）
-//    改用 react-router 的 Link（to="/products"），两模式均正确
+//    用 React onClick；oas-submit 自定义事件走 useOasEvent//    改用 react-router 的 Link（to="/products"），两模式均正确
 //    整页重渲染，title/rules/placeholder/标签随 locale 自动重算（products 同款模式）
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
@@ -34,7 +33,6 @@ export default function ProductEditPage() {
   const { t } = useT()
   const navigate = useNavigate()
 
-  // vanilla：rawId 取自 sessionStorage（products 页 openForm page 模式写入，键名逐字一致）
   const [id] = useState<number | null>(() => {
     const rawId = sessionStorage.getItem('product-edit-id')
     return rawId ? Number(rawId) : null
@@ -50,7 +48,6 @@ export default function ProductEditPage() {
   const dateRef = useRef<HTMLElement | null>(null)
   const savingRef = useRef(false)
 
-  // vanilla init()：并发拉分类（applyOptions）+ 编辑态取行；数据就绪边沿回填
   useEffect(() => {
     let cancelled = false
     void (async () => {
@@ -65,7 +62,6 @@ export default function ProductEditPage() {
         if (!row) appMessage.error(t('products.notFound'))
       }
       setEditing(row)
-      // vanilla fillForm / 新建默认分支（setAttribute 回填，通道一致）
       const fallbackCat =
         row && opts.some((c) => c.value === row.category) ? row.category : (opts[0]?.value ?? '')
       nameRef.current?.setAttribute('value', row?.name ?? '')
@@ -80,12 +76,10 @@ export default function ProductEditPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
-  // vanilla pe-save click 段：触发 oas-form 内部原生 form 提交
   const onSave = () => {
     ;(formRef.current?.shadowRoot?.querySelector('form') as HTMLFormElement | null)?.requestSubmit()
   }
 
-  // vanilla oas-submit 段：价格校验 → 组装 payload → create/update → 返回列表
   useOasEvent<{ values: FormValues }>(formRef, 'oas-submit', async (detail) => {
     if (savingRef.current) return
     const values = detail.values

@@ -1,19 +1,11 @@
 <script setup lang="ts">
 // src/pages/dashboard.vue —— 仪表盘：统计卡 + 趋势/订单构成图表 + 最近订单 + 热销 Top5 + 快捷操作
-// 行为事实来源：vanilla-html/src/pages/dashboard.ts（逐块对齐），react/src/pages/dashboard.tsx 为已验收参照。
 // DOM 结构/类名与两端产出的 DOM 对齐（app.css 仪表盘样式依赖这些类名）。
-// 偏差记录（因果链）：
-// 1. 渲染模型：vanilla 用 innerHTML 拼装 + 手动 setTrendData/setDonutData/setRecentOrders 回写；
 //    本模版改为「range 状态 → 派生 JSON attribute」的声明式渲染（同 react 版），7/14/30 切换只改
 //    range ref，图表 data、订单表 data、donut 图例随重渲自动联动（oas-chart/oas-table 的 data setter
 //    均接受 JSON 字符串，见组件源码 normalizeData/set data）
-// 2. 刷新按钮：vanilla 手动重跑三个回写函数；本模版数据全部由 state 派生，重渲即最新，
-//    故仅保留 appMessage.success 提示（vanilla 的刷新也不重新拉 Top5，保持一致）
-// 3. 事件绑定：oas-segmented 的 oas-change 模板直绑（Vue 原生支持 kebab 事件，见 AGENTS.md 第 1 条，
-//    无需 react 版 useOasEvent 桥接）；刷新/导出/查看全部为原生 click，直绑 @click
-// 4. 快捷操作 href：vanilla 硬编码 '#/xxx'；本模版经 routeHref()（按路由双模式生成，见 router/mode.ts），
+// 3. 事件绑定：oas-segmented 的 oas-change 模板直绑（Vue 原生支持 kebab 事件，见 //    无需 react 版 useOasEvent 桥接）；刷新/导出/查看全部为原生 click，直绑 @click
 //    与壳层导航同一出处
-// 5. 文案刷新：vanilla 用 onLocaleChange(refreshText) 逐节点替换；本模版 useT() 订阅 locale 后整页
 //    重渲染，columns/options/data 等 JSON attribute 随 computed 重算
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useT } from '../composables/use-t'
@@ -64,11 +56,8 @@ const user = session.user
 const name = user?.name ?? ''
 const isAdmin = user?.role === 'admin'
 
-// 统计卡 skeleton 加载态（vanilla：300ms 后 fillStats）
 const statsReady = ref(false)
-// 7/14/30 天联动：vanilla currentRange 局部变量
 const range = ref('7')
-// 热销 Top5：vanilla loadTop5() 异步拉取（null = 加载中，对齐 vanilla 初始空容器）
 const top5 = ref<Top5Row[] | null>(null)
 
 let skeletonTimer: ReturnType<typeof setTimeout> | null = null
@@ -127,7 +116,7 @@ function getToneVars(tone: string): { bg: string; icon: string } {
 const days = computed(() => Number(range.value))
 const breakdown = computed(() => orderBreakdown(days.value))
 
-// 复杂数据走 JSON attribute 通道（AGENTS.md 第 3 条）
+// 复杂数据走 JSON attribute 通道
 const segmentedOptions = computed(() =>
   JSON.stringify([
     { label: t('dashboard.rangeDays', { days: '7' }), value: '7' },
@@ -174,7 +163,6 @@ const quickActions = computed(() => [
   ...(isAdmin ? [{ href: routeHref('/users'), icon: 'user', label: t('nav.users') }] : []),
 ])
 
-// 刷新：数据全部由 range/state 派生，重渲即最新，仅保留提示（对齐 vanilla 提示行为）
 function refresh(): void {
   appMessage.success(tt('dashboard.refreshed'))
 }
@@ -236,7 +224,7 @@ function viewAllOrders(): void {
           </div>
         </oas-card>
       </template>
-      <!-- oas-skeleton 的 active 为布尔存在性语义：静态写出即视为真（AGENTS.md 第 2 条） -->
+      <!-- oas-skeleton 的 active 为布尔存在性语义：静态写出即视为真-->
       <template v-else>
         <oas-card v-for="i in 4" :key="i" class="stat-card stat-card--skeleton">
           <oas-skeleton active rows="3" />

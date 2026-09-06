@@ -1,14 +1,7 @@
 <script setup lang="ts">
 // src/pages/logs-detail-modal.vue —— 日志详情弹窗（描述列表 6 项）
-// 行为事实来源：vanilla-html/src/pages/logs.ts 的 openDetail 段（innerHTML 重建
 // oas-descriptions）与 detailModal oas-cancel 段
-// 偏差记录（因果链）：
-// 1. 渲染模型：vanilla openDetail 每次重建 innerHTML；本模版声明式——entry prop 派生全部字段，
-//    结构静态写出（节点 id 与 vanilla 一致：logs-detail-body）
-// 2. visible 受控：vanilla oas-cancel 时 removeAttribute('visible')；本模版 visible 由父组件
-//    state 单一持有，oas-close 上抛 close 回写（user-detail.vue 同款；vanilla 监听的
 //    oas-cancel 与 oas-close 同为组件关闭回调，语义等价）
-// 3. 级别标签配色：vanilla LEVEL_TAG（info=default/warn=warning/error=danger）
 import { computed } from 'vue'
 import type { LogEntry } from '../data/logs'
 import { useT } from '../composables/use-t'
@@ -28,7 +21,6 @@ function t(key: string, params?: Record<string, string | number>): string {
   return tt(key, params)
 }
 
-// vanilla LEVEL_TAG
 const LEVEL_TAG: Record<LogEntry['level'], string> = {
   info: 'default',
   warn: 'warning',

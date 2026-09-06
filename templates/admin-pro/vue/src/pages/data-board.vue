@@ -1,13 +1,6 @@
 <script setup lang="ts">
 // src/pages/data-board.vue —— 数据看板：统计卡 + 柱状/饼图/堆叠柱状图 + 进度条 + 水印层
-// 行为事实来源：vanilla-html/src/pages/data-board.ts（134 行，逐块对齐）
-// 偏差记录（因果链）：
-// 1. 渲染模型：vanilla draw() innerHTML + refreshText 逐节点回写；本模版声明式——
 //    boardData() 静态数据取一次，图表 data/卡片标题/月份标签全部 computed（依赖 locale），
-//    useT() 订阅后整页重渲染即等价于 vanilla onLocaleChange(refreshText)
-// 2. 图表数据：bar/pie/stacked-bar 的 data 传 JSON 字符串（AGENTS.md 第 3 条；
-//    oas-chart setter 只写内部 dataProp 不落 attribute，与 vanilla setAttribute 通道效果一致）
-// 3. 统计卡双形态：vanilla statCard() 按 anim 二选一（oas-number-animation / oas-statistic）；
 //    本模版 v-if/v-else 同分支，data-testid 命名（anim-*/stat-*）逐字一致
 import { computed } from 'vue'
 import '../styles/pages/data-board.css'
@@ -22,16 +15,13 @@ function t(key: string, params?: Record<string, string | number>): string {
   return tt(key, params)
 }
 
-// vanilla STAT_KEYS / CHART_KEYS / PROGRESS_KEYS（按序对齐 stats/charts/progress 三个列表）
 const STAT_KEYS = ['board.gmv', 'board.orders', 'board.users', 'board.conversion'] as const
 const PROGRESS_KEYS = ['board.targetOrder', 'board.targetRevenue', 'board.targetUsers'] as const
 
-// 静态数据（vanilla render 时 boardData() 取一次）
 const data = boardData()
 const targets = data.quarterTargets
 const progressValues = [targets.order, targets.revenue, targets.users]
 
-// vanilla barData()/pieData()/stackedData()：月份标签随 locale 重算
 const barData = computed(() =>
   JSON.stringify(data.monthRevenue.map((v, i) => ({ label: t(`board.month${i + 1}`), value: v }))),
 )

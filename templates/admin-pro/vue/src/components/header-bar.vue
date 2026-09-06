@@ -1,6 +1,5 @@
 <script setup lang="ts">
 // src/components/header-bar.vue —— 顶栏：☰/logo/（top-head 菜单槽）/搜索/全屏/主题点/语言/通知 badge/用户菜单
-// 结构、id、类名逐字对齐 vanilla app-shell.ts 的 <header class="app-header"> 模板（经 react 版校准）
 // Vue 化差异：oas-* 自定义事件（oas-select）模板直绑（Vue 原生支持 kebab 事件，无需桥接）；
 // 文案重渲靠 t() 包装函数读 locale.value 建立响应式依赖
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
@@ -39,7 +38,6 @@ onUnmounted(() => unsubSession?.())
 
 // 全屏态同步（Esc 退出等浏览器侧变更也要回写 aria-pressed / is-fullscreen）
 const isFullscreen = ref(false)
-// 全屏可用性挂载时判定一次即可（vanilla: fullscreenEnabled 不支持则隐藏按钮）
 const fsSupported = document.fullscreenEnabled
 function onFullscreenChange(): void {
   isFullscreen.value = document.fullscreenElement != null
@@ -74,7 +72,6 @@ const userItems = computed(() => {
   return userMenuItems()
 })
 
-// 未读数变化时 badge 弹跳（vanilla syncBadge 的 is-pop 重触发动画）
 const badgeEl = ref<HTMLElement | null>(null)
 let lastCount = -1
 function syncBadgePop(): void {

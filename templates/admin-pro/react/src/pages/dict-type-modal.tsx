@@ -45,7 +45,6 @@ export function DictTypeModal({ open, editing, onClose, onSubmit }: DictTypeModa
   const onSubmitRef = useRef(onSubmit)
   onSubmitRef.current = onSubmit
 
-  // vanilla openTypeForm：open 边沿逐字段 setAttribute
   useEffect(() => {
     if (!open) return
     nameRef.current?.setAttribute('value', editing?.name ?? '')

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 // src/components/notifications-drawer.vue —— 通知中心抽屉
-// 对齐 vanilla app-shell.ts 通知段：抽屉右出、列表项点击已读、底部「全部已读」
 // 数据状态由 AppShell 经 useNotifications() 持有一份（badge 与抽屉共享），本组件纯展示 + 事件上抛
 // Vue 化差异（天然优势）：@click 直绑 panel 内元素本身（Vue 不用根委托），
 // oas-drawer panel 对原生事件的 stopPropagation 不影响本组件内监听
@@ -32,7 +31,6 @@ function onDrawerClose(): void {
   emit('close')
 }
 
-// 列表项点击已读（vanilla notifList.addEventListener('click') 同款事件委托）
 function onListClick(e: Event): void {
   const item = (e.target as HTMLElement).closest('oas-list-item')
   const id = item?.getAttribute('data-id')

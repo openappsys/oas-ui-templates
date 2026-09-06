@@ -72,7 +72,6 @@ export function MenusFormDrawer({
   const onSubmitRef = useRef(onSubmit)
   onSubmitRef.current = onSubmit
 
-  // vanilla syncMenuType 的命令式半边：C 类型 perms 为空时按 path 自动补全
   const syncMenuType = (type: MenuType) => {
     if (type === 'C') {
       const cur = permsRef.current?.getAttribute('value') ?? ''
@@ -83,7 +82,6 @@ export function MenusFormDrawer({
     }
   }
 
-  // vanilla fillMenuForm + buildParentOptions + setTypeRadio：open 边沿回填
   useEffect(() => {
     if (!open) return
     const node = editing
@@ -124,7 +122,6 @@ export function MenusFormDrawer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, editing, presetParentId])
 
-  // locale 变化时 radio 文案随 JSX 重算，checked 需按 formType 重打（vanilla refreshText 里
   // 重建 radio 组后 setRadioChecked 同款时机）
   useEffect(() => {
     typeGroupRef.current?.querySelectorAll<HTMLElement>('oas-radio').forEach((r) => {
@@ -154,7 +151,6 @@ export function MenusFormDrawer({
   // 组件侧关闭（遮罩/Esc/✕）→ 回写 React 状态（visible 单一事实来源）
   useOasEvent(drawerRef, 'oas-close', () => onCloseRef.current())
 
-  // vanilla typeGroup oas-change 段：取触发 radio 的 value 切 formType
   useOasEvent(typeGroupRef, 'oas-change', (_d, ev) => {
     const radio = ev.composedPath()[0] as HTMLElement
     if (!(radio instanceof HTMLElement) || !radio.hasAttribute('checked')) return
@@ -165,7 +161,6 @@ export function MenusFormDrawer({
     }
   })
 
-  // vanilla pathInput oas-input 段：C 类型 perms 为空时随 path 自动补全
   useOasEvent<{ value: string }>(pathRef, 'oas-input', (d) => {
     if (formType !== 'C') return
     const cur = permsRef.current?.getAttribute('value') ?? ''
@@ -187,7 +182,6 @@ export function MenusFormDrawer({
     })
   })
 
-  // vanilla syncMenuType 的提示文案半边（由 formType 派生）
   const permsHint =
     formType === 'C'
       ? t('menus.hint.autoPerms')

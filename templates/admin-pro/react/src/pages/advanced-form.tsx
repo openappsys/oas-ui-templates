@@ -1,8 +1,7 @@
 // src/pages/advanced-form.tsx —— 高级表单（17 种控件组合 + 校验）
 //    本模版声明式 JSX，useT() 订阅 locale 后整页重渲染，rules/options/placeholder 等
 //    JSON attribute 随之重算（dashboard 同款模式）
-// 2. 事件：oas-form 的 oas-submit 自定义事件走 useOasEvent（AGENTS.md 第 1 条）；
-//    提交/重置按钮为 light DOM 原生 click，直绑 onClick；提交经 shadowRoot 内原生 form
+// 2. 事件：oas-form 的 oas-submit 自定义事件走 useOasEvent//    提交/重置按钮为 light DOM 原生 click，直绑 onClick；提交经 shadowRoot 内原生 form
 //    仅保留 message.success 提示（可观察行为一致）
 import { useRef } from 'react'
 import '../styles/pages/advanced-form.css'
@@ -20,7 +19,6 @@ export default function AdvancedFormPage() {
   const { t } = useT()
   const formRef = useRef<HTMLElement | null>(null)
 
-  // vanilla oas-submit 段：仅提示（formValues 在 vanilla 中亦未被消费）
   useOasEvent<{ values: Record<string, string> }>(formRef, 'oas-submit', () => {
     appMessage.success(t('adv.submitted'))
   })

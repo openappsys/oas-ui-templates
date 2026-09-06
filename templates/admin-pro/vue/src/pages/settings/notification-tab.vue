@@ -1,9 +1,6 @@
 <script setup lang="ts">
 // src/pages/settings/notification-tab.vue —— 通知 Tab：3 类通知 × 2 渠道开关矩阵
-// 逐项对齐 vanilla settings.ts 通知段：仅持久化（oas-admin.settings.notif.{类型}.{渠道}），无 toast。
-// 差异（因果链）：vanilla 初始渲染后不再管开关状态（组件自管理）；
 // 本模版用受控 checks ref 防止 locale 切换等无关重渲染把开关打回挂载初值。
-// 矩阵内 oas-switch 的 oas-change 在矩阵容器上委托：data-key 定位持久化键（vanilla 同款）。
 import { ref } from 'vue'
 import { useT } from '../../composables/use-t'
 import { NOTIF_PREFIX, readBool } from '../../settings-init'

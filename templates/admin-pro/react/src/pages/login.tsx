@@ -52,13 +52,11 @@ export default function LoginPage() {
     form?.requestSubmit()
   }
 
-  // 登录即本地直登 + 手动跳转（对齐 vanilla：navigate(routes[0].path)）
   useOasEvent<LoginSubmitDetail>(rootRef, 'oas-submit', (detail) => {
     const values = detail.values
     session.login(values.name || '用户', values.role === 'viewer' ? 'viewer' : 'admin')
     navigate(appRoutes[0].path, { replace: true })
   })
-  // 输入框回车提交（vanilla 对所有 oas-input 绑 oas-enter，本页仅一个）
   useOasEvent(rootRef, 'oas-enter', requestSubmit)
 
   const rules = JSON.stringify({
@@ -69,7 +67,6 @@ export default function LoginPage() {
     { label: t('profile.roleViewer'), value: 'viewer' },
   ])
 
-  // 与 vanilla formBlock() 逐行对齐
   const formBlock = (
     <>
       <div className="login-head">

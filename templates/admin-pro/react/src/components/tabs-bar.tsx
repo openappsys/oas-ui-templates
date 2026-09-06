@@ -51,7 +51,6 @@ export function TabsBar() {
     })
   })
 
-  // 「+」新增页签：回首页（vanilla oas-add 分支）
   useOasEvent(tabsRef, 'oas-add', () => navigate(HOME_PATH))
 
   const closeFromEvent = (e: React.SyntheticEvent) => {

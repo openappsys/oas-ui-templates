@@ -1,10 +1,5 @@
 <script setup lang="ts">
 // src/pages/forbidden.vue —— 403 无权访问页
-// 行为事实来源：vanilla-html/src/pages/forbidden.ts（react 版 Task 9 并行中，以 vanilla 为准）
-// 偏差记录（因果链）：
-// 1. 渲染模型：vanilla innerHTML + querySelector 绑监听；本模版声明式模板 + @click 直绑
-// 2. 导航：vanilla 自研路由 navigate('/dashboard')；本模版 vue-router push（壳层同款）
-// 3. 文案刷新：vanilla onLocaleChange(draw) 整页重绘；本模版 useT() 订阅 locale 后重渲染
 import { useRouter } from 'vue-router'
 import { useT } from '../composables/use-t'
 
@@ -20,7 +15,6 @@ const router = useRouter()
 function goHome(): void {
   void router.push('/dashboard')
 }
-// vanilla：有历史则后退，否则回首页
 function goBack(): void {
   if (history.length > 1) history.back()
   else void router.push('/dashboard')

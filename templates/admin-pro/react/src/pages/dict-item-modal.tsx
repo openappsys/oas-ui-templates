@@ -47,7 +47,6 @@ export function DictItemModal({ open, editing, onClose, onSubmit }: DictItemModa
   const onSubmitRef = useRef(onSubmit)
   onSubmitRef.current = onSubmit
 
-  // vanilla openItemForm：open 边沿逐字段 setAttribute
   useEffect(() => {
     if (!open) return
     labelRef.current?.setAttribute('value', editing?.label ?? '')

@@ -1,16 +1,9 @@
 <script setup lang="ts">
 // src/pages/advanced-form.vue —— 高级表单：级联 / 联想 / 评分 / 标签 / 穿梭 / 树选择组合与校验
-// 行为事实来源：vanilla-html/src/pages/advanced-form.ts（214 行，逐块对齐）
-// 偏差记录（因果链）：
-// 1. 渲染模型：vanilla innerHTML 拼装 + refreshText 逐节点 setAttribute 回写；本模版声明式——
-//    rules/options/data 等复杂数据全部 computed JSON 字符串（AGENTS.md 第 3 条），
-//    useT() 订阅 locale 后整页重渲染即等价于 vanilla onLocaleChange(refreshText)
-// 2. 事件绑定：oas-form 的 oas-submit 模板直绑（AGENTS.md 第 1 条，无需 react 版
+// 2. 事件绑定：oas-form 的 oas-submit 模板直绑无需 react 版
 //    useOasEvent 桥接）；提交/重置按钮原生 click 直绑 @click
 // 3. 提交/重置仍走命令式：oas-form 内部 <form> 在 shadowRoot 里，
 //    requestSubmit()/reset() 跨 shadow 调用（login.vue 同款 playground 实测模式）
-// 4. formValues：vanilla 仅在 submit 时赋值后 void（无后续消费）；本模版同样留存不消费，
-//    保持与 vanilla 的状态面一致
 import { computed, ref } from 'vue'
 import '../styles/pages/advanced-form.css'
 import { advFormData } from '../data/adv-form'
@@ -25,13 +18,10 @@ function t(key: string, params?: Record<string, string | number>): string {
 }
 
 const formRef = ref<HTMLElement | null>(null)
-// vanilla formValues：submit 后留存（无消费方，对齐 vanilla 状态面）
 let formValues: Record<string, string> = {}
 
-// 静态数据（vanilla render 时 advFormData() 取一次）
 const data = advFormData()
 
-// vanilla catOptions()/channelOptions()/rulesJSON()：随 locale 重算的 JSON attribute
 const catOptions = computed(() =>
   JSON.stringify([
     { label: t('adv.cat.electronics'), value: 'electronics' },
@@ -68,18 +58,15 @@ function innerForm(): HTMLFormElement | null {
   return formRef.value?.shadowRoot?.querySelector('form') as HTMLFormElement | null
 }
 
-// vanilla oas-submit 段
 function onSubmit(e: Event): void {
   formValues = (e as CustomEvent<{ values: Record<string, string> }>).detail.values
   appMessage.success(tt('adv.submitted'))
 }
-// vanilla [data-action="reset"] 段
 function onReset(): void {
   innerForm()?.reset()
   void formValues
   appMessage.info(tt('basic.resetDone'))
 }
-// vanilla [data-action="submit"] 段
 function onSubmitClick(): void {
   innerForm()?.requestSubmit()
 }

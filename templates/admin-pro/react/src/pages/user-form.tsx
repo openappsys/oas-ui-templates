@@ -54,7 +54,6 @@ export function UserForm({ open, editingId, editing, roles, onClose, onSaved }: 
 
   const roleMap = useMemo(() => new Map(roles.map((r) => [r.id, r])), [roles])
 
-  // vanilla fillForm：open 边沿回填（编辑值/新建默认——角色默认第一个角色，状态默认 active）
   useEffect(() => {
     if (!open) return
     nameRef.current?.setAttribute('value', editing?.name ?? '')
@@ -67,7 +66,7 @@ export function UserForm({ open, editingId, editing, roles, onClose, onSaved }: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, editing, roles])
 
-  // panel 内原生 click 例外直绑（AGENTS.md 第 2 条）：取消=关闭；保存=触发内部原生 form 提交
+  // panel 内原生 click 例外直绑：取消=关闭；保存=触发内部原生 form 提交
   useEffect(() => {
     const cancel = cancelRef.current
     const save = saveRef.current
@@ -88,7 +87,6 @@ export function UserForm({ open, editingId, editing, roles, onClose, onSaved }: 
   // 组件侧关闭（遮罩/Esc/✕）→ 回写 React 状态（visible 单一事实来源）
   useOasEvent(surfaceRef, 'oas-close', () => onCloseRef.current())
 
-  // vanilla oas-submit 段：roleId→角色行→role 枚举 → create/update → 关闭 + 刷新
   useOasEvent<{ values: FormValues }>(formRef, 'oas-submit', async (detail) => {
     if (savingRef.current) return
     savingRef.current = true

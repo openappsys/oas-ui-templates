@@ -1,14 +1,10 @@
 <script setup lang="ts">
 // src/pages/products-batch-bar.vue —— 商品批量操作栏（表格多选后出现：批量上下架 + 批量删除）
-// 行为事实来源：vanilla-html/src/pages/products.ts 的 batchBar 显隐段 / batchStatus / 批量删除
-// popconfirm oas-ok 段，react/src/pages/products-batch-bar.tsx 为已验收参照。
-// 偏差记录（因果链）：
 // 1. 执行逻辑（toggleProductStatus/removeProduct 循环、clearSelection、appMessage、refresh）
 //    留在父组件——它们依赖 rows/selected/refresh；本组件只负责呈现与事件上抛
 // 2. 事件绑定：上下架按钮原生 click 模板直绑 @click；oas-popconfirm 的 oas-ok 自定义事件
-//    同样模板直绑（Vue 原生支持 kebab 事件，AGENTS.md 第 1 条，无需 react 版 useOasEvent）
-// 3. 显隐：vanilla 手动切 hidden；本模版由父组件派生 hidden prop（原生 hidden 属性反射）
-// 4. disabled 布尔存在性语义：:disabled="enabled ? null : ''"（AGENTS.md 第 2 条）
+//    同样模板直绑（Vue 原生支持 kebab 事件，无需 react 版 useOasEvent）
+// 4. disabled 布尔存在性语义：:disabled="enabled ? null : ''"
 import { computed } from 'vue'
 import { useT } from '../composables/use-t'
 

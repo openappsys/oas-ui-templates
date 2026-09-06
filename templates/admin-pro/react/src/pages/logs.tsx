@@ -1,7 +1,7 @@
 // src/pages/logs.tsx —— 日志中心（虚拟列表 + 日期锚点 + 统计卡 + 多条件过滤 + CSV 导出）
 //    统计/锚点分组/空态全部由 state 派生
 // 2. 事件绑定：level/keyword/date 的 oas-change/oas-input/oas-clear、虚拟列表 oas-item/oas-scroll、
-//    锚点 oas-click、modal oas-cancel 走 useOasEvent（AGENTS.md 第 1 条）；导出按钮为 light DOM
+//    锚点 oas-click、modal oas-cancel 走 useOasEvent导出按钮为 light DOM
 //    原生 click 直绑 onClick；虚拟列表行 click 在 oas-item 回调里对 element 直绑（element 为
 //    filtered/locale 变化时赋同一 property（setter 内部 slice + update，同引用也会重渲，
 //    dangerouslySetInnerHTML 注入同款内容（见 ./logs-shared.ts）
@@ -45,7 +45,6 @@ export default function LogsPage() {
   const anchorRef = useRef<HTMLElement | null>(null)
   const modalRef = useRef<HTMLElement | null>(null)
 
-  // vanilla init()：先拉全量（统计卡数据源），随后 applyFilter（过滤 effect 以 rows 为依赖）
   useEffect(() => {
     let cancelled = false
     void listLogs().then((list) => {
@@ -56,7 +55,6 @@ export default function LogsPage() {
     }
   }, [])
 
-  // vanilla applyFilter：按 level/keyword/dateRange 异步过滤
   useEffect(() => {
     let cancelled = false
     void listLogs({ level, keyword, dateRange: dateRange ?? undefined }).then((list) => {
@@ -67,7 +65,6 @@ export default function LogsPage() {
     }
   }, [level, keyword, dateRange, rows])
 
-  // vanilla renderVirtualList：items property 通道；locale 变化时重赋刷新行内标签（头注释 3）
   useEffect(() => {
     const vlist = vlistRef.current as (HTMLElement & { items?: LogEntry[] }) | null
     if (vlist) vlist.items = filtered
@@ -76,12 +73,10 @@ export default function LogsPage() {
   // buffer 必须走 attribute 通道：React 19 对 custom element 上 `in` 命中的键一律 property
   // 赋值，而 oas-virtual-list 原型上的 buffer() 是方法（virtual-list.js 内 this.buffer()），
   // buffer="8" 字面量属性会把它覆写成字符串致页面崩溃（dev 走查实测踩中），故挂载时
-  // setAttribute 补写（vanilla HTML 属性同通道；height/item-height 无同名键，可安全声明式）
   useEffect(() => {
     vlistRef.current?.setAttribute('buffer', '8')
   }, [])
 
-  // vanilla scrollToIndex：经 shadowRoot .viewport 定位
   const scrollToIndex = (index: number) => {
     const viewport = (
       vlistRef.current as unknown as { shadowRoot: ShadowRoot } | null
@@ -90,7 +85,6 @@ export default function LogsPage() {
     viewport.scrollTop = Math.max(0, index * ITEM_HEIGHT)
   }
 
-  // vanilla renderStats：今日新增 / 错误数 / 告警数
   const stats = useMemo(() => {
     const today = dateKey(new Date().toISOString())
     return {
@@ -101,7 +95,6 @@ export default function LogsPage() {
     }
   }, [rows])
 
-  // vanilla renderAnchor：按过滤结果分组（含文案，随 locale 重算）
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const groups = useMemo(() => buildDateGroups(filtered, t), [filtered, locale])
   const anchorItemsJson = useMemo(
@@ -115,7 +108,6 @@ export default function LogsPage() {
     [groups],
   )
 
-  // vanilla oas-item：填充行单元格 + 行 click 打开详情
   useOasEvent<{ item: LogEntry; element: HTMLElement }>(vlistRef, 'oas-item', (detail) => {
     const { item, element } = detail
     element.querySelector<HTMLElement>('[data-col="time"]')!.textContent = formatTime(item.time)
@@ -131,7 +123,6 @@ export default function LogsPage() {
     })
   })
 
-  // vanilla oas-scroll：按滚动位置高亮当天锚点
   useOasEvent(vlistRef, 'oas-scroll', () => {
     const viewport = (
       vlistRef.current as unknown as { shadowRoot: ShadowRoot } | null
@@ -143,7 +134,6 @@ export default function LogsPage() {
     anchorRef.current?.setAttribute('active', `#logs-day-${dateKey(row.time)}`)
   })
 
-  // vanilla anchor oas-click：按 href 反查分组行号 → 滚动 + 高亮
   useOasEvent<{ href: string }>(anchorRef, 'oas-click', (detail) => {
     const group = groups.find((g) => `#logs-day-${g.date}` === detail.href)
     if (!group) return
@@ -151,7 +141,6 @@ export default function LogsPage() {
     anchorRef.current?.setAttribute('active', detail.href)
   })
 
-  // vanilla 768px 断点：锚点方向 vertical/horizontal 切换
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 768px)')
     const sync = () => setCompact(mq.matches)
@@ -160,7 +149,6 @@ export default function LogsPage() {
     return () => mq.removeEventListener('change', sync)
   }, [])
 
-  // vanilla 过滤控件段：级别/关键词/日期范围变化 → applyFilter（过滤 effect 消费 state）
   useOasEvent<{ value: string }>(levelRef, 'oas-change', (d) => {
     setLevel((d.value || 'all') as LogLevel | 'all')
   })
@@ -178,13 +166,11 @@ export default function LogsPage() {
     }
   })
 
-  // vanilla 详情弹窗关闭段：摘 visible + 清选中
   useOasEvent(modalRef, 'oas-cancel', () => {
     setDetailOpen(false)
     setSelected(null)
   })
 
-  // vanilla 导出段：空列表仅提示；CSV 带 BOM
   const onExport = () => {
     if (filtered.length === 0) {
       appMessage.info(t('logs.noExportable'))

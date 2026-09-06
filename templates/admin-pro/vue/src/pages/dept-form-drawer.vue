@@ -1,16 +1,8 @@
 <script setup lang="ts">
 // src/pages/dept-form-drawer.vue —— 部门新建/编辑抽屉（oas-drawer + oas-form + 树选择父级）
-// 行为事实来源：vanilla-html/src/pages/dept.ts 的 RULES/fillForm/refreshParentOptions/
 // oas-submit 段
-// 偏差记录（因果链）：
-// 1. 回填：vanilla fillForm 逐字段 setAttribute（父级树选择 options/expanded/value 亦在
 //    open 边沿命令式写入，excludeId=编辑节点 id 以剪掉自身与后代）；本模版在 open 边沿的
-//    watch（flush: 'post'，等 DOM 就位）做同样的事（表单字段非受控，与 vanilla 同一通道）
-// 2. visible 受控：vanilla 靠组件自闭；本模版 visible 由父组件 state 单一持有，
 //    监听 oas-close 上抛 close 回写（category-form-modal.vue 同款）
-// 3. oas-submit：vanilla 在页面级做校验/持久化/提示/刷新；本模版上抛 submit(values)，
-//    父组件持有 editingId/tree 状态做持久化（语义对齐 vanilla state.editingId）
-// 4. 文案刷新：vanilla refreshText 逐节点替换；本模版 useT() 订阅后标题/label/占位/
 //    规则/按钮随 locale 自动重算
 import { computed, ref, watch } from 'vue'
 import { createDept, updateDept } from '../data/system'
@@ -56,12 +48,10 @@ const title = computed(() =>
   props.editing ? t('dept.editDept', { name: props.editing.name }) : t('dept.new'),
 )
 
-// vanilla RULES()
 const rules = computed(
   () => JSON.stringify({ name: [{ required: true, message: t('dept.rule.name') }] }),
 )
 
-// ---- vanilla 树辅助函数（与页面 dept.vue 的同名函数保持同一行为） ----
 function findNode(nodes: DeptTree[], id: number): DeptTree | null {
   for (const n of nodes) {
     if (n.id === id) return n
@@ -108,7 +98,6 @@ function expandKeys(nodes: DeptTree[]): string[] {
   return keys
 }
 
-// vanilla buildParentOptions：顶级行 + 剪掉 excludeId 自身与后代后的树
 function buildParentOptions(excludeId: number | null): Array<Record<string, unknown>> {
   const toOpt = (list: DeptTree[]): Array<Record<string, unknown>> =>
     list.map((n) => ({
@@ -125,7 +114,6 @@ function buildParentOptions(excludeId: number | null): Array<Record<string, unkn
   return [{ value: '0', label: t('dept.option.top'), children: toOpt(filtered) }]
 }
 
-// vanilla refreshParentOptions + fillForm：open 边沿命令式回填（options/expanded/value 同通道）
 watch(
   () => [props.open, props.editing, props.parentForNew],
   () => {
@@ -147,7 +135,6 @@ function onSave(): void {
   form?.requestSubmit()
 }
 
-// vanilla oas-submit 段：trim 校验 → 父级自检 → create/update → 提示 → 上抛 saved
 async function onSubmit(e: Event): Promise<void> {
   if (saving.value) return
   saving.value = true

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 // src/pages/settings/data-tab.vue —— 数据与列表 Tab：表单呈现方式/每页条数
-// 逐项对齐 vanilla settings.ts 数据段：仅持久化（FORM_MODE_KEY/PAGE_SIZE_KEY）+ appMessage.success。
 // Vue 化差异：oas-change 模板直绑；radio 组在组容器上委托、composedPath[0] 取实际变动的 radio。
 import { computed, ref } from 'vue'
 import { useT } from '../../composables/use-t'

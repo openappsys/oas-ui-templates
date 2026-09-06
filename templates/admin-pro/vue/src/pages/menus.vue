@@ -1,19 +1,11 @@
 <script setup lang="ts">
 // src/pages/menus.vue —— 菜单（权限）管理：左树右详情 + 新建/编辑抽屉（纯前端树变更）
-// 行为事实来源：vanilla-html/src/pages/menus.ts（505 行，逐块对齐）。
-// 偏差记录（因果链）：
-// 1. 渲染模型：vanilla 全程 imperative（innerHTML + renderTree/renderDetail 手动刷）；
 //    本模版声明式——tree/selectedId 全部 ref，详情区由 selected 派生；树的增删改沿用
-//    vanilla 的原地变更（menu-tree.ts，Vue ref 深层响应式追踪嵌套数组）
 // 2. 子组件拆分（单文件 ≤400 行纪律）：表单抽屉 ./menu-form-drawer.vue（RULES/fillMenuForm/
 //    syncMenuType/单选与 path 联动段），树辅助函数抽到 ./menu-tree.ts；校验与树变更保留
-//    本文件（editingId/tree 状态在此，对齐 vanilla 提交段位置）
-// 3. vanilla tree 的 node-render 监听（.tree-type-icon/.tree-type-tag 定制）为死代码：
 //    组件实际派发的是 oas-node-render（emit 统一加 oas- 前缀），且默认节点模板无这两个
-//    元素——该监听在 vanilla 从未生效，本模版不移植（行为一致），落地图标时用 oas-node-render
 // 4. 事件绑定：树 oas-select 直绑；详情区删除按钮 popconfirm 直绑 @oas-ok；
-//    data/expanded/selected 属性通道同 dept.vue（AGENTS.md 第 2/3 条）
-// 5. 文案刷新：vanilla onLocaleChange(refreshText) 逐节点替换 + renderDetail 重建；
+//    data/expanded/selected 属性通道同 dept.vue
 //    本模版 useT() 订阅后整页重渲染
 import { computed, onMounted, ref } from 'vue'
 import { treeMenus } from '../data/system'
@@ -41,12 +33,9 @@ function t(key: string, params?: Record<string, string | number>): string {
   return tt(key, params)
 }
 
-// vanilla TYPE_TAG：详情区类型标签配色
 const TYPE_TAG: Record<MenuType, string> = { M: 'default', C: 'primary', F: 'warning' }
-// vanilla PERM_RE：F 类权限字格式
 const PERM_RE = /^[a-z][a-z0-9:]+(:[a-z0-9]+)?$/
 
-// ---- 页面状态（对齐 vanilla PageState） ----
 const tree = ref<MenuTree[]>([])
 const selectedId = ref<number | null>(null)
 const editingId = ref<number | null>(null)
@@ -60,36 +49,30 @@ const editing = computed(() =>
   editingId.value == null ? null : findNode(tree.value, editingId.value),
 )
 
-// vanilla renderTree/toTreeNodes/expandKeys：属性通道
 const treeJson = computed(() => JSON.stringify(toTreeNodes(tree.value)))
 const expandedStr = computed(() => expandKeys(tree.value).join(','))
 const selectedAttr = computed(() => (selectedId.value == null ? null : String(selectedId.value)))
 
-// vanilla init()
 async function init(): Promise<void> {
   tree.value = await treeMenus()
   selectedId.value = tree.value[0]?.id ?? null
 }
 onMounted(() => void init())
 
-// vanilla 树 oas-select 段
 function onSelect(e: Event): void {
   selectedId.value = Number((e as CustomEvent<{ key: string }>).detail.key)
 }
 
-// vanilla openForm：新建（可带父级）/编辑统一入口
 function openForm(node: MenuTree | null, parentOverride?: MenuTree): void {
   editingId.value = node?.id ?? null
   parentForNew.value = node ? null : (parentOverride ?? null)
   drawerOpen.value = true
 }
 
-// vanilla menu-create 段
 function onCreate(): void {
   openForm(null)
 }
 
-// vanilla 详情区 data-md-action="edit"/"child" 段
 function onEditSelected(): void {
   if (selected.value) openForm(selected.value)
 }
@@ -97,7 +80,6 @@ function onAddChild(): void {
   if (selected.value) openForm(null, selected.value)
 }
 
-// vanilla 详情区删除按钮 popconfirm oas-ok 段（有子部门拦截）
 function onDeleteSelected(): void {
   const node = selected.value
   if (!node) return
@@ -110,7 +92,6 @@ function onDeleteSelected(): void {
   selectedId.value = null
 }
 
-// vanilla form oas-submit 段：校验 → 原地改树/插入新节点 → 提示 → 关抽屉
 function onFormSubmit(p: MenuFormPayload): void {
   const { name, type, perms, path, parentId } = p
   if (type === 'F') {

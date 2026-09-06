@@ -1,11 +1,9 @@
 <script setup lang="ts">
 // src/pages/settings/appearance-tab.vue —— 外观 Tab：主题色/圆角/字体大小/表格密度/主题编辑器/重置
-// 逐项对齐 vanilla settings.ts 外观段：
 //   主题色即时写 --oas-color-primary 并按明暗分键（oas-admin.settings.theme.{light|dark}）存储，
 //   监听 document 'themechange' 换色；圆角写 --oas-radius-md；字号/密度调 applyFontSize()/applyDensity()；
 //   主题编辑器 token 变更持久化到 CUSTOM_TOKENS_KEY；重置清 4 键并 removeProperty。
 // Vue 化差异：oas-change 模板直绑；radio 组的 oas-change 在组容器上委托、composedPath[0] 取实际
-// 变动的 radio（vanilla 同款判定）
 import { onMounted, onUnmounted, ref } from 'vue'
 import { useT } from '../../composables/use-t'
 import { appMessage } from '../../lib/app-message'
@@ -113,7 +111,6 @@ function onThemeEditorChange(e: Event): void {
   }
 }
 
-// 明暗主题切换：换成当前主题记的颜色（vanilla onThemeChange 语义）
 function onThemeChange(): void {
   const theme = currentTheme()
   color.value = readColor()

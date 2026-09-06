@@ -3,7 +3,7 @@
 //    data/expanded/selected、详情区、抽屉标题全部由 state 派生；useT() 订阅后整页重渲染，
 //    rules/label/placeholder/rules 文案随 locale 自动重算（dashboard 同款模式）
 // 2. 事件绑定：oas-tree 的 oas-select/oas-node-render、oas-form 的 oas-submit、oas-drawer 的
-//    oas-close 走 useOasEvent（AGENTS.md 第 1 条）；页头新建按钮为 light DOM 原生 click 直绑
+//    oas-close 走 useOasEvent页头新建按钮为 light DOM 原生 click 直绑
 //    onClick；抽屉面板内取消/保存按钮按第 2 条例外直绑 addEventListener（panel 对原生事件
 //    stopPropagation，React 根委托收不到）
 //    options/expanded/value）；本模版在 open 边沿的 useEffect 做同样的事（字段非受控，value
@@ -131,7 +131,6 @@ export default function DeptPage() {
   const cancelRef = useRef<HTMLElement | null>(null)
   const saveRef = useRef<HTMLElement | null>(null)
 
-  // vanilla refresh()：并发拉扁平 + 树；选中节点失效时回落首个根节点
   const refresh = useCallback(async () => {
     const [rows, tr] = await Promise.all([listDepts(), treeDepts()])
     setFlat(rows)
@@ -146,7 +145,6 @@ export default function DeptPage() {
   const selectedNode = selectedId != null ? findNode(tree, selectedId) : null
   const editingNode = editingId != null ? findNode(tree, editingId) : null
 
-  // vanilla fillForm + refreshParentOptions：open 边沿逐字段 setAttribute
   useEffect(() => {
     if (!drawerOpen) return
     nameRef.current?.setAttribute('value', editingNode?.name ?? '')
@@ -161,7 +159,7 @@ export default function DeptPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drawerOpen, editingId, formParentId])
 
-  // panel 内原生 click 例外直绑（AGENTS.md 第 2 条）：取消=关闭；保存=触发内部原生 form 提交
+  // panel 内原生 click 例外直绑：取消=关闭；保存=触发内部原生 form 提交
   useEffect(() => {
     const cancel = cancelRef.current
     const save = saveRef.current
@@ -179,7 +177,6 @@ export default function DeptPage() {
     }
   }, [])
 
-  // vanilla openForm 三种入口（新建/编辑/新增子部门）
   const openCreate = () => {
     setEditingId(null)
     setFormParentId(null)
@@ -196,7 +193,6 @@ export default function DeptPage() {
     setDrawerOpen(true)
   }
 
-  // vanilla doDelete：有子部门拒绝；removeDept 失败提示未找到
   const doDelete = async (id: number) => {
     const node = findNode(tree, id)
     if (!node) {
@@ -217,7 +213,6 @@ export default function DeptPage() {
     void refresh()
   }
 
-  // 树事件：选中联动详情；节点模板渲染后回填人数徽标（vanilla oas-node-render 段）
   useOasEvent<{ key: string }>(treeRef, 'oas-select', (d) => {
     setSelectedId(Number(d.key))
   })
@@ -229,7 +224,6 @@ export default function DeptPage() {
   // 组件侧关闭（遮罩/Esc/✕）→ 回写 React 状态（visible 单一事实来源）
   useOasEvent(drawerRef, 'oas-close', () => setDrawerOpen(false))
 
-  // vanilla oas-submit 段：parentSelf 校验 → create/update → 关闭 + 刷新
   useOasEvent<{ values: { name: string; members: string } }>(formRef, 'oas-submit', async (d) => {
     if (savingRef.current) return
     savingRef.current = true

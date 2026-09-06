@@ -40,7 +40,6 @@ export default function ResultPage() {
   const navigate = useNavigate()
   const [result] = useState(consumeFormResult)
 
-  // vanilla destroyAll：进入结果页清空遗留消息（卸载时复位快照缓存）
   useEffect(() => {
     destroyAll()
     return () => {

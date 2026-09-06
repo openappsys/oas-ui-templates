@@ -1,15 +1,9 @@
 <script setup lang="ts">
 // src/pages/dict-item-modal.vue —— 字典键值新建/编辑弹窗（oas-modal + oas-form + 3 字段）
-// 行为事实来源：vanilla-html/src/pages/dict.ts 的 RULES_ITEM/openItemForm/itemForm oas-submit 段
 // 容器形态参照 category-form-modal.vue 先例
-// 偏差记录（因果链）：
-// 1. 回填：vanilla openItemForm 逐字段 setAttribute（sort 编辑回填数字串、新建置空）；
 //    本模版在 open 边沿的 watch（flush: 'post'，等 DOM 就位）做同样的事（字段非受控）
-// 2. visible 受控：vanilla 靠组件自闭；本模版 visible 由父组件 state 单一持有，
 //    监听 oas-close 上抛 close 回写（category-form-modal.vue 同款）
-// 3. oas-submit：vanilla 在页面级做校验（无选中类型直接返回）/持久化/提示/刷新；
 //    本模版上抛 submit(values)，父组件持有 editingItemId/selectedTypeId 做持久化
-// 4. 文案刷新：vanilla refreshText 逐节点替换；本模版 useT() 订阅后标题/label/占位/
 //    规则/按钮随 locale 自动重算
 import { computed, ref, watch } from 'vue'
 import { createDictItem, updateDictItem } from '../data/system'
@@ -53,7 +47,6 @@ const title = computed(() =>
   props.editing ? t('dict.editItem', { label: props.editing.label }) : t('dict.newItem'),
 )
 
-// vanilla RULES_ITEM()
 const rules = computed(() =>
   JSON.stringify({
     label: [{ required: true, message: t('dict.rule.label') }],
@@ -61,7 +54,6 @@ const rules = computed(() =>
   }),
 )
 
-// vanilla openItemForm：open 边沿回填（新建 sort 置空串）
 watch(
   () => [props.open, props.editing],
   () => {
@@ -80,7 +72,6 @@ function onSave(): void {
   form?.requestSubmit()
 }
 
-// vanilla itemForm oas-submit 段：trim 校验 → create/update → 提示 → 上抛 saved
 async function onSubmit(e: Event): Promise<void> {
   if (saving.value) return
   if (props.typeId == null) return

@@ -1,19 +1,10 @@
 <script setup lang="ts">
 // src/pages/profile.vue —— 个人中心：头像/账户信息 + 主题预览切换 + 登出
-// 行为事实来源：vanilla-html/src/pages/profile.ts（146 行，逐块对齐）
-// 偏差记录（因果链）：
-// 1. 渲染模型：vanilla innerHTML + 逐节点回填；本模版声明式——角色标签/登录时间/
-//    描述列表全部 computed（依赖 locale），useT() 订阅后重渲染即 vanilla refreshText
-// 2. 主题选中态：vanilla syncPreviewSelection 遍历按钮切 is-selected 类；本模版
 //    selectedTheme ref + class 绑定派生；applyTheme 写 <html data-theme> 并派发
-//    themechange（逐字对齐 vanilla，未走 lib/theme.ts——vanilla profile 对 system 是
 //    delete dataset.theme，与壳层 setTheme 的解析式写法语义不同，不强行复用）
-// 3. themechange 监听：vanilla document.addEventListener 后不解绑（页面单例无感知）；
 //    本模版页签切换会重挂载页面，必须 onUnmounted 解绑避免监听器累积
-// 4. 登出：vanilla session.logout() + message.info + navigate(routes[0].path)；
 //    本模版复用壳层同款 logoutNavigate(router)（lib/session-actions.ts，含同路径
 //    冗余导航的 /login 兜底，见该文件注释）
-// 5. admin 头像：vanilla 对 admin 执行 --oas-color-primary 自赋值（视觉效果为 no-op）；
 //    本模版以 :style 条件绑定保留同一行为以对齐 DOM
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -30,7 +21,6 @@ function t(key: string, params?: Record<string, string | number>): string {
 }
 
 const router = useRouter()
-// 路由守卫保证已登录（vanilla session.user! 同款前置条件）
 const user = session.user!
 
 const roleLabel = computed(() =>
@@ -38,7 +28,6 @@ const roleLabel = computed(() =>
 )
 const avatarText = user.name.charAt(0).toUpperCase()
 
-// vanilla formatLoginAt
 const loginAtLabel = computed(() => {
   const n = session.loginAt
   if (!n) return '-'
@@ -52,7 +41,6 @@ const loginAtLabel = computed(() => {
   }).format(new Date(n))
 })
 
-// vanilla currentTheme()
 function currentTheme(): string {
   if (document.documentElement.dataset.theme === 'dark') return 'dark'
   if (document.documentElement.dataset.theme === 'light') return 'light'
@@ -60,7 +48,6 @@ function currentTheme(): string {
 }
 const selectedTheme = ref(currentTheme())
 
-// vanilla applyTheme + syncPreviewSelection
 function applyTheme(next: string): void {
   if (next === 'system') {
     delete document.documentElement.dataset.theme
@@ -79,7 +66,6 @@ function onThemeChange(): void {
 onMounted(() => document.addEventListener('themechange', onThemeChange))
 onUnmounted(() => document.removeEventListener('themechange', onThemeChange))
 
-// vanilla profile-logout 段（logoutNavigate 含同路径 /login 兜底）
 function onLogout(): void {
   logoutNavigate(router)
 }

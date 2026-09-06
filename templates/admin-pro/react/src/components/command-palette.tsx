@@ -43,7 +43,6 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
   function execCommand(value: string): void {
     if (value.startsWith('/')) {
-      // vanilla 同路径 resolve() 重渲当前页；React 同路径导航 no-op，不重挂载
       if (value !== location.pathname) navigate(value)
       return
     }

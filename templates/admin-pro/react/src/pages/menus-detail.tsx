@@ -37,7 +37,6 @@ function MenusDetailInner({
   const { t } = useT()
   const wrapRef = useRef<HTMLDivElement | null>(null)
 
-  // vanilla md-del-pop 直绑的 oas-ok → 父组件编排（子节点存在时拒绝删除）
   useOasEvent(wrapRef, 'oas-ok', () => {
     onDelete(node)
   })

@@ -1,8 +1,7 @@
 // src/pages/users.tsx —— 用户管理（表格 + 搜索 + 详情 descriptions + modal 表单 + 角色权限）
 //    rows/roles/menuTree/keyword/editingId/formOpen/detailOpen 全部 useState，表格 data/
 //    空态/按钮禁用全部由 state 派生；refresh() 仅重拉数据 setState，重渲染即最新
-// 2. 事件绑定：oas-input 的 oas-input/oas-clear 自定义事件走 useOasEvent（AGENTS.md 第 1 条）；
-//    新建/刷新/清筛选按钮为 light DOM 原生 click，直绑 onClick；表格行事件与两个弹窗的
+// 2. 事件绑定：oas-input 的 oas-input/oas-clear 自定义事件走 useOasEvent//    新建/刷新/清筛选按钮为 light DOM 原生 click，直绑 onClick；表格行事件与两个弹窗的
 //    事件接线见 ./users-table.tsx / ./user-form.tsx / ./user-detail.tsx 头注释
 //   （组件受控集合外的人工复位），本模版经 tableRef 做同样的事，不纳入 state
 //    重渲染，columns/options/标签随 locale 自动重算（dashboard 同款模式）
@@ -76,7 +75,6 @@ export default function UsersPage() {
   const canMutate = session.user?.role !== 'viewer'
   const roleMap = useMemo(() => new Map(roles.map((r) => [r.id, r])), [roles])
 
-  // vanilla refresh()：并发拉用户/角色/菜单树，loading 属性包住全程
   const refresh = useCallback(async () => {
     setLoading(true)
     const [list, roleList, tree] = await Promise.all([listUsers(), listRoles(), treeMenus()])
@@ -90,7 +88,6 @@ export default function UsersPage() {
     void refresh()
   }, [refresh])
 
-  // loading → 表格 loading 属性（vanilla setAttribute/removeAttribute 同款人工通道）
   useEffect(() => {
     const table = tableRef.current
     if (!table) return
@@ -98,7 +95,6 @@ export default function UsersPage() {
     else table.removeAttribute('loading')
   }, [loading])
 
-  // vanilla roleName：roleId 命中角色表取角色名，否则回落枚举文案
   const roleName = useCallback(
     (target: UserRow): string => {
       if (target.roleId != null) {
@@ -110,7 +106,6 @@ export default function UsersPage() {
     [roleMap, t],
   )
 
-  // vanilla filtered()：关键字（小写包含，姓名/邮箱）
   const filtered = useMemo(() => {
     const kw = keyword.trim().toLowerCase()
     return rows.filter((r) => {
@@ -120,7 +115,6 @@ export default function UsersPage() {
     })
   }, [rows, keyword])
 
-  // vanilla toDisplay()：行数据 → 展示行（角色/状态换文案）
   const dataJson = useMemo(
     () =>
       JSON.stringify(
@@ -136,7 +130,6 @@ export default function UsersPage() {
     [filtered, roleName, t],
   )
 
-  // vanilla userPerms()：菜单树「用户管理」节点下的 F 类权限标识
   const detailPerms = useMemo((): UserPermItem[] => {
     const target = rows.find((r) => r.id === editingId)
     if (!target) return []
@@ -152,14 +145,12 @@ export default function UsersPage() {
 
   const detailRow = rows.find((r) => r.id === editingId) ?? null
 
-  // vanilla 新建按钮段：无权限时禁用 + 点击守卫
   const onCreate = () => {
     if (!canMutate) return
     setEditingId(null)
     setFormOpen(true)
   }
 
-  // vanilla 表格编辑按钮段：无权限仅提示
   const onEditRow = (id: number) => {
     if (!rows.some((r) => r.id === id)) return
     if (!canMutate) {
@@ -170,21 +161,18 @@ export default function UsersPage() {
     setFormOpen(true)
   }
 
-  // vanilla oas-row-click 段：打开详情（editingId 复用为详情目标，与 vanilla 同语义）
   const onRowOpen = (id: number) => {
     if (!rows.some((r) => r.id === id)) return
     setEditingId(id)
     setDetailOpen(true)
   }
 
-  // vanilla detail-edit 段：关详情 → 开表单（回填由 user-form 的 open 边沿完成）
   const onDetailEdit = () => {
     if (!detailRow) return
     setDetailOpen(false)
     setFormOpen(true)
   }
 
-  // vanilla delete-popconfirm oas-ok 段：权限守卫 → 删行 → 关窗 → 提示 → 刷新
   const onDelete = async () => {
     if (editingId == null) return
     if (!canMutate) {
@@ -198,7 +186,6 @@ export default function UsersPage() {
     void refresh()
   }
 
-  // vanilla 搜索段：关键字变化即回第一页（current 属性人工复位）
   const backToFirstPage = () => tableRef.current?.setAttribute('current', '1')
   useOasEvent<{ value: string }>(searchRef, 'oas-input', (d) => {
     setKeyword(d.value)
@@ -209,7 +196,6 @@ export default function UsersPage() {
     backToFirstPage()
   })
 
-  // vanilla clear-filters 段：清关键字 + 清列筛选 + 搜索框复位
   const onClearFilters = () => {
     setKeyword('')
     backToFirstPage()

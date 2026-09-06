@@ -1,20 +1,15 @@
 <script setup lang="ts">
 // src/pages/dept.vue —— 部门管理：左树右详情（oas-splitter）+ 详情子部门表格 + 新建/编辑抽屉
-// 行为事实来源：vanilla-html/src/pages/dept.ts（445 行，逐块对齐）。
-// 偏差记录（因果链）：
-// 1. 渲染模型：vanilla 全程 imperative（innerHTML + renderTree/renderDetail 手动刷）；
 //    本模版声明式——tree/selectedId/flat 全部 ref，详情区/子部门表由 selected 派生
 // 2. 子组件拆分（单文件 ≤400 行纪律）：表单抽屉 ./dept-form-drawer.vue（RULES/fillForm/
 //    父级树选择/oas-submit 段）；子部门表格列 render（操作列）保留本文件
-// 3. 树节点模板：vanilla innerHTML 内联 <template slot="node">（成员徽标）；Vue 编译器对
 //    template 元素透传（isCustomElement 下编译为真实 <template> 元素），oas-tree 的
 //    fillNodeLabel 对 content/childNodes 双通道读取（组件源码实测），模板直写即可
-// 4. 树数据通道：data=JSON 字符串、expanded=逗号串、selected 存在性语义（AGENTS.md 第 2/3 条）；
+// 4. 树数据通道：data=JSON 字符串、expanded=逗号串、selected 存在性语义；
 //    oas-node-render（徽标回填）与 oas-select（选中）模板直绑（第 1 条）
 // 5. 删除：详情区按钮 popconfirm 直绑 @oas-ok；子表行内 popconfirm 经 oas-ok 的
 //    detail.source 带 data-del 反查（v2.2.8 popconfirm 原生自驱动，无需模板手动 open）；
 //    行内编辑按钮经 @click composedPath 匹配（category.vue 同款）
-// 6. 文案刷新：vanilla onLocaleChange(refreshText) 逐节点替换 + renderDetail 重建；
 //    本模版 useT() 订阅后整页重渲染，columns（含行内标签）随 locale 自动重算
 import '../styles/pages/dept.css'
 import { computed, onMounted, ref } from 'vue'
@@ -32,7 +27,6 @@ function t(key: string, params?: Record<string, string | number>): string {
   return tt(key, params)
 }
 
-// ---- vanilla 树辅助函数（逐字对齐） ----
 function findNode(nodes: DeptTree[], id: number): DeptTree | null {
   for (const n of nodes) {
     if (n.id === id) return n
@@ -79,7 +73,6 @@ function expandKeys(nodes: DeptTree[]): string[] {
   return keys
 }
 
-// ---- 页面状态（对齐 vanilla PageState） ----
 const tree = ref<DeptTree[]>([])
 const flat = ref<DeptNode[]>([])
 const selectedId = ref<number | null>(null)
@@ -94,12 +87,10 @@ const selected = computed(() =>
   selectedId.value == null ? null : findNode(tree.value, selectedId.value),
 )
 
-// vanilla renderTree：data/expanded/selected 属性通道（selected 无选中时移除）
 const treeJson = computed(() => JSON.stringify(toTreeNodes(tree.value)))
 const expandedStr = computed(() => expandKeys(tree.value).join(','))
 const selectedAttr = computed(() => (selectedId.value == null ? null : String(selectedId.value)))
 
-// vanilla SUB_COLUMNS()：名称/人数/操作列（操作列 render 随 locale 重建）
 function subActionCell(node: DeptTree): HTMLElement {
   const ctx = document.createElement('div')
   ctx.className = 'action-cell'
@@ -133,7 +124,6 @@ const subColumns = computed<TableColumn[]>(() => {
 const subRows = computed(() => selected.value?.children ?? [])
 const subRowsJson = computed(() => JSON.stringify(subRows.value))
 
-// vanilla refresh()：拉平铺 + 树，选中失效时回落首个根节点
 async function refresh(): Promise<void> {
   const [rows, treeRows] = await Promise.all([listDepts(), treeDepts()])
   tree.value = treeRows
@@ -144,7 +134,6 @@ async function refresh(): Promise<void> {
 }
 onMounted(() => void refresh())
 
-// vanilla 树 oas-node-render 段：回填成员徽标
 function onNodeRender(e: Event): void {
   const { node, element } = (e as CustomEvent<{ node: { members: number }; element: HTMLElement }>)
     .detail
@@ -152,24 +141,20 @@ function onNodeRender(e: Event): void {
   if (badge) badge.textContent = String(node.members)
 }
 
-// vanilla 树 oas-select 段
 function onSelect(e: Event): void {
   selectedId.value = Number((e as CustomEvent<{ key: string }>).detail.key)
 }
 
-// vanilla openForm：新建（可带父级）/编辑统一入口
 function openForm(node: DeptNode | null, parent?: DeptTree): void {
   editingId.value = node?.id ?? null
   parentForNew.value = parent ?? null
   drawerOpen.value = true
 }
 
-// vanilla dept-create 段
 function onCreate(): void {
   openForm(null)
 }
 
-// vanilla 详情区 data-md-action="edit"/"child" 段
 function onEditSelected(): void {
   if (selected.value) openForm(selected.value)
 }
@@ -177,7 +162,6 @@ function onAddChild(): void {
   if (selected.value) openForm(null, selected.value)
 }
 
-// vanilla doDelete：有子部门/不存在均拦截，删除成功后清选中 + 刷新
 async function doDelete(id: number): Promise<void> {
   const node = findNode(tree.value, id)
   if (!node) {
@@ -198,12 +182,10 @@ async function doDelete(id: number): Promise<void> {
   void refresh()
 }
 
-// vanilla 详情区删除按钮 popconfirm oas-ok
 function onDeleteSelected(): void {
   if (selected.value) void doDelete(selected.value.id)
 }
 
-// vanilla 子表行内编辑：composedPath 匹配 [data-edit] → openForm(row)
 // （v2.2.8 起行点击忽略内嵌交互控件：单元格内 popconfirm 原生自驱动，无需模板手动 open）
 function onSubClick(e: MouseEvent): void {
   const btn = e
@@ -214,14 +196,12 @@ function onSubClick(e: MouseEvent): void {
   if (row) openForm(row)
 }
 
-// vanilla onSubDelete：oas-ok 的 detail.source 带 data-del 反查来源
 function onSubDeleteOk(e: Event): void {
   const src = (e as CustomEvent<{ source?: HTMLElement }>).detail?.source
   if (!src?.hasAttribute?.('data-del')) return
   void doDelete(Number(src.getAttribute('data-del')))
 }
 
-// vanilla oas-submit 段收尾（持久化在抽屉子组件）：关闭抽屉 + 清编辑态 + 刷新
 function onFormSaved(): void {
   drawerOpen.value = false
   editingId.value = null

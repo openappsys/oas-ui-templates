@@ -1,19 +1,13 @@
 <script setup lang="ts">
 // src/pages/login.vue —— 登录页：双版式（split/glass）+ oas-form 本地直登
-// DOM 结构/类名逐块对齐 vanilla-html/src/pages/login.ts 与 react/src/pages/login.tsx
 // （app.css 登录页样式依赖这些类名）
-// 偏差记录（因果链）：
-// 1. 版式读取/切换：vanilla 读 location.search、切换时整页刷新；本模版经 vue-router 的
 //    route.query 读写（hash 模式下查询串在 hash 内，vue-router 正常解析 route.query），
 //    router.replace 触发重渲染切换版式，不整页刷新
 // 2. 事件绑定：oas-submit/oas-enter 模板直绑（Vue 3 对 custom element kebab 事件原生支持，
-//    见 AGENTS.md 第 1 条，无需 react 版 useOasEvent 桥接）；切换版式时声明式绑定随 vnode
+//    见 无需 react 版 useOasEvent 桥接）；切换版式时声明式绑定随 vnode
 //    自动重挂，无 react 版「元素重挂载而 ref 不变、useEffect 不重绑」的丢监听问题
-// 3. 跨 shadow 提交：与 vanilla/react 一致——formRef 取 oas-form 宿主，
 //    其 shadowRoot 内 <form> requestSubmit()（playground 实测模式）
-// 4. 文案刷新：vanilla 用 onLocaleChange(refreshText) 逐节点替换；本模版 useT() 订阅 locale
 //    后整页重渲染，rules/options 等 JSON attribute 随 computed 重算
-// 5. 登录后跳转：vanilla 手动 navigate；react 版 navigate(..., { replace: true })（实测不手动
 //    跳转会因已登录路由表无 /login 匹配而白屏）；本模版对齐 react 用 router.replace——
 //    登录页不留入历史栈，消除登录后回退又回登录页的边角 UX
 // 6. formBlock 复用：react 版共享 JSX 片段；Vue SFC 模板无法跨分支共享片段，

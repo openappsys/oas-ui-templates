@@ -72,12 +72,10 @@ function buildTimeline(order: OrderRow, t: TFunc): TimelineNode[] {
 
 export default function OrderDetailPage() {
   const { t } = useT()
-  // vanilla：id 取自 sessionStorage（orders 页抽屉链接写入，键名逐字一致）
   const [id] = useState(() => sessionStorage.getItem('order-detail-id') ?? '')
   const [order, setOrder] = useState<OrderRow | null>(null)
   const [missing, setMissing] = useState(false)
 
-  // vanilla load()：取单失败显示空态 + 标题回落导航名；成功后 renderAll（此处声明式派生）
   useEffect(() => {
     let cancelled = false
     void (async () => {
@@ -92,7 +90,6 @@ export default function OrderDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
-  // vanilla 操作按钮段：loading → 更新状态 → 提示 → 以返回行重渲
   const onAction = async (e: React.MouseEvent) => {
     if (!order) return
     const button = e.currentTarget as HTMLElement

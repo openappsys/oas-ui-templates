@@ -1,8 +1,5 @@
 <script setup lang="ts">
 // src/pages/not-found.vue —— 404 页面不存在
-// 行为事实来源：vanilla-html/src/pages/not-found.ts（react 版 Task 9 并行中，以 vanilla 为准）
-// 偏差记录（因果链）：与 forbidden.vue 同款——声明式模板 + @click 直绑，
-// vue-router push 替代 vanilla navigate，useT() 订阅替代 onLocaleChange 整页重绘
 import { useRouter } from 'vue-router'
 import { useT } from '../composables/use-t'
 
@@ -18,7 +15,6 @@ const router = useRouter()
 function goHome(): void {
   void router.push('/dashboard')
 }
-// vanilla：有历史则后退，否则回首页
 function goBack(): void {
   if (history.length > 1) history.back()
   else void router.push('/dashboard')

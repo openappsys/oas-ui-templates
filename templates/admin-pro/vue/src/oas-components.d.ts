@@ -62,14 +62,12 @@ declare module 'vue' {
     'oas-descriptions-item': any
     'oas-divider': any
     // Task 2（orders/order-detail/result/category/logs 页）新增：react 版 elements.d.ts
-    // 尚无对应页面，按 vanilla-html 用到的标签补入，react 版落地时同步
     'oas-steps': any
     'oas-timeline': any
     'oas-timeline-item': any
     'oas-result': any
     'oas-virtual-list': any
     'oas-anchor': any
-    // Task 4（dept/dict/menus/roles/basic-form/form 页）新增：同上按 vanilla 用到的标签补入
     'oas-tree': any
     'oas-splitter': any
     'oas-checkbox-group': any

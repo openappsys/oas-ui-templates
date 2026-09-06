@@ -3,7 +3,7 @@
 // 1. 执行逻辑（toggleProductStatus/removeProduct 循环、clearSelection、appMessage、refresh）
 //    留在父组件——它们依赖 rows/selected/refresh；本组件只负责呈现与事件接线
 // 2. 事件绑定：上下架按钮在 light DOM，原生 click 用 React onClick；oas-popconfirm 的
-//    oas-ok 是自定义事件，走 useOasEvent（AGENTS.md 第 1 条）
+//    oas-ok 是自定义事件，走 useOasEvent
 import { useRef } from 'react'
 import { useOasEvent } from '../hooks/use-oas-event'
 import { useT } from '../hooks/use-t'
@@ -29,7 +29,6 @@ export function ProductsBatchBar({
   const delPopRef = useRef<HTMLElement | null>(null)
   const enabled = canMutate && selectedCount > 0
 
-  // 批量删除确认（vanilla popconfirm oas-ok 段；执行体在父组件）
   useOasEvent(delPopRef, 'oas-ok', () => onBatchDelete())
 
   return (

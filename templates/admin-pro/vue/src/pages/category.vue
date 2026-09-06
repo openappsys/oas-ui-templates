@@ -1,18 +1,10 @@
 <script setup lang="ts">
 // src/pages/category.vue —— 商品分类（搜索 + 表格 + 新建/编辑弹窗 + popconfirm 删除）
-// 行为事实来源：vanilla-html/src/pages/category.ts（317 行，逐块对齐）。
-// 偏差记录（因果链）：
-// 1. 渲染模型：vanilla 全程 imperative（innerHTML + renderTable 手动刷表）；本模版声明式——
 //    rows/keyword/editingId/modalOpen 全部 ref，表格数据/空态显隐由 state 派生
 // 2. 子组件拆分（单文件 ≤400 行纪律）：表单弹窗 ./category-form-modal.vue（RULES/fillForm/
-//    oas-submit 段）；表格列 render（状态标签/操作列）保留本文件（vanilla cellTag/cellAction）
-// 3. 事件绑定：搜索 oas-input/oas-clear 模板直绑（AGENTS.md 第 1 条）；新建按钮原生 click
-//    直绑 @click；表格行内编辑按钮经 @click composedPath 匹配（vanilla fromPath.matches 同款，
+// 3. 事件绑定：搜索 oas-input/oas-clear 模板直绑新建按钮原生 click
 //    composed click 能冒泡出 oas-table shadow，users-table.vue 先例）
-// 4. 删除：vanilla popconfirm oas-ok 的 detail.source 带 data-del-id 反查来源；本模版同样
 //    从 oas-ok 事件取 source → data-del-id（v2.2.8 popconfirm 原生自驱动，无需手动 open）
-// 5. CSS：vanilla 页面顶部 import dict.css；本模版在本文件 import（dict.css 从 vanilla 原样复制）
-// 6. 文案刷新：vanilla onLocaleChange(refreshText) 逐节点替换 + renderTable 重建列与行内标签；
 //    本模版 useT() 订阅后整页重渲染，columns（含行内标签）随 locale 自动重算
 import '../styles/pages/dict.css'
 import { computed, onMounted, ref } from 'vue'
@@ -35,7 +27,6 @@ const keyword = ref('')
 const editingId = ref<number | null>(null)
 const modalOpen = ref(false)
 
-// vanilla cellTag：状态标签（on=success，off=default）
 function cellTag(row: CategoryRow): HTMLElement {
   const tag = document.createElement('oas-tag')
   tag.setAttribute('type', row.status === 'on' ? 'success' : 'default')
@@ -43,7 +34,6 @@ function cellTag(row: CategoryRow): HTMLElement {
   return tag
 }
 
-// vanilla cellAction：行内编辑按钮 + popconfirm 包裹的删除按钮（data-del-id 反查来源）
 function cellAction(row: CategoryRow): HTMLElement {
   const ctx = document.createElement('div')
   ctx.className = 'cat-actions'
@@ -72,7 +62,6 @@ function cellAction(row: CategoryRow): HTMLElement {
   return ctx
 }
 
-// vanilla TABLE_COLUMNS()（状态列标签随 locale 重算）
 const columns = computed<TableColumn[]>(() => {
   void locale.value
   return [
@@ -84,31 +73,26 @@ const columns = computed<TableColumn[]>(() => {
   ]
 })
 
-// vanilla refresh()
 async function refresh(): Promise<void> {
   rows.value = await listCategories()
 }
 onMounted(() => void refresh())
 
-// vanilla renderTable 的过滤段：名称/代码包含关键字
 const filtered = computed(() => {
   const kw = keyword.value.trim()
   return rows.value.filter((r) => !kw || r.name.includes(kw) || r.code.includes(kw))
 })
 const empty = computed(() => filtered.value.length === 0)
-// data 走 JSON 字符串通道（AGENTS.md 第 3 条）
+// data 走 JSON 字符串通道
 const rowsJson = computed(() => JSON.stringify(filtered.value))
 
-// 编辑目标行（弹窗回填用；与 editingId 分离以对齐 vanilla 语义）
 const editing = computed(() => rows.value.find((r) => r.id === editingId.value) ?? null)
 
-// vanilla category-create 段：fillForm(null) + openModal
 function onCreate(): void {
   editingId.value = null
   modalOpen.value = true
 }
 
-// vanilla table click 段：composedPath 匹配行内编辑按钮 → fillForm(row) + openModal
 // （v2.2.8 起行点击忽略内嵌交互控件：单元格内 popconfirm 原生自驱动，无需模板手动 open）
 function onTableClick(e: MouseEvent): void {
   const editBtn = e
@@ -122,7 +106,6 @@ function onTableClick(e: MouseEvent): void {
   }
 }
 
-// vanilla popconfirm oas-ok 段：source.data-del-id 反查 → 删除 → 提示 + 刷新
 function onDeleteOk(e: Event): void {
   const src = (e as CustomEvent<{ source?: HTMLElement }>).detail?.source
   const raw = src?.hasAttribute?.('data-del-id') ? src.getAttribute('data-del-id') : null
@@ -136,14 +119,12 @@ function onDeleteOk(e: Event): void {
   })()
 }
 
-// vanilla oas-submit 段的收尾（持久化/提示在子组件）：关闭弹窗 + 清编辑态 + 刷新
 function onFormSaved(): void {
   modalOpen.value = false
   editingId.value = null
   void refresh()
 }
 
-// vanilla search oas-input/oas-clear 段
 function onSearchInput(e: Event): void {
   keyword.value = (e as CustomEvent<{ value: string }>).detail.value ?? ''
 }

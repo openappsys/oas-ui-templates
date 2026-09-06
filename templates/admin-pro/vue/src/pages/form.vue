@@ -1,18 +1,9 @@
 <script setup lang="ts">
 // src/pages/form.vue —— 创建订单向导：三步表单（客户信息 → 商品明细 → 确认提交）
-// 行为事实来源：vanilla-html/src/pages/form.ts（402 行，逐块对齐）。
-// 偏差记录（因果链）：
-// 1. 渲染模型：vanilla innerHTML 拼装 + syncStepVis/renderSummary 手动刷；本模版声明式——
 //    step/表单字段/商品勾选全部 ref，面板显隐/汇总/合计由 state 派生
 // 2. 步骤条 current：正常流转由 :current="step" 声明式同步；点击跨越且校验失败时组件
-//    已自改 current，沿 vanilla 在 oas-change 里命令式 setAttribute 拨回（stepsRef）
-// 3. 事件绑定：oas-input/oas-change/oas-clear 全部模板直绑（AGENTS.md 第 1 条）；
-//    checkbox-group 的 oas-change 会收到子复选冒泡事件，保留 vanilla 的
 //    e.target === 容器 守卫
-// 4. 校验错误：vanilla setError 切 .form-error 的 hidden + aria-invalid；本模版 errors
 //    reactive 派生 :hidden（纯 HTML 元素，属性/property 语义一致），aria-invalid 保留
-//    命令式 setAttribute（与 vanilla 同一 attribute 通道）
-// 5. 提交：createOrder → sessionStorage('form-result') → 跳 /result；vanilla navigate(path)
 //    对齐为本模版 router.push（vue-router 通道，result.vue 已就位消费 form-result）
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -31,7 +22,6 @@ function t(key: string, params?: Record<string, string | number>): string {
 
 const router = useRouter()
 
-// vanilla PHONE_RE/formatMoney/today
 const PHONE_RE = /^1\d{10}$/
 
 function formatMoney(n: number): string {
@@ -42,7 +32,6 @@ function today(): string {
   return new Date().toISOString().slice(0, 10)
 }
 
-// ---- 表单状态（对齐 vanilla FormState） ----
 const step = ref(0)
 const customer = ref('')
 const phone = ref('')
@@ -65,7 +54,6 @@ const productsRef = ref<HTMLElement | null>(null)
 
 const minDate = today()
 
-// vanilla STEPS()：随 locale 重算
 const stepsJson = computed(() =>
   JSON.stringify([
     { title: t('form.step.basic') },
@@ -74,7 +62,6 @@ const stepsJson = computed(() =>
   ]),
 )
 
-// vanilla loadProducts/renderProductsOptions：按价格升序
 async function loadProducts(): Promise<void> {
   const rows = await listProducts()
   productsData.value = rows.sort((a, b) => a.price - b.price)
@@ -94,7 +81,6 @@ const selectedProducts = computed(() =>
 // 合计 = 单价和 × 数量
 const total = computed(() => selectedProducts.value.reduce((sum, p) => sum + p.price, 0) * quantity.value)
 
-// vanilla setError/clearErrors：错误文案 + aria-invalid
 function clearErrors(): void {
   errors.customer = ''
   errors.phone = ''
@@ -105,7 +91,6 @@ function clearErrors(): void {
   productsRef.value?.removeAttribute('aria-invalid')
 }
 
-// vanilla validateStep
 function validateStep(n: number): boolean {
   clearErrors()
   let ok = true
@@ -138,7 +123,6 @@ function validateStep(n: number): boolean {
   return ok
 }
 
-// vanilla goNext/goPrev
 function goNext(): void {
   if (!validateStep(step.value)) return
   step.value += 1
@@ -149,7 +133,6 @@ function goPrev(): void {
   clearErrors()
 }
 
-// vanilla stepsEl oas-change 段：前跳先校验当前步，失败拨回（命令式对齐 vanilla）
 function onStepChange(e: Event): void {
   const target = (e as CustomEvent<{ index: number }>).detail.index
   if (target === step.value) return
@@ -161,7 +144,6 @@ function onStepChange(e: Event): void {
   clearErrors()
 }
 
-// vanilla submitOrder：确认勾选 → 组明细 → createOrder → form-result → /result
 async function submitOrder(): Promise<void> {
   clearErrors()
   if (!confirmed.value) {
@@ -193,7 +175,6 @@ async function submitOrder(): Promise<void> {
   }
 }
 
-// ---- 输入联动（vanilla 各 oas-input/oas-change/oas-clear 段） ----
 function onCustomerInput(e: Event): void {
   customer.value = (e as CustomEvent<{ value: string }>).detail.value
 }
@@ -221,7 +202,6 @@ function onDateChange(e: Event): void {
 function onConfirmChange(e: Event): void {
   confirmed.value = (e as CustomEvent<{ checked: boolean }>).detail.checked
 }
-// 子复选 oas-change 会冒泡过容器：保留 vanilla 的 e.target 守卫
 function onProductsChange(e: Event): void {
   if (e.target !== productsRef.value) return
   products.value = (e as CustomEvent<{ value: string[] }>).detail.value

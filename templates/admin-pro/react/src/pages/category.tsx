@@ -2,7 +2,7 @@
 //    rows/keyword/editingId/modalOpen 全部 useState，过滤/空态/弹窗标题全部由 state 派生；
 //    refresh() 仅重拉数据 setRows，重渲染即最新
 // 2. 事件绑定：search 的 oas-input/oas-clear、form 的 oas-submit、popconfirm 的 oas-ok、
-//    modal 的 oas-close 走 useOasEvent（AGENTS.md 第 1 条）；新建按钮为 light DOM 原生
+//    modal 的 oas-close 走 useOasEvent新建按钮为 light DOM 原生
 //    click 直绑 onClick；弹窗面板内取消/保存按钮按第 2 条例外在元素上直绑 addEventListener
 //   （panel 对原生事件 stopPropagation，React 根委托收不到）
 // 3. columns 含 render 函数（cellTag/cellAction 返回真实 DOM 节点），走 property 通道
@@ -116,7 +116,6 @@ export default function CategoryPage() {
   const saveRef = useRef<HTMLElement | null>(null)
   const savingRef = useRef(false)
 
-  // vanilla refresh()
   const refresh = useCallback(async () => {
     setRows(await listCategories())
   }, [])
@@ -125,7 +124,6 @@ export default function CategoryPage() {
     void refresh()
   }, [refresh])
 
-  // vanilla renderTable：关键字过滤（原文 includes，非小写化——逐字对齐）
   const filtered = useMemo(() => {
     const kw = keyword.trim()
     return rows.filter((r) => !kw || r.name.includes(kw) || r.code.includes(kw))
@@ -133,13 +131,11 @@ export default function CategoryPage() {
 
   const dataJson = useMemo(() => JSON.stringify(filtered), [filtered])
 
-  // 列定义按 locale 重建（vanilla renderTable 里重设 columns 同款时机）
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const columns = useMemo<TableColumn[]>(() => buildColumns(t), [locale])
 
   const editing = editingId != null ? (rows.find((r) => r.id === editingId) ?? null) : null
 
-  // vanilla fillForm：open 边沿回填（编辑值/新建默认）
   useEffect(() => {
     if (!modalOpen) return
     nameRef.current?.setAttribute('value', editing?.name ?? '')
@@ -158,7 +154,7 @@ export default function CategoryPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modalOpen, editingId])
 
-  // panel 内原生 click 例外直绑（AGENTS.md 第 2 条）：取消=关闭；保存=触发内部原生 form 提交
+  // panel 内原生 click 例外直绑：取消=关闭；保存=触发内部原生 form 提交
   useEffect(() => {
     const cancel = cancelRef.current
     const save = saveRef.current
@@ -179,7 +175,6 @@ export default function CategoryPage() {
   // 组件侧关闭（遮罩/Esc/✕）→ 回写 React 状态（visible 单一事实来源）
   useOasEvent(modalRef, 'oas-close', () => setModalOpen(false))
 
-  // vanilla 表格 click 段：composedPath 匹配行内编辑按钮（删除由 popconfirm 自驱动）
   const onWrapClick = (e: React.MouseEvent) => {
     const btn = e.nativeEvent
       .composedPath()
@@ -195,7 +190,6 @@ export default function CategoryPage() {
     }
   }
 
-  // vanilla popconfirm oas-ok 段：detail.source 反查 data-del-id → 删除 → 提示 → 刷新
   useOasEvent<{ source: HTMLElement }>(tableRef, 'oas-ok', (detail) => {
     const src = detail.source
     const id = Number(
@@ -210,7 +204,6 @@ export default function CategoryPage() {
     })()
   })
 
-  // vanilla oas-submit 段：trim → 组装 → create/update → 关闭 + 刷新
   useOasEvent<{ values: FormValues }>(formRef, 'oas-submit', async (detail) => {
     if (savingRef.current) return
     savingRef.current = true
@@ -237,7 +230,6 @@ export default function CategoryPage() {
     }
   })
 
-  // vanilla 搜索段
   useOasEvent<{ value: string }>(searchRef, 'oas-input', (d) => {
     setKeyword(d.value ?? '')
   })

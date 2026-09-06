@@ -1,17 +1,9 @@
 <script setup lang="ts">
 // src/pages/product-form.vue —— 商品表单（dialog/drawer 双形态，page 形态见 product-edit.vue）
-// 行为事实来源：vanilla-html/src/pages/products.ts 的 FORM_BODY/fillForm/openForm/oas-submit 段，
-// react/src/pages/product-form.tsx 为已验收参照。
-// 偏差记录（因果链）：
-// 1. 回填：vanilla openForm 时 fillForm 逐字段 setAttribute；本模版在 open 边沿的 watch
 //    （flush: 'post'，等 DOM 就位）里做同样的事（表单字段非受控，value 全走 attribute，
-//    与 vanilla 同一通道）
-// 2. 取消/保存按钮：位于 oas-modal/oas-drawer 的 panel 内，vanilla/react 因 panel 对原生
 //    click stopPropagation 需直绑 addEventListener；Vue 的 @click 直绑元素本身不走根委托，
-//    不受 panel 拦截影响（AGENTS.md 第 5 条），故与 light DOM 按钮一样模板直绑
-// 3. visible 受控：vanilla 靠组件自闭（遮罩/Esc 时组件自摘 visible 属性）；本模版 visible 由
+//    不受 panel 拦截影响故与 light DOM 按钮一样模板直绑
 //    父组件 state 单一持有，必须监听 oas-close 回写，否则组件自闭后与 state 失同步
-// 4. 分类选项：vanilla applyCategoryOptions 里 setAttribute('options')；本模版 options 走
 //    声明式 JSON attribute 随 categories prop 重算，回填仅写 value attribute
 // 5. 表单体复用：react 版共享 body JSX；Vue SFC 模板无法跨分支共享片段，dialog/drawer
 //    两分支各写一份（login.vue 同款先例，结构/类名逐行一致，改动需两处同步）
@@ -68,13 +60,11 @@ function today(): string {
   return new Date().toISOString().slice(0, 10)
 }
 
-// vanilla resolveCategory：非法/空值回落第一个分类
 function resolveCategory(value?: string): string {
   if (value && props.categories.some((c) => c.value === value)) return value
   return props.categories[0]?.value ?? ''
 }
 
-// vanilla fillForm：open 边沿回填（编辑值/新建默认），upload 清空
 watch(
   () => [props.open, props.editing, props.categories],
   () => {
@@ -95,7 +85,6 @@ function onSave(): void {
   form?.requestSubmit()
 }
 
-// vanilla oas-submit 段：价格校验 → 组装 payload → create/update → 关闭 + 刷新
 async function onSubmit(e: Event): Promise<void> {
   if (saving.value) return
   const values = (e as CustomEvent<{ values: FormValues }>).detail.values
@@ -140,7 +129,7 @@ const catOptions = computed(() => JSON.stringify(props.categories))
 
 <template>
   <!-- vanilla surfaceMarkup：dialog=oas-modal 内嵌 h2#form-title；drawer=oas-drawer title 属性；
-       visible 布尔存在性语义（AGENTS.md 第 2 条） -->
+       visible 布尔存在性语义-->
   <oas-modal
     v-if="mode === 'dialog'"
     data-testid="product-dialog"

@@ -1,25 +1,15 @@
 <script setup lang="ts">
 // src/pages/products.vue —— 商品管理（卡片/列表双视图 + 三表单模式 + 批量操作 + 列设置持久化）
-// 行为事实来源：vanilla-html/src/pages/products.ts（755 行，逐块对齐），
-// react/src/pages/products.tsx 为已验收参照（拆分边界对齐它）。
-// 偏差记录（因果链）：
-// 1. 渲染模型：vanilla 全程 imperative（innerHTML + setAttribute 回写）；本模版声明式——
 //    rows/keyword/category/page/view/selected/columnKeys 全部 ref，表格切片/空态/批量栏
 //    显隐/分页属性全部由 state 派生；refresh() 仅重拉数据写 ref，重渲染即最新
 // 2. 事件绑定：oas-input/oas-select/oas-segmented/oas-pagination 的 oas-* 自定义事件一律模板
-//    直绑（Vue 原生支持 kebab 事件，AGENTS.md 第 1 条，无需 react 版 useOasEvent 桥接）；
-//    工具栏按钮原生 click 直绑 @click；卡片编辑按钮 @click 委托 + closest 匹配（vanilla 同款）
+//    直绑（Vue 原生支持 kebab 事件，无需 react 版 useOasEvent 桥接）；
 // 3. visible 受控同步：表单容器/列设置弹窗的 visible 由 state 持有，组件侧关闭（遮罩/Esc）
-//    经 oas-close 回写 state（vanilla 靠组件自摘属性，无此问题）——由子组件上抛 close
-// 4. 手动分页：vanilla 超页时静默 state.page = maxPage；本模版派生 current = min(page, maxPage)
 //    不回头改 state（显示结果一致，避免渲染期写状态）
-// 5. 文案刷新：vanilla onLocaleChange(refreshText) 逐节点替换；本模版 useT() 订阅后整页
 //    重渲染，rules/options/columns/标签随 locale 自动重算（dashboard 同款模式）
 // 6. 子组件拆分（主体 ≤400 行纪律；本文件加分页器 hidden 补写逻辑与头注释后贴线 401 行）：表格 ./products-table.vue、表单 ./product-form.vue、
 //    批量栏 ./products-batch-bar.vue、列设置弹窗 ./products-columns-modal.vue；
-//    page 形态跳 /products/edit（sessionStorage 键 product-edit-id 与 vanilla 逐字一致）
-// 7. 布尔 attribute 一律存在性语义（:checked="cond ? '' : null"，AGENTS.md 第 2 条）；
-//    hidden 走原生属性反射（:hidden="bool"）；options 等复杂数据传 JSON 字符串（第 3 条）
+// 7. 布尔 attribute 一律存在性语义（:checked="cond ? '' : null"，//    hidden 走原生属性反射（:hidden="bool"）；options 等复杂数据传 JSON 字符串（第 3 条）
 // 8. oas-pagination 的 hidden 例外：组件 update() 会无条件自摘 hidden（为 hide-on-single
 //    预留），声明式 :hidden 会被 total/current 变更触发的同步 update 吞掉（react 版「卡片
 //    视图下搜索」场景同样会丢 hidden）。故 pager 的 hidden 改由 watch(flush:'post') 在 Vue
@@ -84,7 +74,6 @@ const category = ref('')
 const editingId = ref<number | null>(null)
 const page = ref(1)
 const view = ref<ViewMode>(readView())
-// 页面生命周期内不变（vanilla 同为 render 时读取一次的局部状态）
 const formMode = readFormMode()
 const pageSize = readPageSizeNum()
 const selected = ref<number[]>([])
@@ -98,7 +87,6 @@ const canMutate = session.user?.role !== 'viewer'
 const tableCompRef = ref<InstanceType<typeof ProductsTable> | null>(null)
 const pagerRef = ref<HTMLElement | null>(null)
 
-// vanilla refresh()：并发拉商品 + 分类；当前筛选分类失效时清空（applyCategoryOptions 语义）
 async function refresh(): Promise<void> {
   const [list, cats] = await Promise.all([listProducts(), listCategories()])
   rows.value = list
@@ -108,7 +96,6 @@ async function refresh(): Promise<void> {
 }
 onMounted(() => void refresh())
 
-// vanilla filtered()：关键字（小写包含）+ 分类精确匹配
 const filtered = computed(() => {
   const kw = keyword.value.trim().toLowerCase()
   return rows.value.filter((r) => {
@@ -136,7 +123,6 @@ watch(
   { flush: 'post', immediate: true },
 )
 
-// 编辑态行（表单回填用；与 editingId 分离以对齐 vanilla 语义）
 const editing = computed(() => rows.value.find((r) => r.id === editingId.value) ?? null)
 
 // page 模式以外的表单容器形态（v-if 已排除 'page'，此处只做类型收窄）
@@ -144,7 +130,6 @@ const surfaceMode = computed<'dialog' | 'drawer'>(() =>
   formMode === 'dialog' ? 'dialog' : 'drawer',
 )
 
-// vanilla openForm：page 模式写 sessionStorage 跳编辑页；其余就地开表单容器
 function openForm(row: ProductRow | null): void {
   if (formMode === 'page') {
     if (row) sessionStorage.setItem('product-edit-id', String(row.id))
@@ -156,7 +141,6 @@ function openForm(row: ProductRow | null): void {
   surfaceOpen.value = true
 }
 
-// vanilla grid/table 开关切换段（共用）
 async function toggleStatus(id: number): Promise<void> {
   const updated = await toggleProductStatus(id)
   if (!updated) {
@@ -169,7 +153,6 @@ async function toggleStatus(id: number): Promise<void> {
   void refresh()
 }
 
-// vanilla oas-edit 行内编辑持久化段
 function inlineEdit(id: number, column: 'price' | 'stock', value: number): void {
   void updateProduct(id, { [column]: value }).then((updated) => {
     if (!updated) appMessage.error(tt('products.notFound'))
@@ -178,13 +161,11 @@ function inlineEdit(id: number, column: 'price' | 'stock', value: number): void 
   })
 }
 
-// vanilla clearSelection：清空选中 + 摘掉表格 selected 属性（组件受控集合外的人工复位）
 function clearSelection(): void {
   selected.value = []
   tableCompRef.value?.clearSelected()
 }
 
-// vanilla batchStatus：逐项 toggle 至目标态，统计变更数
 async function batchStatus(target: 'on' | 'off'): Promise<void> {
   if (!canMutate) {
     appMessage.error(tt('common.noPerm'))
@@ -201,7 +182,6 @@ async function batchStatus(target: 'on' | 'off'): Promise<void> {
   void refresh()
 }
 
-// vanilla 批量删除 popconfirm oas-ok 段：逐项删除 + 清选 + 提示 + 刷新
 async function batchDelete(): Promise<void> {
   if (!canMutate) {
     appMessage.error(tt('common.noPerm'))
@@ -216,7 +196,6 @@ async function batchDelete(): Promise<void> {
   void refresh()
 }
 
-// 工具栏事件（oas-* 自定义事件模板直绑，detail 取值对齐 vanilla）
 function onSearchInput(e: Event): void {
   keyword.value = (e as CustomEvent<{ value: string }>).detail.value
   page.value = 1
@@ -240,7 +219,6 @@ function onPageChange(e: Event): void {
   page.value = (e as CustomEvent<{ page: number }>).detail.page
 }
 
-// 卡片视图开关（vanilla grid oas-change 段：composedPath 源头取 data-id）
 function onGridChange(e: Event): void {
   const sw = e.composedPath()[0] as HTMLElement
   const id = Number(sw.getAttribute('data-id'))
@@ -248,7 +226,6 @@ function onGridChange(e: Event): void {
   void toggleStatus(id)
 }
 
-// 卡片视图编辑按钮：light DOM 子节点，@click 委托（vanilla closest 匹配同款）
 function onGridClick(e: MouseEvent): void {
   const btn = (e.target as HTMLElement).closest('[data-testid="product-edit"]')
   if (!btn) return
@@ -268,7 +245,7 @@ function onFormSaved(): void {
   void refresh()
 }
 
-// 复杂数据走 JSON attribute 通道（AGENTS.md 第 3 条）
+// 复杂数据走 JSON attribute 通道
 const filterOptions = computed(() =>
   JSON.stringify([{ label: t('products.allCategories'), value: '' }, ...categories.value]),
 )

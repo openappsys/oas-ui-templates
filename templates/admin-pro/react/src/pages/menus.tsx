@@ -31,7 +31,6 @@ export default function MenusPage() {
 
   const treeRef = useRef<HTMLElement | null>(null)
 
-  // vanilla init：拉树 + 选中首个根节点
   useEffect(() => {
     void treeMenus().then((rows) => {
       setTree(rows)
@@ -42,7 +41,6 @@ export default function MenusPage() {
   const selectedNode = selectedId != null ? findNode(tree, selectedId) : null
   const editingNode = editingId != null ? findNode(tree, editingId) : null
 
-  // vanilla nextId：树内最大 id + 1
   const nextId = (): number => {
     const all: MenuTree[] = []
     const walk = (list: MenuTree[]) => {
@@ -55,7 +53,6 @@ export default function MenusPage() {
     return all.reduce((m, n) => Math.max(m, n.id), 0) + 1
   }
 
-  // vanilla openForm 三种入口（新建/编辑/新增子菜单）
   const openCreate = () => {
     setEditingId(null)
     setFormParentId(null)
@@ -72,7 +69,6 @@ export default function MenusPage() {
     setDrawerOpen(true)
   }
 
-  // vanilla md-del-pop oas-ok 段：有子菜单拒绝；纯内存删除
   const doDelete = (node: MenuTree) => {
     if ((node.children ?? []).length > 0) {
       appMessage.error(t('menus.hasChildren'))
@@ -84,12 +80,10 @@ export default function MenusPage() {
     setTree([...tree])
   }
 
-  // 树事件：选中联动详情（vanilla oas-select 段）
   useOasEvent<{ key: string }>(treeRef, 'oas-select', (d) => {
     setSelectedId(Number(d.key))
   })
 
-  // vanilla oas-submit 段：类型差异校验 → 父级合法性 → 原地更新/插入（值由抽屉收集转发）
   const handleMenuSubmit = (p: MenuSubmitPayload) => {
     const { name, type: formType, parentId, perms, path } = p
     if (!name) return

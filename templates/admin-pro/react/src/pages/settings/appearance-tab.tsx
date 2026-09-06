@@ -110,7 +110,6 @@ export function AppearanceTab() {
     }
   })
 
-  // 明暗主题切换：换成当前主题记的颜色（vanilla onThemeChange 语义）
   useEffect(() => {
     const onThemeChange = (): void => {
       const theme = currentTheme()

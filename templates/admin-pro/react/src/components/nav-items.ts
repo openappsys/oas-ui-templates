@@ -151,7 +151,6 @@ export function buildCommandItems(): CommandEntry[] {
       keywords: ['system', 'auto'],
     },
   ]
-  // 两个分隔符 value 同为 'sep'，与 vanilla 逐字对齐（组件按 separator 字段渲染分隔行）
   const separator: CommandEntry = { label: ' ', value: 'sep', separator: true }
   return [...pageItems, separator, ...actionItems, separator, ...themeItems]
 }

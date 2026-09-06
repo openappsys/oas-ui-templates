@@ -35,7 +35,6 @@ export function NavMenu({
   useOasEvent<{ value: string }>(navRef, 'oas-select', (detail) => {
     const value = detail.value
     if (!value) return
-    // vanilla 同路径会 resolve() 重渲当前页；React 下同路径导航天然 no-op，不重挂载页面
     if (value !== activePath) navigate(value)
     onNavigate?.()
   })
@@ -50,7 +49,6 @@ export function NavMenu({
   })
 
   // navigation 在浮层容器里首帧测量会坍缩成 0×0（oas-navigation-menu 浮层测量缺陷）：
-  // 挂载稳定后重设 items 触发重新测量兜底（vanilla toggleMenuPopover 同款 rAF 重设）
   useEffect(() => {
     if (!popover || style !== 'navigation') return
     const raf = requestAnimationFrame(() => {
