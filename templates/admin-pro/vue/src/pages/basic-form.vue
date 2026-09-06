@@ -1,7 +1,6 @@
 <script setup lang="ts">
 // src/pages/basic-form.vue —— 基础表单：输入/下拉/数字/文本域/开关/日期/上传组合
-// 行为事实来源：vanilla-html/src/pages/basic-form.ts（150 行，逐块对齐）；
-// react 版同期并行开发中仍为占位，以 vanilla 为准
+// 行为事实来源：vanilla-html/src/pages/basic-form.ts（150 行，逐块对齐）。
 // 偏差记录（因果链）：
 // 1. 渲染模型：vanilla innerHTML 拼装 + refreshText 逐节点 setAttribute 回写；本模版声明式——
 //    rules/options 等复杂数据全部 computed JSON 字符串（AGENTS.md 第 3 条），useT() 订阅

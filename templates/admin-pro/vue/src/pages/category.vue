@@ -1,7 +1,6 @@
 <script setup lang="ts">
 // src/pages/category.vue —— 商品分类（搜索 + 表格 + 新建/编辑弹窗 + popconfirm 删除）
-// 行为事实来源：vanilla-html/src/pages/category.ts（317 行，逐块对齐）；
-// react 版同期并行开发中仍为占位，以 vanilla 为准
+// 行为事实来源：vanilla-html/src/pages/category.ts（317 行，逐块对齐）。
 // 偏差记录（因果链）：
 // 1. 渲染模型：vanilla 全程 imperative（innerHTML + renderTable 手动刷表）；本模版声明式——
 //    rows/keyword/editingId/modalOpen 全部 ref，表格数据/空态显隐由 state 派生

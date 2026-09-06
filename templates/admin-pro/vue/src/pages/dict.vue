@@ -1,7 +1,6 @@
 <script setup lang="ts">
 // src/pages/dict.vue —— 字典管理：左类型列表 + 右键值表格（双弹窗新建/编辑）
-// 行为事实来源：vanilla-html/src/pages/dict.ts（439 行，逐块对齐）；
-// react 版同期并行开发中仍为占位，以 vanilla 为准
+// 行为事实来源：vanilla-html/src/pages/dict.ts（439 行，逐块对齐）。
 // 偏差记录（因果链）：
 // 1. 渲染模型：vanilla 全程 imperative（innerHTML + renderTypeList/renderItems 手动刷）；
 //    本模版声明式——types/counts/selectedTypeId/loadedItems 全部 ref，列表/表头/空态由

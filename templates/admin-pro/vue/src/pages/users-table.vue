@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // src/pages/users-table.vue —— 用户列表表格（oas-table + 行编辑按钮 + 行点击）
 // 行为事实来源：vanilla-html/src/pages/users.ts 的 COLUMNS/cellAction/renderTable/setEmpty 段
-// （react 版 Task 9 并行中仍为占位，以 vanilla 为准；拆分边界参照 products-table.vue 先例）
+// 拆分边界参照 products-table.vue 先例
 // 偏差记录（因果链）：
 // 1. columns 含 render 函数（action 列返回真实 DOM 节点），JSON 序列化会丢函数，故走 property
 //    通道：Vue 3.5 对有 setter 的 custom element 直接 property 赋值（AGENTS.md 第 3 条，

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 // src/pages/roles.vue —— 角色管理：表格（数据权限标签 + 行编辑/popconfirm 删除）+ 新建/编辑抽屉
-// 行为事实来源：vanilla-html/src/pages/roles.ts（352 行，逐块对齐）；
-// react 版同期并行开发中仍为占位，以 vanilla 为准
+// 行为事实来源：vanilla-html/src/pages/roles.ts（352 行，逐块对齐）。
 // 偏差记录（因果链）：
 // 1. 渲染模型：vanilla 全程 imperative（innerHTML + renderTable 手动刷表）；本模版声明式——
 //    roles/deptList/editingId/drawerOpen 全部 ref，表格数据由 state 派生

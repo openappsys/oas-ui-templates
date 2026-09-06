@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // src/pages/user-detail.vue —— 用户详情弹窗（头像 + 描述列表 + 权限标识 + 编辑/删除）
 // 行为事实来源：vanilla-html/src/pages/users.ts 的 oas-row-click 段（详情回填）与
-// renderPerms/delete-popconfirm 段（react 版 Task 9 并行中仍为占位，以 vanilla 为准）
+// renderPerms/delete-popconfirm 段
 // 偏差记录（因果链）：
 // 1. 渲染模型：vanilla 每次行点击 innerHTML 重建 oas-descriptions 再逐节点回填；本模版
 //    声明式——详情字段由 user/roleName/permTags props 派生，oas-descriptions 结构静态写出

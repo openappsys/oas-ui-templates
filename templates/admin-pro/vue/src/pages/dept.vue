@@ -1,7 +1,6 @@
 <script setup lang="ts">
 // src/pages/dept.vue —— 部门管理：左树右详情（oas-splitter）+ 详情子部门表格 + 新建/编辑抽屉
-// 行为事实来源：vanilla-html/src/pages/dept.ts（445 行，逐块对齐）；
-// react 版同期并行开发中仍为占位，以 vanilla 为准
+// 行为事实来源：vanilla-html/src/pages/dept.ts（445 行，逐块对齐）。
 // 偏差记录（因果链）：
 // 1. 渲染模型：vanilla 全程 imperative（innerHTML + renderTree/renderDetail 手动刷）；
 //    本模版声明式——tree/selectedId/flat 全部 ref，详情区/子部门表由 selected 派生

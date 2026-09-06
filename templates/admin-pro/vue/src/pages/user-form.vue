@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // src/pages/user-form.vue —— 用户新建/编辑弹窗（oas-modal + oas-form）
 // 行为事实来源：vanilla-html/src/pages/users.ts 的 RULES/fillForm/form-save/oas-submit 段
-// （react 版 Task 9 并行中仍为占位，以 vanilla 为准；容器形态参照 product-form.vue 先例）
+// 容器形态参照 product-form.vue 先例
 // 偏差记录（因果链）：
 // 1. 回填：vanilla fillForm 逐字段 setAttribute；本模版在 open 边沿的 watch（flush: 'post'，
 //    等 DOM 就位）里做同样的事（表单字段非受控，value 全走 attribute，与 vanilla 同一通道）

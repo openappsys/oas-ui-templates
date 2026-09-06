@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // src/pages/orders.vue —— 订单管理（统计卡 + 状态页签 + 表格 + 详情抽屉 + CSV 导出）
 // 行为事实来源：vanilla-html/src/pages/orders.ts（448 行，逐块对齐）；
-// react 版同期并行开发中仍为占位，以 vanilla 为准（拆分边界参照 users/products 先例）
+// 拆分边界参照 users/products 先例
 // 偏差记录（因果链）：
 // 1. 渲染模型：vanilla 全程 imperative（innerHTML + setAttribute 回写 + renderTable/renderStats/
 //    renderTabs 手动刷）；本模版声明式——rows/keyword/status/selectedId/scopeVisible 全部 ref，

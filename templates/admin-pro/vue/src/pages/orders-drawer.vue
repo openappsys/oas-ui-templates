@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // src/pages/orders-drawer.vue —— 订单详情抽屉（状态标签 + 描述列表 + 流程操作 + 完整详情链接）
 // 行为事实来源：vanilla-html/src/pages/orders.ts 的 drawer 段（fillDesc/renderAction/openDrawer/
-// order-detail-action click）（react 版同期并行中仍为占位，以 vanilla 为准）
+// order-detail-action click）
 // 偏差记录（因果链）：
 // 1. 渲染模型：vanilla openDrawer 时逐节点 setAttribute/textContent 回填；本模版声明式——
 //    字段全部由 row prop 派生，oas-descriptions 结构静态写出（节点 id 与 vanilla 逐字一致：

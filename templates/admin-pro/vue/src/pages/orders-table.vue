@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // src/pages/orders-table.vue —— 订单列表表格（oas-table 内置分页 + 状态/金额/品名 render 列）
 // 行为事实来源：vanilla-html/src/pages/orders.ts 的 TABLE_COLUMNS/statusCell/moneyCell/
-// itemSummary 段（react 版同期并行中仍为占位，以 vanilla 为准；拆分边界参照 users-table.vue 先例）
+// itemSummary 段（拆分边界参照 users-table.vue 先例）
 // 偏差记录（因果链）：
 // 1. columns 含 render 函数（items 文本摘要/金额 mono/状态标签），JSON 序列化会丢函数，故走
 //    property 通道：Vue 3.5 对有 setter 的 custom element 直接 property 赋值（AGENTS.md 第 3 条，

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 // src/pages/profile.vue —— 个人中心：头像/账户信息 + 主题预览切换 + 登出
-// 行为事实来源：vanilla-html/src/pages/profile.ts（146 行，逐块对齐；
-// react 版 Task 9 并行中仍为占位，以 vanilla 为准）
+// 行为事实来源：vanilla-html/src/pages/profile.ts（146 行，逐块对齐）
 // 偏差记录（因果链）：
 // 1. 渲染模型：vanilla innerHTML + 逐节点回填；本模版声明式——角色标签/登录时间/
 //    描述列表全部 computed（依赖 locale），useT() 订阅后重渲染即 vanilla refreshText

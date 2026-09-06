@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // src/pages/dict-type-modal.vue —— 字典类型新建/编辑弹窗（oas-modal + oas-form + 2 字段）
 // 行为事实来源：vanilla-html/src/pages/dict.ts 的 RULES_TYPE/openTypeForm/typeForm oas-submit 段
-// （react 版同期并行开发中仍为占位，以 vanilla 为准；容器形态参照 category-form-modal.vue 先例）
+// 容器形态参照 category-form-modal.vue 先例
 // 偏差记录（因果链）：
 // 1. 回填：vanilla openTypeForm 逐字段 setAttribute；本模版在 open 边沿的 watch
 //    （flush: 'post'，等 DOM 就位）做同样的事（表单字段非受控，value 全走 attribute 通道）

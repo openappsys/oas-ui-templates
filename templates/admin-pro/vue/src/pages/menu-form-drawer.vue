@@ -2,7 +2,6 @@
 // src/pages/menu-form-drawer.vue —— 菜单新建/编辑抽屉（类型单选/父级树选择/权限字自动补全）
 // 行为事实来源：vanilla-html/src/pages/menus.ts 的 RULES/fillMenuForm/syncMenuType/
 // typeGroup oas-change/path oas-input/form oas-submit 段
-// （react 版同期并行开发中仍为占位，以 vanilla 为准）
 // 偏差记录（因果链）：
 // 1. 回填：vanilla fillMenuForm 逐字段 setAttribute；本模版在 open 边沿的 watch
 //    （flush: 'post'，等 DOM 就位）做同样的事（字段非受控，与 vanilla 同一通道）

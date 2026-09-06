@@ -1,7 +1,6 @@
 <script setup lang="ts">
 // src/pages/advanced-form.vue —— 高级表单：级联 / 联想 / 评分 / 标签 / 穿梭 / 树选择组合与校验
-// 行为事实来源：vanilla-html/src/pages/advanced-form.ts（214 行，逐块对齐；
-// react 版 Task 9 并行中仍为占位，以 vanilla 为准）
+// 行为事实来源：vanilla-html/src/pages/advanced-form.ts（214 行，逐块对齐）
 // 偏差记录（因果链）：
 // 1. 渲染模型：vanilla innerHTML 拼装 + refreshText 逐节点 setAttribute 回写；本模版声明式——
 //    rules/options/data 等复杂数据全部 computed JSON 字符串（AGENTS.md 第 3 条），

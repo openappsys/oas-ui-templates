@@ -1,7 +1,6 @@
 <script setup lang="ts">
 // src/pages/order-detail.vue —— 订单详情页（步骤条 + 描述列表 + 时间线 + 流程操作）
-// 行为事实来源：vanilla-html/src/pages/order-detail.ts（230 行，逐块对齐）；
-// react 版同期并行开发中仍为占位，以 vanilla 为准
+// 行为事实来源：vanilla-html/src/pages/order-detail.ts（230 行，逐块对齐）。
 // 偏差记录（因果链）：
 // 1. 订单号来源：vanilla 读 sessionStorage('order-detail-id')（orders 页抽屉链接写入）；
 //    本模版改读 route.query.id（orders-drawer.vue 的 RouterLink 携带）——可观察行为一致

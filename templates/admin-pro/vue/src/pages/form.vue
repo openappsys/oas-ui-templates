@@ -1,7 +1,6 @@
 <script setup lang="ts">
 // src/pages/form.vue —— 创建订单向导：三步表单（客户信息 → 商品明细 → 确认提交）
-// 行为事实来源：vanilla-html/src/pages/form.ts（402 行，逐块对齐）；
-// react 版同期并行开发中仍为占位，以 vanilla 为准
+// 行为事实来源：vanilla-html/src/pages/form.ts（402 行，逐块对齐）。
 // 偏差记录（因果链）：
 // 1. 渲染模型：vanilla innerHTML 拼装 + syncStepVis/renderSummary 手动刷；本模版声明式——
 //    step/表单字段/商品勾选全部 ref，面板显隐/汇总/合计由 state 派生

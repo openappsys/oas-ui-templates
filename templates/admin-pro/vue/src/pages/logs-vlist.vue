@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // src/pages/logs-vlist.vue —— 日志虚拟列表（oas-virtual-list 封装：行模板 + items 注入 + 行回填）
 // 行为事实来源：vanilla-html/src/pages/logs.ts 的 template[slot=item]/renderVirtualList/
-// scrollToIndex/oas-item 段（react 版同期并行中仍为占位，以 vanilla 为准；
+// scrollToIndex/oas-item 段（
 // 拆分边界：logs.vue 主文件 ≤400 行纪律，锚点联动留在父组件）
 // 偏差记录（因果链）：
 // 1. 行模板：oas-virtual-list 读取子节点 template[slot="item"]（shadow 容器约定）；Vue 编译器

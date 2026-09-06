@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // src/pages/dept-form-drawer.vue —— 部门新建/编辑抽屉（oas-drawer + oas-form + 树选择父级）
 // 行为事实来源：vanilla-html/src/pages/dept.ts 的 RULES/fillForm/refreshParentOptions/
-// oas-submit 段（react 版同期并行开发中仍为占位，以 vanilla 为准）
+// oas-submit 段
 // 偏差记录（因果链）：
 // 1. 回填：vanilla fillForm 逐字段 setAttribute（父级树选择 options/expanded/value 亦在
 //    open 边沿命令式写入，excludeId=编辑节点 id 以剪掉自身与后代）；本模版在 open 边沿的

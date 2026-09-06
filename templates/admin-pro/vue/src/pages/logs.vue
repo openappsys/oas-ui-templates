@@ -1,7 +1,6 @@
 <script setup lang="ts">
 // src/pages/logs.vue —— 日志中心（虚拟列表 + 日期锚点 + 筛选 + 统计卡 + CSV 导出）
-// 行为事实来源：vanilla-html/src/pages/logs.ts（402 行，逐块对齐）；
-// react 版同期并行开发中仍为占位，以 vanilla 为准
+// 行为事实来源：vanilla-html/src/pages/logs.ts（402 行，逐块对齐）。
 // 偏差记录（因果链）：
 // 1. 渲染模型：vanilla 全程 imperative（applyFilter 手动刷列表/锚点/统计/空态）；本模版
 //    声明式——rows/filtered/level/keyword/dateRange/selected 全部 ref，锚点 items/空态显隐
@@ -18,7 +17,7 @@
 // 6. CSS：vanilla 页面顶部 import logs.css 与 '@oas-ui/ui' 子路径按需注册；本模版 main.ts
 //    已全量注册组件，仅需 import logs.css（从 vanilla 原样复制）
 import '../styles/pages/logs.css'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { listLogs } from '../data/logs'
 import type { LogEntry, LogLevel } from '../data/logs'
 import { useT } from '../composables/use-t'
@@ -100,18 +99,29 @@ const levelOptions = computed(() =>
 // vanilla renderAnchor：锚点 items JSON + href→日期/日期→索引两张反查表
 const dateIndexMap = new Map<string, number>()
 const hrefDateMap = new Map<string, string>()
+// items JSON 纯派生；反查表写入放 watch（computed 保持无副作用）
 const anchorItems = computed(() => {
   void locale.value
-  dateIndexMap.clear()
-  hrefDateMap.clear()
-  const items = buildDateGroups(filtered.value).map((g) => {
-    const href = `#logs-day-${g.date}`
-    dateIndexMap.set(g.date, g.index)
-    hrefDateMap.set(href, g.date)
-    return { href, title: `${g.label} (${g.date.slice(5)})` }
-  })
-  return JSON.stringify(items)
+  return JSON.stringify(
+    buildDateGroups(filtered.value).map((g) => ({
+      href: `#logs-day-${g.date}`,
+      title: `${g.label} (${g.date.slice(5)})`,
+    })),
+  )
 })
+watch(
+  filtered,
+  () => {
+    dateIndexMap.clear()
+    hrefDateMap.clear()
+    for (const g of buildDateGroups(filtered.value)) {
+      const href = `#logs-day-${g.date}`
+      dateIndexMap.set(g.date, g.index)
+      hrefDateMap.set(href, g.date)
+    }
+  },
+  { immediate: true },
+)
 
 // vanilla applyFilter：按 level/keyword/dateRange 拉取（列表/回顶由 logs-vlist.vue 的
 // watch 派生，锚点/统计/空态由 computed 派生）

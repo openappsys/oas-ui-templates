@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // src/pages/category-form-modal.vue —— 分类新建/编辑弹窗（oas-modal + oas-form + 5 字段）
 // 行为事实来源：vanilla-html/src/pages/category.ts 的 RULES/fillForm/modal 表单段
-// （react 版同期并行开发中仍为占位，以 vanilla 为准；容器形态参照 user-form.vue 先例）
+// 容器形态参照 user-form.vue 先例
 // 偏差记录（因果链）：
 // 1. 回填：vanilla fillForm 逐字段 setAttribute（checked 存在性切换）；本模版在 open 边沿的
 //    watch（flush: 'post'，等 DOM 就位）里做同样的事（表单字段非受控，value 全走 attribute，
@@ -108,7 +108,7 @@ async function onSubmit(e: Event): Promise<void> {
       appMessage.success(tt('common.created'))
     } else {
       const updated = await updateCategory(props.editingId, payload)
-      if (!updated) appMessage.error(tt('common.saved'))
+      if (!updated) appMessage.error(tt('common.networkError'))
       else appMessage.success(tt('common.saved'))
     }
     emit('saved')

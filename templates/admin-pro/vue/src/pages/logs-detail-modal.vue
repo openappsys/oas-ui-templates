@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // src/pages/logs-detail-modal.vue —— 日志详情弹窗（描述列表 6 项）
 // 行为事实来源：vanilla-html/src/pages/logs.ts 的 openDetail 段（innerHTML 重建
-// oas-descriptions）与 detailModal oas-cancel 段（react 版同期并行中仍为占位，以 vanilla 为准）
+// oas-descriptions）与 detailModal oas-cancel 段
 // 偏差记录（因果链）：
 // 1. 渲染模型：vanilla openDetail 每次重建 innerHTML；本模版声明式——entry prop 派生全部字段，
 //    结构静态写出（节点 id 与 vanilla 一致：logs-detail-body）

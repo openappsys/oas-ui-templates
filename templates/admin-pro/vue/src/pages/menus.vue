@@ -1,7 +1,6 @@
 <script setup lang="ts">
 // src/pages/menus.vue —— 菜单（权限）管理：左树右详情 + 新建/编辑抽屉（纯前端树变更）
-// 行为事实来源：vanilla-html/src/pages/menus.ts（505 行，逐块对齐）；
-// react 版同期并行开发中仍为占位，以 vanilla 为准
+// 行为事实来源：vanilla-html/src/pages/menus.ts（505 行，逐块对齐）。
 // 偏差记录（因果链）：
 // 1. 渲染模型：vanilla 全程 imperative（innerHTML + renderTree/renderDetail 手动刷）；
 //    本模版声明式——tree/selectedId 全部 ref，详情区由 selected 派生；树的增删改沿用

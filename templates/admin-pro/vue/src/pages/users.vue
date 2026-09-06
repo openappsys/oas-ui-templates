@@ -1,7 +1,6 @@
 <script setup lang="ts">
 // src/pages/users.vue —— 用户管理（搜索/刷新 + 表格 + 新建/编辑弹窗 + 详情弹窗）
-// 行为事实来源：vanilla-html/src/pages/users.ts（553 行，逐块对齐；
-// react 版 Task 9 并行中仍为占位，以 vanilla 为准）
+// 行为事实来源：vanilla-html/src/pages/users.ts（553 行，逐块对齐）
 // 偏差记录（因果链）：
 // 1. 渲染模型：vanilla 全程 imperative（innerHTML + setAttribute 回写 + renderTable 手动刷表）；
 //    本模版声明式——rows/roles/menuTree/keyword/editingId/formOpen/detailOpen 全部 ref，

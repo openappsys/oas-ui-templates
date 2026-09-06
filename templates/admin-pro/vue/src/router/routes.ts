@@ -1,5 +1,5 @@
 // src/router/routes.ts —— 路由表事实来源
-// 本模版为 hash 路由组装需要补入，meta 为本模版新增（titleKey 取 i18n 已存在的 login.welcome）
+// /login 为本模版新增（vanilla 未登录时由路由器直接渲染登录页，不经路由表）；各路由 meta 亦为本模版新增（titleKey 取 i18n 已存在的 key，如 login.welcome）
 import type { RouteComponent } from 'vue-router'
 
 export type RouteGroup = 'nav.output' | 'nav.business' | 'nav.system' | 'nav.demo'

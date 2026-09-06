@@ -1,7 +1,6 @@
 <script setup lang="ts">
 // src/pages/data-board.vue —— 数据看板：统计卡 + 柱状/饼图/堆叠柱状图 + 进度条 + 水印层
-// 行为事实来源：vanilla-html/src/pages/data-board.ts（134 行，逐块对齐；
-// react 版 Task 9 并行中仍为占位，以 vanilla 为准）
+// 行为事实来源：vanilla-html/src/pages/data-board.ts（134 行，逐块对齐）
 // 偏差记录（因果链）：
 // 1. 渲染模型：vanilla draw() innerHTML + refreshText 逐节点回写；本模版声明式——
 //    boardData() 静态数据取一次，图表 data/卡片标题/月份标签全部 computed（依赖 locale），

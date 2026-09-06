@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // src/pages/dict-item-modal.vue —— 字典键值新建/编辑弹窗（oas-modal + oas-form + 3 字段）
 // 行为事实来源：vanilla-html/src/pages/dict.ts 的 RULES_ITEM/openItemForm/itemForm oas-submit 段
-// （react 版同期并行开发中仍为占位，以 vanilla 为准；容器形态参照 category-form-modal.vue 先例）
+// 容器形态参照 category-form-modal.vue 先例
 // 偏差记录（因果链）：
 // 1. 回填：vanilla openItemForm 逐字段 setAttribute（sort 编辑回填数字串、新建置空）；
 //    本模版在 open 边沿的 watch（flush: 'post'，等 DOM 就位）做同样的事（字段非受控）

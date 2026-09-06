@@ -1,7 +1,6 @@
 <script setup lang="ts">
 // src/pages/result.vue —— 表单提交结果页（成功/失败双态，一次性读取 sessionStorage）
-// 行为事实来源：vanilla-html/src/pages/result.ts（75 行，逐块对齐）；
-// react 版同期并行开发中仍为占位，以 vanilla 为准
+// 行为事实来源：vanilla-html/src/pages/result.ts（75 行，逐块对齐）。
 // 偏差记录（因果链）：
 // 1. 渲染模型：vanilla 按成功/失败分支拼两份 innerHTML；本模版同一结构 + status/description
 //    按态派生（DOM/类名/testid 与 vanilla 逐字一致：form-result/result-view-order/

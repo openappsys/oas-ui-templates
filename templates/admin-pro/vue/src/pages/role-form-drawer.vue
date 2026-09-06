@@ -2,7 +2,6 @@
 // src/pages/role-form-drawer.vue —— 角色新建/编辑抽屉（数据权限单选 + 自定义部门穿梭框）
 // 行为事实来源：vanilla-html/src/pages/roles.ts 的 RULES/fillForm/scopeGroup oas-change/
 // transfer oas-change/form oas-submit 段
-// （react 版同期并行开发中仍为占位，以 vanilla 为准）
 // 偏差记录（因果链）：
 // 1. 回填：vanilla fillForm 逐字段 setAttribute（transfer value 在 open 边沿写入）；
 //    本模版在 open 边沿的 watch（flush: 'post'，等 DOM 就位）做同样的事（字段非受控）
