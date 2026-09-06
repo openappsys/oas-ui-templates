@@ -1,11 +1,14 @@
 // oas-ui Web Components 的 JSX 类型声明：让 <oas-*> 标签在 React JSX 下通过 tsc 检查。
 // 统一规则：
 //   - 标量 prop 按 HTML 语义声明 string | boolean | number
-//   - 数据型 prop（columns/data/options/rules/items）声明 string（JSON 序列化后传入）
+//   - 数据型 prop（columns/data/options/rules/items）声明 string（JSON 序列化后传入）；
+//     例外：oas-table 的 columns/data 支持 property 通道（render 函数无法 JSON 序列化，
+//     React 19 对自定义元素上已定义的 property 会直接赋值，见 src/pages/products-table.tsx）
 //   - kebab-case 属性用引号键名，如 'row-key'
 //   - onOasXxx 自定义事件声明仅供类型通过——React 19 不会把 onXxx prop 绑到 kebab 事件，
 //     真实事件绑定必须用 useOasEvent（addEventListener），见 src/hooks/use-oas-event.ts
 import type { DetailedHTMLProps, HTMLAttributes } from 'react'
+import type { TableColumn } from '@oas-ui/ui/data/table'
 
 type OasBase = DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLElement>
 
@@ -77,6 +80,7 @@ declare module 'react/jsx-runtime' {
       'oas-modal': OasBase & {
         title?: string
         open?: boolean
+        visible?: boolean
         'no-footer'?: boolean
         onOasClose?: (e: Event) => void
         onOasOk?: (e: Event) => void
@@ -218,10 +222,68 @@ declare module 'react/jsx-runtime' {
         description?: string
       }
       'oas-table': OasBase & {
-        columns?: string
-        data?: string
+        /** 列定义：JSON 字符串或 TableColumn[]（含 render 函数时走 property 通道） */
+        columns?: string | TableColumn[]
+        /** 行数据：JSON 字符串或对象数组（property 通道） */
+        data?: string | object[]
         'row-key'?: string
+        'column-keys'?: string
+        checkable?: boolean
+        stripe?: boolean
+        editable?: boolean
         onOasSortChange?: (e: Event) => void
+      }
+      'oas-masonry': OasBase & {
+        columns?: string | number
+        gap?: string
+      }
+      'oas-pagination': OasBase & {
+        total?: string | number
+        'page-size'?: string | number
+        current?: string | number
+        'show-total'?: boolean
+        onOasChange?: (e: Event) => void
+      }
+      'oas-checkbox': OasBase & {
+        name?: string
+        value?: string
+        checked?: boolean
+        disabled?: boolean
+        onOasChange?: (e: Event) => void
+      }
+      'oas-popconfirm': OasBase & {
+        title?: string
+        onOasOk?: (e: Event) => void
+        onOasCancel?: (e: Event) => void
+      }
+      'oas-input-number': OasBase & {
+        name?: string
+        value?: string | number
+        min?: string | number
+        max?: string | number
+        step?: string | number
+        precision?: string | number
+        placeholder?: string
+        disabled?: boolean
+        onOasChange?: (e: Event) => void
+      }
+      'oas-date-picker': OasBase & {
+        name?: string
+        value?: string
+        placeholder?: string
+        disabled?: boolean
+        onOasChange?: (e: Event) => void
+      }
+      'oas-upload': OasBase & {
+        name?: string
+        accept?: string
+        'list-type'?: string
+        disabled?: boolean
+        onOasChange?: (e: Event) => void
+      }
+      'oas-page-header': OasBase & {
+        title?: string
+        subtitle?: string
       }
       'oas-progress': OasBase & {
         percent?: string | number
