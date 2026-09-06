@@ -37,6 +37,7 @@ function cellTag(row: CategoryRow): HTMLElement {
 function cellAction(row: CategoryRow): HTMLElement {
   const ctx = document.createElement('div')
   ctx.className = 'cat-actions'
+  ctx.style.cssText = 'display:flex;align-items:center;gap:var(--oas-space-2,8px)'
   const edit = document.createElement('oas-button')
   edit.className = 'category-edit'
   edit.setAttribute('data-testid', 'category-edit')
