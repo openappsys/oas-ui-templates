@@ -61,6 +61,14 @@ declare module 'vue' {
     'oas-descriptions': any
     'oas-descriptions-item': any
     'oas-divider': any
+    // Task 2（orders/order-detail/result/category/logs 页）新增：react 版 elements.d.ts
+    // 尚无对应页面，按 vanilla-html 用到的标签补入，react 版落地时同步
+    'oas-steps': any
+    'oas-timeline': any
+    'oas-timeline-item': any
+    'oas-result': any
+    'oas-virtual-list': any
+    'oas-anchor': any
   }
 }
 export {}

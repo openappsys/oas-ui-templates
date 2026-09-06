@@ -1,0 +1,228 @@
+<script setup lang="ts">
+// src/pages/order-detail.vue —— 订单详情页（步骤条 + 描述列表 + 时间线 + 流程操作）
+// 行为事实来源：vanilla-html/src/pages/order-detail.ts（230 行，逐块对齐）；
+// react 版同期并行开发中仍为占位，以 vanilla 为准
+// 偏差记录（因果链）：
+// 1. 订单号来源：vanilla 读 sessionStorage('order-detail-id')（orders 页抽屉链接写入）；
+//    本模版改读 route.query.id（orders-drawer.vue 的 RouterLink 携带）——可观察行为一致
+//    （目标页拿到同一订单号），且 URL 可收藏/刷新后恢复，sessionStorage 通道不再使用
+// 2. 渲染模型：vanilla innerHTML + load() 异步回填（renderSteps/renderBasic/renderTimeline/
+//    renderAction 逐节点写）；本模版声明式——order ref 就绪后各区块由 computed 派生，
+//    oas-steps 的 steps 复杂数据走 JSON attribute 通道（AGENTS.md 第 3 条）
+// 3. 事件绑定：流程按钮在 light DOM（oas-card 内），原生 click 模板直绑 @click（vanilla
+//    addEventListener 同款）；按钮 loading 态用 :loading 存在性语义对齐 setAttribute('loading')
+// 4. 返回链接：vanilla 写死 href="#/orders"；本模版用 RouterLink（hash/history 双模式均正确，
+//    product-edit.vue 先例）
+// 5. 文案刷新：vanilla onLocaleChange(refreshText) 分支重建；本模版 useT() 订阅后整页重渲染，
+//    步骤/描述/时间线/操作随 locale 自动重算（加载中/缺失态同样响应式）
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
+import { getOrder, updateOrderStatus } from '../data/orders'
+import type { OrderRow, OrderStatus } from '../data/orders'
+import { useT } from '../composables/use-t'
+import { appMessage } from '../lib/app-message'
+
+// vanilla FLOW_STEPS/FLOW_TO/STATUS_TAG
+const FLOW_STEPS: OrderStatus[] = ['pending', 'paid', 'shipping', 'done']
+const FLOW_TO: Partial<Record<OrderStatus, OrderStatus>> = {
+  pending: 'paid',
+  paid: 'shipping',
+  shipping: 'done',
+}
+const STATUS_TAG: Record<OrderStatus, string> = {
+  pending: 'warning',
+  paid: 'primary',
+  shipping: 'purple',
+  done: 'success',
+  cancelled: 'danger',
+}
+
+const { t: tt, locale } = useT()
+/** 模板文案函数：读 locale.value 建立响应式依赖，切语言时重渲 */
+function t(key: string, params?: Record<string, string | number>): string {
+  void locale.value
+  return tt(key, params)
+}
+
+function statusLabel(status: OrderStatus): string {
+  return t(`orders.status.${status}`)
+}
+
+const route = useRoute()
+
+// vanilla：render 时同步读一次（本模版取 query，'?id=' 缺省为 ''）
+const id = typeof route.query.id === 'string' ? route.query.id : ''
+
+const order = ref<OrderRow | null>(null)
+const missing = ref(false)
+const flowing = ref(false)
+
+// 异步拉取存活标记：卸载后丢弃迟到的 Promise 结果（product-edit.vue 同款语义）
+let alive = true
+onUnmounted(() => {
+  alive = false
+})
+
+// vanilla load()：取单 → 缺失显示空态；就绪后整卡渲染
+onMounted(async () => {
+  const row = await getOrder(id)
+  if (!alive) return
+  if (!row) {
+    missing.value = true
+    return
+  }
+  order.value = row
+})
+
+// vanilla formatMoney（详情版：¥ 无空格、固定两位小数）
+function formatMoney(n: number): string {
+  return `¥${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
+
+// vanilla addDays：created 日期 + n 天（时间线节点时间）
+function addDays(dateStr: string, n: number): string {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const date = new Date(y, m - 1, d)
+  date.setDate(date.getDate() + n)
+  const mm = String(date.getMonth() + 1).padStart(2, '0')
+  const dd = String(date.getDate()).padStart(2, '0')
+  return `${date.getFullYear()}-${mm}-${dd}`
+}
+
+// 页头标题/状态标签（vanilla renderAll：ph title=订单号 + tag 配色）
+const title = computed(() => (order.value ? order.value.id : t('nav.orderDetail')))
+const statusTag = computed(() => {
+  if (!order.value) return { label: t('orderDetail.loading'), type: 'default' as const }
+  return { label: statusLabel(order.value.status), type: STATUS_TAG[order.value.status] }
+})
+
+// vanilla renderSteps：cancelled 或未加载隐藏；否则 4 步 + 当前步序号
+const steps = computed(() => FLOW_STEPS.map((s) => ({ title: statusLabel(s) })))
+const stepsCurrent = computed(() => (order.value ? FLOW_STEPS.indexOf(order.value.status) : -1))
+const stepsVisible = computed(
+  () => !!order.value && order.value.status !== 'cancelled' && stepsCurrent.value >= 0,
+)
+
+// vanilla renderTimeline/buildTimeline：创建 + 按进度补节点；cancelled 单独一节点红色
+const timeline = computed(() => {
+  const o = order.value
+  if (!o) return []
+  const nodes: Array<{ time: string; title: string; color?: string }> = [
+    { time: o.created, title: t('orderDetail.timeline.created') },
+  ]
+  if (o.status === 'cancelled') {
+    nodes.push({ time: addDays(o.created, 1), title: statusLabel('cancelled'), color: 'red' })
+    return nodes
+  }
+  const idx = FLOW_STEPS.indexOf(o.status)
+  if (idx >= 1) nodes.push({ time: addDays(o.created, 1), title: statusLabel('paid') })
+  if (idx >= 2) nodes.push({ time: addDays(o.created, 2), title: statusLabel('shipping') })
+  if (idx >= 3)
+    nodes.push({ time: addDays(o.created, 3), title: statusLabel('done'), color: 'green' })
+  return nodes
+})
+
+// vanilla renderAction：有下一步显示按钮（文案=流程动作），否则显示终态提示
+const flowTo = computed(() => (order.value ? FLOW_TO[order.value.status] ?? null : null))
+const note = computed(() => {
+  if (!order.value || flowTo.value) return ''
+  return order.value.status === 'done' ? t('orders.noteDone') : t('orders.noteCancelled')
+})
+
+// vanilla action click 段：loading → updateOrderStatus → 提示 → order=updated 重渲（声明式自动）
+async function onAction(): Promise<void> {
+  if (!order.value || !flowTo.value) return
+  const actionLabel = t(`orders.flow.${order.value.status}`)
+  flowing.value = true
+  const updated = await updateOrderStatus(order.value.id, flowTo.value)
+  flowing.value = false
+  if (!updated) {
+    appMessage.error(tt('orders.notFound'))
+    return
+  }
+  appMessage.success(tt('orders.flowApplied', { action: actionLabel }))
+  order.value = updated
+}
+</script>
+
+<template>
+  <div class="page order-detail-page">
+    <oas-page-header data-testid="order-page-header" class="order-detail-ph" :title="title">
+      <div slot="extra" class="ph-extra">
+        <RouterLink class="link-btn" to="/orders" data-testid="order-back">
+          {{ t('orderDetail.backList') }}
+        </RouterLink>
+        <oas-tag
+          data-testid="order-status-tag"
+          :type="statusTag.type === 'purple' ? null : statusTag.type"
+          :color="statusTag.type === 'purple' ? 'purple' : null"
+        >
+          {{ statusTag.label }}
+        </oas-tag>
+      </div>
+    </oas-page-header>
+    <div v-if="order" id="order-detail-card">
+      <oas-card>
+        <oas-steps
+          v-if="stepsVisible"
+          class="order-steps"
+          id="order-detail-steps"
+          :steps="JSON.stringify(steps)"
+          :current="stepsCurrent"
+        />
+        <oas-descriptions data-testid="order-detail-basic" id="order-detail-basic" column="2">
+          <oas-descriptions-item :label="t('orders.th.customer')">
+            <span>{{ order.customer }}</span>
+          </oas-descriptions-item>
+          <oas-descriptions-item :label="t('orders.th.amount')">
+            <span class="mono">{{ formatMoney(order.amount) }}</span>
+          </oas-descriptions-item>
+          <oas-descriptions-item :label="t('form.label.phone')">
+            <span class="mono">{{ order.phone ?? '-' }}</span>
+          </oas-descriptions-item>
+          <oas-descriptions-item :label="t('form.summary.urgent')">
+            <span>{{ order.urgent ? t('form.label.urgent') : t('form.summary.normalDelivery') }}</span>
+          </oas-descriptions-item>
+          <oas-descriptions-item :label="t('orders.th.created')">
+            <span class="mono">{{ order.created }}</span>
+          </oas-descriptions-item>
+          <oas-descriptions-item :label="t('orders.th.items')">
+            <span>
+              <oas-tag v-for="it in order.items" :key="it">{{ it }}</oas-tag>
+            </span>
+          </oas-descriptions-item>
+        </oas-descriptions>
+        <div class="order-timeline-head">{{ t('orderDetail.timelineTitle') }}</div>
+        <div id="order-detail-timeline-wrap">
+          <oas-timeline data-testid="order-detail-timeline">
+            <oas-timeline-item
+              v-for="n in timeline"
+              :key="`${n.time}-${n.title}`"
+              :time="n.time"
+              :color="n.color ?? null"
+            >
+              {{ n.title }}
+            </oas-timeline-item>
+          </oas-timeline>
+        </div>
+        <div class="order-detail-foot">
+          <oas-button
+            v-if="flowTo"
+            data-testid="order-detail-action"
+            type="primary"
+            :loading="flowing ? '' : null"
+            @click="void onAction()"
+          >
+            {{ t(`orders.flow.${order.status}`) }}
+          </oas-button>
+          <div v-if="!flowTo" class="order-detail-note" data-testid="order-detail-note">
+            {{ note }}
+          </div>
+        </div>
+      </oas-card>
+    </div>
+    <div v-if="missing" id="order-detail-missing">
+      <oas-empty :description="t('orderDetail.missing')" />
+    </div>
+  </div>
+</template>

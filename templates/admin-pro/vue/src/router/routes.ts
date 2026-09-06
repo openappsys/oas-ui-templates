@@ -1,6 +1,6 @@
 // src/router/routes.ts —— 路由表事实来源
-// path/meta 与 react 模版 src/router/routes.tsx 逐字对齐（11 条），
-// react 版已按 vanilla-html/src/router/routes.ts 中对应页面校准
+// path/meta 与 vanilla-html/src/router/routes.ts 对应条目逐字对齐（react 版同期并行，
+// 未落地的页面以 vanilla 为准）；/login 为本模版组装新增（见下方原注释）
 // 例外：/login 在 vanilla 路由表中不存在（vanilla 未登录时由 router 直接渲染登录页），
 // 本模版为 hash 路由组装需要补入，meta 为本模版新增（titleKey 取 i18n 已存在的 login.welcome）
 import type { RouteComponent } from 'vue-router'
@@ -41,6 +41,16 @@ export const appRoutes: AppRoute[] = [
     path: '/login',
     meta: { titleKey: 'login.welcome', icon: 'lock', hidden: true },
     Component: () => import('../pages/login.vue'),
+  },
+  {
+    path: '/orders',
+    meta: {
+      titleKey: 'nav.orders',
+      icon: 'calendar',
+      iconColor: 'var(--oas-tint-cyan)',
+      group: 'nav.business',
+    },
+    Component: () => import('../pages/orders.vue'),
   },
   {
     path: '/products',
@@ -85,6 +95,16 @@ export const appRoutes: AppRoute[] = [
     Component: () => import('../pages/data-board.vue'),
   },
   {
+    path: '/order-detail',
+    meta: { titleKey: 'nav.orderDetail', icon: 'calendar', hidden: true, parent: '/orders' },
+    Component: () => import('../pages/order-detail.vue'),
+  },
+  {
+    path: '/result',
+    meta: { titleKey: 'nav.result', icon: 'check', hidden: true, parent: '/form' },
+    Component: () => import('../pages/result.vue'),
+  },
+  {
     path: '/users',
     meta: {
       titleKey: 'nav.users',
@@ -105,6 +125,28 @@ export const appRoutes: AppRoute[] = [
       group: 'nav.output',
     },
     Component: () => import('../pages/profile.vue'),
+  },
+  {
+    path: '/system/category',
+    meta: {
+      titleKey: 'nav.category',
+      icon: 'tree',
+      iconColor: 'var(--oas-tint-violet)',
+      roles: ['admin'],
+      group: 'nav.system',
+    },
+    Component: () => import('../pages/category.vue'),
+  },
+  {
+    path: '/system/logs',
+    meta: {
+      titleKey: 'nav.logs',
+      icon: 'clock',
+      iconColor: 'var(--oas-color-warning)',
+      roles: ['admin'],
+      group: 'nav.system',
+    },
+    Component: () => import('../pages/logs.vue'),
   },
   {
     path: '/settings',
