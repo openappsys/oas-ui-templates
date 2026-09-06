@@ -1,0 +1,284 @@
+// src/pages/orders.tsx —— 订单管理（统计卡 + 状态 tabs + 表格 + 快捷详情抽屉 + CSV 导出）
+// 行为事实来源：vanilla-html/src/pages/orders.ts（448 行，逐块对齐）。
+// 偏差记录（因果链）：
+// 1. 渲染模型：vanilla 全程 imperative（innerHTML + setAttribute 回写）；本模版声明式——
+//    rows/keyword/status/selectedId 全部 useState，过滤/统计/空态/tabs 徽标全部由 state 派生；
+//    refresh() 仅重拉数据 setRows，重渲染即最新
+// 2. 事件绑定：search 的 oas-input/oas-clear、tabs 的 oas-change、table 的 oas-row-click
+//    走 useOasEvent（AGENTS.md 第 1 条）；导出/清筛选按钮为 light DOM 原生 click 直绑
+//    onClick；抽屉内链接与流程按钮的例外接线见 ./orders-drawer.tsx 头注释
+// 3. 样式：.orders-scope 在 vanilla 是页面内联 <style>，本模版 JSX 内联同款内容；其余
+//    （.orders-stats/.stat-card/.order-detail* 等）来自全局 app.css（与 vanilla 同为全局副本）
+// 4. 分页：oas-table 内置 pagination（page-size 跟随设置中心，缺省 8——vanilla pageSize()
+//    语义逐字对齐）；搜索/切 tab 后 tableRef.setAttribute('current','1') 人工复位首屏
+// 5. 文案刷新：vanilla onLocaleChange(refreshText) 逐节点替换；本模版 useT() 订阅后整页
+//    重渲染，tabs/统计/表格列随 locale 自动重算（users/dashboard 同款模式）
+// 6. 流程提示文案：vanilla 取点击时 button.textContent；本模版以更新前行状态反推同一文案
+//   （t(`orders.flow.${旧状态}`)），可观察结果一致
+// 7. 子组件拆分（单文件 ≤400 行纪律）：表格 ./orders-table.tsx、快捷详情抽屉 ./orders-drawer.tsx
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { listOrders, updateOrderStatus } from '../data/orders'
+import type { OrderRow, OrderStatus } from '../data/orders'
+import { useOasEvent } from '../hooks/use-oas-event'
+import { useT } from '../hooks/use-t'
+import { appMessage } from '../lib/app-message'
+import { PAGE_SIZE_KEY } from '../settings-init'
+import { session } from '../store/session'
+import { OrdersDrawer } from './orders-drawer'
+import { OrdersTable, statusLabel } from './orders-table'
+
+/** vanilla .orders-scope 内联样式（页面内的权限范围提示条） */
+const SCOPE_STYLE = `
+.orders-scope {
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-2);
+  margin-bottom: var(--oas-space-3);
+  padding: var(--oas-space-3) var(--oas-space-4);
+  border: 1px solid color-mix(in srgb, var(--oas-color-info-text) 30%, transparent);
+  border-radius: var(--oas-radius-md);
+  background: color-mix(in srgb, var(--oas-color-info-text) 10%, transparent);
+  color: var(--oas-color-text-primary);
+  font-size: var(--oas-font-size-sm);
+}
+.orders-scope oas-icon {
+  color: var(--oas-color-info-text);
+  flex-shrink: 0;
+}
+`
+
+/** vanilla pageSize()：每页条数跟随设置中心；未设置时保持原默认 8 */
+function readPageSizeNum(): number {
+  const raw = localStorage.getItem(PAGE_SIZE_KEY)
+  return raw ? Number(raw) || 8 : 8
+}
+
+/** vanilla TABS：全部 + 五状态（文案随 locale 重算） */
+const STATUS_KEYS: OrderStatus[] = ['pending', 'paid', 'shipping', 'done', 'cancelled']
+
+function buildTabs(
+  t: (key: string) => string,
+): Array<{ label: string; value: 'all' | OrderStatus }> {
+  return [
+    { label: t('orders.tabAll'), value: 'all' },
+    ...STATUS_KEYS.map((s) => ({ label: statusLabel(s, t), value: s })),
+  ]
+}
+
+export default function OrdersPage() {
+  const { t } = useT()
+  const [rows, setRows] = useState<OrderRow[]>([])
+  const [keyword, setKeyword] = useState('')
+  const [status, setStatus] = useState<'all' | OrderStatus>('all')
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [pageSize] = useState(readPageSizeNum)
+
+  const tableRef = useRef<HTMLElement | null>(null)
+  const searchRef = useRef<HTMLElement | null>(null)
+  const tabsRef = useRef<HTMLElement | null>(null)
+
+  const isViewer = session.user?.role === 'viewer'
+
+  // vanilla refresh()：loading 包裹；viewer 角色仅保留本人创建订单并显示范围提示
+  const refresh = useCallback(async () => {
+    setLoading(true)
+    let list = await listOrders()
+    const u = session.user
+    if (u?.role === 'viewer') list = list.filter((r) => r.creator === u.name)
+    setRows(list)
+    setLoading(false)
+  }, [])
+
+  useEffect(() => {
+    void refresh()
+  }, [refresh])
+
+  // loading → 表格 loading 属性（vanilla setAttribute/removeAttribute 同款人工通道）
+  useEffect(() => {
+    const table = tableRef.current
+    if (!table) return
+    if (loading) table.setAttribute('loading', '')
+    else table.removeAttribute('loading')
+  }, [loading])
+
+  // vanilla filtered()：状态精确 + 客户名小写包含
+  const filtered = useMemo(() => {
+    const kw = keyword.trim().toLowerCase()
+    return rows.filter((r) => {
+      if (status !== 'all' && r.status !== status) return false
+      if (kw && !r.customer.toLowerCase().includes(kw)) return false
+      return true
+    })
+  }, [rows, keyword, status])
+
+  // vanilla renderTabs 的 counts：全部 + 各状态行数
+  const tabCounts = useMemo(() => {
+    const counts: Partial<Record<'all' | OrderStatus, number>> = { all: rows.length }
+    for (const r of rows) counts[r.status] = (counts[r.status] ?? 0) + 1
+    return counts
+  }, [rows])
+
+  // vanilla renderStats：待处理数 / 本月销售额 / 完成率
+  const stats = useMemo(() => {
+    const pending = rows.filter((r) => r.status === 'pending' || r.status === 'paid').length
+    const monthPrefix = new Date().toISOString().slice(0, 7)
+    const monthSales = rows
+      .filter((r) => r.created.startsWith(monthPrefix))
+      .reduce((sum, r) => sum + r.amount, 0)
+    const doneRate = rows.length
+      ? Math.round((rows.filter((r) => r.status === 'done').length / rows.length) * 100)
+      : 0
+    return { pending, monthSales, doneRate }
+  }, [rows])
+
+  const dataJson = useMemo(() => JSON.stringify(filtered), [filtered])
+
+  // vanilla 导出段：空列表仅提示；CSV 带 BOM，商品以 " | " 拼接
+  const onExport = () => {
+    const list = filtered
+    if (list.length === 0) {
+      appMessage.info(t('orders.noExportable'))
+      return
+    }
+    const header = t('orders.exportHeader')
+    const body = list.map((r) =>
+      [r.id, r.customer, r.amount, statusLabel(r.status, t), r.items.join(' | '), r.created].join(
+        ',',
+      ),
+    )
+    const csv = `\ufeff${[header, ...body].join('\n')}`
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `orders-${Date.now()}.csv`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+    appMessage.success(t('orders.exported', { count: list.length }))
+  }
+
+  // vanilla 清筛选段：复位关键字/状态/搜索框/分页
+  const onClearFilter = () => {
+    setKeyword('')
+    setStatus('all')
+    tableRef.current?.setAttribute('current', '1')
+    searchRef.current?.setAttribute('value', '')
+  }
+
+  // vanilla 搜索段：关键字变化即回第一页
+  const backToFirstPage = () => tableRef.current?.setAttribute('current', '1')
+  useOasEvent<{ value: string }>(searchRef, 'oas-input', (d) => {
+    setKeyword(d.value)
+    backToFirstPage()
+  })
+  useOasEvent(searchRef, 'oas-clear', () => {
+    setKeyword('')
+    backToFirstPage()
+  })
+  useOasEvent<{ value: string }>(tabsRef, 'oas-change', (d) => {
+    setStatus(d.value === 'all' ? 'all' : (d.value as OrderStatus))
+    backToFirstPage()
+  })
+
+  // vanilla openDrawer：记录选中行 + 开抽屉
+  const openDrawer = (row: OrderRow) => {
+    setSelectedId(row.id)
+    setDrawerOpen(true)
+  }
+
+  // vanilla 流程按钮段：更新状态 → 提示 → refresh（抽屉内容随 rows 派生自动更新）
+  const applyFlow = useCallback(
+    async (id: string, target: OrderStatus) => {
+      const prev = rows.find((r) => r.id === id)
+      const updated = await updateOrderStatus(id, target)
+      if (!updated) {
+        appMessage.error(t('orders.notFound'))
+        return
+      }
+      appMessage.success(
+        t('orders.flowApplied', { action: prev ? t(`orders.flow.${prev.status}`) : '' }),
+      )
+      await refresh()
+    },
+    [rows, t, refresh],
+  )
+
+  const tabs = buildTabs(t)
+  const selectedRow = rows.find((r) => r.id === selectedId) ?? null
+
+  return (
+    <div className="page">
+      <style>{SCOPE_STYLE}</style>
+      <div className="page-head">
+        <div>
+          <h1 className="page-title">{t('nav.orders')}</h1>
+          <p className="page-subtitle">{t('orders.subtitle')}</p>
+        </div>
+        <oas-button data-testid="orders-export" type="primary" icon="download" onClick={onExport}>
+          {t('orders.exportCsv')}
+        </oas-button>
+      </div>
+      <div id="orders-scope" className="orders-scope" hidden={!isViewer || undefined}>
+        <oas-icon size="16" name="info" />
+        <span data-testid="orders-scope-text">{t('orders.scopeOnlySelf')}</span>
+      </div>
+      <div className="orders-stats" id="orders-stats">
+        <oas-card className="stat-card">
+          <div className="stat-label">{t('orders.stat.pending')}</div>
+          <div className="stat-value mono">{stats.pending}</div>
+          <div className="stat-foot">{t('orders.stat.pendingHint')}</div>
+        </oas-card>
+        <oas-card className="stat-card">
+          <div className="stat-label">{t('orders.stat.monthSales')}</div>
+          <div className="stat-value mono">{`¥ ${stats.monthSales.toLocaleString('en-US')}`}</div>
+          <div className="stat-foot">{t('orders.stat.monthHint')}</div>
+        </oas-card>
+        <oas-card className="stat-card">
+          <div className="stat-label">{t('orders.stat.doneRate')}</div>
+          <div className="stat-value mono">{stats.doneRate}%</div>
+          <oas-progress className="stat-progress" percent={stats.doneRate} show-text="false" />
+        </oas-card>
+      </div>
+      <oas-card className="list-card" title={t('orders.listTitle')}>
+        <div className="orders-toolbar" slot="extra">
+          <oas-input
+            ref={searchRef}
+            data-testid="orders-search"
+            placeholder={t('orders.search')}
+            clearable
+            prefix-icon="search"
+          />
+        </div>
+        <oas-tabs ref={tabsRef} data-testid="orders-tabs" active={status}>
+          {tabs.map((item) => (
+            <oas-tab-panel
+              key={item.value}
+              label={item.label}
+              value={item.value}
+              badge={tabCounts[item.value] || undefined}
+            />
+          ))}
+        </oas-tabs>
+        <OrdersTable
+          tableRef={tableRef}
+          dataJson={dataJson}
+          empty={filtered.length === 0}
+          pageSize={pageSize}
+          onRowOpen={openDrawer}
+          onClearFilter={onClearFilter}
+        />
+      </oas-card>
+
+      <OrdersDrawer
+        open={drawerOpen}
+        row={selectedRow}
+        onClose={() => setDrawerOpen(false)}
+        onApplyFlow={applyFlow}
+      />
+    </div>
+  )
+}

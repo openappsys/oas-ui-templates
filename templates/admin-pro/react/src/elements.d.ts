@@ -174,6 +174,7 @@ declare module 'react/jsx-runtime' {
       'oas-tab-panel': OasBase & {
         value?: string
         label?: string
+        badge?: string | number
       }
       'oas-breadcrumb': OasBase & {
         items?: string
@@ -275,6 +276,8 @@ declare module 'react/jsx-runtime' {
       'oas-date-picker': OasBase & {
         name?: string
         value?: string
+        /** 日期选择器形态（single/daterange 等，logs 页 daterange 在用） */
+        type?: string
         placeholder?: string
         disabled?: boolean
         onOasChange?: (e: Event) => void
@@ -379,6 +382,37 @@ declare module 'react/jsx-runtime' {
         label?: string
       }
       'oas-divider': OasBase
+      'oas-virtual-list': OasBase & {
+        /** 行数据（LogEntry[] 等对象数组；组件 setter 走 property 通道） */
+        items?: unknown
+        height?: string | number
+        'item-height'?: string | number
+        buffer?: string | number
+        onOasItem?: (e: Event) => void
+        onOasScroll?: (e: Event) => void
+      }
+      'oas-anchor': OasBase & {
+        items?: string
+        active?: string
+        direction?: string
+        hash?: string | boolean
+        onOasClick?: (e: Event) => void
+      }
+      'oas-steps': OasBase & {
+        /** 步骤定义（JSON 字符串，如 [{ title: '待支付' }, …]） */
+        steps?: string
+        current?: string | number
+      }
+      'oas-timeline': OasBase
+      'oas-timeline-item': OasBase & {
+        time?: string
+        color?: string
+      }
+      'oas-result': OasBase & {
+        status?: string
+        title?: string
+        description?: string
+      }
     }
   }
 }

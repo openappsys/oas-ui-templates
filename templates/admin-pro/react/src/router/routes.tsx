@@ -1,5 +1,5 @@
 // src/router/routes.tsx —— 路由表事实来源
-// path/meta 与 vanilla-html/src/router/routes.ts 中对应页面逐字对齐（本模版取 11 条）
+// path/meta 与 vanilla-html/src/router/routes.ts 中对应页面逐字对齐（本模版取 17 条）
 // 例外：/login 在 vanilla 路由表中不存在（vanilla 未登录时由 router 直接渲染登录页），
 // 本模版为 HashRouter 组装需要补入，meta 为本模版新增（titleKey 取 i18n 已存在的 login.welcome）
 import { lazy, type ComponentType, type LazyExoticComponent } from 'react'
@@ -34,6 +34,26 @@ export const appRoutes: AppRoute[] = [
       group: 'nav.output',
     },
     Component: lazy(() => import('../pages/dashboard')),
+  },
+  {
+    path: '/orders',
+    meta: {
+      titleKey: 'nav.orders',
+      icon: 'calendar',
+      iconColor: 'var(--oas-tint-cyan)',
+      group: 'nav.business',
+    },
+    Component: lazy(() => import('../pages/orders')),
+  },
+  {
+    path: '/order-detail',
+    meta: { titleKey: 'nav.orderDetail', icon: 'calendar', hidden: true, parent: '/orders' },
+    Component: lazy(() => import('../pages/order-detail')),
+  },
+  {
+    path: '/result',
+    meta: { titleKey: 'nav.result', icon: 'check', hidden: true, parent: '/form' },
+    Component: lazy(() => import('../pages/result')),
   },
   {
     path: '/login',
@@ -103,6 +123,28 @@ export const appRoutes: AppRoute[] = [
       group: 'nav.output',
     },
     Component: lazy(() => import('../pages/profile')),
+  },
+  {
+    path: '/system/category',
+    meta: {
+      titleKey: 'nav.category',
+      icon: 'tree',
+      iconColor: 'var(--oas-tint-violet)',
+      roles: ['admin'],
+      group: 'nav.system',
+    },
+    Component: lazy(() => import('../pages/category')),
+  },
+  {
+    path: '/system/logs',
+    meta: {
+      titleKey: 'nav.logs',
+      icon: 'clock',
+      iconColor: 'var(--oas-color-warning)',
+      roles: ['admin'],
+      group: 'nav.system',
+    },
+    Component: lazy(() => import('../pages/logs')),
   },
   {
     path: '/settings',
