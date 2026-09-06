@@ -409,7 +409,8 @@ export default {
   'settings.general.routerModeHash': 'hash（#/path）',
   'settings.general.routerModeHistory': 'history（/path）',
   'settings.general.routerModeConfirmTitle': '切换路由模式',
-  'settings.general.routerModeConfirmContent': '切换将重新加载整个应用，未保存的页面状态会丢失。确定切换吗？',
+  'settings.general.routerModeConfirmContent':
+    '切换将重新加载整个应用，未保存的页面状态会丢失。确定切换吗？',
   'settings.general.menuStyleLabel': '菜单形态',
   'settings.general.menuStyleHint': '侧边栏 / 菜单条 / 多级导航',
   'settings.general.menuStyleSidebar': '侧边栏',

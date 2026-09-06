@@ -166,7 +166,12 @@ export function UserForm({ open, editingId, editing, roles, onClose, onSaved }: 
               name="email"
               placeholder={t('users.email')}
             />
-            <oas-select ref={roleRef} data-testid="field-role" name="roleId" options={roleOptions} />
+            <oas-select
+              ref={roleRef}
+              data-testid="field-role"
+              name="roleId"
+              options={roleOptions}
+            />
             <oas-select
               ref={statusRef}
               data-testid="field-status"

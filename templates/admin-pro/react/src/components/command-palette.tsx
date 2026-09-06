@@ -72,7 +72,9 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       }
       if (e.key !== '/' || e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return
       const target = e.target as HTMLElement | null
-      if (target?.closest('input, textarea, select, [contenteditable="true"], oas-input, oas-select'))
+      if (
+        target?.closest('input, textarea, select, [contenteditable="true"], oas-input, oas-select')
+      )
         return
       e.preventDefault()
       if (session.user) onOpenChange(true)

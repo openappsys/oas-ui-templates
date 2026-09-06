@@ -86,7 +86,11 @@ export default function LoginPage() {
       <p className="login-sub">{t('login.subtitle')}</p>
       <oas-form id="login-form" rules={rules}>
         <div className="login-fields">
-          <oas-input data-testid="login-name" name="name" placeholder={t('login.namePlaceholder')} />
+          <oas-input
+            data-testid="login-name"
+            name="name"
+            placeholder={t('login.namePlaceholder')}
+          />
           <oas-select data-testid="login-role" name="role" value="admin" options={roleOptions} />
           <oas-button data-testid="login-submit" type="primary" block onClick={requestSubmit}>
             {t('login.submit')} <oas-icon name="arrow-right" size="14" />

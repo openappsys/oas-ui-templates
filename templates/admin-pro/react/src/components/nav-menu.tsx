@@ -6,11 +6,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useOasEvent } from '../hooks/use-oas-event'
-import {
-  readSidebarCollapsed,
-  writeSidebarCollapsed,
-  type MenuStyle,
-} from '../layout-config'
+import { readSidebarCollapsed, writeSidebarCollapsed, type MenuStyle } from '../layout-config'
 import { groupMenuItems, sidebarItems } from './nav-items'
 
 export interface NavMenuProps {
@@ -25,7 +21,14 @@ export interface NavMenuProps {
   onNavigate?: () => void
 }
 
-export function NavMenu({ style, vertical, activePath, navRef, popover, onNavigate }: NavMenuProps) {
+export function NavMenu({
+  style,
+  vertical,
+  activePath,
+  navRef,
+  popover,
+  onNavigate,
+}: NavMenuProps) {
   const navigate = useNavigate()
   const [collapsed, setCollapsed] = useState(readSidebarCollapsed())
   const id = popover ? 'nav-popover' : 'nav'

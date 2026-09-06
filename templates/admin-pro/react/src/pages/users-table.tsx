@@ -51,7 +51,10 @@ function cellAction(row: UserRow, t: TFunc): HTMLElement {
 }
 
 /** vanilla COLUMNS：role/status 可过滤，created 可排序，action 列 render 走富内容挂载 */
-function buildColumns(t: TFunc, roleFilters: Array<{ label: string; value: string }>): TableColumn[] {
+function buildColumns(
+  t: TFunc,
+  roleFilters: Array<{ label: string; value: string }>,
+): TableColumn[] {
   return [
     { key: 'id', title: 'ID', width: '60px' },
     { key: 'name', title: t('users.name') },
@@ -91,7 +94,11 @@ export function UsersTable({
   // 列定义按 locale + roles 重建（vanilla renderTable 里 COLUMNS(roleFilters) 同款时机）
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const columns = useMemo<TableColumn[]>(
-    () => buildColumns(t, roles.map((r) => ({ label: r.name, value: r.name }))),
+    () =>
+      buildColumns(
+        t,
+        roles.map((r) => ({ label: r.name, value: r.name })),
+      ),
     [locale, roles],
   )
 
@@ -103,22 +110,16 @@ export function UsersTable({
 
   // 编辑按钮：composed click 冒泡出 shadow 后经 React 根委托到此（vanilla fromPath 等价）
   const onWrapClick = (e: React.MouseEvent) => {
-    const btn = e
-      .nativeEvent.composedPath()
-      .find(
-        (n): n is HTMLElement => n instanceof HTMLElement && n.matches('.user-row-edit'),
-      )
+    const btn = e.nativeEvent
+      .composedPath()
+      .find((n): n is HTMLElement => n instanceof HTMLElement && n.matches('.user-row-edit'))
     if (!btn) return
     const id = Number(btn.getAttribute('data-id'))
     if (id) onEditRow(id)
   }
 
   return (
-    <div
-      className={`table-wrap${empty ? ' is-empty' : ''}`}
-      id="table-wrap"
-      onClick={onWrapClick}
-    >
+    <div className={`table-wrap${empty ? ' is-empty' : ''}`} id="table-wrap" onClick={onWrapClick}>
       <oas-table
         ref={tableRef}
         data-testid="users-table"

@@ -40,10 +40,34 @@ function readTheme(): ThemeChoice {
   return 'system'
 }
 
-const THEME_PREVIEWS: Array<{ theme: ThemeChoice; cls: string; mini: string; ariaKey: string; labelKey: string }> = [
-  { theme: 'light', cls: 'is-light', mini: 'light-mini', ariaKey: 'profile.theme.light', labelKey: 'cmd.light' },
-  { theme: 'dark', cls: 'is-dark', mini: 'dark-mini', ariaKey: 'profile.theme.dark', labelKey: 'cmd.dark' },
-  { theme: 'system', cls: 'is-system', mini: 'system-mini', ariaKey: 'profile.theme.system', labelKey: 'cmd.system' },
+const THEME_PREVIEWS: Array<{
+  theme: ThemeChoice
+  cls: string
+  mini: string
+  ariaKey: string
+  labelKey: string
+}> = [
+  {
+    theme: 'light',
+    cls: 'is-light',
+    mini: 'light-mini',
+    ariaKey: 'profile.theme.light',
+    labelKey: 'cmd.light',
+  },
+  {
+    theme: 'dark',
+    cls: 'is-dark',
+    mini: 'dark-mini',
+    ariaKey: 'profile.theme.dark',
+    labelKey: 'cmd.dark',
+  },
+  {
+    theme: 'system',
+    cls: 'is-system',
+    mini: 'system-mini',
+    ariaKey: 'profile.theme.system',
+    labelKey: 'cmd.system',
+  },
 ]
 
 export default function ProfilePage() {

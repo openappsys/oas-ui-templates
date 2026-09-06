@@ -92,8 +92,7 @@ export function userMenuItems(): string {
   ])
 }
 
-export const LANG_ITEMS =
-  '[{"label":"简体中文","value":"zh-CN"},{"label":"English","value":"en"}]'
+export const LANG_ITEMS = '[{"label":"简体中文","value":"zh-CN"},{"label":"English","value":"en"}]'
 
 export interface CommandEntry {
   label: string

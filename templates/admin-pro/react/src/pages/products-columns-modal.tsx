@@ -12,7 +12,11 @@
 import { useEffect, useRef } from 'react'
 import { useOasEvent } from '../hooks/use-oas-event'
 import { useT } from '../hooks/use-t'
-import { PRODUCT_COLUMN_KEYS, PRODUCT_COLUMN_MANDATORY, writeProductColumns } from './product-columns'
+import {
+  PRODUCT_COLUMN_KEYS,
+  PRODUCT_COLUMN_MANDATORY,
+  writeProductColumns,
+} from './product-columns'
 import type { ProductColumnKey } from './product-columns'
 
 export interface ProductsColumnsModalProps {

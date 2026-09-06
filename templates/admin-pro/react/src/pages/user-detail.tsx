@@ -127,7 +127,11 @@ export function UserDetail({
           <oas-button ref={editRef} data-testid="detail-edit" type="primary">
             {t('common.edit')}
           </oas-button>
-          <oas-popconfirm ref={popconfirmRef} title={t('users.confirmDelete')} id="delete-popconfirm">
+          <oas-popconfirm
+            ref={popconfirmRef}
+            title={t('users.confirmDelete')}
+            id="delete-popconfirm"
+          >
             <oas-button
               data-testid="detail-delete"
               type="danger"

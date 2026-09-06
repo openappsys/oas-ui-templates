@@ -34,10 +34,24 @@ interface StatDef {
 }
 
 const STATS: StatDef[] = [
-  { testid: 'stat-visits', icon: 'eye', tone: 'blue', labelKey: 'dashboard.stat.visits', value: 12480, delta: 12.4 },
+  {
+    testid: 'stat-visits',
+    icon: 'eye',
+    tone: 'blue',
+    labelKey: 'dashboard.stat.visits',
+    value: 12480,
+    delta: 12.4,
+  },
   { icon: 'user', tone: 'green', labelKey: 'dashboard.stat.users', value: 328, delta: 8.2 },
   { icon: 'arrow-up', tone: 'violet', labelKey: 'dashboard.stat.orders', value: 1926, delta: 3.1 },
-  { icon: 'clock', tone: 'orange', labelKey: 'dashboard.stat.conversion', value: 4.6, suffix: '%', delta: -0.4 },
+  {
+    icon: 'clock',
+    tone: 'orange',
+    labelKey: 'dashboard.stat.conversion',
+    value: 4.6,
+    suffix: '%',
+    delta: -0.4,
+  },
 ]
 
 const DONUT_COLORS = [
@@ -158,7 +172,9 @@ export default function DashboardPage() {
 
   const quickActions = [
     { href: routeHref('/form'), icon: 'plus', label: t('nav.createOrder') },
-    ...(isAdmin ? [{ href: routeHref('/products'), icon: 'edit', label: t('products.newProduct') }] : []),
+    ...(isAdmin
+      ? [{ href: routeHref('/products'), icon: 'edit', label: t('products.newProduct') }]
+      : []),
     { href: routeHref('/orders'), icon: 'calendar', label: t('nav.orders') },
     ...(isAdmin ? [{ href: routeHref('/users'), icon: 'user', label: t('nav.users') }] : []),
   ]
@@ -173,7 +189,9 @@ export default function DashboardPage() {
       <div className="page-head">
         <div>
           <h1 className="page-title">{t('nav.dashboard')}</h1>
-          <p className="page-subtitle">{t('dashboard.welcome', { name, date: todayLabel(locale) })}</p>
+          <p className="page-subtitle">
+            {t('dashboard.welcome', { name, date: todayLabel(locale) })}
+          </p>
         </div>
         <oas-space>
           <oas-button id="dash-refresh" icon="refresh" onClick={refresh}>
@@ -192,11 +210,7 @@ export default function DashboardPage() {
               const arrow = s.delta >= 0 ? 'arrow-up' : 'arrow-down'
               const deltaCls = s.delta >= 0 ? 'delta-up' : 'delta-down'
               return (
-                <oas-card
-                  key={s.labelKey}
-                  className="stat-card"
-                  data-testid={s.testid}
-                >
+                <oas-card key={s.labelKey} className="stat-card" data-testid={s.testid}>
                   <div className="stat-row">
                     <div
                       className="stat-icon"

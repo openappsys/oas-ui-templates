@@ -168,11 +168,9 @@ export function ProductsTable({
 
   // 编辑按钮：composed click 冒泡出 shadow 后经 React 根委托到此（vanilla fromPath 等价）
   const onWrapClick = (e: React.MouseEvent) => {
-    const btn = e
-      .nativeEvent.composedPath()
-      .find(
-        (n): n is HTMLElement => n instanceof HTMLElement && n.matches('.product-edit'),
-      )
+    const btn = e.nativeEvent
+      .composedPath()
+      .find((n): n is HTMLElement => n instanceof HTMLElement && n.matches('.product-edit'))
     if (!btn) return
     const id = Number(btn.getAttribute('data-id'))
     if (id) onEditRow(id)

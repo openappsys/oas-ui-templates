@@ -73,9 +73,8 @@ export default function ProductEditPage() {
       }
       setEditing(row)
       // vanilla fillForm / 新建默认分支（setAttribute 回填，通道一致）
-      const fallbackCat = row && opts.some((c) => c.value === row.category)
-        ? row.category
-        : (opts[0]?.value ?? '')
+      const fallbackCat =
+        row && opts.some((c) => c.value === row.category) ? row.category : (opts[0]?.value ?? '')
       nameRef.current?.setAttribute('value', row?.name ?? '')
       catRef.current?.setAttribute('value', fallbackCat)
       priceRef.current?.setAttribute('value', row ? String(row.price) : '')
@@ -90,9 +89,7 @@ export default function ProductEditPage() {
 
   // vanilla pe-save click 段：触发 oas-form 内部原生 form 提交
   const onSave = () => {
-    ;(
-      formRef.current?.shadowRoot?.querySelector('form') as HTMLFormElement | null
-    )?.requestSubmit()
+    ;(formRef.current?.shadowRoot?.querySelector('form') as HTMLFormElement | null)?.requestSubmit()
   }
 
   // vanilla oas-submit 段：价格校验 → 组装 payload → create/update → 返回列表
@@ -128,9 +125,7 @@ export default function ProductEditPage() {
     }
   })
 
-  const title = id
-    ? t('products.editItem').replace('#{id}', String(id))
-    : t('products.newProduct')
+  const title = id ? t('products.editItem').replace('#{id}', String(id)) : t('products.newProduct')
   const rules = JSON.stringify({ name: [{ required: true, message: t('products.rule.name') }] })
 
   return (

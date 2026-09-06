@@ -61,11 +61,7 @@ export default function DataBoardPage() {
         </div>
         <div className="board-charts">
           <oas-card className="chart-card" title={t('board.monthRevenue')}>
-            <oas-chart
-              type="bar"
-              data={monthBar}
-              aria-label={t('board.monthRevenue')}
-            />
+            <oas-chart type="bar" data={monthBar} aria-label={t('board.monthRevenue')} />
           </oas-card>
           <oas-card className="chart-card" title={t('board.categoryShare')}>
             <oas-chart type="pie" data={pie} aria-label={t('board.categoryShare')} />

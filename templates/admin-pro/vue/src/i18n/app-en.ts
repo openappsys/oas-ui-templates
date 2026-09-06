@@ -389,7 +389,8 @@ export default {
   'dict.warn.selectType': 'Please select a dictionary type first',
   'dict.notFoundType': 'That type no longer exists',
   'dict.notFoundItem': 'That key-value item no longer exists',
-  'settings.subtitle': 'Manage appearance, layout & navigation, data display and notification preferences',
+  'settings.subtitle':
+    'Manage appearance, layout & navigation, data display and notification preferences',
   'settings.cardTitle': 'Preferences',
   'settings.tab.appearance': 'Appearance',
   'settings.tab.layout': 'Layout & Navigation',
@@ -411,7 +412,8 @@ export default {
   'settings.general.routerModeHash': 'hash (#/path)',
   'settings.general.routerModeHistory': 'history (/path)',
   'settings.general.routerModeConfirmTitle': 'Switch Router Mode',
-  'settings.general.routerModeConfirmContent': 'Switching reloads the entire app — unsaved page state will be lost. Continue?',
+  'settings.general.routerModeConfirmContent':
+    'Switching reloads the entire app — unsaved page state will be lost. Continue?',
   'settings.general.menuStyleLabel': 'Menu Style',
   'settings.general.menuStyleHint': 'Sidebar / Menu bar / Mega nav',
   'settings.general.menuStyleSidebar': 'Sidebar',

@@ -10,7 +10,13 @@ import { session } from '../store/session'
 import { LANG_ITEMS, userMenuItems } from './nav-items'
 
 const EXPAND_ICON = (
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+  <svg
+    viewBox="0 0 16 16"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+  >
     <path d="M2 5V3.5A1.5 1.5 0 0 1 3.5 2H5" />
     <path d="M11 2h1.5A1.5 1.5 0 0 1 14 3.5V5" />
     <path d="M14 11v1.5a1.5 1.5 0 0 1-1.5 1.5H11" />
@@ -18,7 +24,13 @@ const EXPAND_ICON = (
   </svg>
 )
 const COMPRESS_ICON = (
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+  <svg
+    viewBox="0 0 16 16"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+  >
     <path d="M2 5h3V2" />
     <path d="M14 5h-3V2" />
     <path d="M14 11h-3v3" />
@@ -195,7 +207,13 @@ export function HeaderBar({
           <oas-icon size="18">{GLOBE_ICON}</oas-icon>
         </button>
       </oas-dropdown>
-      <oas-badge id="notif-badge" ref={badgeRef as React.Ref<HTMLElement>} value={String(notifCount)} size="small" offset="-2,2">
+      <oas-badge
+        id="notif-badge"
+        ref={badgeRef as React.Ref<HTMLElement>}
+        value={String(notifCount)}
+        size="small"
+        offset="-2,2"
+      >
         <button
           id="notif-toggle"
           className="icon-btn"

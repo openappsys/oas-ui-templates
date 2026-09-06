@@ -7,7 +7,9 @@ let subscribed = false
 function ensureSubscribed() {
   if (subscribed) return
   subscribed = true
-  onLocaleChange((name) => { locale.value = name as AppLocale })
+  onLocaleChange((name) => {
+    locale.value = name as AppLocale
+  })
 }
 
 /** 订阅组件库 i18n 的 locale 变化，返回 t 函数与响应式 locale */

@@ -28,7 +28,11 @@ export const router = createRouter({
         ...appRoutes
           .filter((r) => r.path !== '/login')
           // meta 展开为匿名对象字面量类型以获得隐式索引签名，兼容 vue-router 的 RouteMeta
-          .map((r) => ({ path: r.path.replace(/^\//, ''), component: r.Component, meta: { ...r.meta } })),
+          .map((r) => ({
+            path: r.path.replace(/^\//, ''),
+            component: r.Component,
+            meta: { ...r.meta },
+          })),
       ],
     },
     { path: '/:pathMatch(.*)*', redirect: '/not-found' },

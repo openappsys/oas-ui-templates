@@ -127,11 +127,7 @@ export default function AdvancedFormPage() {
               <oas-rate name="rating" value="3" data-testid="adv-rating" />
             </oas-form-item>
             <oas-form-item label={t('adv.tags')}>
-              <oas-dynamic-tags
-                name="tags"
-                placeholder={t('adv.tagsPh')}
-                data-testid="adv-tags"
-              />
+              <oas-dynamic-tags name="tags" placeholder={t('adv.tagsPh')} data-testid="adv-tags" />
             </oas-form-item>
             <oas-form-item label={t('adv.region')}>
               <oas-tree-select

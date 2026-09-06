@@ -4,12 +4,7 @@
 // 注意：oas-drawer 内部 panel 对 click stopPropagation（mask 点击关闭的配套），
 // 抽屉内按钮/列表的 click 无法冒泡到 React 根委托——必须像 vanilla 一样在元素上直接 addEventListener
 import { useCallback, useEffect, useRef, useState } from 'react'
-import {
-  listNotifications,
-  markAllRead,
-  markRead,
-  type Notification,
-} from '../data/notifications'
+import { listNotifications, markAllRead, markRead, type Notification } from '../data/notifications'
 import { useOasEvent } from '../hooks/use-oas-event'
 import { useT } from '../hooks/use-t'
 

@@ -8,7 +8,9 @@ declare global {
 }
 if (import.meta.env.PROD) {
   window.dataLayer = window.dataLayer || []
-  window.gtag = function () { window.dataLayer.push(arguments as unknown) }
+  window.gtag = function () {
+    window.dataLayer.push(arguments as unknown)
+  }
   window.gtag('js', new Date())
   window.gtag('config', 'G-RXJ8JG9R19')
   var s = document.createElement('script')

@@ -2,12 +2,7 @@
 // list/markRead/markAllRead 是裸数据模块（无订阅），动作后重读列表驱动重渲染
 // （对齐 react 版 notifications-drawer.tsx 内 useNotifications 的语义）
 import { computed, ref } from 'vue'
-import {
-  listNotifications,
-  markAllRead,
-  markRead,
-  type Notification,
-} from '../data/notifications'
+import { listNotifications, markAllRead, markRead, type Notification } from '../data/notifications'
 
 export function useNotifications() {
   const items = ref<Notification[]>(listNotifications())
