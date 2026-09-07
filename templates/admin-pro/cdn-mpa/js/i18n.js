@@ -52,6 +52,8 @@ const dict = {
     'form.reset': '重置',
     'form.ruleName': '请输入项目名称',
     'form.submitted': '已提交',
+    'form.selectPh': '请选择',
+    'form.datePh': '请选择日期',
     'form.resetDone': '已重置',
   },
   en: {
@@ -102,6 +104,8 @@ const dict = {
     'form.reset': 'Reset',
     'form.ruleName': 'Please enter project name',
     'form.submitted': 'Submitted',
+    'form.selectPh': 'Please select',
+    'form.datePh': 'Please select a date',
     'form.resetDone': 'Reset',
   },
 }

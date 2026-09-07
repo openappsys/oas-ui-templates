@@ -4,7 +4,7 @@ import '@oas-ui/ui/form/slider'
 import '@oas-ui/ui/framework/theme-editor'
 import { message } from '@oas-ui/ui/feedback/message'
 import { modal } from '@oas-ui/ui/feedback/modal'
-import { t } from '../i18n'
+import { t, onLocaleChange } from '../i18n'
 import { applyRouterMode, routerMode } from '../router/mode'
 import { canPosition, navConfig, setMenuPosition, setMenuStyle } from '../layout-config'
 import type { MenuPosition, MenuStyle } from '../layout-config'
@@ -133,7 +133,7 @@ const TAB_LAYOUT_OPTIONS = (): Array<{ label: string; value: string }> => [
   { label: t('settings.tabsLayout.vertical'), value: 'vertical' },
 ]
 
-export function render(el: HTMLElement): () => void {
+function draw(el: HTMLElement): () => void {
   const tabsLayoutKey = 'oas-admin.settings.tabs-layout'
   const readTabLayout = (): 'horizontal' | 'vertical' =>
     localStorage.getItem(tabsLayoutKey) === 'vertical' ? 'vertical' : 'horizontal'
@@ -507,5 +507,19 @@ export function render(el: HTMLElement): () => void {
 
   return () => {
     document.removeEventListener('themechange', onThemeChange)
+  }
+}
+
+/** 语言切换时整体重画设置中心（dispose 旧监听 → 清空 → 重建） */
+export function render(el: HTMLElement): () => void {
+  let dispose = draw(el)
+  const off = onLocaleChange(() => {
+    dispose()
+    el.innerHTML = ''
+    dispose = draw(el)
+  })
+  return () => {
+    off()
+    dispose()
   }
 }

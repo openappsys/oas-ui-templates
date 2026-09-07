@@ -21,7 +21,7 @@ function readTabsLayout(): TabsLayout {
 }
 
 export default function SettingsPage() {
-  const { t } = useT()
+  const { t, locale } = useT()
   const [tabsLayout, setTabsLayout] = useState<TabsLayout>(readTabsLayout)
   const segmentedRef = useRef<HTMLElement | null>(null)
 
@@ -62,6 +62,7 @@ export default function SettingsPage() {
         {/* 标准 oas-tabs 结构：oas-tab-panel 子元素（slot 投射），组件自动管理 tab 头 + 面板显隐；
             竖排用官方 tab-position="left" 驱动（vanilla setTabsLayout 同款） */}
         <oas-tabs
+          key={locale}
           id="settings-tabs"
           data-testid="settings-tabs"
           active="appearance"

@@ -56,4 +56,6 @@ import '@oas-ui/ui/form/segmented'
 import '@oas-ui/ui/layout/sidebar'
 import '@oas-ui/ui/navigation/steps'
 import '@oas-ui/ui/navigation/tabs'
+// v2.4.1 L3 能力包拆分：context-menu/sortable/editable 移入 manager 能力包，子路径引入需显式注册
+import '@oas-ui/ui/navigation/tabs/manager'
 import '@oas-ui/ui/navigation/breadcrumb'

@@ -32,9 +32,9 @@
             <oas-form id="basic-form">
               <div class="form-grid">
                 <oas-input name="name" label="项目名称" placeholder="项目名称" data-i18n-attr='{"label":"form.name","placeholder":"form.name"}'></oas-input>
-                <oas-select name="category" label="项目分类" options='[{"label":"A","value":"a"},{"label":"B","value":"b"}]' data-i18n-attr='{"label":"form.category"}'></oas-select>
+                <oas-select name="category" label="项目分类" placeholder="请选择" options='[{"label":"A","value":"a"},{"label":"B","value":"b"}]' data-i18n-attr='{"label":"form.category","placeholder":"form.selectPh"}'></oas-select>
                 <oas-switch name="status" label="状态" data-i18n-attr='{"label":"form.status"}'></oas-switch>
-                <oas-date-picker name="due" label="截止日期" data-i18n-attr='{"label":"form.due"}'></oas-date-picker>
+                <oas-date-picker name="due" label="截止日期" placeholder="请选择日期" data-i18n-attr='{"label":"form.due","placeholder":"form.datePh"}'></oas-date-picker>
               </div>
               <oas-textarea name="desc" label="项目描述" data-i18n-attr='{"label":"form.desc"}'></oas-textarea>
               <oas-space style="margin-top: var(--oas-space-3)">

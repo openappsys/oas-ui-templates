@@ -135,6 +135,7 @@ window.addEventListener('hashchange', resolve)
 resolve()
 onLocaleChange(() => {
   if (!session()) return
+  resolve()
   app.querySelector('.oas-logo-word').textContent = t('app.title')
   app.querySelector('#lang-toggle').textContent = t('header.lang')
   app.querySelector('#logout').textContent = t('header.logout')

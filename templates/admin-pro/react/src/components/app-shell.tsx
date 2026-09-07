@@ -43,7 +43,7 @@ function buildCrumbs(activePath: string, t: (key: string) => string): CrumbItem[
 }
 
 export function AppShell() {
-  const { t } = useT()
+  const { t, locale } = useT()
   const location = useLocation()
   const activePath = location.pathname
 
@@ -100,7 +100,7 @@ export function AppShell() {
     }
   }, [popoverOpen])
 
-  const crumbs = useMemo(() => JSON.stringify(buildCrumbs(activePath, t)), [activePath, t])
+  const crumbs = useMemo(() => JSON.stringify(buildCrumbs(activePath, t)), [activePath, locale])
 
   // 页面入场动画：首次渲染不加 page-enter，路由切换后 key 重挂载 <main> 自然重放动画
   const prevPathRef = useRef<string | null>(null)

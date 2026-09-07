@@ -82,7 +82,9 @@ function onKeydownCapture(e: KeyboardEvent): void {
 
 <template>
   <div class="tabs-bar">
+    <!-- oas-tabs 只观察 childList，label 变化不重读——切语言时重挂载刷新页签头 -->
     <oas-tabs
+      :key="locale"
       id="page-tabs"
       data-testid="page-tabs"
       type="card"

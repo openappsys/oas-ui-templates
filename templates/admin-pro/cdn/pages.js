@@ -296,9 +296,9 @@ export function renderForm(el) {
           })}'>
             <div class="form-grid">
               <oas-input name="name" label="${t('form.name')}" placeholder="${t('form.name')}"></oas-input>
-              <oas-select name="category" label="${t('form.category')}" options='[{"label":"A","value":"a"},{"label":"B","value":"b"}]'></oas-select>
+              <oas-select name="category" label="${t('form.category')}" placeholder="${t('form.selectPh')}" options='[{"label":"A","value":"a"},{"label":"B","value":"b"}]'></oas-select>
               <oas-switch name="status" label="${t('form.status')}"></oas-switch>
-              <oas-date-picker name="due" label="${t('form.due')}"></oas-date-picker>
+              <oas-date-picker name="due" label="${t('form.due')}" placeholder="${t('form.datePh')}"></oas-date-picker>
             </div>
             <oas-textarea name="desc" label="${t('form.desc')}"></oas-textarea>
             <oas-space style="margin-top: var(--oas-space-3)">

@@ -23,7 +23,7 @@ function closeKeyOf(e: React.SyntheticEvent): string | null {
 export function TabsBar() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { t } = useT()
+  const { t, locale } = useT()
   const { view, closeTab, closeKeys, navigateTo } = useTabs(location.pathname)
   const tabsRef = useRef<HTMLElement>(null)
   // oas-close 合批：右键「关闭其他/全部」组件逐个 key 连发，同一微任务内合并成一次 closeKeys
@@ -65,6 +65,8 @@ export function TabsBar() {
   return (
     <div className="tabs-bar">
       <oas-tabs
+        // oas-tabs 对子 panel 只观察 childList 变化，label 文案更新不重读——切语言时重挂载刷新页签头
+        key={locale}
         id="page-tabs"
         ref={tabsRef as React.Ref<HTMLElement>}
         data-testid="page-tabs"
