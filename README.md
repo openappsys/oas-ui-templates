@@ -11,6 +11,7 @@
 | `templates/admin-pro/vanilla-html` | Vite + TypeScript | 后台管理系统（零框架 · i18n / 请求层 / 权限守卫 / 多页签 / **可配置导航**（sidebar/menubar/navigation × 左/右/顶）/ **设置中心**（外观 / 布局 / 数据 / 通知）） | ✅ | ✅ | 可用 |
 | `templates/admin-pro/react` | Vite + React 19 | 完整后台（react-router hash/history 双模式 · useOasEvent 事件桥接 · 与 vanilla 同等功能集，独立实现） | ✅ | ✅ | 可用 |
 | `templates/admin-pro/vue` | Vite + Vue 3.5 | 完整后台（vue-router · @oas-* 模板直绑 · 与 vanilla 同等功能集，独立实现） | ✅ | ✅ | 可用 |
+| `templates/admin-pro/svelte` | Vite + Svelte 5 | 完整后台（自研双模式路由 · onoas-* 模板直绑 · 与 vanilla 同等功能集，独立实现） | ✅ | ✅ | 可用 |
 | `templates/admin-pro/cdn` | 零构建（unpkg CDN + 原生 JS） | 轻量后台（登录 / 路由 / CRUD / 表单 / 中英切换） | — | ✅ | 可用 |
 | `templates/admin-pro/cdn-mpa` | 零构建（unpkg CDN + 原生 JS） | 轻量后台 MPA（一页一 HTML · 登录 / CRUD / 表单 / 中英切换） | — | ✅ | 可用 |
 
@@ -83,7 +84,8 @@ A collection of project templates built on [oas-ui](https://oas-ui.dev), a frame
 | --- | --- | --- | --- | --- | --- |
 | `templates/admin-pro/vanilla-html` | Vite + TypeScript | Admin dashboard (zero-framework · i18n / request layer / route guards / multi-tab / **configurable nav** (sidebar/menubar/navigation × left/right/top) / **settings center** (appearance / layout / data / notifications)) | ✅ | ✅ | Stable |
 | `templates/admin-pro/react` | Vite + React 19 | All vanilla mechanisms (react-router hash/history dual mode · useOasEvent event bridge · 11 aligned pages) | ✅ | ✅ | Stable |
-| `templates/admin-pro/vue` | Vite + Vue 3.5 | All vanilla mechanisms (vue-router · direct @oas-* template binding · 11 aligned pages) | ✅ | ✅ | Stable |
+| `templates/admin-pro/vue` | Vite + Vue 3.5 | Full admin framework (vue-router · direct @oas-* template binding · feature parity with vanilla, independently implemented) | ✅ | ✅ | Stable |
+| `templates/admin-pro/svelte` | Vite + Svelte 5 | Full admin framework (self-built dual-mode router · direct onoas-* template binding · feature parity with vanilla, independently implemented) | ✅ | ✅ | Stable |
 | `templates/admin-pro/cdn` | Zero-build (unpkg CDN + plain JS) | Lightweight admin (login / router / CRUD / form / zh-en) | — | ✅ | Stable |
 | `templates/admin-pro/cdn-mpa` | Zero-build (unpkg CDN + plain JS) | Lightweight MPA admin (one HTML per page · login / CRUD / form / zh-en) | — | ✅ | Stable |
 
