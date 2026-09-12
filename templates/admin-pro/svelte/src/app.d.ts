@@ -206,6 +206,45 @@ declare global {
       'oas-theme-editor': OasBase & {
         'onoas-change'?: OasEvent
       }
+      // 其余 oas-* 标签：宽松基座声明（用到再按 props 细化）
+      'oas-anchor': OasBase
+      'oas-auto-complete': OasBase
+      'oas-cascader': OasBase
+      'oas-chart': OasBase
+      'oas-checkbox': OasBase
+      'oas-checkbox-group': OasBase
+      'oas-combobox': OasBase
+      'oas-date-picker': OasBase
+      'oas-descriptions': OasBase
+      'oas-descriptions-item': OasBase
+      'oas-divider': OasBase
+      'oas-dynamic-tags': OasBase
+      'oas-empty': OasBase
+      'oas-input-number': OasBase
+      'oas-masonry': OasBase
+      'oas-number-animation': OasBase
+      'oas-page-header': OasBase
+      'oas-pagination': OasBase
+      'oas-pin-input': OasBase
+      'oas-popconfirm': OasBase
+      'oas-progress': OasBase
+      'oas-rate': OasBase
+      'oas-result': OasBase
+      'oas-skeleton': OasBase
+      'oas-splitter': OasBase
+      'oas-statistic': OasBase
+      'oas-steps': OasBase
+      'oas-table': OasBase
+      'oas-textarea': OasBase
+      'oas-timeline': OasBase
+      'oas-timeline-item': OasBase
+      'oas-transfer': OasBase
+      'oas-tree': OasBase
+      'oas-tree-select': OasBase
+      'oas-upload': OasBase
+      'oas-virtual-list': OasBase
+      'oas-watermark': OasBase
+
     }
   }
 }
