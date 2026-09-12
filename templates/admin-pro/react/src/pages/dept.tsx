@@ -251,7 +251,7 @@ export default function DeptPage() {
 
   const rules = JSON.stringify({ name: [{ required: true, message: t('dept.rule.name') }] })
   const treeNodesJson = useMemo(() => JSON.stringify(toTreeNodes(tree)), [tree])
-  const expandedAttr = useMemo(() => expandKeys(tree).join(','), [tree])
+  const expandedAttr = useMemo(() => JSON.stringify(expandKeys(tree)), [tree])
 
   return (
     <div className="page">

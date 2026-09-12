@@ -13,10 +13,10 @@
     "size": "node scripts/size.mjs"
   },
   "dependencies": {
-    "@oas-ui/i18n": "^2.4.1",
-    "@oas-ui/icons": "^2.4.1",
-    "@oas-ui/theme": "^2.4.1",
-    "@oas-ui/ui": "^2.4.1",
+    "@oas-ui/i18n": "^2.5.0",
+    "@oas-ui/icons": "^2.5.0",
+    "@oas-ui/theme": "^2.5.0",
+    "@oas-ui/ui": "^2.5.0",
     "@tanstack/react-query": "^5.102.8",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

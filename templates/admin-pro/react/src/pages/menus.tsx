@@ -164,7 +164,7 @@ export default function MenusPage() {
       }
     }
     walk(tree)
-    return keys.join(',')
+    return JSON.stringify(keys)
   }, [tree])
 
   return (

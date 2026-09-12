@@ -208,7 +208,7 @@ export function render(el: HTMLElement): () => void {
 
   function renderTree(): void {
     tree.setAttribute('data', JSON.stringify(toTreeNodes(state.tree)))
-    tree.setAttribute('expanded', expandKeys(state.tree).join(','))
+    tree.setAttribute('expanded', JSON.stringify(expandKeys(state.tree)))
     if (state.selectedId != null) tree.setAttribute('selected', String(state.selectedId))
     else tree.removeAttribute('selected')
   }

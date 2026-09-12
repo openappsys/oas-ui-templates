@@ -87,7 +87,7 @@ const selected = computed(() =>
 )
 
 const treeJson = computed(() => JSON.stringify(toTreeNodes(tree.value)))
-const expandedStr = computed(() => expandKeys(tree.value).join(','))
+const expandedStr = computed(() => JSON.stringify(expandKeys(tree.value)))
 const selectedAttr = computed(() => (selectedId.value == null ? null : String(selectedId.value)))
 
 function subActionCell(node: DeptTree): HTMLElement {

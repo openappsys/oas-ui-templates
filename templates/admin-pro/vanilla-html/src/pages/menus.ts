@@ -203,7 +203,7 @@ export function render(el: HTMLElement): () => void {
   function renderTree(): void {
     const expanded = expandKeys()
     tree.setAttribute('data', JSON.stringify(toTreeNodes(state.tree)))
-    tree.setAttribute('expanded', expanded.join(','))
+    tree.setAttribute('expanded', JSON.stringify(expanded))
     if (state.selectedId != null) tree.setAttribute('selected', String(state.selectedId))
     else tree.removeAttribute('selected')
   }
