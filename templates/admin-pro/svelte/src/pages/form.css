@@ -1,0 +1,105 @@
+/* src/pages/form.css —— 创建订单向导页样式（由 form.tsx import，form-steps.tsx 随页面引入生效）：
+   步骤条（.form-wizard）、分步容器（.form-step）、汇总/明细（.form-total/.form-items）、
+   底部吸底操作区（.form-foot）。.form-grid/.form-field/.form-actions 等基础表单类留在全局 app.css。 */
+
+.form-wizard oas-steps {
+  margin-bottom: var(--oas-space-4);
+}
+
+.form-step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-4);
+}
+.form-step[hidden],
+.form-confirm[hidden] {
+  display: none;
+}
+
+.form-error {
+  color: var(--oas-color-danger);
+  font-size: var(--oas-font-size-xs);
+  margin-top: var(--oas-space-1);
+}
+.form-error[hidden] {
+  display: none;
+}
+
+.switch-line {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--oas-space-2);
+  min-height: var(--oas-control-height-md);
+}
+
+.form-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: var(--oas-space-3);
+  font-size: var(--oas-font-size-sm);
+  color: var(--oas-color-text-secondary);
+}
+.form-total .num {
+  font-family: var(--app-mono);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--oas-color-text-primary);
+}
+
+.form-items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-2);
+  margin-top: var(--oas-space-4);
+}
+.form-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--oas-space-3);
+  padding: var(--oas-space-2) var(--oas-space-3);
+  background: var(--oas-color-bg-hover);
+  border-radius: var(--oas-radius-md);
+  font-size: var(--oas-font-size-sm);
+  color: var(--oas-color-text-primary);
+}
+.form-item-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.form-item-calc {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.form-confirm {
+  margin-top: var(--oas-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-1);
+}
+
+.form-foot {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-3);
+  margin: var(--oas-space-4) calc(-1 * var(--oas-space-4)) calc(-1 * var(--oas-space-4));
+  padding: var(--oas-space-4);
+  border-top: 1px solid var(--oas-color-border);
+  background: var(--oas-color-bg);
+}
+.form-foot-summary[hidden] {
+  display: none;
+}
+.form-foot .form-actions {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
