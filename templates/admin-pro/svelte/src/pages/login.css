@@ -1,0 +1,262 @@
+/* src/pages/login.css —— 登录页样式（由 login.svelte import，全局 CSS 与 react 版类名零变更）：
+   双版式——split 左品牌右表单（.login-split/.login-brand/.login-panel）与
+   glass 玻璃拟态（.login-glass/.glass-card），以及窄屏（≤879px）折叠布局。
+   .link-btn 基础类留在全局 app.css（通知抽屉/结果页等共用），仅 .link-btn-light 在此。 */
+
+.login-split {
+  min-height: 100%;
+  display: flex;
+  flex: 1;
+}
+.login-brand {
+  position: relative;
+  flex: 1.2;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 64px;
+  overflow: hidden;
+  background-color: #0a0f1e;
+  background-image:
+    radial-gradient(circle at 18% 12%, rgba(11, 108, 255, 0.25), transparent 40%),
+    radial-gradient(circle at 82% 88%, rgba(124, 58, 237, 0.18), transparent 45%),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.04) 0,
+      rgba(255, 255, 255, 0.04) 1px,
+      transparent 1px,
+      transparent 48px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.04) 0,
+      rgba(255, 255, 255, 0.04) 1px,
+      transparent 1px,
+      transparent 48px
+    );
+  color: #fff;
+}
+.login-brand-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--oas-space-3);
+  max-width: 560px;
+  margin: 0 auto;
+  text-align: center;
+}
+.login-brand h1 {
+  margin: var(--oas-space-2) 0 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+}
+.login-brand p {
+  margin: 0;
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.72);
+}
+.brand-stats {
+  display: flex;
+  gap: var(--oas-space-6);
+  margin-top: var(--oas-space-3);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.brand-stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-1);
+}
+.brand-stat .num {
+  font-family: var(--app-mono);
+  font-size: 24px;
+  font-weight: 650;
+  color: #9ecdff;
+}
+.brand-stat .label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+.brand-code {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 48px;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  text-align: center;
+  font-family: var(--app-mono);
+  font-size: 12px;
+  line-height: 1.7;
+  white-space: pre;
+  tab-size: 2;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.login-panel {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
+  padding: var(--oas-space-6);
+  background: linear-gradient(180deg, var(--oas-color-bg) 0%, var(--oas-color-bg-hover) 100%);
+}
+.login-card {
+  width: min(400px, 100%);
+  padding: 32px;
+  border-radius: 16px;
+  background: var(--oas-color-bg-elevated);
+  border: 1px solid var(--oas-color-border);
+  box-shadow: 0 12px 40px rgba(11, 108, 255, 0.1);
+}
+
+.login-title {
+  margin: var(--oas-space-3) 0 var(--oas-space-1);
+  font-size: 18px;
+  font-weight: 650;
+  color: var(--oas-color-text-primary);
+}
+.login-sub {
+  margin: 0 0 var(--oas-space-4);
+  font-size: 13px;
+  color: var(--oas-color-text-secondary);
+}
+.login-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-3);
+}
+.login-fields oas-input,
+.login-fields oas-select {
+  width: 100%;
+}
+.login-divider {
+  height: 1px;
+  margin: var(--oas-space-4) 0 var(--oas-space-3);
+  background: var(--oas-color-border);
+}
+.login-tip {
+  margin: 0 0 var(--oas-space-2);
+  font-size: 12px;
+  color: var(--oas-color-text-secondary);
+  text-align: center;
+}
+.login-alt {
+  display: block;
+  text-align: center;
+}
+
+.link-btn-light {
+  color: #9ecdff;
+}
+
+.login-glass {
+  min-height: 100%;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--oas-space-3);
+  padding: var(--oas-space-6);
+  background-color: #0a0f1e;
+  background-image:
+    radial-gradient(1400px 720px at 50% -180px, rgba(11, 108, 255, 0.3), transparent 70%),
+    radial-gradient(
+      1000px 800px at calc(100% - 240px) calc(100% - 200px),
+      rgba(124, 58, 237, 0.22),
+      transparent 70%
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.04) 0,
+      rgba(255, 255, 255, 0.04) 1px,
+      transparent 1px,
+      transparent 48px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.04) 0,
+      rgba(255, 255, 255, 0.04) 1px,
+      transparent 1px,
+      transparent 48px
+    );
+  --oas-color-border: rgba(255, 255, 255, 0.28);
+  --oas-color-bg: rgba(255, 255, 255, 0.08);
+}
+.login-glass oas-button {
+  --oas-color-primary: #0b6cff;
+  --oas-color-text-on-primary: #ffffff;
+  --oas-color-primary-hover: color-mix(in srgb, #0b6cff 85%, black);
+  --oas-color-primary-active: color-mix(in srgb, #0b6cff 75%, black);
+}
+.glass-card {
+  width: min(400px, 100%);
+  padding: 36px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+}
+.glass-card .login-head {
+  display: flex;
+  justify-content: center;
+}
+.glass-card .login-title {
+  color: #fff;
+  text-align: center;
+}
+.glass-card .login-sub {
+  color: rgba(255, 255, 255, 0.65);
+  text-align: center;
+}
+.glass-card .login-divider {
+  background: rgba(255, 255, 255, 0.14);
+}
+.glass-card .login-tip {
+  color: rgba(255, 255, 255, 0.55);
+}
+.glass-slogan {
+  margin: 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.65);
+}
+.glass-foot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--oas-space-2);
+  margin-top: var(--oas-space-4);
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.65);
+}
+.glass-foot .link-btn-light {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+@media (max-width: 879px) {
+  .login-split {
+    flex-direction: column;
+  }
+  .login-brand {
+    flex: none;
+    height: 160px;
+    padding: var(--oas-space-4);
+    justify-content: flex-start;
+  }
+  .login-brand h1,
+  .login-brand p,
+  .brand-stats,
+  .brand-code {
+    display: none;
+  }
+  .login-panel {
+    padding: var(--oas-space-4);
+  }
+}
