@@ -1,0 +1,41 @@
+/* src/styles/pages/users.css —— 用户管理域样式（users.svelte import；自 react 版 users.css
+   逐字移植，类名零变更）：工具栏（.users-toolbar）、用户详情头（.detail-header，user-detail
+   子组件）、用户表单弹层的溢出修正（user-form 子组件的 oas-modal）。 */
+
+.users-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-2);
+  flex-wrap: wrap;
+}
+.users-toolbar oas-input {
+  width: 220px;
+}
+.users-toolbar oas-select {
+  width: 140px;
+}
+
+.detail-header {
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-3);
+  margin-bottom: var(--oas-space-4);
+}
+.detail-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--oas-color-text-primary);
+  line-height: 1.4;
+}
+
+/* 用户表单弹层内含 oas-select 下拉，需露出弹层 body 溢出部分 */
+oas-modal[data-testid="user-form-modal"]::part(body) {
+  overflow: visible;
+}
+
+@media (max-width: 768px) {
+  .users-toolbar oas-input,
+  .users-toolbar oas-select {
+    width: 100%;
+  }
+}
