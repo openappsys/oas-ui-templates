@@ -24,7 +24,9 @@ declare global {
         variant?: string
         icon?: string
         loading?: boolean
-        disabled?: boolean
+        // 存在性语义：组件基类纯 attribute 驱动（无 property setter），传 false 会落成
+        // disabled="false" 仍被判定禁用——必须用 {cond ? '' : null}
+        disabled?: OasFlag
         block?: boolean
       }
       'oas-icon': OasBase & {
@@ -44,6 +46,10 @@ declare global {
         required?: boolean
         disabled?: boolean
         readonly?: boolean
+        /** Enter 键派发（bubbles+composed，登录页跨版式直绑） */
+        'onoas-enter'?: OasEvent
+        'onoas-input'?: OasEvent
+        'onoas-clear'?: OasEvent
       }
       'oas-select': OasBase & {
         name?: string
@@ -73,6 +79,7 @@ declare global {
       'oas-tag': OasBase & {
         type?: string
         size?: string
+        color?: string
       }
       'oas-space': OasBase & {
         direction?: string
@@ -89,6 +96,8 @@ declare global {
         'onoas-close'?: OasEvent
         'onoas-ok'?: OasEvent
         'onoas-cancel'?: OasEvent
+        // light DOM 子元素（如列设置 checkbox）的 oas-change 冒泡到 host 的委托监听
+        'onoas-change'?: OasEvent
       }
       'oas-drawer': OasBase & {
         title?: string
@@ -149,6 +158,7 @@ declare global {
       'oas-tab-panel': OasBase & {
         value?: string
         label?: string
+        badge?: string | number | null
       }
       'oas-dropdown': OasBase & {
         placement?: string
@@ -206,43 +216,141 @@ declare global {
       'oas-theme-editor': OasBase & {
         'onoas-change'?: OasEvent
       }
+      // ---- Task 5：orders / order-detail / result / category / logs ----
+      // oas-table 为 Task 4/5 两批次用法的并集（合并去重，勿再整块覆盖他人成员）
+      'oas-table': OasBase & {
+        'row-key'?: string
+        'empty-text'?: string
+        data?: string
+        checkable?: OasFlag
+        stripe?: OasFlag
+        editable?: OasFlag
+        loading?: OasFlag
+        pagination?: OasFlag
+        'page-size'?: string | number
+        'column-keys'?: string
+        current?: string | number
+        'filter-values'?: string
+        'onoas-check'?: OasEvent
+        'onoas-edit'?: OasEvent
+        'onoas-change'?: OasEvent
+        'onoas-row-click'?: OasEvent
+        'onoas-ok'?: OasEvent
+      }
+      'oas-progress': OasBase & {
+        percent?: string | number
+        'show-text'?: OasFlag
+      }
+      'oas-result': OasBase & {
+        status?: string
+        title?: string
+        description?: string
+      }
+      'oas-steps': OasBase & {
+        steps?: string
+        current?: string | number
+      }
+      'oas-timeline-item': OasBase & {
+        time?: string
+        color?: string
+      }
+      'oas-anchor': OasBase & {
+        direction?: string
+        hash?: string
+        items?: string
+        active?: string | null
+        'onoas-click'?: OasEvent
+      }
+      'oas-virtual-list': OasBase & {
+        height?: string | number
+        'item-height'?: string | number
+        'onoas-item'?: OasEvent
+        'onoas-scroll'?: OasEvent
+      }
       // 其余 oas-* 标签：宽松基座声明（用到再按 props 细化）
-      'oas-anchor': OasBase
       'oas-auto-complete': OasBase
       'oas-cascader': OasBase
-      'oas-chart': OasBase
-      'oas-checkbox': OasBase
+      // ---- Task 3：login / dashboard（自宽松基座细化）----
+      'oas-chart': OasBase & {
+        type?: string
+      }
+      'oas-skeleton': OasBase & {
+        active?: OasFlag
+        rows?: string | number
+      }
       'oas-checkbox-group': OasBase
       'oas-combobox': OasBase
-      'oas-date-picker': OasBase
-      'oas-descriptions': OasBase
-      'oas-descriptions-item': OasBase
       'oas-divider': OasBase
       'oas-dynamic-tags': OasBase
-      'oas-empty': OasBase
-      'oas-input-number': OasBase
-      'oas-masonry': OasBase
+      // ---- Task 4：products/users/profile/错误页（自宽松基座细化，属性见各页面用法） ----
+      'oas-masonry': OasBase & {
+        columns?: string
+        gap?: string
+        'onoas-change'?: OasEvent
+      }
+      'oas-empty': OasBase & {
+        description?: string
+      }
+      'oas-input-number': OasBase & {
+        name?: string
+        value?: string
+        min?: string | number
+        max?: string | number
+        step?: string | number
+        precision?: string
+        placeholder?: string
+        disabled?: boolean
+      }
+      'oas-date-picker': OasBase & {
+        type?: string
+        value?: string
+        placeholder?: string
+        disabled?: boolean
+        'onoas-change'?: OasEvent
+      }
+      'oas-descriptions': OasBase & {
+        column?: string | number
+      }
+      'oas-descriptions-item': OasBase & {
+        label?: string
+      }
+      'oas-page-header': OasBase & {
+        title?: string
+      }
+      'oas-pagination': OasBase & {
+        total?: string | number
+        'page-size'?: string | number
+        current?: string | number
+        'show-total'?: OasFlag
+        'onoas-change'?: OasEvent
+      }
+      'oas-popconfirm': OasBase & {
+        title?: string
+        placement?: string
+        'onoas-ok'?: OasEvent
+        'onoas-cancel'?: OasEvent
+      }
+      'oas-upload': OasBase & {
+        accept?: string
+        'list-type'?: string
+        disabled?: boolean
+      }
+      'oas-checkbox': OasBase & {
+        value?: string
+        checked?: OasFlag
+        disabled?: OasFlag
+        'onoas-change'?: OasEvent
+      }
       'oas-number-animation': OasBase
-      'oas-page-header': OasBase
-      'oas-pagination': OasBase
       'oas-pin-input': OasBase
-      'oas-popconfirm': OasBase
-      'oas-progress': OasBase
       'oas-rate': OasBase
-      'oas-result': OasBase
-      'oas-skeleton': OasBase
       'oas-splitter': OasBase
       'oas-statistic': OasBase
-      'oas-steps': OasBase
-      'oas-table': OasBase
       'oas-textarea': OasBase
       'oas-timeline': OasBase
-      'oas-timeline-item': OasBase
-      'oas-transfer': OasBase
       'oas-tree': OasBase
       'oas-tree-select': OasBase
-      'oas-upload': OasBase
-      'oas-virtual-list': OasBase
+      'oas-transfer': OasBase
       'oas-watermark': OasBase
 
     }
