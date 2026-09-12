@@ -1,0 +1,15 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.8/schema.json",
+  "root": false,
+  "extends": "//",
+  "files": {
+    "includes": [
+      "**/*.{ts,tsx,js,jsx,mjs,cjs,json,jsonc,css}",
+      "!.svelte-check/**",
+      "!dist/**",
+      "!node_modules/**",
+      "!test-results/**",
+      "!playwright-report/**"
+    ]
+  }
+}
