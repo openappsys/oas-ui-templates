@@ -37,6 +37,8 @@
   }
 
   const flow = $derived(row && FLOW_TO[row.status] ? { to: FLOW_TO[row.status]! } : null)
+  // loading 用存在性语义：oas-button 纯 attribute 驱动（原型无 loading 存取器），
+  // 布尔 false 会落成 loading="false" 仍被判为 loading——须 {flowing ? '' : null}
   let flowing = $state(false)
 
   function onLinkClick(e: Event): void {
@@ -114,7 +116,7 @@
             data-testid="order-detail-action"
             id="order-detail-action"
             type="primary"
-            loading={flowing}
+            loading={flowing ? '' : null}
             data-target={flow.to}
             onclick={onActionClick}
           >

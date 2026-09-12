@@ -88,6 +88,8 @@
 
   let order = $state<OrderRow | null>(null)
   let loaded = $state(false)
+  // loading 用存在性语义：oas-button 纯 attribute 驱动（原型无 loading 存取器），
+  // 布尔 false 会落成 loading="false" 仍被判为 loading——须 {flowing ? '' : null}
   let flowing = $state(false)
 
   onMount(() => {
@@ -215,7 +217,7 @@
           <oas-button
             data-testid="order-detail-action"
             type="primary"
-            loading={flowing}
+            loading={flowing ? '' : null}
             data-target={flow.to}
             onclick={onAction}
           >

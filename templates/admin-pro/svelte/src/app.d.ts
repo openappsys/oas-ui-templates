@@ -23,9 +23,9 @@ declare global {
         size?: string
         variant?: string
         icon?: string
-        loading?: boolean
+        loading?: OasFlag
         // 存在性语义：组件基类纯 attribute 驱动（无 property setter），传 false 会落成
-        // disabled="false" 仍被判定禁用——必须用 {cond ? '' : null}
+        // disabled="false" 仍被判定禁用——必须用 {cond ? '' : null}（loading 同理）
         disabled?: OasFlag
         block?: boolean
       }
@@ -239,6 +239,7 @@ declare global {
       }
       'oas-progress': OasBase & {
         percent?: string | number
+        value?: string | number
         'show-text'?: OasFlag
       }
       'oas-result': OasBase & {
