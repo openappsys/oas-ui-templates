@@ -62,7 +62,7 @@ function renderShell() {
       <header class="app-header" slot="header">
         <button id="nav-toggle" class="nav-toggle" type="button" aria-label="打开菜单">☰</button>
         <!-- logo：OAS 徽标 + 站名，点击回站点首页（门户 /） -->
-        <a class="oas-logo" href="/" style="text-decoration: none; cursor: pointer">
+        <a class="oas-logo" href="/" style="text-decoration: none; color: inherit; cursor: pointer">
           <span class="oas-logo-badge">OAS</span>
           <span class="oas-logo-word">${t('app.title')}</span>
         </a>
