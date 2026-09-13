@@ -8,3 +8,6 @@ dist/
 playwright-report/
 test-results/
 shots/
+
+# svelte-check 产物
+.svelte-check/

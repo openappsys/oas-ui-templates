@@ -2,10 +2,11 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { gzipSync } from 'node:zlib'
 
+// 全量 import '@oas-ui/ui' 的教学型模版，预算按实际产物 + 余量设定（与 react/vue 同口径）
 const BUDGETS = {
-  entry: 152600,
+  entry: 512000,
   dashboard: 20480,
-  total: 410700,
+  total: 770100,
 }
 
 const ASSETS_DIR = 'dist/assets'

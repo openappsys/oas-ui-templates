@@ -83,7 +83,7 @@ A collection of project templates built on [oas-ui](https://oas-ui.dev), a frame
 | Template | Stack | Description | Unit | e2e | Status |
 | --- | --- | --- | --- | --- | --- |
 | `templates/admin-pro/vanilla-html` | Vite + TypeScript | Admin dashboard (zero-framework · i18n / request layer / route guards / multi-tab / **configurable nav** (sidebar/menubar/navigation × left/right/top) / **settings center** (appearance / layout / data / notifications)) | ✅ | ✅ | Stable |
-| `templates/admin-pro/react` | Vite + React 19 | All vanilla mechanisms (react-router hash/history dual mode · useOasEvent event bridge · 11 aligned pages) | ✅ | ✅ | Stable |
+| `templates/admin-pro/react` | Vite + React 19 | Full admin framework (react-router hash/history dual mode · useOasEvent event bridge · feature parity with vanilla, independently implemented) | ✅ | ✅ | Stable |
 | `templates/admin-pro/vue` | Vite + Vue 3.5 | Full admin framework (vue-router · direct @oas-* template binding · feature parity with vanilla, independently implemented) | ✅ | ✅ | Stable |
 | `templates/admin-pro/svelte` | Vite + Svelte 5 | Full admin framework (self-built dual-mode router · direct onoas-* template binding · feature parity with vanilla, independently implemented) | ✅ | ✅ | Stable |
 | `templates/admin-pro/cdn` | Zero-build (unpkg CDN + plain JS) | Lightweight admin (login / router / CRUD / form / zh-en) | — | ✅ | Stable |
