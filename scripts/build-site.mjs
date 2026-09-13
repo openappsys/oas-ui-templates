@@ -38,6 +38,9 @@ for (const staticFile of ['og.png']) {
   const src = join(siteDir, staticFile)
   if (existsSync(src)) cpSync(src, join(outDir, staticFile))
 }
+// assets 目录（自托管的 theme css 等）
+const assetsDir = join(siteDir, 'assets')
+if (existsSync(assetsDir)) cpSync(assetsDir, join(outDir, 'assets'), { recursive: true })
 
 const deployed = []
 for (const family of families) {
