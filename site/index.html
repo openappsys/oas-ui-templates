@@ -883,12 +883,13 @@
         var el = document.getElementById("term")
         if (!el) return { stop: function(){}, start: function(){} }
         var ctl = { stopped: false }
+        var runToken = 0  // 代际令牌：stop/start 后旧轮次醒来比对不通过即退出
         function clear() { el.innerHTML = "" }
         function sleep(ms) { return new Promise(function(r){ setTimeout(r, ms) }) }
-        async function typeInto(node, text, speed) {
+        async function typeInto(node, text, speed, token) {
           speed = speed || 22
           for (var i = 0; i < text.length; i++) {
-            if (ctl.stopped) return false
+            if (ctl.stopped || token !== runToken) return false
             node.textContent = text.slice(0, i + 1)
             await sleep(speed)
           }
@@ -907,31 +908,35 @@
           el.appendChild(div)
           return div.querySelector(".t-cmd")
         }
-        async function runOnce() {
+        async function runOnce(token) {
           clear()
           var isZh = (document.documentElement.lang === "zh-CN")
           var ok
           var l1 = promptLine()
-          ok = await typeInto(l1, "npx degit openappsys/oas-ui-templates/templates/admin-pro/vanilla-html my-admin", 18)
+          ok = await typeInto(l1, "npx degit openappsys/oas-ui-templates/templates/admin-pro/vanilla-html my-admin", 18, token)
           if (!ok) return
           l1.parentNode.querySelector(".t-cursor").remove()
           await sleep(260)
+          if (token !== runToken) return
           line("t-out", "# " + (isZh ? "已下载完整后台模版 · 零框架运行时 · 即取即用" : "full-featured admin template downloaded · zero-framework · ready to use"))
           await sleep(220)
+          if (token !== runToken) return
           var l3 = promptLine()
-          ok = await typeInto(l3, "cd my-admin && pnpm install", 18)
+          ok = await typeInto(l3, "cd my-admin && pnpm install", 18, token)
           if (!ok) return
           l3.parentNode.querySelector(".t-cursor").remove()
           await sleep(260)
+          if (token !== runToken) return
           var l4 = promptLine()
-          ok = await typeInto(l4, "pnpm dev", 18)
+          ok = await typeInto(l4, "pnpm dev", 18, token)
           if (!ok) return
           l4.parentNode.querySelector(".t-cursor").remove()
           await sleep(360)
+          if (token !== runToken) return
           line("t-ok", "✓ vite ready in 215ms → http://localhost:5173")
         }
-        ctl.start = function() { ctl.stopped = false; runOnce() }
-        ctl.stop = function() { ctl.stopped = true }
+        ctl.start = function() { ctl.stopped = false; runOnce(runToken) }
+        ctl.stop = function() { ctl.stopped = true; runToken++ }
         return ctl
       }
       applyLocale(detect())
