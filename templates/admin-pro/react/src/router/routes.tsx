@@ -1,6 +1,29 @@
 // src/router/routes.tsx —— 路由表事实来源
 // 本模版为 HashRouter 组装需要补入，meta 为本模版新增（titleKey 取 i18n 已存在的 login.welcome）
-import { lazy, type ComponentType, type LazyExoticComponent } from 'react'
+import type { ComponentType } from 'react'
+import AdvancedFormPage from '../pages/advanced-form'
+import BasicFormPage from '../pages/basic-form'
+import CategoryPage from '../pages/category'
+import DashboardPage from '../pages/dashboard'
+import DataBoardPage from '../pages/data-board'
+import DeptPage from '../pages/dept'
+import DictPage from '../pages/dict'
+import ForbiddenPage from '../pages/forbidden'
+import FormPage from '../pages/form'
+import LoginPage from '../pages/login'
+import LogsPage from '../pages/logs'
+import MenusPage from '../pages/menus'
+import NotFoundPage from '../pages/not-found'
+import OrderDetailPage from '../pages/order-detail'
+import OrdersPage from '../pages/orders'
+import ProductEditPage from '../pages/product-edit'
+import ProductsPage from '../pages/products'
+import ProfilePage from '../pages/profile'
+import ResultPage from '../pages/result'
+import RolesPage from '../pages/roles'
+import ServerErrorPage from '../pages/server-error'
+import SettingsPage from '../pages/settings'
+import UsersPage from '../pages/users'
 
 export type RouteGroup = 'nav.output' | 'nav.business' | 'nav.system' | 'nav.demo'
 
@@ -19,7 +42,7 @@ export interface AppRouteMeta {
 export interface AppRoute {
   path: string
   meta: AppRouteMeta
-  Component: LazyExoticComponent<ComponentType>
+  Component: ComponentType
 }
 
 export const appRoutes: AppRoute[] = [
@@ -31,7 +54,7 @@ export const appRoutes: AppRoute[] = [
       iconColor: 'var(--oas-color-primary)',
       group: 'nav.output',
     },
-    Component: lazy(() => import('../pages/dashboard')),
+    Component: DashboardPage
   },
   {
     path: '/orders',
@@ -41,7 +64,7 @@ export const appRoutes: AppRoute[] = [
       iconColor: 'var(--oas-tint-cyan)',
       group: 'nav.business',
     },
-    Component: lazy(() => import('../pages/orders')),
+    Component: OrdersPage
   },
   {
     path: '/products',
@@ -52,7 +75,7 @@ export const appRoutes: AppRoute[] = [
       roles: ['admin'],
       group: 'nav.business',
     },
-    Component: lazy(() => import('../pages/products')),
+    Component: ProductsPage
   },
   {
     path: '/users',
@@ -63,7 +86,7 @@ export const appRoutes: AppRoute[] = [
       roles: ['admin', 'viewer'],
       group: 'nav.business',
     },
-    Component: lazy(() => import('../pages/users')),
+    Component: UsersPage
   },
   {
     path: '/data-board',
@@ -73,7 +96,7 @@ export const appRoutes: AppRoute[] = [
       iconColor: 'var(--oas-color-primary)',
       group: 'nav.output',
     },
-    Component: lazy(() => import('../pages/data-board')),
+    Component: DataBoardPage
   },
   {
     path: '/profile',
@@ -84,7 +107,7 @@ export const appRoutes: AppRoute[] = [
       hidden: true,
       group: 'nav.output',
     },
-    Component: lazy(() => import('../pages/profile')),
+    Component: ProfilePage
   },
   {
     path: '/form',
@@ -94,17 +117,17 @@ export const appRoutes: AppRoute[] = [
       iconColor: 'var(--oas-color-warning)',
       group: 'nav.business',
     },
-    Component: lazy(() => import('../pages/form')),
+    Component: FormPage
   },
   {
     path: '/order-detail',
     meta: { titleKey: 'nav.orderDetail', icon: 'calendar', hidden: true, parent: '/orders' },
-    Component: lazy(() => import('../pages/order-detail')),
+    Component: OrderDetailPage
   },
   {
     path: '/result',
     meta: { titleKey: 'nav.result', icon: 'check', hidden: true, parent: '/form' },
-    Component: lazy(() => import('../pages/result')),
+    Component: ResultPage
   },
   {
     path: '/system/roles',
@@ -115,7 +138,7 @@ export const appRoutes: AppRoute[] = [
       roles: ['admin'],
       group: 'nav.system',
     },
-    Component: lazy(() => import('../pages/roles')),
+    Component: RolesPage
   },
   {
     path: '/system/menus',
@@ -126,7 +149,7 @@ export const appRoutes: AppRoute[] = [
       roles: ['admin'],
       group: 'nav.system',
     },
-    Component: lazy(() => import('../pages/menus')),
+    Component: MenusPage
   },
   {
     path: '/system/dept',
@@ -137,7 +160,7 @@ export const appRoutes: AppRoute[] = [
       roles: ['admin'],
       group: 'nav.system',
     },
-    Component: lazy(() => import('../pages/dept')),
+    Component: DeptPage
   },
   {
     path: '/system/category',
@@ -148,7 +171,7 @@ export const appRoutes: AppRoute[] = [
       roles: ['admin'],
       group: 'nav.system',
     },
-    Component: lazy(() => import('../pages/category')),
+    Component: CategoryPage
   },
   {
     path: '/system/dict',
@@ -159,7 +182,7 @@ export const appRoutes: AppRoute[] = [
       roles: ['admin'],
       group: 'nav.system',
     },
-    Component: lazy(() => import('../pages/dict')),
+    Component: DictPage
   },
   {
     path: '/system/logs',
@@ -170,7 +193,7 @@ export const appRoutes: AppRoute[] = [
       roles: ['admin'],
       group: 'nav.system',
     },
-    Component: lazy(() => import('../pages/logs')),
+    Component: LogsPage
   },
   {
     path: '/settings',
@@ -180,7 +203,7 @@ export const appRoutes: AppRoute[] = [
       iconColor: 'var(--oas-tint-violet)',
       group: 'nav.system',
     },
-    Component: lazy(() => import('../pages/settings')),
+    Component: SettingsPage,
   },
   {
     path: '/products/edit',
@@ -191,7 +214,7 @@ export const appRoutes: AppRoute[] = [
       hidden: true,
       parent: '/products',
     },
-    Component: lazy(() => import('../pages/product-edit')),
+    Component: ProductEditPage
   },
   {
     path: '/forbidden',
@@ -201,7 +224,7 @@ export const appRoutes: AppRoute[] = [
       iconColor: 'var(--oas-color-danger)',
       group: 'nav.demo',
     },
-    Component: lazy(() => import('../pages/forbidden')),
+    Component: ForbiddenPage
   },
   {
     path: '/not-found',
@@ -211,7 +234,7 @@ export const appRoutes: AppRoute[] = [
       iconColor: 'var(--oas-color-primary)',
       group: 'nav.demo',
     },
-    Component: lazy(() => import('../pages/not-found')),
+    Component: NotFoundPage
   },
   {
     path: '/500',
@@ -221,7 +244,7 @@ export const appRoutes: AppRoute[] = [
       iconColor: 'var(--oas-color-warning)',
       group: 'nav.demo',
     },
-    Component: lazy(() => import('../pages/server-error')),
+    Component: ServerErrorPage
   },
   {
     path: '/basic-form',
@@ -231,7 +254,7 @@ export const appRoutes: AppRoute[] = [
       iconColor: 'var(--oas-color-success)',
       group: 'nav.demo',
     },
-    Component: lazy(() => import('../pages/basic-form')),
+    Component: BasicFormPage
   },
   {
     path: '/advanced-form',
@@ -241,12 +264,12 @@ export const appRoutes: AppRoute[] = [
       iconColor: 'var(--oas-tint-cyan)',
       group: 'nav.demo',
     },
-    Component: lazy(() => import('../pages/advanced-form')),
+    Component: AdvancedFormPage
   },
   {
     path: '/login',
     meta: { titleKey: 'login.welcome', icon: 'lock', hidden: true },
-    Component: lazy(() => import('../pages/login')),
+    Component: LoginPage
   },
 ]
 
