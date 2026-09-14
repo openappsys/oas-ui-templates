@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>设置中心 · OAS Admin CDN · MPA</title>
+    <script src="./js/fouc.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/index.css" />
+    <script src="https://unpkg.com/@oas-ui/ui@2/dist/cdn.js"></script>
+    <link rel="stylesheet" href="./css/app.css" />
+    <link rel="stylesheet" href="./css/pages.css" />
+    <link rel="stylesheet" href="./css/pages-b.css" />
+  </head>
+  <body>
+    <oas-layout class="app" viewport>
+      <header class="app-header" slot="header">
+          <button id="nav-toggle" class="nav-toggle" type="button" aria-label="打开菜单">☰</button>
+        <a class="oas-logo" href="/" style="text-decoration:none;color:inherit;cursor:pointer">
+          <span class="oas-logo-badge">OAS</span>
+          <span class="oas-logo-word" data-i18n="app.title">OAS Admin CDN · MPA</span>
+        </a>
+        <span class="spacer"></span>
+        <button id="lang-toggle" data-testid="lang-toggle" class="icon-btn" type="button" data-i18n="header.lang">English</button>
+        <button id="logout" class="icon-btn" type="button" data-i18n="header.logout">退出</button>
+      </header>
+      <oas-sider slot="sider">
+        <oas-sidebar id="nav" active="./settings.html" items='[{"label":"仪表盘","value":"./dashboard.html","icon":"star","group":"菜单"},{"label":"用户管理","value":"./users.html","icon":"user","group":"菜单"},{"label":"基础表单","value":"./form.html","icon":"form","group":"菜单"}]'></oas-sidebar>
+      </oas-sider>
+      <div slot="content" id="view">
+        <div class="page settings-page">
+          <div class="page-head">
+            <div>
+              <h1 class="page-title" data-i18n="nav.settings">设置中心</h1>
+              <p class="page-subtitle" data-i18n="settings.subtitle">外观、布局、数据与通知偏好</p>
+            </div>
+            <!-- options 由 js/settings.js 按 locale 灌（t() 文案） -->
+            <oas-segmented id="settings-tabs-layout" data-testid="settings-tabs-layout" value="horizontal" options='[{"label":"横排","value":"horizontal"},{"label":"竖排","value":"vertical"}]'></oas-segmented>
+          </div>
+          <oas-card class="settings-card">
+            <!-- 四 Tab：外观 / 布局与导航 / 数据与列表 / 通知；面板内容由 js/settings.js 灌 -->
+            <oas-tabs data-testid="settings-tabs" id="settings-tabs">
+              <oas-tab-panel label="外观" value="appearance" data-i18n-attr='{"label":"settings.tab.appearance"}'>
+                <div class="settings-panel" data-panel="appearance"></div>
+              </oas-tab-panel>
+              <oas-tab-panel label="布局与导航" value="layout" data-i18n-attr='{"label":"settings.tab.layout"}'>
+                <div class="settings-panel" data-panel="layout"></div>
+              </oas-tab-panel>
+              <oas-tab-panel label="数据与列表" value="data" data-i18n-attr='{"label":"settings.tab.data"}'>
+                <div class="settings-panel" data-panel="data"></div>
+              </oas-tab-panel>
+              <oas-tab-panel label="通知" value="notification" data-i18n-attr='{"label":"settings.tab.notification"}'>
+                <div class="settings-panel" data-panel="notification"></div>
+              </oas-tab-panel>
+            </oas-tabs>
+          </oas-card>
+        </div>
+      </div>
+    </oas-layout>
+    <script type="module" src="./js/settings.js"></script>
+  </body>
+</html>

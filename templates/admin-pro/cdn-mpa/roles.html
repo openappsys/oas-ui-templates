@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>角色管理 · OAS Admin CDN · MPA</title>
+    <script src="./js/fouc.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/index.css" />
+    <script src="https://unpkg.com/@oas-ui/ui@2/dist/cdn.js"></script>
+    <link rel="stylesheet" href="./css/app.css" />
+    <link rel="stylesheet" href="./css/pages.css" />
+    <link rel="stylesheet" href="./css/pages-b.css" />
+  </head>
+  <body>
+    <oas-layout class="app" viewport>
+      <header class="app-header" slot="header">
+          <button id="nav-toggle" class="nav-toggle" type="button" aria-label="打开菜单">☰</button>
+        <a class="oas-logo" href="/" style="text-decoration:none;color:inherit;cursor:pointer">
+          <span class="oas-logo-badge">OAS</span>
+          <span class="oas-logo-word" data-i18n="app.title">OAS Admin CDN · MPA</span>
+        </a>
+        <span class="spacer"></span>
+        <button id="lang-toggle" data-testid="lang-toggle" class="icon-btn" type="button" data-i18n="header.lang">English</button>
+        <button id="logout" class="icon-btn" type="button" data-i18n="header.logout">退出</button>
+      </header>
+      <oas-sider slot="sider">
+        <oas-sidebar id="nav" active="./roles.html" items='[{"label":"仪表盘","value":"./dashboard.html","icon":"star","group":"菜单"},{"label":"用户管理","value":"./users.html","icon":"user","group":"菜单"},{"label":"基础表单","value":"./form.html","icon":"form","group":"菜单"}]'></oas-sidebar>
+      </oas-sider>
+      <div slot="content" id="view">
+        <div class="page">
+          <div class="page-head">
+            <div>
+              <h1 class="page-title" data-i18n="nav.roles">角色管理</h1>
+              <p class="page-subtitle" data-i18n="roles.subtitle">管理角色与数据权限范围</p>
+            </div>
+            <oas-button data-testid="role-create" type="primary" icon="plus" data-i18n="roles.new">新建角色</oas-button>
+          </div>
+          <oas-card class="list-card" title="角色列表" data-i18n-attr='{"title":"roles.list"}'>
+            <div class="table-wrap" id="roles-wrap">
+              <oas-table data-testid="roles-table" row-key="id" data-i18n-attr='{"empty-text":"roles.empty"}' empty-text="暂无角色"></oas-table>
+            </div>
+          </oas-card>
+
+          <oas-drawer data-testid="role-form-drawer" title="新建角色" placement="right" size="medium" no-footer data-i18n-attr='{"title":"roles.new"}'>
+            <oas-form id="role-form">
+              <div class="role-form-body">
+                <div class="form-field">
+                  <label class="form-label"><span data-i18n="roles.form.name">角色名称</span> <span class="req">*</span></label>
+                  <oas-input data-testid="rf-name" name="name" data-i18n-attr='{"placeholder":"roles.rule.name"}' placeholder="请输入角色名称"></oas-input>
+                </div>
+                <div class="form-field">
+                  <label class="form-label"><span data-i18n="roles.form.code">角色编码</span> <span class="req">*</span></label>
+                  <oas-input data-testid="rf-code" name="code" data-i18n-attr='{"placeholder":"roles.placeholder.code"}' placeholder="如 ops_manager"></oas-input>
+                  <div class="form-hint" data-i18n="roles.hint.code">小写字母开头，可含数字 / 冒号 / 下划线 / 连字符</div>
+                </div>
+                <div class="form-field">
+                  <label class="form-label" data-i18n="roles.form.dataScope">数据权限</label>
+                  <div class="radio-group" id="rf-scope"></div>
+                </div>
+                <div class="form-field" id="rf-custom" hidden>
+                  <label class="form-label" data-i18n="roles.form.customScope">自定义权限部门</label>
+                  <oas-transfer data-testid="rf-transfer" id="rf-transfer" source-title="可选部门" target-title="已选部门" searchable data="[]" value="[]" data-i18n-attr='{"source-title":"roles.transfer.source","target-title":"roles.transfer.target"}'></oas-transfer>
+                </div>
+                <div class="form-actions">
+                  <oas-space justify="end">
+                    <oas-button data-testid="rf-cancel" data-i18n="common.cancel">取消</oas-button>
+                    <oas-button data-testid="rf-save" type="primary" data-i18n="common.save">保存</oas-button>
+                  </oas-space>
+                </div>
+              </div>
+            </oas-form>
+          </oas-drawer>
+        </div>
+      </div>
+    </oas-layout>
+    <script type="module" src="./js/roles.js"></script>
+  </body>
+</html>

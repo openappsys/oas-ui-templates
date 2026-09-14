@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>日志中心 · OAS Admin CDN · MPA</title>
+    <script src="./js/fouc.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/index.css" />
+    <script src="https://unpkg.com/@oas-ui/ui@2/dist/cdn.js"></script>
+    <link rel="stylesheet" href="./css/app.css" />
+    <link rel="stylesheet" href="./css/pages.css" />
+    <link rel="stylesheet" href="./css/pages-b.css" />
+  </head>
+  <body>
+    <oas-layout class="app" viewport>
+      <header class="app-header" slot="header">
+          <button id="nav-toggle" class="nav-toggle" type="button" aria-label="打开菜单">☰</button>
+        <a class="oas-logo" href="/" style="text-decoration:none;color:inherit;cursor:pointer">
+          <span class="oas-logo-badge">OAS</span>
+          <span class="oas-logo-word" data-i18n="app.title">OAS Admin CDN · MPA</span>
+        </a>
+        <span class="spacer"></span>
+        <button id="lang-toggle" data-testid="lang-toggle" class="icon-btn" type="button" data-i18n="header.lang">English</button>
+        <button id="logout" class="icon-btn" type="button" data-i18n="header.logout">退出</button>
+      </header>
+      <oas-sider slot="sider">
+        <oas-sidebar id="nav" active="./logs.html" items='[{"label":"仪表盘","value":"./dashboard.html","icon":"star","group":"菜单"},{"label":"用户管理","value":"./users.html","icon":"user","group":"菜单"},{"label":"基础表单","value":"./form.html","icon":"form","group":"菜单"}]'></oas-sidebar>
+      </oas-sider>
+      <div slot="content" id="view">
+        <div class="page">
+          <div class="page-head">
+            <div>
+              <h1 class="page-title" data-i18n="nav.logs">日志中心</h1>
+              <p class="page-subtitle" data-i18n="logs.subtitle">检索近 7 天操作日志</p>
+            </div>
+          </div>
+          <div class="logs-stats" id="logs-stats"></div>
+          <oas-card class="logs-card" title="日志列表" data-i18n-attr='{"title":"logs.cardTitle"}'>
+            <div class="logs-toolbar" slot="extra">
+              <oas-select data-testid="logs-level" data-i18n-attr='{"placeholder":"logs.toolbar.level"}' placeholder="级别" clearable></oas-select>
+              <oas-input data-testid="logs-keyword" data-i18n-attr='{"placeholder":"logs.toolbar.keyword"}' placeholder="搜索操作人 / 动作 / IP" clearable prefix-icon="search"></oas-input>
+              <oas-date-picker data-testid="logs-date" type="daterange" data-i18n-attr='{"placeholder":"logs.toolbar.dateRange"}' placeholder="日期范围"></oas-date-picker>
+              <oas-button data-testid="logs-export" type="primary" icon="download" data-i18n="logs.export">导出</oas-button>
+            </div>
+            <div class="logs-main">
+              <div class="logs-list-wrap">
+                <div class="logs-header">
+                  <span class="logs-h-time" data-i18n="logs.th.time">时间</span>
+                  <span class="logs-h-level" data-i18n="logs.th.level">级别</span>
+                  <span class="logs-h-operator" data-i18n="logs.th.operator">操作人</span>
+                  <span class="logs-h-action" data-i18n="logs.th.action">动作</span>
+                  <span class="logs-h-ip" data-i18n="logs.th.ip">IP</span>
+                </div>
+                <div class="logs-list-body">
+                  <oas-virtual-list data-testid="logs-list" id="logs-list" height="480" item-height="44">
+                    <template slot="item">
+                      <style>
+                        .logs-cell {
+                          font-size: var(--oas-font-size-sm);
+                          color: var(--oas-color-text-primary);
+                          overflow: hidden;
+                          text-overflow: ellipsis;
+                          white-space: nowrap;
+                        }
+                        .logs-cell.mono {
+                          font-family: var(--app-mono);
+                        }
+                        .logs-cell.logs-time {
+                          color: var(--oas-color-text-secondary);
+                        }
+                        @media (max-width: 768px) {
+                          .logs-cell {
+                            font-size: var(--oas-font-size-xs);
+                          }
+                        }
+                      </style>
+                      <span class="logs-cell logs-time mono" data-col="time"></span>
+                      <span class="logs-cell logs-level" data-col="level"><oas-tag size="small"></oas-tag></span>
+                      <span class="logs-cell logs-operator" data-col="operator"></span>
+                      <span class="logs-cell logs-action" data-col="action"></span>
+                      <span class="logs-cell logs-ip mono" data-col="ip"></span>
+                    </template>
+                  </oas-virtual-list>
+                  <div class="logs-empty" id="logs-empty" hidden>
+                    <oas-empty data-i18n-attr='{"description":"logs.empty"}' description="未找到匹配日志"></oas-empty>
+                  </div>
+                </div>
+              </div>
+              <div class="logs-anchor-wrap">
+                <oas-anchor data-testid="logs-anchor" id="logs-anchor" direction="vertical" hash="false"></oas-anchor>
+              </div>
+            </div>
+          </oas-card>
+          <oas-modal data-testid="logs-detail" title="日志详情" no-footer data-i18n-attr='{"title":"logs.detailTitle"}'>
+            <div class="logs-detail-body" id="logs-detail-body"></div>
+          </oas-modal>
+        </div>
+      </div>
+    </oas-layout>
+    <script type="module" src="./js/logs.js"></script>
+  </body>
+</html>

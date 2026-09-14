@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>基础表单 · OAS Admin CDN · MPA</title>
+    <script src="./js/fouc.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/index.css" />
+    <script src="https://unpkg.com/@oas-ui/ui@2/dist/cdn.js"></script>
+    <link rel="stylesheet" href="./css/app.css" />
+    <link rel="stylesheet" href="./css/pages.css" />
+    <link rel="stylesheet" href="./css/pages-b.css" />
+  </head>
+  <body>
+    <oas-layout class="app" viewport>
+      <header class="app-header" slot="header">
+          <button id="nav-toggle" class="nav-toggle" type="button" aria-label="打开菜单">☰</button>
+        <a class="oas-logo" href="/" style="text-decoration:none;color:inherit;cursor:pointer">
+          <span class="oas-logo-badge">OAS</span>
+          <span class="oas-logo-word" data-i18n="app.title">OAS Admin CDN · MPA</span>
+        </a>
+        <span class="spacer"></span>
+        <button id="lang-toggle" data-testid="lang-toggle" class="icon-btn" type="button" data-i18n="header.lang">English</button>
+        <button id="logout" class="icon-btn" type="button" data-i18n="header.logout">退出</button>
+      </header>
+      <oas-sider slot="sider">
+        <oas-sidebar id="nav" active="./basic-form.html" items='[{"label":"仪表盘","value":"./dashboard.html","icon":"star","group":"菜单"},{"label":"用户管理","value":"./users.html","icon":"user","group":"菜单"},{"label":"基础表单","value":"./form.html","icon":"form","group":"菜单"}]'></oas-sidebar>
+      </oas-sider>
+      <div slot="content" id="view">
+        <div class="page">
+          <div class="page-head">
+            <div>
+              <h1 class="page-title" data-i18n="basic.title">基础表单</h1>
+              <p class="page-subtitle" data-i18n="basic.subtitle">一张通用的卡片表单，覆盖常用控件与校验</p>
+            </div>
+          </div>
+          <oas-card class="list-card" title="表单" data-i18n-attr='{"title":"basic.card"}'>
+            <!-- rules 由 js/basic-form.js 灌（校验文案随 locale）；select options 亦由 JS 灌 -->
+            <oas-form id="basic-form">
+              <div class="form-grid form-grid--2col">
+                <oas-input name="name" data-i18n-attr='{"label":"basic.name","placeholder":"basic.name"}' label="项目名称" placeholder="项目名称"></oas-input>
+                <oas-select name="category" data-i18n-attr='{"label":"basic.category","placeholder":"basic.category"}' label="项目分类" placeholder="项目分类"></oas-select>
+                <oas-select name="status" data-i18n-attr='{"label":"basic.status","placeholder":"basic.status"}' label="状态" placeholder="状态"></oas-select>
+                <oas-input name="days" type="number" data-i18n-attr='{"label":"basic.days"}' label="执行天数"></oas-input>
+                <oas-input name="budget" type="number" data-i18n-attr='{"label":"basic.budget"}' label="项目预算"></oas-input>
+                <oas-input name="contact" data-i18n-attr='{"label":"basic.contact","placeholder":"basic.contact"}' label="联系人邮箱" placeholder="联系人邮箱"></oas-input>
+                <oas-textarea name="desc" data-i18n-attr='{"label":"basic.desc"}' label="项目描述"></oas-textarea>
+                <oas-switch name="notify" data-i18n-attr='{"label":"basic.notify"}' label="完成通知"></oas-switch>
+                <oas-date-picker name="due" data-i18n-attr='{"label":"basic.days"}' label="执行天数"></oas-date-picker>
+                <oas-upload name="file" data-i18n-attr='{"label":"basic.contact"}' label="联系人邮箱"></oas-upload>
+              </div>
+              <oas-space>
+                <oas-button type="primary" data-action="submit" data-i18n="basic.submit">提交</oas-button>
+                <oas-button data-action="reset" data-i18n="basic.reset">重置</oas-button>
+              </oas-space>
+            </oas-form>
+          </oas-card>
+        </div>
+      </div>
+    </oas-layout>
+    <script type="module" src="./js/basic-form.js"></script>
+  </body>
+</html>

@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>字典管理 · OAS Admin CDN · MPA</title>
+    <script src="./js/fouc.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/index.css" />
+    <script src="https://unpkg.com/@oas-ui/ui@2/dist/cdn.js"></script>
+    <link rel="stylesheet" href="./css/app.css" />
+    <link rel="stylesheet" href="./css/pages.css" />
+    <link rel="stylesheet" href="./css/pages-b.css" />
+  </head>
+  <body>
+    <oas-layout class="app" viewport>
+      <header class="app-header" slot="header">
+          <button id="nav-toggle" class="nav-toggle" type="button" aria-label="打开菜单">☰</button>
+        <a class="oas-logo" href="/" style="text-decoration:none;color:inherit;cursor:pointer">
+          <span class="oas-logo-badge">OAS</span>
+          <span class="oas-logo-word" data-i18n="app.title">OAS Admin CDN · MPA</span>
+        </a>
+        <span class="spacer"></span>
+        <button id="lang-toggle" data-testid="lang-toggle" class="icon-btn" type="button" data-i18n="header.lang">English</button>
+        <button id="logout" class="icon-btn" type="button" data-i18n="header.logout">退出</button>
+      </header>
+      <oas-sider slot="sider">
+        <oas-sidebar id="nav" active="./dict.html" items='[{"label":"仪表盘","value":"./dashboard.html","icon":"star","group":"菜单"},{"label":"用户管理","value":"./users.html","icon":"user","group":"菜单"},{"label":"基础表单","value":"./form.html","icon":"form","group":"菜单"}]'></oas-sidebar>
+      </oas-sider>
+      <div slot="content" id="view">
+        <div class="page">
+          <div class="page-head">
+            <div>
+              <h1 class="page-title" data-i18n="nav.dict">字典管理</h1>
+              <p class="page-subtitle" data-i18n="dict.subtitle">维护业务枚举字典类型与键值</p>
+            </div>
+          </div>
+          <div class="dict-layout">
+            <oas-card class="dict-type-card" title="字典类型" data-i18n-attr='{"title":"dict.typeTitle"}'>
+              <div class="dict-type-list" data-testid="dict-type-list"></div>
+            </oas-card>
+            <oas-card class="dict-items-card" title="字典键值" data-i18n-attr='{"title":"dict.itemTitle"}'>
+              <div class="dict-pane-head" id="dict-pane-head">
+                <div id="dict-pane-title"></div>
+                <div>
+                  <oas-button data-testid="dict-type-create" type="text" icon="plus" data-i18n="dict.newType">新建类型</oas-button>
+                  <oas-button data-testid="dict-item-create" type="primary" icon="plus" data-i18n="dict.newItem">新建键值</oas-button>
+                </div>
+              </div>
+              <div id="dict-items-wrap">
+                <oas-table data-testid="dict-items-table" row-key="id"></oas-table>
+              </div>
+            </oas-card>
+          </div>
+
+          <oas-modal data-testid="dict-type-modal" no-footer>
+            <div class="modal-body">
+              <h2 id="dict-type-title" data-i18n="dict.newType">新建类型</h2>
+              <oas-form id="dict-type-form">
+                <div class="dict-form-body">
+                  <div class="form-field">
+                    <label class="form-label"><span data-i18n="dict.form.typeName">类型名称</span> <span class="req">*</span></label>
+                    <oas-input data-testid="dtf-name" name="name" data-i18n-attr='{"placeholder":"dict.placeholder.typeName"}' placeholder="请输入类型名称"></oas-input>
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label"><span data-i18n="dict.form.typeCode">类型编码</span> <span class="req">*</span></label>
+                    <oas-input data-testid="dtf-code" name="code" data-i18n-attr='{"placeholder":"dict.placeholder.typeCode"}' placeholder="如 order_status"></oas-input>
+                  </div>
+                  <div class="form-actions">
+                    <oas-space justify="end">
+                      <oas-button data-testid="dtf-cancel" data-i18n="common.cancel">取消</oas-button>
+                      <oas-button data-testid="dtf-save" type="primary" data-i18n="common.save">保存</oas-button>
+                    </oas-space>
+                  </div>
+                </div>
+              </oas-form>
+            </div>
+          </oas-modal>
+
+          <oas-modal data-testid="dict-item-modal" no-footer>
+            <div class="modal-body">
+              <h2 id="dict-item-title" data-i18n="dict.newItem">新建键值</h2>
+              <oas-form id="dict-item-form">
+                <div class="dict-form-body">
+                  <div class="form-field">
+                    <label class="form-label"><span data-i18n="dict.form.label">标签</span> <span class="req">*</span></label>
+                    <oas-input data-testid="dif-label" name="label" data-i18n-attr='{"placeholder":"dict.placeholder.label"}' placeholder="请输入标签"></oas-input>
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label"><span data-i18n="dict.form.value">键值</span> <span class="req">*</span></label>
+                    <oas-input data-testid="dif-value" name="value" data-i18n-attr='{"placeholder":"dict.placeholder.value"}' placeholder="请输入键值"></oas-input>
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label" data-i18n="dict.form.sort">排序</label>
+                    <oas-input-number data-testid="dif-sort" name="sort" min="0" placeholder="1"></oas-input-number>
+                  </div>
+                  <div class="form-actions">
+                    <oas-space justify="end">
+                      <oas-button data-testid="dif-cancel" data-i18n="common.cancel">取消</oas-button>
+                      <oas-button data-testid="dif-save" type="primary" data-i18n="common.save">保存</oas-button>
+                    </oas-space>
+                  </div>
+                </div>
+              </oas-form>
+            </div>
+          </oas-modal>
+        </div>
+      </div>
+    </oas-layout>
+    <script type="module" src="./js/dict.js"></script>
+  </body>
+</html>

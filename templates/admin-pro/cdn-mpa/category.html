@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>商品分类 · OAS Admin CDN · MPA</title>
+    <script src="./js/fouc.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/index.css" />
+    <script src="https://unpkg.com/@oas-ui/ui@2/dist/cdn.js"></script>
+    <link rel="stylesheet" href="./css/app.css" />
+    <link rel="stylesheet" href="./css/pages.css" />
+    <link rel="stylesheet" href="./css/pages-b.css" />
+  </head>
+  <body>
+    <oas-layout class="app" viewport>
+      <header class="app-header" slot="header">
+          <button id="nav-toggle" class="nav-toggle" type="button" aria-label="打开菜单">☰</button>
+        <a class="oas-logo" href="/" style="text-decoration:none;color:inherit;cursor:pointer">
+          <span class="oas-logo-badge">OAS</span>
+          <span class="oas-logo-word" data-i18n="app.title">OAS Admin CDN · MPA</span>
+        </a>
+        <span class="spacer"></span>
+        <button id="lang-toggle" data-testid="lang-toggle" class="icon-btn" type="button" data-i18n="header.lang">English</button>
+        <button id="logout" class="icon-btn" type="button" data-i18n="header.logout">退出</button>
+      </header>
+      <oas-sider slot="sider">
+        <oas-sidebar id="nav" active="./category.html" items='[{"label":"仪表盘","value":"./dashboard.html","icon":"star","group":"菜单"},{"label":"用户管理","value":"./users.html","icon":"user","group":"菜单"},{"label":"基础表单","value":"./form.html","icon":"form","group":"菜单"}]'></oas-sidebar>
+      </oas-sider>
+      <div slot="content" id="view">
+        <div class="page">
+          <div class="page-head">
+            <div>
+              <h1 class="page-title" data-i18n="nav.category">商品分类</h1>
+              <p class="page-subtitle" data-i18n="category.subtitle">维护商品分类与排序</p>
+            </div>
+            <oas-button data-testid="category-create" type="primary" icon="plus" data-i18n="category.new">新建分类</oas-button>
+          </div>
+          <div class="dict-items-card">
+            <div class="dict-pane-head">
+              <oas-input data-testid="category-search" class="category-search" data-i18n-attr='{"placeholder":"category.search"}' placeholder="搜索分类" prefix-icon="search" clearable></oas-input>
+            </div>
+            <div id="category-items-wrap">
+              <oas-table data-testid="category-table" row-key="id"></oas-table>
+              <div class="table-empty" data-testid="category-empty" hidden>
+                <oas-empty data-i18n-attr='{"description":"category.empty"}' description="暂无分类"></oas-empty>
+              </div>
+            </div>
+          </div>
+
+          <oas-modal data-testid="category-modal" no-footer>
+            <div class="modal-body">
+              <h2 id="category-modal-title" data-i18n="category.new">新建分类</h2>
+              <oas-form id="category-form">
+                <div class="dict-form-body">
+                  <div class="form-field">
+                    <label class="form-label"><span data-i18n="category.form.name">分类名称</span> <span class="req">*</span></label>
+                    <oas-input data-testid="cf-name" name="name" data-i18n-attr='{"placeholder":"category.placeholder.name"}' placeholder="请输入分类名称"></oas-input>
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label"><span data-i18n="category.form.code">分类编码</span> <span class="req">*</span></label>
+                    <oas-input data-testid="cf-code" name="code" data-i18n-attr='{"placeholder":"category.placeholder.code"}' placeholder="请输入分类编码"></oas-input>
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label" data-i18n="category.form.sort">排序</label>
+                    <oas-input-number data-testid="cf-sort" name="sort" min="0" placeholder="1"></oas-input-number>
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label" data-i18n="category.form.status">状态</label>
+                    <oas-switch data-testid="cf-status" name="status" checked></oas-switch>
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label" data-i18n="category.form.desc">描述</label>
+                    <oas-input data-testid="cf-desc" name="desc" data-i18n-attr='{"placeholder":"category.placeholder.desc"}' placeholder="分类描述"></oas-input>
+                  </div>
+                  <div class="form-actions">
+                    <oas-space justify="end">
+                      <oas-button data-testid="cf-cancel" data-i18n="common.cancel">取消</oas-button>
+                      <oas-button data-testid="cf-save" type="primary" data-i18n="common.save">保存</oas-button>
+                    </oas-space>
+                  </div>
+                </div>
+              </oas-form>
+            </div>
+          </oas-modal>
+        </div>
+      </div>
+    </oas-layout>
+    <script type="module" src="./js/category.js"></script>
+  </body>
+</html>

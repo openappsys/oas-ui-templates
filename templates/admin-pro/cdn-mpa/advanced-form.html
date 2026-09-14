@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>高级表单 · OAS Admin CDN · MPA</title>
+    <script src="./js/fouc.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/index.css" />
+    <script src="https://unpkg.com/@oas-ui/ui@2/dist/cdn.js"></script>
+    <link rel="stylesheet" href="./css/app.css" />
+    <link rel="stylesheet" href="./css/pages.css" />
+    <link rel="stylesheet" href="./css/pages-b.css" />
+  </head>
+  <body>
+    <oas-layout class="app" viewport>
+      <header class="app-header" slot="header">
+          <button id="nav-toggle" class="nav-toggle" type="button" aria-label="打开菜单">☰</button>
+        <a class="oas-logo" href="/" style="text-decoration:none;color:inherit;cursor:pointer">
+          <span class="oas-logo-badge">OAS</span>
+          <span class="oas-logo-word" data-i18n="app.title">OAS Admin CDN · MPA</span>
+        </a>
+        <span class="spacer"></span>
+        <button id="lang-toggle" data-testid="lang-toggle" class="icon-btn" type="button" data-i18n="header.lang">English</button>
+        <button id="logout" class="icon-btn" type="button" data-i18n="header.logout">退出</button>
+      </header>
+      <oas-sider slot="sider">
+        <oas-sidebar id="nav" active="./advanced-form.html" items='[{"label":"仪表盘","value":"./dashboard.html","icon":"star","group":"菜单"},{"label":"用户管理","value":"./users.html","icon":"user","group":"菜单"},{"label":"基础表单","value":"./form.html","icon":"form","group":"菜单"}]'></oas-sidebar>
+      </oas-sider>
+      <div slot="content" id="view">
+        <div class="page">
+          <div class="page-head">
+            <div>
+              <h1 class="page-title" data-i18n="adv.title">高级表单</h1>
+              <p class="page-subtitle" data-i18n="adv.subtitle">分组卡片 + 联想 / 级联 / 穿梭框等复合控件</p>
+            </div>
+          </div>
+          <!-- rules 与各复合控件 options 由 js/advanced-form.js 灌（文案/数据随 locale） -->
+          <oas-form id="advanced-form" layout="vertical">
+            <oas-card class="adv-card" title="基本信息" data-i18n-attr='{"title":"adv.basic"}'>
+              <div class="adv-grid">
+                <oas-form-item label="公司名称" required data-i18n-attr='{"label":"adv.company"}'>
+                  <oas-input name="company" data-i18n-attr='{"placeholder":"adv.companyPh"}' placeholder="请输入公司名称"></oas-input>
+                </oas-form-item>
+                <oas-form-item label="统一社会信用代码" required data-i18n-attr='{"label":"adv.creditCode"}'>
+                  <oas-input name="creditCode" data-i18n-attr='{"placeholder":"adv.creditCodePh"}' placeholder="18 位大写字母与数字"></oas-input>
+                </oas-form-item>
+                <oas-form-item label="成立日期" data-i18n-attr='{"label":"adv.founded"}'>
+                  <oas-date-picker data-i18n-attr='{"placeholder":"adv.foundedPh"}' placeholder="请选择日期"></oas-date-picker>
+                </oas-form-item>
+                <oas-form-item label="员工规模" data-i18n-attr='{"label":"adv.staff"}'>
+                  <oas-slider name="staff" min="0" max="5000" step="100" value="200" data-testid="adv-staff"></oas-slider>
+                </oas-form-item>
+              </div>
+            </oas-card>
+            <oas-card class="adv-card" title="联系信息" data-i18n-attr='{"title":"adv.contact"}'>
+              <div class="adv-grid">
+                <oas-form-item label="联系电话" data-i18n-attr='{"label":"adv.phone"}'>
+                  <oas-auto-complete name="phone" data-i18n-attr='{"placeholder":"adv.phonePh"}' placeholder="请输入联系电话"></oas-auto-complete>
+                </oas-form-item>
+                <oas-form-item label="公司地址" data-i18n-attr='{"label":"adv.address"}'>
+                  <oas-cascader data-i18n-attr='{"placeholder":"adv.addressPh"}' placeholder="请选择地区"></oas-cascader>
+                </oas-form-item>
+                <oas-form-item label="邮政编码" data-i18n-attr='{"label":"adv.pinLabel"}'>
+                  <oas-pin-input name="pin" length="4" data-testid="adv-pin"></oas-pin-input>
+                </oas-form-item>
+                <oas-form-item label="邮箱" data-i18n-attr='{"label":"adv.email"}'>
+                  <oas-input name="email" type="email" data-i18n-attr='{"placeholder":"adv.emailPh"}' placeholder="请输入邮箱"></oas-input>
+                </oas-form-item>
+              </div>
+            </oas-card>
+            <oas-card class="adv-card" title="业务信息" data-i18n-attr='{"title":"adv.biztitle"}'>
+              <div class="adv-grid">
+                <oas-form-item label="主营类目" required data-i18n-attr='{"label":"adv.category"}'>
+                  <oas-combobox name="category" data-i18n-attr='{"placeholder":"adv.categoryPh"}' placeholder="请选择主营类目"></oas-combobox>
+                </oas-form-item>
+                <oas-form-item label="店铺评分" data-i18n-attr='{"label":"adv.rating"}'>
+                  <oas-rate name="rating" value="3" data-testid="adv-rating"></oas-rate>
+                </oas-form-item>
+                <oas-form-item label="经营标签" data-i18n-attr='{"label":"adv.tags"}'>
+                  <oas-dynamic-tags name="tags" data-i18n-attr='{"placeholder":"adv.tagsPh"}' placeholder="输入后回车添加" data-testid="adv-tags"></oas-dynamic-tags>
+                </oas-form-item>
+                <oas-form-item label="销售区域" data-i18n-attr='{"label":"adv.region"}'>
+                  <oas-tree-select data-i18n-attr='{"placeholder":"adv.regionPh"}' placeholder="请选择销售区域"></oas-tree-select>
+                </oas-form-item>
+              </div>
+            </oas-card>
+            <oas-card class="adv-card" title="合作信息" data-i18n-attr='{"title":"adv.coop"}'>
+              <div class="adv-grid">
+                <oas-form-item label="销售渠道" data-i18n-attr='{"label":"adv.channels"}'>
+                  <oas-transfer data-testid="adv-transfer" data="[]"></oas-transfer>
+                </oas-form-item>
+                <oas-form-item label="开启协作通知" data-i18n-attr='{"label":"adv.notify"}'>
+                  <oas-switch></oas-switch>
+                </oas-form-item>
+              </div>
+            </oas-card>
+            <oas-space>
+              <oas-button type="primary" data-action="submit" data-i18n="adv.submit">提交</oas-button>
+              <oas-button data-action="reset" data-i18n="basic.reset">重置</oas-button>
+            </oas-space>
+          </oas-form>
+        </div>
+      </div>
+    </oas-layout>
+    <script type="module" src="./js/advanced-form.js"></script>
+  </body>
+</html>

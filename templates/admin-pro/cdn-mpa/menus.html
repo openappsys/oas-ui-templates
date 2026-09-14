@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>权限管理 · OAS Admin CDN · MPA</title>
+    <script src="./js/fouc.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/index.css" />
+    <script src="https://unpkg.com/@oas-ui/ui@2/dist/cdn.js"></script>
+    <link rel="stylesheet" href="./css/app.css" />
+    <link rel="stylesheet" href="./css/pages.css" />
+    <link rel="stylesheet" href="./css/pages-b.css" />
+  </head>
+  <body>
+    <oas-layout class="app" viewport>
+      <header class="app-header" slot="header">
+          <button id="nav-toggle" class="nav-toggle" type="button" aria-label="打开菜单">☰</button>
+        <a class="oas-logo" href="/" style="text-decoration:none;color:inherit;cursor:pointer">
+          <span class="oas-logo-badge">OAS</span>
+          <span class="oas-logo-word" data-i18n="app.title">OAS Admin CDN · MPA</span>
+        </a>
+        <span class="spacer"></span>
+        <button id="lang-toggle" data-testid="lang-toggle" class="icon-btn" type="button" data-i18n="header.lang">English</button>
+        <button id="logout" class="icon-btn" type="button" data-i18n="header.logout">退出</button>
+      </header>
+      <oas-sider slot="sider">
+        <oas-sidebar id="nav" active="./menus.html" items='[{"label":"仪表盘","value":"./dashboard.html","icon":"star","group":"菜单"},{"label":"用户管理","value":"./users.html","icon":"user","group":"菜单"},{"label":"基础表单","value":"./form.html","icon":"form","group":"菜单"}]'></oas-sidebar>
+      </oas-sider>
+      <div slot="content" id="view">
+        <div class="page">
+          <div class="page-head">
+            <div>
+              <h1 class="page-title" data-i18n="nav.menus">权限管理</h1>
+              <p class="page-subtitle" data-i18n="menus.subtitle">维护菜单树与按钮级权限标识</p>
+            </div>
+            <oas-button data-testid="menu-create" type="primary" icon="plus" data-i18n="menus.new">新建菜单</oas-button>
+          </div>
+          <div class="menu-layout">
+            <oas-card class="menu-tree-card" title="菜单树" data-i18n-attr='{"title":"menus.treeTitle"}'>
+              <oas-tree data-testid="menu-tree" id="menu-tree"></oas-tree>
+            </oas-card>
+            <oas-card class="menu-detail-card" title="菜单详情" data-i18n-attr='{"title":"menus.detailTitle"}'>
+              <div id="menu-detail" class="menu-detail"></div>
+            </oas-card>
+          </div>
+
+          <oas-drawer data-testid="menu-form-drawer" title="新建菜单" placement="right" size="medium" no-footer data-i18n-attr='{"title":"menus.new"}'>
+            <oas-form id="menu-form">
+              <div class="menu-form-body">
+                <div class="form-field">
+                  <label class="form-label"><span data-i18n="menus.form.name">菜单名称</span> <span class="req">*</span></label>
+                  <oas-input data-testid="mf-name" name="name" data-i18n-attr='{"placeholder":"menus.rule.name"}' placeholder="请输入菜单名称"></oas-input>
+                </div>
+                <div class="form-field">
+                  <label class="form-label" data-i18n="menus.form.type">类型</label>
+                  <div class="radio-group inline" id="mf-type"></div>
+                </div>
+                <div class="form-field">
+                  <label class="form-label" data-i18n="menus.form.parent">上级菜单</label>
+                  <oas-tree-select data-testid="mf-parent" id="mf-parent" data-i18n-attr='{"placeholder":"menus.placeholder.top"}' placeholder="顶级菜单" options="[]" value="0"></oas-tree-select>
+                </div>
+                <div class="form-field">
+                  <label class="form-label"><span data-i18n="menus.form.perms">权限标识</span> <span class="form-hint-inline" id="mf-perms-hint"></span></label>
+                  <oas-input data-testid="mf-perms" name="perms" data-i18n-attr='{"placeholder":"menus.placeholder.perms"}' placeholder="如 order:list"></oas-input>
+                </div>
+                <div class="form-field">
+                  <label class="form-label"><span data-i18n="menus.form.path">路由地址</span> <span class="req" id="mf-path-req"></span></label>
+                  <oas-input data-testid="mf-path" name="path" data-i18n-attr='{"placeholder":"menus.placeholder.path"}' placeholder="如 /orders"></oas-input>
+                </div>
+                <div class="form-actions">
+                  <oas-space justify="end">
+                    <oas-button data-testid="mf-cancel" data-i18n="common.cancel">取消</oas-button>
+                    <oas-button data-testid="mf-save" type="primary" data-i18n="common.save">保存</oas-button>
+                  </oas-space>
+                </div>
+              </div>
+            </oas-form>
+          </oas-drawer>
+        </div>
+      </div>
+    </oas-layout>
+    <script type="module" src="./js/menus.js"></script>
+  </body>
+</html>
