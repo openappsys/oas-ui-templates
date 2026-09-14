@@ -27,8 +27,14 @@
     <link rel="stylesheet" href="./pages-b.css" />
     <link rel="stylesheet" href="./pages-c.css" />
     <script src="https://unpkg.com/@oas-ui/ui@2.5.3/dist/cdn.js"></script>
+    <script src="./js/icon-patch.js"></script>
     <style>
       /* 壳层与登录页样式：只消费 theme 的 --oas-* token，不硬编码色值 */
+      /* tint 变量补充（iconColor 用，vanilla app.css 同值） */
+      :root {
+        --oas-tint-violet: #7c3aed;
+        --oas-tint-cyan: #0ea5e9;
+      }
       * { box-sizing: border-box; }
       body {
         margin: 0;
