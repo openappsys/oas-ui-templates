@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>数据看板 · OAS Admin CDN · MPA</title>
+    <script src="./js/fouc.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/index.css" />
+    <script src="https://unpkg.com/@oas-ui/ui@2/dist/cdn.js"></script>
+    <link rel="stylesheet" href="./css/app.css" />
+    <link rel="stylesheet" href="./css/pages.css" />
+  </head>
+  <body>
+    <oas-layout class="app" viewport>
+      <header class="app-header" slot="header">
+          <button id="nav-toggle" class="nav-toggle" type="button" aria-label="打开菜单">☰</button>
+        <a class="oas-logo" href="/" style="text-decoration:none;color:inherit;cursor:pointer">
+          <span class="oas-logo-badge">OAS</span>
+          <span class="oas-logo-word" data-i18n="app.title">OAS Admin CDN · MPA</span>
+        </a>
+        <span class="spacer"></span>
+        <button id="lang-toggle" data-testid="lang-toggle" class="icon-btn" type="button" data-i18n="header.lang">English</button>
+        <button id="logout" class="icon-btn" type="button" data-i18n="header.logout">退出</button>
+      </header>
+      <oas-sider slot="sider">
+        <oas-sidebar id="nav" active="./data-board.html" items='[{"label":"仪表盘","value":"./dashboard.html","icon":"star","group":"菜单"},{"label":"用户管理","value":"./users.html","icon":"user","group":"菜单"},{"label":"基础表单","value":"./form.html","icon":"form","group":"菜单"}]'></oas-sidebar>
+      </oas-sider>
+      <div slot="content" id="view">
+        <div class="page board-page">
+          <div class="page-head">
+            <div>
+              <h1 class="page-title" data-i18n="board.title">数据看板</h1>
+              <p class="page-subtitle" data-i18n="board.subtitle">统计卡 + 柱状 / 饼图 / 堆叠柱状图 + 进度条 + 水印层，覆盖 dashboard 未展示的图表类型</p>
+            </div>
+          </div>
+          <oas-watermark text="OAS Admin Pro" repeat opacity="0.12">
+            <div class="board-grid" id="board-grid"></div>
+            <div class="board-charts">
+              <oas-card class="chart-card" data-i18n-attr='{"title":"board.monthRevenue"}' title="月度营收（柱状图 bar）">
+                <oas-chart id="chart-bar" type="bar" data-i18n-attr='{"aria-label":"board.monthRevenue"}' aria-label="月度营收"></oas-chart>
+              </oas-card>
+              <oas-card class="chart-card" data-i18n-attr='{"title":"board.categoryShare"}' title="品类占比（饼图 pie）">
+                <oas-chart id="chart-pie" type="pie" data-i18n-attr='{"aria-label":"board.categoryShare"}' aria-label="品类占比"></oas-chart>
+              </oas-card>
+              <oas-card class="chart-card chart-card--wide" data-i18n-attr='{"title":"board.channelTrend"}' title="渠道趋势（堆叠柱状图 stacked-bar）">
+                <oas-chart id="chart-stacked" type="stacked-bar" options='{"showLegend":true}' data-i18n-attr='{"aria-label":"board.channelTrend"}' aria-label="渠道趋势"></oas-chart>
+              </oas-card>
+            </div>
+            <oas-card class="board-progress" data-i18n-attr='{"title":"board.targetTitle"}' title="季度目标达成（progress）">
+              <div class="progress-list">
+                <div class="progress-row">
+                  <span class="progress-label" data-i18n="board.targetOrder">订单目标</span>
+                  <oas-progress data-testid="board-progress-order"></oas-progress>
+                </div>
+                <div class="progress-row">
+                  <span class="progress-label" data-i18n="board.targetRevenue">营收目标</span>
+                  <oas-progress data-testid="board-progress-revenue"></oas-progress>
+                </div>
+                <div class="progress-row">
+                  <span class="progress-label" data-i18n="board.targetUsers">用户目标</span>
+                  <oas-progress data-testid="board-progress-users"></oas-progress>
+                </div>
+              </div>
+            </oas-card>
+          </oas-watermark>
+        </div>
+      </div>
+    </oas-layout>
+    <script type="module" src="./js/data-board.js"></script>
+  </body>
+</html>

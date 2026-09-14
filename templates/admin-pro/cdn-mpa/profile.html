@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>个人中心 · OAS Admin CDN · MPA</title>
+    <script src="./js/fouc.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/index.css" />
+    <script src="https://unpkg.com/@oas-ui/ui@2/dist/cdn.js"></script>
+    <link rel="stylesheet" href="./css/app.css" />
+    <link rel="stylesheet" href="./css/pages.css" />
+  </head>
+  <body>
+    <oas-layout class="app" viewport>
+      <header class="app-header" slot="header">
+          <button id="nav-toggle" class="nav-toggle" type="button" aria-label="打开菜单">☰</button>
+        <a class="oas-logo" href="/" style="text-decoration:none;color:inherit;cursor:pointer">
+          <span class="oas-logo-badge">OAS</span>
+          <span class="oas-logo-word" data-i18n="app.title">OAS Admin CDN · MPA</span>
+        </a>
+        <span class="spacer"></span>
+        <button id="lang-toggle" data-testid="lang-toggle" class="icon-btn" type="button" data-i18n="header.lang">English</button>
+        <button id="logout" class="icon-btn" type="button" data-i18n="header.logout">退出</button>
+      </header>
+      <oas-sider slot="sider">
+        <oas-sidebar id="nav" active="" items='[{"label":"仪表盘","value":"./dashboard.html","icon":"star","group":"菜单"},{"label":"用户管理","value":"./users.html","icon":"user","group":"菜单"},{"label":"基础表单","value":"./form.html","icon":"form","group":"菜单"}]'></oas-sidebar>
+      </oas-sider>
+      <div slot="content" id="view">
+        <div class="page">
+          <h1 class="page-title" data-i18n="nav.profile">个人中心</h1>
+          <div class="profile-layout">
+            <oas-card class="profile-left">
+              <div class="profile-avatar-wrap">
+                <oas-avatar id="profile-avatar" size="64"><span slot="fallback" id="profile-avatar-text" class="profile-avatar-fallback"></span></oas-avatar>
+                <div id="profile-name" class="profile-name"></div>
+                <oas-tag id="profile-role-tag" type="primary"></oas-tag>
+              </div>
+              <oas-divider></oas-divider>
+              <div class="profile-logout-wrap">
+                <oas-button id="profile-logout" type="danger" variant="text" data-i18n="header.logout">退出</oas-button>
+              </div>
+            </oas-card>
+            <oas-card class="profile-right" data-i18n-attr='{"title":"profile.accountInfo"}' title="账户信息">
+              <oas-descriptions column="2">
+                <oas-descriptions-item data-i18n-attr='{"label":"profile.username"}' label="用户名"><span id="profile-name2"></span></oas-descriptions-item>
+                <oas-descriptions-item data-i18n-attr='{"label":"profile.role"}' label="角色"><span id="profile-role2"></span></oas-descriptions-item>
+                <oas-descriptions-item data-i18n-attr='{"label":"profile.loginAt"}' label="登录时间"><span id="profile-login-at"></span></oas-descriptions-item>
+                <oas-descriptions-item data-i18n-attr='{"label":"profile.dataVersion"}' label="数据版本"><span data-i18n="profile.demoData">演示数据 v1</span></oas-descriptions-item>
+              </oas-descriptions>
+            </oas-card>
+          </div>
+          <oas-card class="profile-theme" data-i18n-attr='{"title":"profile.appearance"}' title="外观">
+            <div class="theme-previews">
+              <button class="theme-preview is-light" data-theme="light" data-i18n-attr='{"aria-label":"profile.theme.light"}' aria-label="浅色主题">
+                <span class="preview-mini light-mini"></span>
+                <span class="preview-label" data-i18n="cmd.light">浅色</span>
+              </button>
+              <button class="theme-preview is-dark" data-theme="dark" data-i18n-attr='{"aria-label":"profile.theme.dark"}' aria-label="深色主题">
+                <span class="preview-mini dark-mini"></span>
+                <span class="preview-label" data-i18n="cmd.dark">深色</span>
+              </button>
+              <button class="theme-preview is-system" data-theme="system" data-i18n-attr='{"aria-label":"profile.theme.system"}' aria-label="跟随系统">
+                <span class="preview-mini system-mini"></span>
+                <span class="preview-label" data-i18n="cmd.system">跟随系统</span>
+              </button>
+            </div>
+          </oas-card>
+        </div>
+      </div>
+    </oas-layout>
+    <script type="module" src="./js/profile.js"></script>
+  </body>
+</html>

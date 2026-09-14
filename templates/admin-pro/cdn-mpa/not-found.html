@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>页面不存在 · OAS Admin CDN · MPA</title>
+    <script src="./js/fouc.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/index.css" />
+    <script src="https://unpkg.com/@oas-ui/ui@2/dist/cdn.js"></script>
+    <link rel="stylesheet" href="./css/app.css" />
+    <link rel="stylesheet" href="./css/pages.css" />
+  </head>
+  <body>
+    <oas-layout class="app" viewport>
+      <header class="app-header" slot="header">
+          <button id="nav-toggle" class="nav-toggle" type="button" aria-label="打开菜单">☰</button>
+        <a class="oas-logo" href="/" style="text-decoration:none;color:inherit;cursor:pointer">
+          <span class="oas-logo-badge">OAS</span>
+          <span class="oas-logo-word" data-i18n="app.title">OAS Admin CDN · MPA</span>
+        </a>
+        <span class="spacer"></span>
+        <button id="lang-toggle" data-testid="lang-toggle" class="icon-btn" type="button" data-i18n="header.lang">English</button>
+        <button id="logout" class="icon-btn" type="button" data-i18n="header.logout">退出</button>
+      </header>
+      <oas-sider slot="sider">
+        <oas-sidebar id="nav" active="./not-found.html" items='[{"label":"仪表盘","value":"./dashboard.html","icon":"star","group":"菜单"},{"label":"用户管理","value":"./users.html","icon":"user","group":"菜单"},{"label":"基础表单","value":"./form.html","icon":"form","group":"菜单"}]'></oas-sidebar>
+      </oas-sider>
+      <div slot="content" id="view">
+        <div class="page notice" data-title-key="common.404.title">
+          <oas-icon class="notice-icon notice-icon--search" name="search" size="28"></oas-icon>
+          <div class="notice-code">404</div>
+          <h1 class="notice-title" data-i18n="common.404.title">页面不存在</h1>
+          <p class="notice-desc" data-i18n="common.404.desc">你访问的页面不存在或已被移除。</p>
+          <div class="notice-actions">
+            <oas-button type="default" variant="outlined" data-action="back" data-i18n="common.back">返回上一页</oas-button>
+            <oas-button type="primary" data-action="home" data-i18n="common.home">返回首页</oas-button>
+          </div>
+        </div>
+      </div>
+    </oas-layout>
+    <script type="module" src="./js/notice.js"></script>
+  </body>
+</html>

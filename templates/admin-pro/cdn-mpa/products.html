@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>商品管理 · OAS Admin CDN · MPA</title>
+    <script src="./js/fouc.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/index.css" />
+    <script src="https://unpkg.com/@oas-ui/ui@2/dist/cdn.js"></script>
+    <link rel="stylesheet" href="./css/app.css" />
+    <link rel="stylesheet" href="./css/pages.css" />
+  </head>
+  <body>
+    <oas-layout class="app" viewport>
+      <header class="app-header" slot="header">
+          <button id="nav-toggle" class="nav-toggle" type="button" aria-label="打开菜单">☰</button>
+        <a class="oas-logo" href="/" style="text-decoration:none;color:inherit;cursor:pointer">
+          <span class="oas-logo-badge">OAS</span>
+          <span class="oas-logo-word" data-i18n="app.title">OAS Admin CDN · MPA</span>
+        </a>
+        <span class="spacer"></span>
+        <button id="lang-toggle" data-testid="lang-toggle" class="icon-btn" type="button" data-i18n="header.lang">English</button>
+        <button id="logout" class="icon-btn" type="button" data-i18n="header.logout">退出</button>
+      </header>
+      <oas-sider slot="sider">
+        <oas-sidebar id="nav" active="./products.html" items='[{"label":"仪表盘","value":"./dashboard.html","icon":"star","group":"菜单"},{"label":"用户管理","value":"./users.html","icon":"user","group":"菜单"},{"label":"基础表单","value":"./form.html","icon":"form","group":"菜单"}]'></oas-sidebar>
+      </oas-sider>
+      <div slot="content" id="view">
+        <div class="page products-page">
+          <div class="page-head">
+            <div>
+              <h1 class="page-title" data-i18n="nav.products">商品管理</h1>
+              <p class="page-subtitle" data-i18n="products.subtitle">维护商品资料与上下架状态</p>
+            </div>
+            <oas-button data-testid="product-create" type="primary" icon="plus" data-i18n="products.newProduct">新建商品</oas-button>
+          </div>
+          <div class="products-toolbar">
+            <oas-input data-testid="product-search" data-i18n-attr='{"placeholder":"products.search"}' placeholder="搜索商品名称" clearable prefix-icon="search"></oas-input>
+            <oas-select data-testid="product-category" data-i18n-attr='{"placeholder":"products.category"}' placeholder="分类" options='[]' value=""></oas-select>
+            <oas-segmented data-testid="product-view" class="products-view-toggle" options='[]' value="cards"></oas-segmented>
+            <oas-button data-testid="product-columns" class="products-columns-btn" icon="gear" data-i18n="products.columns.title">列设置</oas-button>
+          </div>
+          <div class="product-batch-bar" data-testid="product-batch-bar" hidden>
+            <span class="product-batch-count" data-testid="product-batch-count"></span>
+            <oas-space class="product-batch-actions" justify="end">
+              <oas-button data-testid="product-batch-unlist" size="small" data-i18n="products.batch.unlist">批量下架</oas-button>
+              <oas-button data-testid="product-batch-list" size="small" data-i18n="products.batch.list">批量上架</oas-button>
+              <oas-popconfirm data-testid="product-batch-del-pop" id="product-batch-del-pop" title="">
+                <oas-button data-testid="product-batch-delete" size="small" type="danger" data-i18n="products.batch.delete">批量删除</oas-button>
+              </oas-popconfirm>
+            </oas-space>
+          </div>
+          <oas-masonry class="product-grid" data-testid="product-grid" columns="4" gap="12px"></oas-masonry>
+          <div class="table-wrap products-table-wrap" hidden>
+            <oas-table data-testid="product-table" row-key="id" checkable stripe></oas-table>
+            <div class="product-list-empty" data-testid="product-empty" hidden>
+              <oas-empty data-i18n-attr='{"description":"products.empty"}' description="未找到匹配商品"></oas-empty>
+            </div>
+          </div>
+          <oas-pagination data-testid="product-pager" hidden total="0" page-size="5" current="1" show-total></oas-pagination>
+          <!-- 表单容器（dialog/drawer，随设置 form-mode）由 js/products.js 动态插入 -->
+          <oas-modal data-testid="product-columns-modal" id="product-columns-modal" data-i18n-attr='{"title":"products.columns.title"}' title="列设置" no-footer>
+            <div class="product-columns-list" data-testid="product-columns-list"></div>
+            <div class="form-actions">
+              <oas-space justify="end">
+                <oas-button data-testid="product-columns-reset" data-i18n="products.columns.reset">恢复默认</oas-button>
+                <oas-button data-testid="product-columns-close" type="primary" data-i18n="common.save">保存</oas-button>
+              </oas-space>
+            </div>
+          </oas-modal>
+        </div>
+      </div>
+    </oas-layout>
+    <script type="module" src="./js/products.js"></script>
+  </body>
+</html>

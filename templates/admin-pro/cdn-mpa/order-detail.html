@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>订单详情 · OAS Admin CDN · MPA</title>
+    <script src="./js/fouc.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/index.css" />
+    <script src="https://unpkg.com/@oas-ui/ui@2/dist/cdn.js"></script>
+    <link rel="stylesheet" href="./css/app.css" />
+    <link rel="stylesheet" href="./css/pages.css" />
+  </head>
+  <body>
+    <oas-layout class="app" viewport>
+      <header class="app-header" slot="header">
+          <button id="nav-toggle" class="nav-toggle" type="button" aria-label="打开菜单">☰</button>
+        <a class="oas-logo" href="/" style="text-decoration:none;color:inherit;cursor:pointer">
+          <span class="oas-logo-badge">OAS</span>
+          <span class="oas-logo-word" data-i18n="app.title">OAS Admin CDN · MPA</span>
+        </a>
+        <span class="spacer"></span>
+        <button id="lang-toggle" data-testid="lang-toggle" class="icon-btn" type="button" data-i18n="header.lang">English</button>
+        <button id="logout" class="icon-btn" type="button" data-i18n="header.logout">退出</button>
+      </header>
+      <oas-sider slot="sider">
+        <oas-sidebar id="nav" active="./orders.html" items='[{"label":"仪表盘","value":"./dashboard.html","icon":"star","group":"菜单"},{"label":"用户管理","value":"./users.html","icon":"user","group":"菜单"},{"label":"基础表单","value":"./form.html","icon":"form","group":"菜单"}]'></oas-sidebar>
+      </oas-sider>
+      <div slot="content" id="view">
+        <div class="page order-detail-page">
+          <oas-page-header data-testid="order-page-header" class="order-detail-ph" data-i18n-attr='{"title":"nav.orderDetail"}' title="订单详情">
+            <div slot="extra" class="ph-extra">
+              <a class="link-btn" href="./orders.html" data-testid="order-back" data-i18n="orderDetail.backList">返回列表</a>
+              <oas-tag data-testid="order-status-tag" data-i18n="orderDetail.loading">加载中</oas-tag>
+            </div>
+          </oas-page-header>
+          <div id="order-detail-card">
+            <oas-card>
+              <div id="order-detail-steps" hidden></div>
+              <oas-descriptions data-testid="order-detail-basic" id="order-detail-basic" column="2"></oas-descriptions>
+              <div class="order-timeline-head" data-i18n="orderDetail.timelineTitle">操作日志</div>
+              <div id="order-detail-timeline-wrap"></div>
+              <div class="order-detail-foot">
+                <oas-button data-testid="order-detail-action" type="primary" hidden></oas-button>
+                <div class="order-detail-note" id="order-detail-note" hidden></div>
+              </div>
+            </oas-card>
+          </div>
+          <div id="order-detail-missing" hidden></div>
+        </div>
+      </div>
+    </oas-layout>
+    <script type="module" src="./js/order-detail.js"></script>
+  </body>
+</html>

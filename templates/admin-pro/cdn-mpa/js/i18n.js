@@ -50,6 +50,15 @@ export function t(key) {
   return dict[locale][key] ?? key
 }
 
+// 插值换文：t() 基础上支持 {name} 占位符（对齐 vanilla t(key, params) 的常用子集）
+export function tf(key, params) {
+  let s = t(key)
+  if (params) {
+    for (const [k, v] of Object.entries(params)) s = s.split(`{${k}}`).join(String(v))
+  }
+  return s
+}
+
 // 静态文本换文：遍历 [data-i18n]（textContent）与 [data-i18n-attr]（JSON 属性映射），
 // 按当前 locale 替换。HTML 里写中文源，入口是 deferred module，paint 前完成无闪烁
 export function applyStaticTexts(root = document) {

@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>订单管理 · OAS Admin CDN · MPA</title>
+    <script src="./js/fouc.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/index.css" />
+    <script src="https://unpkg.com/@oas-ui/ui@2/dist/cdn.js"></script>
+    <link rel="stylesheet" href="./css/app.css" />
+    <link rel="stylesheet" href="./css/pages.css" />
+  </head>
+  <body>
+    <oas-layout class="app" viewport>
+      <header class="app-header" slot="header">
+          <button id="nav-toggle" class="nav-toggle" type="button" aria-label="打开菜单">☰</button>
+        <a class="oas-logo" href="/" style="text-decoration:none;color:inherit;cursor:pointer">
+          <span class="oas-logo-badge">OAS</span>
+          <span class="oas-logo-word" data-i18n="app.title">OAS Admin CDN · MPA</span>
+        </a>
+        <span class="spacer"></span>
+        <button id="lang-toggle" data-testid="lang-toggle" class="icon-btn" type="button" data-i18n="header.lang">English</button>
+        <button id="logout" class="icon-btn" type="button" data-i18n="header.logout">退出</button>
+      </header>
+      <oas-sider slot="sider">
+        <oas-sidebar id="nav" active="./orders.html" items='[{"label":"仪表盘","value":"./dashboard.html","icon":"star","group":"菜单"},{"label":"用户管理","value":"./users.html","icon":"user","group":"菜单"},{"label":"基础表单","value":"./form.html","icon":"form","group":"菜单"}]'></oas-sidebar>
+      </oas-sider>
+      <div slot="content" id="view">
+        <div class="page">
+          <div class="page-head">
+            <div>
+              <h1 class="page-title" data-i18n="nav.orders">订单管理</h1>
+              <p class="page-subtitle" data-i18n="orders.subtitle">跟踪订单状态与销售情况</p>
+            </div>
+            <oas-button data-testid="orders-export" type="primary" icon="download" data-i18n="orders.exportCsv">导出 CSV</oas-button>
+          </div>
+          <div id="orders-scope" class="orders-scope" hidden>
+            <oas-icon size="16" name="info"></oas-icon>
+            <span data-testid="orders-scope-text" data-i18n="orders.scopeOnlySelf">数据权限：仅本人</span>
+          </div>
+          <div class="orders-stats" id="orders-stats"></div>
+          <oas-card class="list-card" title="订单列表" data-i18n-attr='{"title":"orders.listTitle"}'>
+            <div class="orders-toolbar" slot="extra">
+              <oas-input data-testid="orders-search" data-i18n-attr='{"placeholder":"orders.search"}' placeholder="搜索客户名称" clearable prefix-icon="search"></oas-input>
+            </div>
+            <oas-tabs data-testid="orders-tabs" id="orders-tabs"></oas-tabs>
+            <div class="table-wrap" id="orders-table-wrap">
+              <oas-table data-testid="orders-list" row-key="id" data-i18n-attr='{"empty-text":"orders.empty"}' empty-text="未找到匹配订单" pagination page-size="8"></oas-table>
+              <div class="empty-overlay" id="orders-empty" hidden>
+                <oas-empty data-i18n-attr='{"description":"orders.empty"}' description="未找到匹配订单"></oas-empty>
+                <oas-button id="orders-clear" type="primary" data-i18n="common.clearFilter">清除筛选</oas-button>
+              </div>
+            </div>
+          </oas-card>
+
+          <oas-drawer data-testid="order-drawer" data-i18n-attr='{"title":"orders.detailTitle"}' title="订单详情" placement="right" size="medium" no-footer>
+            <div class="order-detail">
+              <div class="order-detail-head">
+                <div>
+                  <div class="order-detail-no mono" id="order-detail-no"></div>
+                  <div class="order-detail-sub" data-i18n="orders.detailTitle">订单详情</div>
+                </div>
+                <oas-tag data-testid="order-detail-tag" id="order-detail-tag"></oas-tag>
+              </div>
+              <oas-descriptions id="order-detail-desc" column="1"></oas-descriptions>
+              <div class="order-detail-foot">
+                <div class="order-detail-foot-row">
+                  <oas-button data-testid="order-detail-action" id="order-detail-action" type="primary" hidden></oas-button>
+                  <a class="link-btn" data-testid="order-detail-link" href="./order-detail.html" data-i18n="orders.fullDetail">查看完整详情 →</a>
+                </div>
+                <div class="order-detail-note" id="order-detail-note" hidden></div>
+              </div>
+            </div>
+          </oas-drawer>
+        </div>
+      </div>
+    </oas-layout>
+    <script type="module" src="./js/orders.js"></script>
+  </body>
+</html>

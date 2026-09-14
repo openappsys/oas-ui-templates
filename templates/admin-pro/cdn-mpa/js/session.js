@@ -11,7 +11,8 @@ export function readSession() {
 
 export function writeSession(name) {
   try {
-    localStorage.setItem(SESSION_KEY, JSON.stringify({ name }))
+    // loginAt：个人中心「登录时间」展示用（毫秒时间戳）
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ name, loginAt: Date.now() }))
   } catch {
     /* ignore */
   }
