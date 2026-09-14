@@ -1,10 +1,11 @@
 * {
   box-sizing: border-box;
 }
-/* tint 变量补充（iconColor 用，vanilla app.css 同值） */
+/* 变量补充（vanilla app.css 同值）：tint 给 iconColor、control-height-lg 控侧栏菜单行高 32px */
 :root {
   --oas-tint-violet: #7c3aed;
   --oas-tint-cyan: #0ea5e9;
+  --oas-control-height-lg: 32px;
 }
 
 body {
