@@ -36,17 +36,25 @@ function renderLogin() {
         <h1>${t('login.title')}</h1>
         <p class="sub">${t('login.subtitle')}</p>
         <oas-input data-testid="login-name" placeholder="${t('login.namePh')}"></oas-input>
+        <oas-select data-testid="login-role" value="admin" options='${JSON.stringify([
+          { label: t('users.role.admin'), value: 'admin' },
+          { label: t('profile.roleViewer'), value: 'viewer' },
+        ])}'></oas-select>
         <oas-button data-testid="login-submit" type="primary">${t('login.submit')}</oas-button>
         <p class="login-tip">${t('login.tip')}</p>
       </div>
     </div>`
   const input = app.querySelector('[data-testid="login-name"]')
+  const roleSelect = app.querySelector('[data-testid="login-role"]')
   const submit = () => {
     const name = (input.shadowRoot?.querySelector('input')?.value ?? '').trim()
     if (!name) return
     try {
-      // loginAt 供个人中心「登录时间」展示（对齐 vanilla session 语义）
-      localStorage.setItem(SESSION_KEY, JSON.stringify({ name, loginAt: Date.now() }))
+      // loginAt 供个人中心「登录时间」展示；role 供仪表盘快捷操作 / 用户页只读判断（对齐 vanilla session 语义）
+      localStorage.setItem(
+        SESSION_KEY,
+        JSON.stringify({ name, role: roleSelect.getAttribute('value') === 'viewer' ? 'viewer' : 'admin', loginAt: Date.now() }),
+      )
     } catch {
       /* 隐私模式 */
     }

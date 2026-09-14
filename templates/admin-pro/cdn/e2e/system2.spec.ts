@@ -1,8 +1,8 @@
 // e2e/system2.spec.ts —— 系统管理页用例二（移植自 react/e2e/system2.spec.ts 字典/分类/用户段，
 // 断言语义逐条对齐）：字典键值、商品分类 CRUD 四连、用户角色列与行编辑回填
 // 适配点：cdn 无角色系统——react 版「viewer 操作权限禁用按钮」「viewer 数据权限提示条」
-// 「用户详情弹窗权限标识」不移植（cdn 用户页为轻量实现，无详情弹窗）；
-// 行编辑按钮改用 cdn 的 [data-edit] 属性定位（react 版为 user-row-edit testid）
+// 的用例语义由登录页角色选择承接（admin/viewer），行编辑按钮走 vanilla 同款
+// user-row-edit testid 定位
 import { expect, test } from '@playwright/test'
 import { beforeEachMock, login, noConsoleErrors } from './helpers'
 
@@ -117,9 +117,9 @@ test('用户管理：角色列取角色名 + 行编辑按钮打开回填表单',
   await expect(page.getByTestId('users-table')).toContainText('管理员')
 
   // 注意：oas-table 行编辑按钮会连带派发 oas-row-click（vanilla 同款边界），
-  // cdn 用户页未监听行点击，仅打开编辑弹窗
-  await page.getByTestId('users-table').locator('[data-edit]').first().click()
+  // 编辑弹窗与详情弹窗会同时置 visible，此处仅断言编辑弹窗回填
+  await page.getByTestId('users-table').locator('[data-testid="user-row-edit"]').first().click()
   await expect(page.getByTestId('user-form-modal')).toHaveAttribute('visible', '')
-  await expect(page.getByTestId('uf-name').locator('input')).toHaveValue('张伟')
+  await expect(page.getByTestId('field-name').locator('input')).toHaveValue('张伟')
   expect(errors).toEqual([])
 })

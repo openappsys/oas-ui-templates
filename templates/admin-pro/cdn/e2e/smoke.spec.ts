@@ -34,19 +34,22 @@ test('users 表格渲染种子数据 + 弹窗新建入表', async ({ page }) => 
   await login(page)
   await page.locator('#nav').getByText('用户管理').click()
   await expect(page.getByTestId('users-table')).toContainText('张伟')
-  await page.getByTestId('user-new').click()
-  await page.getByTestId('uf-name').locator('input').fill('测试用户')
-  await page.getByTestId('uf-email').locator('input').fill('test@example.com')
-  await page.getByTestId('uf-save').click()
+  await page.getByTestId('user-create').click()
+  await page.getByTestId('field-name').locator('input').fill('测试用户')
+  await page.getByTestId('field-email').locator('input').fill('test@example.com')
+  await page.getByTestId('form-save').click()
   await expect(page.getByTestId('users-table')).toContainText('测试用户')
 })
 
-test('form 空值提交触发必填校验且不跳转', async ({ page }) => {
+test('form 三步向导：空值下一步拦截且不跳转', async ({ page }) => {
   await login(page)
-  await page.locator('#nav').getByText('基础表单').click()
-  await page.getByRole('button', { name: '提交' }).click()
-  await expect(page.locator('#basic-form')).toContainText('请输入项目名称')
+  await page.locator('#nav').getByText('创建订单').click()
+  await expect(page.getByTestId('form-steps')).toBeVisible()
+  await page.getByTestId('form-next').click()
+  await expect(page.getByTestId('form-error-customer')).toContainText('请输入客户名称')
+  await expect(page.getByTestId('form-error-phone')).toContainText('请输入手机号')
   await expect(page).toHaveURL(/#\/form/)
+  await expect(page.getByTestId('form-step1')).toBeVisible()
 })
 
 test('中英切换：壳层标题与菜单即时变化', async ({ page }) => {

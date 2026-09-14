@@ -1,19 +1,13 @@
 /**
  * 路由表（自 vanilla src/router/routes.ts 去 TS 移植，path / 顺序 / meta 逐字对齐）
  * 共 22 条 + 登录页（app.js 壳层特判）= 与 vanilla 全量对齐的 23 页。
- * 渲染函数：既有 3 页（dashboard / users / form）在 pages.js；
- * 批 A（orders / order-detail / products / product-edit / data-board / result /
- * profile / 403 / 404 / 500）在 pages-*.js 各自文件；
- * 批 B（roles / menus / dept / category / dict / logs / settings / basic-form /
- * advanced-form）同样各自分文件（单文件 ≤400 行纪律）。
- *
- * 过渡期偏差（既有 e2e 契约，保留）：
- * - cdn 既有 e2e 断言「点击侧栏『基础表单』落在 #/form 且渲染 #basic-form」，
- *   故 /form 侧栏标签沿用 cdn 既有键 nav.form（navKey 覆盖），页面仍是基础表单实现；
- * - /basic-form 侧栏暂隐藏（navHidden），避免与 /form 出现两个同名菜单项，
- *   路由本身可达（哈希直访渲染真实现）。
+ * 渲染函数：dashboard / users / form 三页在 pages-dashboard.js / pages-users.js /
+ * pages-form.js（三步订单向导）；其余批 A / 批 B 页面在 pages-*.js 各自文件
+ * （单文件 ≤400 行纪律）。
  */
-import { renderDashboard, renderForm, renderUsers } from './pages.js'
+import { renderDashboard } from './pages-dashboard.js'
+import { renderUsers } from './pages-users.js'
+import { renderForm } from './pages-form.js'
 import { renderOrders } from './pages-orders.js'
 import { renderOrderDetail } from './pages-order-detail.js'
 import { renderProductEdit } from './pages-product-edit.js'
@@ -36,7 +30,7 @@ import { renderAdvancedForm } from './pages-advanced-form.js'
  * @typedef {Object} CdnRoute
  * @property {string} path
  * @property {string} titleKey 页面标题 i18n 键（document.title）
- * @property {string} [navKey] 侧栏标签 i18n 键（缺省用 titleKey；/form 过渡期覆盖）
+ * @property {string} [navKey] 侧栏标签 i18n 键（缺省用 titleKey）
  * @property {string} icon
  * @property {string} [iconColor]
  * @property {string[]} [roles] 角色白名单（逐字保留 vanilla 元数据；cdn 会话无角色概念，暂不启用守卫）
@@ -103,7 +97,6 @@ export const routes = [
   {
     path: '/form',
     titleKey: 'nav.createOrder',
-    navKey: 'nav.form',
     icon: 'plus',
     iconColor: 'var(--oas-color-warning)',
     group: 'nav.business',
@@ -226,7 +219,6 @@ export const routes = [
     icon: 'form',
     iconColor: 'var(--oas-color-success)',
     group: 'nav.demo',
-    navHidden: true,
     render: renderBasicForm,
   },
   {
