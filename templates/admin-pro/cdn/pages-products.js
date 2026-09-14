@@ -235,6 +235,9 @@ export function renderProducts(el) {
 
   async function refresh() {
     const [rows, cats] = await Promise.all([listProducts(), listCategories()])
+    // stale 守卫：数据层 delay() 用 setTimeout 模拟，等待期间用户可能已导航离开，
+    // el 脱离文档后 applyCategoryOptions/renderList 的 querySelector 会拿到 null（或写陈旧 DOM），直接放弃本次续体
+    if (!el.isConnected) return
     state.rows = rows
     state.categories = cats.map((c) => ({ label: c.name, value: c.name }))
     applyCategoryOptions()

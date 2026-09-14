@@ -207,6 +207,8 @@ export function renderOrders(el) {
     const table = q('[data-testid="orders-list"]')
     table.setAttribute('loading', '')
     let rows = await listOrders()
+    // stale 守卫：等待期间导航离开后 el 已脱离文档，续体继续 q() 查询会拿到 null 并抛 TypeError
+    if (!el.isConnected) return
     const u = JSON.parse(localStorage.getItem(SESSION_KEY) ?? 'null')
     // cdn 会话无角色概念（登录仅存 name），viewer 数据权限分支保留但恒不生效
     if (u?.role === 'viewer') {
@@ -314,6 +316,8 @@ export function renderOrders(el) {
       }
       OASUI.message.success(t('orders.flowApplied', { action: button.textContent }))
       await refresh()
+      // stale 守卫：refresh 等待期间导航离开则放弃续体，避免对脱离文档的抽屉 DOM 抛 TypeError
+      if (!el.isConnected) return
       const row = state.rows.find((r) => r.id === state.selectedId)
       if (row) {
         const tag = q('#order-detail-tag')

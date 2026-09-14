@@ -229,6 +229,8 @@ export function renderLogs(el) {
       keyword: state.keyword,
       dateRange: state.dateRange ?? undefined,
     })
+    // stale 守卫：等待期间导航离开后 el 已脱离文档，续体渲染只会写入陈旧 DOM，直接放弃
+    if (!el.isConnected) return
     renderVirtualList()
     renderAnchor()
     renderStats()
@@ -323,6 +325,8 @@ export function renderLogs(el) {
 
   async function init() {
     state.rows = await listLogs()
+    // stale 守卫：同 applyFilter，导航离开后不再续写已脱离文档的 DOM
+    if (!el.isConnected) return
     await applyFilter()
   }
 

@@ -70,6 +70,8 @@ export function bindBatchBar(el, state, { refresh, clear }) {
       if (!row || row.status === target) continue
       if (await toggleProductStatus(id)) changed++
     }
+    // stale 守卫：批量循环逐条 await，期间导航离开后 clear() 的新查询会在脱离文档的 el 上抛 TypeError
+    if (!el.isConnected) return
     clear()
     OASUI.message.success(t('products.batch.statusDone', { count: changed }))
     void refresh()
@@ -80,6 +82,8 @@ export function bindBatchBar(el, state, { refresh, clear }) {
     for (const id of state.selected) {
       if (await removeProduct(id)) removed++
     }
+    // stale 守卫：同 batchStatus，导航离开后不再操作脱离文档的 DOM
+    if (!el.isConnected) return
     clear()
     OASUI.message.success(t('products.batch.deleted', { count: removed }))
     void refresh()

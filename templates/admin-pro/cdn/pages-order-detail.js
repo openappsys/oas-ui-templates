@@ -113,6 +113,9 @@ export function renderOrderDetail(el) {
 
   async function load() {
     order = await getOrder(id)
+    // stale 守卫：数据层 delay() 用 setTimeout 模拟，等待期间导航离开后 el 已脱离文档，
+    // 续体的 q() 查询会拿到 null 并抛 TypeError，直接放弃
+    if (!el.isConnected) return
     if (!order) {
       q('#order-detail-card').hidden = true
       const missing = q('#order-detail-missing')
@@ -134,6 +137,8 @@ export function renderOrderDetail(el) {
       button.setAttribute('loading', '')
       const updated = await updateOrderStatus(order.id, target)
       button.removeAttribute('loading')
+      // stale 守卫：等待期间导航离开则放弃续体，renderAll 对脱离文档的 DOM 查询会抛 TypeError
+      if (!el.isConnected) return
       if (!updated) {
         OASUI.message.error(t('orders.notFound'))
         return

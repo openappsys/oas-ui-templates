@@ -70,10 +70,15 @@ export function renderProductEdit(el) {
 
   async function init() {
     const cats = await listCategories()
+    // stale 守卫：数据层 delay() 用 setTimeout 模拟，等待期间导航离开后 el 已脱离文档，
+    // 续体的 querySelector 会拿到 null 并抛 TypeError，直接放弃
+    if (!el.isConnected) return
     categoryOptions = cats.map((c) => ({ label: c.name, value: c.name }))
     q('[data-testid="pf-category"]').setAttribute('options', JSON.stringify(categoryOptions))
     if (id && Number.isFinite(id)) {
       editing = await getProduct(id)
+      // 两段 await 之间仍可能发生导航离开，第二段醒来后同样放弃
+      if (!el.isConnected) return
       if (editing) fillProductForm(el, editing, categoryOptions)
       else OASUI.message.error(t('products.notFound'))
     } else {

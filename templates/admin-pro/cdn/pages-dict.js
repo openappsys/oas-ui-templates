@@ -214,6 +214,8 @@ export function renderDict(el) {
       return
     }
     state.loadedItems = await listDictItems(state.selectedTypeId)
+    // stale 守卫：等待期间导航离开后 el 已脱离文档，续体渲染只会写入陈旧 DOM，直接放弃
+    if (!el.isConnected) return
     state.counts[state.selectedTypeId] = state.loadedItems.length
     renderTypeList()
     renderItems()
@@ -243,6 +245,8 @@ export function renderDict(el) {
 
   async function refresh() {
     state.types = await listDictTypes()
+    // stale 守卫：等待期间导航离开后 el 已脱离文档，后续渲染只会写入陈旧 DOM，直接放弃
+    if (!el.isConnected) return
     if (state.selectedTypeId == null || !state.types.some((ty) => ty.id === state.selectedTypeId)) {
       state.selectedTypeId = state.types[0]?.id ?? null
     }

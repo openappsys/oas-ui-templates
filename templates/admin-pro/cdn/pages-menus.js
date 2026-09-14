@@ -217,6 +217,8 @@ export function renderMenus(el) {
 
   async function init() {
     state.tree = await treeMenus()
+    // stale 守卫：等待期间导航离开后 el 已脱离文档，续体渲染只会写入陈旧 DOM，直接放弃
+    if (!el.isConnected) return
     buildParentOptions()
     state.selectedId = state.tree[0]?.id ?? null
     renderTree()

@@ -136,6 +136,8 @@ export function renderCategory(el) {
 
   async function refresh() {
     state.rows = await listCategories()
+    // stale 守卫：等待期间导航离开后 el 已脱离文档，renderTable 只会写入陈旧 DOM，直接放弃
+    if (!el.isConnected) return
     renderTable()
   }
 
