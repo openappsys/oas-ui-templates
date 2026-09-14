@@ -12,8 +12,8 @@
 | `templates/admin-pro/react` | Vite + React 19 | 完整后台（react-router hash/history 双模式 · useOasEvent 事件桥接 · 与 vanilla 同等功能集，独立实现） | ✅ | ✅ | 可用 |
 | `templates/admin-pro/vue` | Vite + Vue 3.5 | 完整后台（vue-router · @oas-* 模板直绑 · 与 vanilla 同等功能集，独立实现） | ✅ | ✅ | 可用 |
 | `templates/admin-pro/svelte` | Vite + Svelte 5 | 完整后台（自研双模式路由 · onoas-* 模板直绑 · 与 vanilla 同等功能集，独立实现） | ✅ | ✅ | 可用 |
-| `templates/admin-pro/cdn` | 零构建（unpkg CDN + 原生 JS） | 轻量后台（登录 / 路由 / CRUD / 表单 / 中英切换） | — | ✅ | 可用 |
-| `templates/admin-pro/cdn-mpa` | 零构建（unpkg CDN + 原生 JS） | 轻量后台 MPA（一页一 HTML · 登录 / CRUD / 表单 / 中英切换） | — | ✅ | 可用 |
+| `templates/admin-pro/cdn` | 零构建（unpkg CDN + 原生 JS） | 完整后台（与 vanilla 同等功能集 · 登录 / 路由 / CRUD / 系统管理 / 中英切换） | — | ✅ | 可用 |
+| `templates/admin-pro/cdn-mpa` | 零构建（unpkg CDN + 原生 JS） | 完整后台 MPA（一页一 HTML · 与 vanilla 同等功能集 · 登录 / CRUD / 系统管理 / 中英切换） | — | ✅ | 可用 |
 
 ## 开发
 
