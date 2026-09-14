@@ -66,3 +66,47 @@ export function initShell({ active }) {
     location.href = './index.html'
   })
 }
+
+// ── 公开 helper：面包屑注入（Task 4+ 页面使用） ───────────────────────────
+// 用法：OASShell.setBreadcrumb([
+//   { label: 'nav.orders', href: './orders.html' }, // label 传 i18n key，渲染时经 t() 换文
+//   { label: 'order.detail' },                      // 末项不传 href = 当前页（aria-current）
+// ])
+// - 渲染进页面 .crumbs-bar（#view 首位），无该容器则动态创建
+// - 纯原生 DOM 操作（ol/li/a），无组件依赖
+// - 中英支持：items 注册在本模块内，语言切换 = setLocale + reload（MPA 约定），
+//   页面初始化时重新调用 setBreadcrumb 即以新 locale 的 t() 重新渲染
+let registeredCrumbs = []
+
+function renderCrumbs() {
+  const view = document.querySelector('#view')
+  if (!view || registeredCrumbs.length === 0) return
+  let bar = view.querySelector('.crumbs-bar')
+  if (!bar) {
+    bar = document.createElement('div')
+    bar.className = 'crumbs-bar'
+    view.prepend(bar)
+  }
+  const ol = document.createElement('ol')
+  ol.className = 'crumbs'
+  for (const item of registeredCrumbs) {
+    const li = document.createElement('li')
+    if (item.href) {
+      const a = document.createElement('a')
+      a.href = item.href
+      a.textContent = t(item.label)
+      li.appendChild(a)
+    } else {
+      li.setAttribute('aria-current', 'page')
+      li.textContent = t(item.label)
+    }
+    ol.appendChild(li)
+  }
+  bar.replaceChildren(ol)
+}
+
+window.OASShell = window.OASShell || {}
+window.OASShell.setBreadcrumb = function (items) {
+  registeredCrumbs = Array.isArray(items) ? items.slice() : []
+  renderCrumbs()
+}

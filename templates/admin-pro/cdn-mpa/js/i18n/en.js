@@ -1,3 +1,4 @@
+// i18n 字典文件豁免 ≤400 行口径（数据表性质，拆散有害）；见计划 Global Constraints 批注
 export default {
   "app.title": "OAS Admin CDN · MPA",
   "nav.group": "Menu",

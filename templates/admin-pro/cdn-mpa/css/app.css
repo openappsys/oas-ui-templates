@@ -71,6 +71,34 @@ body {
   font-size: 13px;
   color: var(--oas-color-text-secondary);
 }
+.crumbs-bar {
+  flex-shrink: 0;
+  padding: var(--oas-space-2) var(--oas-space-4);
+  border-bottom: 1px solid var(--oas-color-border);
+}
+.crumbs {
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+.crumbs li + li::before {
+  content: '/';
+  color: var(--oas-color-text-secondary);
+}
+.crumbs a {
+  color: var(--oas-color-text-secondary);
+  text-decoration: none;
+}
+.crumbs a:hover {
+  color: var(--oas-color-primary);
+}
+.crumbs [aria-current='page'] {
+  color: var(--oas-color-text-primary);
+}
 .stat-grid {
   display: grid;
   gap: var(--oas-space-3);
