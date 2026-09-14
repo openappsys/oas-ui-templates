@@ -79,7 +79,7 @@ function boot() {
 function renderDashboard() {
   const user = readSession()
   const name = user?.name ?? ''
-  // mpa 会话暂无角色字段（session.js 仅存 name/loginAt），演示账号按管理员，与 profile.js 同款
+  // role 来自登录页角色选择；旧会话无 role 时回落 admin（与 profile.js 同款）
   const isAdmin = (user?.role ?? 'admin') === 'admin'
 
   // 快捷操作：MPA 页间为真实导航（vanilla 为 #/form 等 hash 路由）

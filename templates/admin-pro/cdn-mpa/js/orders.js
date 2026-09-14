@@ -189,7 +189,7 @@ function renderOrders() {
     table.setAttribute('loading', '')
     let rows = await listOrders()
     const u = readSession()
-    // 数据权限演示：viewer 仅见本人订单（mpa 会话暂无角色字段，恒走 else 分支）
+    // 数据权限演示：viewer 仅见本人订单（role 由登录页角色选择写入）
     if (u?.role === 'viewer') {
       rows = rows.filter((r) => r.creator === u.name)
       scopeEl.hidden = false

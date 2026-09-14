@@ -3,16 +3,23 @@ const SESSION_KEY = 'oas-admin-cdn-mpa.session'
 export function readSession() {
   try {
     const v = JSON.parse(localStorage.getItem(SESSION_KEY) ?? 'null')
-    return v && typeof v === 'object' && typeof v.name === 'string' ? v : null
+    // role 归一化：非 'viewer' 一律回落 admin（兼容修复前无 role 字段的旧会话）
+    if (v && typeof v === 'object' && typeof v.name === 'string') {
+      return { ...v, role: v.role === 'viewer' ? 'viewer' : 'admin' }
+    }
+    return null
   } catch {
     return null
   }
 }
 
-export function writeSession(name) {
+export function writeSession(name, role = 'admin') {
   try {
-    // loginAt：个人中心「登录时间」展示用（毫秒时间戳）
-    localStorage.setItem(SESSION_KEY, JSON.stringify({ name, loginAt: Date.now() }))
+    // loginAt：个人中心「登录时间」展示用（毫秒时间戳）；role：viewer 只读演示路径开关
+    localStorage.setItem(
+      SESSION_KEY,
+      JSON.stringify({ name, role: role === 'viewer' ? 'viewer' : 'admin', loginAt: Date.now() }),
+    )
   } catch {
     /* ignore */
   }

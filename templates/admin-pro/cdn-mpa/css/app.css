@@ -187,6 +187,7 @@ body {
   color: var(--oas-color-text-secondary);
 }
 .login-card oas-input,
+.login-card oas-select,
 .login-card oas-button {
   width: 100%;
   margin-bottom: var(--oas-space-3);

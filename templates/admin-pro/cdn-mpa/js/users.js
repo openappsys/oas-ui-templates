@@ -50,8 +50,8 @@ function roleEnumFor(roleRow) {
   return 'editor'
 }
 
-// mpa 会话暂无角色字段（session.js 仅存 name/loginAt），与 orders.js 同款约定：
-// 分支保留（登录态一旦带 role=viewer 即整体只读），当前演示恒为可编辑
+// 会话 role 由登录页角色选择写入（session.js 存 name/role/loginAt）：
+// admin 全量可编辑；viewer 登录即整体只读（新建/编辑/删除入口禁用）
 function canMutate() {
   return readSession()?.role !== 'viewer'
 }

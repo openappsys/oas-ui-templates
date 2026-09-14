@@ -9,10 +9,20 @@ if (readSession()) {
   applyStaticTexts()
 
   const input = document.querySelector('[data-testid="login-name"]')
+  const roleSelect = document.querySelector('[data-testid="login-role"]')
+  // 角色选项文案与 react 版登录页同源（users.role.admin / profile.roleViewer），默认 admin
+  roleSelect.setAttribute(
+    'options',
+    JSON.stringify([
+      { label: t('users.role.admin'), value: 'admin' },
+      { label: t('profile.roleViewer'), value: 'viewer' },
+    ]),
+  )
   const submit = () => {
     const name = (input.shadowRoot?.querySelector('input')?.value ?? '').trim()
     if (!name) return
-    writeSession(name)
+    const role = roleSelect.getAttribute('value') === 'viewer' ? 'viewer' : 'admin'
+    writeSession(name, role)
     location.href = './dashboard.html'
   }
   document.querySelector('[data-testid="login-submit"]').addEventListener('click', submit)

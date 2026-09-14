@@ -1,6 +1,6 @@
 // e2e/_helpers.ts —— e2e 公共工具：运行时 mock、登录助手、localStorage 写入
-// viewer 角色分支说明：cdn-mpa 会话无 role 字段（session.js 仅存 name/loginAt），
-// react 版的 viewer 403/操作权限用例在本模版无对应分支，一律跳过不移植。
+// viewer 角色分支说明：登录页角色选择已上线（session 存 name/role/loginAt），
+// 但既有用例仍按 admin 全量断言编写，viewer 只读路径由 smoke 验证覆盖。
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Page } from '@playwright/test'

@@ -36,7 +36,7 @@ if (guard()) {
 
 function renderProfile() {
   const user = readSession() ?? { name: '-' }
-  // mpa 会话暂无角色字段，演示账号按管理员展示
+  // role 来自登录页角色选择，缺省按管理员展示
   const roleLabel = user.role === 'viewer' ? t('profile.roleViewer') : t('users.role.admin')
 
   document.querySelector('#profile-avatar-text').textContent = user.name.charAt(0).toUpperCase()
