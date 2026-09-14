@@ -17,7 +17,7 @@
 - i18n：key 跟随 vanilla 英文键名逐字对齐（`nav.roles` 等），中英两份字典同步补
 - 每任务完成门槛：`playwright test`（既有 spec）全绿 + 新页面 dev 走查
 - commit message 中文 conventional commits；代码注释中文
-- 单文件 ≤400 行（mpa 每页 HTML 除外）
+- 单文件 ≤400 行（mpa 每页 HTML 除外；**i18n 字典文件豁免**——数据表性质，拆散有害，文件头注释声明即可）
 
 ---
 
