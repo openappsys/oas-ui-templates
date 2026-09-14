@@ -37,7 +37,7 @@ export default {
   "users.save": "保存",
   "users.cancel": "取消",
   "users.ruleName": "请输入姓名",
-  "form.subtitle": "oas-form 校验 / 提交 / 重置",
+  "form.subtitle": "三步向导创建一条新订单",
   "form.name": "项目名称",
   "form.category": "项目分类",
   "form.status": "状态",

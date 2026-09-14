@@ -7,7 +7,10 @@
     <script src="./js/fouc.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2.5.3/index.css" />
     <script src="https://unpkg.com/@oas-ui/ui@2.5.3/dist/cdn.js"></script>
+    <script src="./js/icon-patch.js"></script>
     <link rel="stylesheet" href="./css/app.css" />
+    <link rel="stylesheet" href="./css/pages.css" />
+    <link rel="stylesheet" href="./css/dashboard.css" />
   </head>
   <body>
     <oas-layout class="app" viewport>
@@ -26,33 +29,50 @@
       </oas-sider>
       <div slot="content" id="view">
         <div class="page">
-          <h1 class="page-title" data-i18n="nav.dashboard">仪表盘</h1>
-          <p class="page-subtitle"><span data-i18n="dash.welcome">欢迎回来</span>，<span id="dash-user"></span></p>
-          <div class="stat-grid">
-            <oas-card class="stat-card" data-testid="stat-visits">
-              <div class="stat-label" data-i18n="dash.statVisits">今日访问</div>
-              <div class="stat-value">12,480</div>
-              <div class="stat-delta delta-up">+12.4% <span data-i18n="dash.vsYesterday">较昨日</span></div>
+          <div class="page-head">
+            <div>
+              <h1 class="page-title" data-i18n="nav.dashboard">仪表盘</h1>
+              <p class="page-subtitle" id="dash-welcome"></p>
+            </div>
+            <oas-space>
+              <oas-button id="dash-refresh" icon="refresh" data-i18n="common.refresh">刷新</oas-button>
+              <oas-button id="dash-export" icon="download" data-i18n="dashboard.export">导出</oas-button>
+            </oas-space>
+          </div>
+          <div class="stat-grid" id="stat-grid">
+            <oas-card class="stat-card stat-card--skeleton"><oas-skeleton active rows="3"></oas-skeleton></oas-card>
+            <oas-card class="stat-card stat-card--skeleton"><oas-skeleton active rows="3"></oas-skeleton></oas-card>
+            <oas-card class="stat-card stat-card--skeleton"><oas-skeleton active rows="3"></oas-skeleton></oas-card>
+            <oas-card class="stat-card stat-card--skeleton"><oas-skeleton active rows="3"></oas-skeleton></oas-card>
+          </div>
+          <div class="chart-grid">
+            <oas-card title="访问趋势" data-i18n-attr='{"title":"dashboard.trendTitle"}'>
+              <oas-segmented id="trend-range" slot="extra"></oas-segmented>
+              <oas-chart id="chart-trend" class="chart" type="area" options='{"smooth":true,"gradient":true}' aria-label="访问趋势" data-i18n-attr='{"aria-label":"dashboard.trendTitle"}'></oas-chart>
             </oas-card>
-            <oas-card class="stat-card" data-testid="stat-users">
-              <div class="stat-label" data-i18n="dash.statUsers">新增用户</div>
-              <div class="stat-value">328</div>
-              <div class="stat-delta delta-up">+8.2% <span data-i18n="dash.vsYesterday">较昨日</span></div>
-            </oas-card>
-            <oas-card class="stat-card" data-testid="stat-orders">
-              <div class="stat-label" data-i18n="dash.statOrders">订单量</div>
-              <div class="stat-value">1,926</div>
-              <div class="stat-delta delta-up">+3.1% <span data-i18n="dash.vsYesterday">较昨日</span></div>
-            </oas-card>
-            <oas-card class="stat-card" data-testid="stat-rate">
-              <div class="stat-label" data-i18n="dash.statRate">转化率</div>
-              <div class="stat-value">4.6%</div>
-              <div class="stat-delta delta-down">-0.4% <span data-i18n="dash.vsYesterday">较昨日</span></div>
+            <oas-card title="订单构成" data-i18n-attr='{"title":"dashboard.ordersTitle"}'>
+              <oas-chart id="chart-orders" class="chart" type="donut" options='{"colors":["var(--oas-color-success)","var(--oas-color-primary)","var(--oas-color-warning)","var(--oas-color-danger)"]}' aria-label="订单构成" data-i18n-attr='{"aria-label":"dashboard.ordersTitle"}'></oas-chart>
+              <div id="donut-legend-wrap"></div>
             </oas-card>
           </div>
-          <oas-card title="访问趋势" data-i18n-attr='{"title":"dash.trendTitle"}'>
-            <oas-chart id="chart-trend" type="area" options='{"smooth":true,"gradient":true}' aria-label="访问趋势" data-i18n-attr='{"aria-label":"dash.trendTitle"}'></oas-chart>
-          </oas-card>
+          <div class="bottom-grid">
+            <oas-card title="最近订单" data-i18n-attr='{"title":"dashboard.recentOrders"}'>
+              <button id="orders-view-all" class="link-btn" slot="extra">
+                <span data-i18n="dashboard.viewAll">查看全部</span> <oas-icon name="chevron-right" size="12"></oas-icon>
+              </button>
+              <oas-table data-testid="orders-table" row-key="id" data="[]"></oas-table>
+            </oas-card>
+            <oas-card title="热销商品 Top5" data-i18n-attr='{"title":"dashboard.topProducts"}'>
+              <a class="link-btn" href="./products.html" slot="extra">
+                <span data-i18n="dashboard.viewAll">查看全部</span> <oas-icon name="chevron-right" size="12"></oas-icon>
+              </a>
+              <div id="top5-list" data-testid="top5-list" class="top5-list"></div>
+            </oas-card>
+            <oas-card class="quick-card" title="快捷操作" data-i18n-attr='{"title":"dashboard.quickActions"}'>
+              <div class="quick-actions" data-testid="quick-actions"></div>
+              <div class="quick-foot" data-i18n="dashboard.techNote">Web Components 驱动 · 零框架运行时</div>
+            </oas-card>
+          </div>
         </div>
       </div>
     </oas-layout>

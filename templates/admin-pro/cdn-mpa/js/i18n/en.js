@@ -37,7 +37,7 @@ export default {
   "users.save": "Save",
   "users.cancel": "Cancel",
   "users.ruleName": "Name is required",
-  "form.subtitle": "oas-form validate / submit / reset",
+  "form.subtitle": "Create a new order with a three-step wizard",
   "form.name": "Project Name",
   "form.category": "Category",
   "form.status": "Status",

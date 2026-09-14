@@ -3,8 +3,8 @@ import { clearSession } from './session.js'
 
 // 导航表：对齐 vanilla routes.ts 的非隐藏路由（分组顺序 总览→业务→系统→示例）
 // 差异说明：vanilla 隐藏路由（profile/order-detail/result/product-edit）不进侧栏；
-// 创建订单向导页尚未落地，不设菜单项（旧占位页 form.html 保留可直达但不上侧栏）；
-// 「基础表单」入口对齐 vanilla /basic-form（nav.basicForm），避免与占位页标题撞文案
+// 创建订单向导页（form.html）不上侧栏，保留可直达（vanilla /form 有菜单项，mpa 暂不收录）；
+// 「基础表单」入口对齐 vanilla /basic-form（nav.basicForm），避免与向导页路径撞车
 const NAV = [
   // 总览
   {

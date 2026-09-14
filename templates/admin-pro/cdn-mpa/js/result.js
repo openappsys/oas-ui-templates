@@ -5,17 +5,17 @@ import { applyStaticTexts, t, tf } from './i18n.js'
 if (guard()) {
   document.title = `${t('nav.result')} · ${t('app.title')}`
   applyStaticTexts()
-  // 隐藏路由：无侧栏高亮；面包屑 基础表单 → 结果（MPA 演示流：表单 → 结果）
+  // 隐藏路由：无侧栏高亮；面包屑 创建订单 → 结果（MPA 演示流：创建订单向导 → 结果）
   initShell({ active: '' })
   window.OASShell.setBreadcrumb([
-    { label: 'nav.form', href: './form.html' },
+    { label: 'nav.createOrder', href: './form.html' },
     { label: 'nav.result' },
   ])
   renderResult()
 }
 
 function renderResult() {
-  // 读创建订单向导写入的结果标记（读后即焚）；MPA 向导页未落地时自然落入失败态演示
+  // 读创建订单向导写入的结果标记（读后即焚）；直接访问（无标记）时自然落入失败态演示
   let success = false
   let orderId = ''
   try {

@@ -7,7 +7,10 @@
     <script src="./js/fouc.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2.5.3/index.css" />
     <script src="https://unpkg.com/@oas-ui/ui@2.5.3/dist/cdn.js"></script>
+    <script src="./js/icon-patch.js"></script>
     <link rel="stylesheet" href="./css/app.css" />
+    <link rel="stylesheet" href="./css/pages.css" />
+    <link rel="stylesheet" href="./css/users.css" />
   </head>
   <body>
     <oas-layout class="app" viewport>
@@ -26,26 +29,66 @@
       </oas-sider>
       <div slot="content" id="view">
         <div class="page">
-          <h1 class="page-title" data-i18n="users.title">用户管理</h1>
-          <div class="toolbar">
-            <oas-input data-testid="users-search" data-i18n-attr='{"placeholder":"users.searchPh"}' placeholder="搜索姓名 / 邮箱"></oas-input>
-            <oas-button data-testid="user-new" type="primary" data-i18n="users.new">新建用户</oas-button>
+          <div class="page-head">
+            <div>
+              <h1 class="page-title" data-i18n="users.title">用户管理</h1>
+              <p class="page-subtitle" data-i18n="users.subtitle">管理系统成员与权限</p>
+            </div>
+            <oas-button data-testid="user-create" type="primary" icon="plus" data-i18n="users.new">新建用户</oas-button>
           </div>
-          <oas-card>
-            <oas-table data-testid="users-table"></oas-table>
-            <div class="table-foot">
-              <oas-pagination data-testid="users-pager" page-size="8" current="1" total="0" show-total></oas-pagination>
+          <oas-card class="list-card" title="用户列表" data-i18n-attr='{"title":"users.list"}'>
+            <div class="users-toolbar" slot="extra">
+              <oas-input data-testid="user-search" data-i18n-attr='{"placeholder":"users.search"}' placeholder="搜索姓名 / 邮箱" clearable prefix-icon="search"></oas-input>
+              <oas-button id="users-refresh" icon="refresh" data-i18n-attr='{"title":"common.refresh"}' title="刷新"></oas-button>
+            </div>
+            <div class="table-wrap" id="table-wrap">
+              <oas-table data-testid="users-table" row-key="id" data="[]" pagination></oas-table>
+              <div class="empty-overlay" id="empty-overlay" hidden>
+                <oas-empty data-i18n-attr='{"description":"users.empty"}' description="未找到匹配用户"></oas-empty>
+                <oas-button id="clear-filters" type="primary" data-i18n="common.clearFilter">清除筛选</oas-button>
+              </div>
             </div>
           </oas-card>
+
           <oas-modal data-testid="user-form-modal" no-footer>
-            <div style="padding: var(--oas-space-4); min-width: 0">
-              <h2 id="form-title" style="margin:0 0 var(--oas-space-3); font-size:16px" data-i18n="users.formNew">新建用户</h2>
-              <oas-input data-testid="uf-name" data-i18n-attr='{"placeholder":"users.th.name"}' placeholder="姓名"></oas-input>
-              <oas-input data-testid="uf-email" data-i18n-attr='{"placeholder":"users.th.email"}' placeholder="邮箱" style="margin-top: var(--oas-space-2)"></oas-input>
-              <div style="display:flex; gap: var(--oas-space-2); justify-content:flex-end; margin-top: var(--oas-space-3)">
-                <oas-button data-testid="uf-cancel" data-i18n="users.cancel">取消</oas-button>
-                <oas-button data-testid="uf-save" type="primary" data-i18n="users.save">保存</oas-button>
+            <div class="modal-body">
+              <h2 id="form-title"></h2>
+              <oas-form id="user-form">
+                <div class="form-grid">
+                  <oas-input data-testid="field-name" name="name" data-i18n-attr='{"placeholder":"users.name"}' placeholder="姓名"></oas-input>
+                  <oas-input data-testid="field-email" name="email" data-i18n-attr='{"placeholder":"users.email"}' placeholder="邮箱"></oas-input>
+                  <oas-select data-testid="field-role" name="roleId" options="[]"></oas-select>
+                  <oas-select data-testid="field-status" name="status" options="[]"></oas-select>
+                </div>
+                <div class="form-actions">
+                  <oas-space justify="end">
+                    <oas-button data-testid="form-cancel" data-i18n="common.cancel">取消</oas-button>
+                    <oas-button data-testid="form-save" type="primary" data-i18n="common.save">保存</oas-button>
+                  </oas-space>
+                </div>
+              </oas-form>
+            </div>
+          </oas-modal>
+
+          <oas-modal data-testid="user-detail-modal" no-footer>
+            <div class="modal-body">
+              <div class="detail-header">
+                <oas-avatar id="detail-avatar" size="48"><span slot="fallback" id="detail-avatar-text"></span></oas-avatar>
+                <div>
+                  <div id="detail-name" class="detail-name"></div>
+                  <oas-tag id="detail-role-tag" type="primary"></oas-tag>
+                </div>
               </div>
+              <oas-descriptions id="detail-desc" column="1"></oas-descriptions>
+              <oas-divider></oas-divider>
+              <div class="detail-perms-title form-label" data-i18n="users.perm">权限标识</div>
+              <div id="detail-perms-list" class="detail-perms-list"></div>
+              <oas-space justify="end">
+                <oas-button data-testid="detail-edit" type="primary" data-i18n="common.edit">编辑</oas-button>
+                <oas-popconfirm id="delete-popconfirm" data-i18n-attr='{"title":"users.confirmDelete"}' title="删除该用户？">
+                  <oas-button data-testid="detail-delete" type="danger" data-i18n="common.delete">删除</oas-button>
+                </oas-popconfirm>
+              </oas-space>
             </div>
           </oas-modal>
         </div>

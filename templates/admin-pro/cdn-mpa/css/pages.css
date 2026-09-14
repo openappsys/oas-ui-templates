@@ -1,6 +1,5 @@
-/* Task 4 新增页面共享样式：自 vanilla src/styles/app.css + pages/products.css + pages/data-board.css 移植
-   仅被新增 10 页引入（orders/order-detail/products/product-edit/data-board/result/profile/403/404/500），
-   不影响 dashboard/users/form 既有观感 */
+/* 共享页级样式：自 vanilla src/styles/app.css + pages/products.css + pages/data-board.css 移植
+   由新增 10 页与 dashboard/form/users 对齐版共同引入（均为增量类，不改组件默认观感） */
 
 :root {
   --app-mono: ui-monospace, "Cascadia Mono", "JetBrains Mono", Consolas, monospace;
