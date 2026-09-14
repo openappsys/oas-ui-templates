@@ -1,17 +1,16 @@
 import { currentLocale, onLocaleChange, setLocale, t } from './i18n.js'
-import { renderDashboard, renderForm, renderUsers } from './pages.js'
+import { matchRoute, routes } from './routes.js'
 
 const SESSION_KEY = 'oas-admin-cdn.session'
-const ROUTES = {
-  '/dashboard': renderDashboard,
-  '/users': renderUsers,
-  '/form': renderForm,
+
+// 侧栏分组：与 vanilla app-shell 的 GROUP_ORDER / GROUP_KEYS 逐字对齐
+const GROUP_ORDER = ['nav.output', 'nav.business', 'nav.system', 'nav.demo']
+const GROUP_KEYS = {
+  'nav.output': 'nav.group.overview',
+  'nav.business': 'nav.group.business',
+  'nav.system': 'nav.group.system',
+  'nav.demo': 'nav.group.demo',
 }
-const NAV = [
-  { path: '/dashboard', icon: 'star', key: 'nav.dashboard' },
-  { path: '/users', icon: 'user', key: 'nav.users' },
-  { path: '/form', icon: 'form', key: 'nav.form' },
-]
 
 const HOME = '/dashboard'
 function parseHash() {
@@ -97,12 +96,24 @@ function renderShell() {
 function syncNav() {
   const nav = app.querySelector('#nav')
   if (!nav) return
-  nav.setAttribute(
-    'items',
-    JSON.stringify(
-      NAV.map((n) => ({ label: t(n.key), value: n.path, icon: n.icon, group: t('nav.group') })),
-    ),
-  )
+  // 与 vanilla sidebarItems 同构：过滤隐藏路由 → 按分组排序 → items JSON
+  // cdn 过渡期附加过滤 navHidden（/basic-form，见 routes.js 注释）
+  const items = routes
+    .filter((r) => !r.hidden && !r.navHidden && r.group)
+    .slice()
+    .sort(
+      (a, b) =>
+        GROUP_ORDER.indexOf(a.group) - GROUP_ORDER.indexOf(b.group) ||
+        routes.indexOf(a) - routes.indexOf(b),
+    )
+    .map((r) => ({
+      label: t(r.navKey ?? r.titleKey),
+      value: r.path,
+      icon: r.icon,
+      iconColor: r.iconColor,
+      group: t(GROUP_KEYS[r.group]),
+    }))
+  nav.setAttribute('items', JSON.stringify(items))
   nav.setAttribute('active', parseHash())
 }
 
@@ -119,16 +130,17 @@ function resolve() {
     location.hash = '#' + HOME
     return
   }
-  const render = ROUTES[hash]
-  if (!render) {
-    location.hash = '#' + HOME
+  const route = matchRoute(hash)
+  if (!route) {
+    // 未知路径与 vanilla guard 语义对齐：送 /not-found（占位页）
+    location.hash = '#/not-found'
     return
   }
   if (!app.querySelector('#view')) renderShell()
   syncNav()
   const view = app.querySelector('#view')
   disposePage?.()
-  disposePage = render(view)
+  disposePage = route.render(view)
 }
 
 window.addEventListener('hashchange', resolve)
