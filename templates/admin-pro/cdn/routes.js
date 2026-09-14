@@ -1,8 +1,10 @@
 /**
  * 路由表（自 vanilla src/router/routes.ts 去 TS 移植，path / 顺序 / meta 逐字对齐）
  * 共 22 条 + 登录页（app.js 壳层特判）= 与 vanilla 全量对齐的 23 页。
- * 渲染函数：既有 3 页（dashboard / users / form）沿用现行实现，其余为本任务占位，
- * 后续任务按 vanilla 同名页逐个替换。
+ * 渲染函数：既有 3 页（dashboard / users / form）在 pages.js；
+ * Task 3 批次（orders / order-detail / products / product-edit / data-board / result /
+ * profile / 403 / 404 / 500）在 pages-*.js 各自文件（单文件 ≤400 行纪律）；
+ * 其余为占位，后续任务按 vanilla 同名页逐个替换。
  *
  * 过渡期偏差（Task 5 页面替换时消除）：
  * - cdn 既有 e2e 断言「点击侧栏『基础表单』落在 #/form 且渲染 #basic-form」，
@@ -12,6 +14,14 @@
  */
 import { onLocaleChange, t } from './i18n.js'
 import { renderDashboard, renderForm, renderUsers } from './pages.js'
+import { renderOrders } from './pages-orders.js'
+import { renderOrderDetail } from './pages-order-detail.js'
+import { renderProductEdit } from './pages-product-edit.js'
+import { renderProducts } from './pages-products.js'
+import { renderDataBoard } from './pages-data-board.js'
+import { renderResult } from './pages-result.js'
+import { renderProfile } from './pages-profile.js'
+import { renderForbidden, renderNotFound, renderServerError } from './pages-errors.js'
 
 /**
  * 「页面建设中」占位渲染（返回与页面渲染函数同构的 dispose 回调）
@@ -68,7 +78,7 @@ export const routes = [
     icon: 'calendar',
     iconColor: 'var(--oas-tint-cyan)',
     group: 'nav.business',
-    render: wip('nav.orders'),
+    render: renderOrders,
   },
   {
     path: '/products',
@@ -77,7 +87,7 @@ export const routes = [
     iconColor: 'var(--oas-tint-violet)',
     roles: ['admin'],
     group: 'nav.business',
-    render: wip('nav.products'),
+    render: renderProducts,
   },
   {
     path: '/users',
@@ -94,7 +104,7 @@ export const routes = [
     icon: 'eye',
     iconColor: 'var(--oas-color-primary)',
     group: 'nav.output',
-    render: wip('nav.dataBoard'),
+    render: renderDataBoard,
   },
   {
     path: '/profile',
@@ -103,7 +113,7 @@ export const routes = [
     iconColor: 'var(--oas-color-primary)',
     hidden: true,
     group: 'nav.output',
-    render: wip('nav.profile'),
+    render: renderProfile,
   },
   {
     path: '/form',
@@ -120,7 +130,7 @@ export const routes = [
     icon: 'calendar',
     hidden: true,
     parent: '/orders',
-    render: wip('nav.orderDetail'),
+    render: renderOrderDetail,
   },
   {
     path: '/result',
@@ -128,7 +138,7 @@ export const routes = [
     icon: 'check',
     hidden: true,
     parent: '/form',
-    render: wip('nav.result'),
+    render: renderResult,
   },
   {
     path: '/system/roles',
@@ -199,7 +209,7 @@ export const routes = [
     roles: ['admin'],
     hidden: true,
     parent: '/products',
-    render: wip('nav.products'),
+    render: renderProductEdit,
   },
   {
     path: '/forbidden',
@@ -207,7 +217,7 @@ export const routes = [
     icon: 'warning',
     iconColor: 'var(--oas-color-danger)',
     group: 'nav.demo',
-    render: wip('nav.forbidden'),
+    render: renderForbidden,
   },
   {
     path: '/not-found',
@@ -215,7 +225,7 @@ export const routes = [
     icon: 'search',
     iconColor: 'var(--oas-color-primary)',
     group: 'nav.demo',
-    render: wip('nav.notFound'),
+    render: renderNotFound,
   },
   {
     path: '/500',
@@ -223,7 +233,7 @@ export const routes = [
     icon: 'error',
     iconColor: 'var(--oas-color-warning)',
     group: 'nav.demo',
-    render: wip('nav.serverError'),
+    render: renderServerError,
   },
   {
     path: '/basic-form',

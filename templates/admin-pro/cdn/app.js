@@ -45,7 +45,8 @@ function renderLogin() {
     const name = (input.shadowRoot?.querySelector('input')?.value ?? '').trim()
     if (!name) return
     try {
-      localStorage.setItem(SESSION_KEY, JSON.stringify({ name }))
+      // loginAt 供个人中心「登录时间」展示（对齐 vanilla session 语义）
+      localStorage.setItem(SESSION_KEY, JSON.stringify({ name, loginAt: Date.now() }))
     } catch {
       /* 隐私模式 */
     }

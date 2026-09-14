@@ -49,8 +49,19 @@ export function setLocale(next) {
   for (const fn of listeners) fn(next)
 }
 
-export function t(key) {
-  return dict[locale][key] ?? key
+/**
+ * 取词典文案；params 以 {name} 占位符插值（与 @oas-ui/i18n 的 t 语义对齐）
+ * @param {string} key
+ * @param {Record<string, string | number>} [params]
+ */
+export function t(key, params) {
+  let text = dict[locale][key] ?? key
+  if (params) {
+    for (const [k, v] of Object.entries(params)) {
+      text = text.replaceAll(`{${k}}`, String(v))
+    }
+  }
+  return text
 }
 
 export function onLocaleChange(fn) {
