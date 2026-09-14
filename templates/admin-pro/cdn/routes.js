@@ -2,17 +2,17 @@
  * 路由表（自 vanilla src/router/routes.ts 去 TS 移植，path / 顺序 / meta 逐字对齐）
  * 共 22 条 + 登录页（app.js 壳层特判）= 与 vanilla 全量对齐的 23 页。
  * 渲染函数：既有 3 页（dashboard / users / form）在 pages.js；
- * Task 3 批次（orders / order-detail / products / product-edit / data-board / result /
- * profile / 403 / 404 / 500）在 pages-*.js 各自文件（单文件 ≤400 行纪律）；
- * 其余为占位，后续任务按 vanilla 同名页逐个替换。
+ * 批 A（orders / order-detail / products / product-edit / data-board / result /
+ * profile / 403 / 404 / 500）在 pages-*.js 各自文件；
+ * 批 B（roles / menus / dept / category / dict / logs / settings / basic-form /
+ * advanced-form）同样各自分文件（单文件 ≤400 行纪律）。
  *
- * 过渡期偏差（Task 5 页面替换时消除）：
+ * 过渡期偏差（既有 e2e 契约，保留）：
  * - cdn 既有 e2e 断言「点击侧栏『基础表单』落在 #/form 且渲染 #basic-form」，
  *   故 /form 侧栏标签沿用 cdn 既有键 nav.form（navKey 覆盖），页面仍是基础表单实现；
  * - /basic-form 侧栏暂隐藏（navHidden），避免与 /form 出现两个同名菜单项，
- *   路由本身可达（哈希直访渲染占位页）。
+ *   路由本身可达（哈希直访渲染真实现）。
  */
-import { onLocaleChange, t } from './i18n.js'
 import { renderDashboard, renderForm, renderUsers } from './pages.js'
 import { renderOrders } from './pages-orders.js'
 import { renderOrderDetail } from './pages-order-detail.js'
@@ -22,30 +22,15 @@ import { renderDataBoard } from './pages-data-board.js'
 import { renderResult } from './pages-result.js'
 import { renderProfile } from './pages-profile.js'
 import { renderForbidden, renderNotFound, renderServerError } from './pages-errors.js'
-
-/**
- * 「页面建设中」占位渲染（返回与页面渲染函数同构的 dispose 回调）
- * @param {string} titleKey
- * @returns {(el: HTMLElement) => () => void}
- */
-function wip(titleKey) {
-  return (el) => {
-    function draw() {
-      document.title = `${t(titleKey)} · ${t('app.title')}`
-      el.innerHTML = `
-        <div class="page">
-          <h1 class="page-title">${t(titleKey)}</h1>
-          <oas-card>
-            <div data-testid="page-wip" style="padding: var(--oas-space-6) 0; text-align: center; color: var(--oas-color-text-secondary)">
-              ${t('common.building')}
-            </div>
-          </oas-card>
-        </div>`
-    }
-    draw()
-    return onLocaleChange(draw)
-  }
-}
+import { renderRoles } from './pages-roles.js'
+import { renderMenus } from './pages-menus.js'
+import { renderDept } from './pages-dept.js'
+import { renderCategory } from './pages-category.js'
+import { renderDict } from './pages-dict.js'
+import { renderLogs } from './pages-logs.js'
+import { renderSettings } from './pages-settings.js'
+import { renderBasicForm } from './pages-basic-form.js'
+import { renderAdvancedForm } from './pages-advanced-form.js'
 
 /**
  * @typedef {Object} CdnRoute
@@ -147,7 +132,7 @@ export const routes = [
     iconColor: 'var(--oas-tint-violet)',
     roles: ['admin'],
     group: 'nav.system',
-    render: wip('nav.roles'),
+    render: renderRoles,
   },
   {
     path: '/system/menus',
@@ -156,7 +141,7 @@ export const routes = [
     iconColor: 'var(--oas-color-primary)',
     roles: ['admin'],
     group: 'nav.system',
-    render: wip('nav.menus'),
+    render: renderMenus,
   },
   {
     path: '/system/dept',
@@ -165,7 +150,7 @@ export const routes = [
     iconColor: 'var(--oas-tint-cyan)',
     roles: ['admin'],
     group: 'nav.system',
-    render: wip('nav.dept'),
+    render: renderDept,
   },
   {
     path: '/system/category',
@@ -174,7 +159,7 @@ export const routes = [
     iconColor: 'var(--oas-tint-violet)',
     roles: ['admin'],
     group: 'nav.system',
-    render: wip('nav.category'),
+    render: renderCategory,
   },
   {
     path: '/system/dict',
@@ -183,7 +168,7 @@ export const routes = [
     iconColor: 'var(--oas-color-success)',
     roles: ['admin'],
     group: 'nav.system',
-    render: wip('nav.dict'),
+    render: renderDict,
   },
   {
     path: '/system/logs',
@@ -192,7 +177,7 @@ export const routes = [
     iconColor: 'var(--oas-color-warning)',
     roles: ['admin'],
     group: 'nav.system',
-    render: wip('nav.logs'),
+    render: renderLogs,
   },
   {
     path: '/settings',
@@ -200,7 +185,7 @@ export const routes = [
     icon: 'filter',
     iconColor: 'var(--oas-tint-violet)',
     group: 'nav.system',
-    render: wip('nav.settings'),
+    render: renderSettings,
   },
   {
     path: '/products/edit',
@@ -242,7 +227,7 @@ export const routes = [
     iconColor: 'var(--oas-color-success)',
     group: 'nav.demo',
     navHidden: true,
-    render: wip('nav.basicForm'),
+    render: renderBasicForm,
   },
   {
     path: '/advanced-form',
@@ -250,7 +235,7 @@ export const routes = [
     icon: 'menu',
     iconColor: 'var(--oas-tint-cyan)',
     group: 'nav.demo',
-    render: wip('nav.advancedForm'),
+    render: renderAdvancedForm,
   },
 ]
 

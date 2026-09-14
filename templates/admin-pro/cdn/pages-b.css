@@ -1,0 +1,269 @@
+/**
+ * 页面级样式·批 B（系统管理：公共补丁 / 部门 / 字典）
+ * 逐字移植自 vanilla src/styles/pages/dept.css / dict.css / logs.css
+ * settings / advanced-form 样式在 pages-c.css；token 约定同 pages.css
+ */
+
+/* ---------- 公共补丁（自 vanilla app.css 抽取批 B 页面所需类） ---------- */
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-2);
+}
+.radio-item {
+  display: inline-flex;
+  flex-direction: column;
+  line-height: 1.4;
+}
+.radio-label {
+  color: var(--oas-color-text-primary);
+}
+.radio-desc {
+  font-size: var(--oas-font-size-xs);
+  color: var(--oas-color-text-secondary);
+}
+.form-hint {
+  font-size: var(--oas-font-size-xs);
+  color: var(--oas-color-text-secondary);
+  margin-top: var(--oas-space-1);
+}
+.form-hint-inline {
+  font-size: var(--oas-font-size-xs);
+  color: var(--oas-color-text-secondary);
+  font-weight: 400;
+}
+.table-hidden {
+  display: none !important;
+}
+.role-form-body,
+.menu-form-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-4);
+}
+.role-form-body oas-transfer,
+.menu-form-body oas-tree-select {
+  width: 100%;
+}
+.role-form-body oas-transfer::part(panel) {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+}
+.menu-layout {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: var(--oas-space-3);
+  margin-bottom: var(--oas-space-3);
+}
+.menu-tree-card::part(body) {
+  padding: 0;
+}
+.menu-tree-card oas-tree {
+  padding: var(--oas-space-2);
+}
+.menu-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-4);
+}
+.menu-detail-head {
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-2);
+}
+.menu-detail-title {
+  font-size: 16px;
+  font-weight: 650;
+  color: var(--oas-color-text-primary);
+}
+.menu-detail-actions {
+  display: flex;
+  gap: var(--oas-space-2);
+  align-items: center;
+}
+.tree-node-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--oas-space-1);
+  min-width: 0;
+}
+.tree-type-icon {
+  color: var(--oas-color-text-secondary);
+  flex-shrink: 0;
+}
+.tree-type-tag {
+  margin-left: var(--oas-space-1);
+}
+.category-search {
+  width: 280px;
+  max-width: 100%;
+}
+.category-search::part(input) {
+  height: 32px;
+}
+@media (max-width: 992px) {
+  .menu-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- 部门管理（dept.css） ---------- */
+.dept-layout {
+  margin-bottom: var(--oas-space-3);
+}
+.dept-layout::part(pane-left),
+.dept-layout::part(pane-right) {
+  min-width: 0;
+}
+.dept-tree-card::part(body) {
+  padding: 0;
+}
+.dept-tree-card oas-tree {
+  padding: var(--oas-space-2);
+}
+.dept-member-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  margin-left: var(--oas-space-2);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--oas-color-primary) 14%, transparent);
+  color: var(--oas-color-primary);
+  font-family: var(--app-mono);
+  font-size: 11px;
+  line-height: 1;
+  vertical-align: middle;
+}
+.dept-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-4);
+}
+.dept-detail-head {
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-2);
+}
+.dept-detail-title {
+  font-size: 16px;
+  font-weight: 650;
+  color: var(--oas-color-text-primary);
+}
+.dept-detail-actions {
+  display: flex;
+  gap: var(--oas-space-2);
+  align-items: center;
+}
+.sub-dept-empty {
+  text-align: center;
+  padding: var(--oas-space-6);
+  color: var(--oas-color-text-secondary);
+  font-size: var(--oas-font-size-sm);
+}
+.dept-form-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-4);
+}
+.dept-form-body oas-tree-select,
+.dept-form-body oas-input-number {
+  width: 100%;
+}
+
+/* ---------- 字典管理（dict.css） ---------- */
+.dict-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: var(--oas-space-3);
+  margin-bottom: var(--oas-space-3);
+  align-items: start;
+}
+.dict-type-card::part(body) {
+  padding: 0;
+}
+.dict-type-list {
+  padding: var(--oas-space-1);
+}
+.dict-type-item {
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-2);
+  padding: var(--oas-space-2) var(--oas-space-3);
+  border-radius: var(--oas-radius-md);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.dict-type-item:hover {
+  background: var(--oas-color-bg-hover);
+}
+.dict-type-item.is-selected {
+  background: color-mix(in srgb, var(--oas-color-primary) 12%, transparent);
+}
+.dict-type-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--oas-font-size-sm);
+  color: var(--oas-color-text-primary);
+  font-weight: 500;
+}
+.dict-type-code {
+  font-family: var(--app-mono);
+  font-size: 11px;
+  color: var(--oas-color-text-secondary);
+}
+.dict-type-count {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--oas-color-bg-hover);
+  color: var(--oas-color-text-secondary);
+  font-family: var(--app-mono);
+  font-size: 11px;
+}
+.dict-pane-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--oas-space-2);
+  margin-bottom: var(--oas-space-2);
+}
+.dict-pane-title {
+  font-size: var(--oas-font-size-sm);
+  font-weight: 600;
+  color: var(--oas-color-text-primary);
+}
+.dict-pane-sub {
+  font-size: var(--oas-font-size-xs);
+  color: var(--oas-color-text-secondary);
+}
+.dict-empty {
+  text-align: center;
+  padding: var(--oas-space-6);
+  color: var(--oas-color-text-secondary);
+  font-size: var(--oas-font-size-sm);
+}
+.dict-form-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-4);
+}
+.dict-form-body oas-input-number {
+  width: 100%;
+}
+@media (max-width: 992px) {
+  .dict-layout {
+    grid-template-columns: 1fr;
+  }
+}
