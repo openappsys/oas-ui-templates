@@ -268,7 +268,12 @@
         color: var(--oas-text);
       }
       .features-head p { margin: 0; color: var(--oas-text-muted); font-size: 15px; line-height: 1.6; }
-      .f-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--oas-sp-4); }
+      .f-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--oas-sp-4); }      .f-card .f-title {
+        display: flex; align-items: center; gap: 8px;
+        padding: 10px 14px 8px; margin: 0;
+        border-bottom: 1px solid var(--oas-border);
+        font-size: 14px; font-weight: 700;
+      }
       .f-card {
         position: relative;
         display: flex; flex-direction: column;
@@ -409,6 +414,10 @@
         </div>
         <div class="f-grid">
           <a class="f-card" href="./admin-pro/vanilla-html/">
+            <h3 class="f-title">
+                <span>admin-pro / vanilla</span>
+                <span class="f-feat" style="border:0;background:rgba(11,108,255,.10);color:#0B6CFF" data-i18n="m.vanilla.tag">首推</span>
+              </h3>
             <div class="f-shot f-shot--fallback" aria-hidden="true">
               <svg viewBox="0 0 320 200" xmlns="http://www.w3.org/2000/svg">
                 <defs>
@@ -458,10 +467,7 @@
             </div>
             <div class="f-body">
               <p class="f-fit" data-i18n="fit.vanilla">完整后台框架</p>
-              <h3 class="f-title">
-                <span>admin-pro / vanilla</span>
-                <span class="f-feat" style="border:0;background:rgba(11,108,255,.10);color:#0B6CFF" data-i18n="m.vanilla.tag">首推</span>
-              </h3>
+              
               <p class="f-desc" data-i18n="feat.vanilla.desc">中大型后台首选。设置中心把外观 / 布局 / 数据 / 通知四类配置拆成独立 Tab，所有偏好持久化。</p>
               <div class="f-feats">
                 <span class="f-feat" data-i18n="feat.guard">权限守卫</span>
@@ -474,6 +480,10 @@
             </div>
           </a>
           <a class="f-card" href="./admin-pro/cdn/">
+            <h3 class="f-title">
+                <span>admin-pro / cdn</span>
+                <span class="f-feat" style="border:0;background:rgba(22,163,74,.10);color:#16A34A" data-i18n="m.cdn.tag">零构建</span>
+              </h3>
             <div class="f-shot f-shot--fallback" aria-hidden="true">
               <svg viewBox="0 0 320 200" xmlns="http://www.w3.org/2000/svg">
                 <defs>
@@ -514,10 +524,7 @@
             </div>
             <div class="f-body">
               <p class="f-fit" data-i18n="fit.cdn">完整后台框架</p>
-              <h3 class="f-title">
-                <span>admin-pro / cdn</span>
-                <span class="f-feat" style="border:0;background:rgba(22,163,74,.10);color:#16A34A" data-i18n="m.cdn.tag">零构建</span>
-              </h3>
+              
               <p class="f-desc" data-i18n="feat.cdn.desc">通过 unpkg 引入 oas-ui，原生 JS 直写：完整后台功能开箱即用，不走打包，独立实现。</p>
               <div class="f-feats">
                 <span class="f-feat" data-i18n="feat.cdn">CDN</span>
@@ -529,6 +536,10 @@
             </div>
           </a>
           <a class="f-card" href="./admin-pro/cdn-mpa/">
+            <h3 class="f-title">
+                <span>admin-pro / cdn-mpa</span>
+                <span class="f-feat" style="border:0;background:rgba(22,163,74,.10);color:#16A34A" data-i18n="m.mpa.tag">零构建 · MPA</span>
+              </h3>
             <div class="f-shot f-shot--fallback" aria-hidden="true">
               <svg viewBox="0 0 320 200" xmlns="http://www.w3.org/2000/svg">
                 <defs>
@@ -562,10 +573,7 @@
             </div>
             <div class="f-body">
               <p class="f-fit" data-i18n="fit.mpa">完整后台框架</p>
-              <h3 class="f-title">
-                <span>admin-pro / cdn-mpa</span>
-                <span class="f-feat" style="border:0;background:rgba(22,163,74,.10);color:#16A34A" data-i18n="m.mpa.tag">零构建 · MPA</span>
-              </h3>
+              
               <p class="f-desc" data-i18n="feat.mpa.desc">最朴素的多页范式：一页一 HTML、真实浏览器跳转、公共 JS 抽取复用——零运行时假设。</p>
               <div class="f-feats">
                 <span class="f-feat" data-i18n="feat.mpa">多页应用</span>
@@ -577,6 +585,10 @@
             </div>
           </a>
           <a class="f-card" href="./admin-pro/react/">
+            <h3 class="f-title">
+                <span>admin-pro / react</span>
+                <span class="f-feat" style="border:0;background:rgba(11,108,255,.10);color:#0B6CFF" data-i18n="m.react.tag">React</span>
+              </h3>
             <div class="f-shot f-shot--fallback" aria-hidden="true">
               <svg viewBox="0 0 320 200" xmlns="http://www.w3.org/2000/svg">
                 <defs>
@@ -618,10 +630,7 @@
             </div>
             <div class="f-body">
               <p class="f-fit" data-i18n="fit.react">React 19 · Vite</p>
-              <h3 class="f-title">
-                <span>admin-pro / react</span>
-                <span class="f-feat" style="border:0;background:rgba(11,108,255,.10);color:#0B6CFF" data-i18n="m.react.tag">React</span>
-              </h3>
+              
               <p class="f-desc" data-i18n="feat.react.desc">React 19 + react-router（hash/history 双模式）。useOasEvent 事件桥接 oas-* 自定义事件，完整后台功能，独立实现。</p>
               <div class="f-feats">
                 <span class="f-feat" data-i18n="feat.guard">权限守卫</span>
@@ -632,6 +641,10 @@
             </div>
           </a>
           <a class="f-card" href="./admin-pro/vue/">
+            <h3 class="f-title">
+                <span>admin-pro / vue</span>
+                <span class="f-feat" style="border:0;background:rgba(11,108,255,.10);color:#0B6CFF" data-i18n="m.vue.tag">Vue</span>
+              </h3>
             <div class="f-shot f-shot--fallback" aria-hidden="true">
               <svg viewBox="0 0 320 200" xmlns="http://www.w3.org/2000/svg">
                 <defs>
@@ -666,10 +679,7 @@
             </div>
             <div class="f-body">
               <p class="f-fit" data-i18n="fit.vue">Vue 3.5 · Vite</p>
-              <h3 class="f-title">
-                <span>admin-pro / vue</span>
-                <span class="f-feat" style="border:0;background:rgba(11,108,255,.10);color:#0B6CFF" data-i18n="m.vue.tag">Vue</span>
-              </h3>
+              
               <p class="f-desc" data-i18n="feat.vue.desc">Vue 3.5 + vue-router。oas-* 组件事件与属性经 @oas-* 模板直绑，完整后台功能，独立实现。</p>
               <div class="f-feats">
                 <span class="f-feat" data-i18n="feat.guard">权限守卫</span>
@@ -680,6 +690,10 @@
             </div>
           </a>
           <a class="f-card" href="./admin-pro/svelte/">
+            <h3 class="f-title">
+                <span>admin-pro / svelte</span>
+                <span class="f-feat" style="border:0;background:rgba(11,108,255,.10);color:#0B6CFF" data-i18n="m.svelte.tag">Vue</span>
+              </h3>
             <div class="f-shot f-shot--fallback" aria-hidden="true">
               <svg viewBox="0 0 320 200" xmlns="http://www.w3.org/2000/svg">
                 <defs>
@@ -714,10 +728,7 @@
             </div>
             <div class="f-body">
               <p class="f-fit" data-i18n="fit.svelte">Vue 3.5 · Vite</p>
-              <h3 class="f-title">
-                <span>admin-pro / svelte</span>
-                <span class="f-feat" style="border:0;background:rgba(11,108,255,.10);color:#0B6CFF" data-i18n="m.svelte.tag">Vue</span>
-              </h3>
+              
               <p class="f-desc" data-i18n="feat.svelte.desc">Vue 3.5 + vue-router。oas-* 组件事件与属性经 @oas-* 模板直绑，完整后台功能，独立实现。</p>
               <div class="f-feats">
                 <span class="f-feat" data-i18n="feat.guard">权限守卫</span>
