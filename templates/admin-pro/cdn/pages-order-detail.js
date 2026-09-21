@@ -4,7 +4,14 @@
  */
 import { onLocaleChange, t } from './i18n.js'
 import { getOrder, updateOrderStatus } from './data/orders.js'
-import { buildTimeline, flowFor, formatMoneyPrecise, FLOW_STEPS, setTagType, statusLabel } from './order-shared.js'
+import {
+  buildTimeline,
+  flowFor,
+  formatMoneyPrecise,
+  FLOW_STEPS,
+  setTagType,
+  statusLabel,
+} from './order-shared.js'
 
 export function renderOrderDetail(el) {
   const id = sessionStorage.getItem('order-detail-id') ?? ''
@@ -74,12 +81,13 @@ export function renderOrderDetail(el) {
 
   function renderTimeline() {
     if (!order) return
-    q('#order-detail-timeline-wrap').innerHTML = `<oas-timeline data-testid="order-detail-timeline">${buildTimeline(order)
-      .map(
-        (n) =>
-          `<oas-timeline-item time="${n.time}"${n.color ? ` color="${n.color}"` : ''}>${n.title}</oas-timeline-item>`,
-      )
-      .join('')}</oas-timeline>`
+    q('#order-detail-timeline-wrap').innerHTML =
+      `<oas-timeline data-testid="order-detail-timeline">${buildTimeline(order)
+        .map(
+          (n) =>
+            `<oas-timeline-item time="${n.time}"${n.color ? ` color="${n.color}"` : ''}>${n.title}</oas-timeline-item>`,
+        )
+        .join('')}</oas-timeline>`
   }
 
   function renderAction() {

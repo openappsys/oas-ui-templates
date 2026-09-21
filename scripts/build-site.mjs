@@ -24,7 +24,9 @@ function safeRm(p) {
     rmSync(p, { recursive: true, force: true })
   } catch (e) {
     if (e && (e.code === 'EPERM' || e.code === 'EBUSY' || e.code === 'ENOTEMPTY')) {
-      console.warn(`warn: could not clean ${p} (${e.code}); existing files will be overwritten in place.`)
+      console.warn(
+        `warn: could not clean ${p} (${e.code}); existing files will be overwritten in place.`,
+      )
     } else {
       throw e
     }

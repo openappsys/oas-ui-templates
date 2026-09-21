@@ -157,7 +157,9 @@ export function render(el: HTMLElement): () => void {
     el.querySelectorAll<HTMLElement>('.form-error').forEach((e) => {
       e.hidden = true
     })
-    ;[customer, phone, productsGroup].forEach((c) => c.removeAttribute('aria-invalid'))
+    ;[customer, phone, productsGroup].forEach((c) => {
+      c.removeAttribute('aria-invalid')
+    })
   }
 
   function validateStep(n: number): boolean {

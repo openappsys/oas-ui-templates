@@ -13,4 +13,3 @@ const root = document.querySelector<HTMLDivElement>('#app')!
 mountApp(root)
 applySettings()
 initRouter(root.querySelector<HTMLElement>('#view')!)
-

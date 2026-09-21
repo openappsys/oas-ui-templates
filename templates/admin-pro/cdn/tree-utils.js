@@ -105,7 +105,8 @@ export function insertChild(nodes, parentId, child) {
   }
   const parent = findNode(nodes, parentId)
   if (parent) {
-    ;(parent.children ??= []).push(child)
+    if (!parent.children) parent.children = []
+    parent.children.push(child)
   }
 }
 

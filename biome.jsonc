@@ -1,13 +1,21 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.8/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.14/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
   "files": {
     "ignoreUnknown": false,
     "includes": [
       "**/*.{ts,tsx,js,jsx,mjs,cjs,json,jsonc,css}",
-      "!**/dist/**",
-      "!**/node_modules/**",
-      "!**/test-results/**",
-      "!**/playwright-report/**"
+      "!**/dist",
+      "!**/node_modules",
+      "!**/test-results",
+      "!**/playwright-report",
+      "!**/coverage",
+      "!**/shots",
+      "!**/.svelte-check"
     ]
   },
   "formatter": {
@@ -24,7 +32,32 @@
     }
   },
   "linter": {
-    "enabled": false
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "style": {
+        // 测试代码大量使用 `!` 断言，业界（ESLint no-non-null-assertion）普遍关闭
+        "noNonNullAssertion": "off"
+      },
+      "correctness": {
+        // React 官方 exhaustive-deps 默认即 warn；i18n 场景常故意依赖 locale 而非 t 触发重算
+        "useExhaustiveDependencies": "warn"
+      },
+      "a11y": {
+        // oas-* web component 的语义 biome 不识别（label 无法 for 关联非 form-associated 元素、
+        // 组件内部自行处理键盘交互），按 ESLint jsx-a11y 惯例整体降为 warn 提示
+        "noLabelWithoutControl": "warn",
+        "noStaticElementInteractions": "warn",
+        "useKeyWithClickEvents": "warn",
+        "noSvgWithoutTitle": "warn",
+        "useSemanticElements": "warn",
+        "useButtonType": "warn"
+      },
+      "suspicious": {
+        // 骨架屏等固定长度列表用下标 key 是可接受场景
+        "noArrayIndexKey": "warn"
+      }
+    }
   },
   "assist": {
     "enabled": false

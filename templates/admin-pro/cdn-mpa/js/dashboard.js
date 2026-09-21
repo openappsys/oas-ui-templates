@@ -8,10 +8,39 @@ import { listProducts } from './data/products.js'
 
 // 统计卡定义（vanilla STATS 段逐字对齐；仅首卡带 testid 供 e2e 登录等待）
 const STATS = [
-  { testid: 'stat-visits', icon: 'eye', tone: 'blue', labelKey: 'dashboard.stat.visits', value: 12480, delta: 12.4 },
-  { testid: undefined, icon: 'user', tone: 'green', labelKey: 'dashboard.stat.users', value: 328, delta: 8.2 },
-  { testid: undefined, icon: 'arrow-up', tone: 'violet', labelKey: 'dashboard.stat.orders', value: 1926, delta: 3.1 },
-  { testid: undefined, icon: 'clock', tone: 'orange', labelKey: 'dashboard.stat.conversion', value: 4.6, suffix: '%', delta: -0.4 },
+  {
+    testid: 'stat-visits',
+    icon: 'eye',
+    tone: 'blue',
+    labelKey: 'dashboard.stat.visits',
+    value: 12480,
+    delta: 12.4,
+  },
+  {
+    testid: undefined,
+    icon: 'user',
+    tone: 'green',
+    labelKey: 'dashboard.stat.users',
+    value: 328,
+    delta: 8.2,
+  },
+  {
+    testid: undefined,
+    icon: 'arrow-up',
+    tone: 'violet',
+    labelKey: 'dashboard.stat.orders',
+    value: 1926,
+    delta: 3.1,
+  },
+  {
+    testid: undefined,
+    icon: 'clock',
+    tone: 'orange',
+    labelKey: 'dashboard.stat.conversion',
+    value: 4.6,
+    suffix: '%',
+    delta: -0.4,
+  },
 ]
 
 const DONUT_COLORS = [
@@ -32,7 +61,9 @@ function segmentedOptions() {
 function todayLabel() {
   const d = new Date()
   const locale = currentLocale() === 'en' ? 'en-US' : 'zh-CN'
-  return new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'long', day: 'numeric' }).format(d)
+  return new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'long', day: 'numeric' }).format(
+    d,
+  )
 }
 
 function trendLabels(days) {
@@ -86,7 +117,9 @@ function renderDashboard() {
   function quickActions() {
     return [
       { href: './form.html', icon: 'plus', label: t('nav.createOrder') },
-      ...(isAdmin ? [{ href: './products.html', icon: 'edit', label: t('products.newProduct') }] : []),
+      ...(isAdmin
+        ? [{ href: './products.html', icon: 'edit', label: t('products.newProduct') }]
+        : []),
       { href: './orders.html', icon: 'calendar', label: t('nav.orders') },
       ...(isAdmin ? [{ href: './users.html', icon: 'user', label: t('nav.users') }] : []),
     ]

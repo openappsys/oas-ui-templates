@@ -4,7 +4,7 @@ import { join } from 'node:path'
 const scriptsDir = import.meta.dirname
 const src = join(scriptsDir, '..')
 const dist = join(src, 'dist')
-const FILES = readdirSync(src).filter(f => f.endsWith('.html'))
+const FILES = readdirSync(src).filter((f) => f.endsWith('.html'))
 const DIRS = ['css', 'js']
 
 rmSync(dist, { recursive: true, force: true })

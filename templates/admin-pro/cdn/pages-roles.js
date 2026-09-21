@@ -288,9 +288,10 @@ export function renderRoles(el) {
     })
     el.querySelector('#rf-custom > .form-label')?.replaceChildren(t('roles.form.customScope'))
     el.querySelector('[data-testid="rf-name"]').setAttribute('placeholder', t('roles.rule.name'))
-    el
-      .querySelector('[data-testid="rf-code"]')
-      .setAttribute('placeholder', t('roles.placeholder.code'))
+    el.querySelector('[data-testid="rf-code"]').setAttribute(
+      'placeholder',
+      t('roles.placeholder.code'),
+    )
     el.querySelector('.form-hint').textContent = t('roles.hint.code')
     scopeGroup.innerHTML = DATA_SCOPE_OPTIONS()
       .map(

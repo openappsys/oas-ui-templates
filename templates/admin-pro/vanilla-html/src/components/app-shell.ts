@@ -51,7 +51,10 @@ function sidebarItems(): string {
  *  includeHref：仅 navigation 需要（卡片用 <a href> 渲染，无 href 会落到 '#' 致点击被 <a> 默认跳转
  *  重置成 '#'，丢 #/settings）；menubar 子项是 li（走 select→navigate 本就正常）绝不传，保持原样 */
 function groupMenuItems(activePath: string, includeHref: boolean): string {
-  const groups = new Map<string, Array<{ label: string; value: string; icon?: string; active?: boolean; href?: string }>>()
+  const groups = new Map<
+    string,
+    Array<{ label: string; value: string; icon?: string; active?: boolean; href?: string }>
+  >()
   for (const r of routes) {
     if (r.meta.hidden) continue
     const g = groupLabel(r.meta.group)
@@ -250,7 +253,8 @@ export function mountApp(root: HTMLElement): void {
   /** 按形态设置菜单 items（sidebar→分组字段；navigation→分组下拉 + active 高亮） */
   function setNavItems(activePath: string): void {
     const style = menuStyle()
-    const items = style === 'sidebar' ? sidebarItems() : groupMenuItems(activePath, style === 'navigation')
+    const items =
+      style === 'sidebar' ? sidebarItems() : groupMenuItems(activePath, style === 'navigation')
     navEl().setAttribute('items', items)
   }
   /** 按形态映射当前路由高亮（各组件高亮机制不同，须分开处理，避免 navigation-menu 把 value 当「已展开面板」）：

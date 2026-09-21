@@ -94,7 +94,7 @@ body {
   font-size: 13px;
 }
 .crumbs li + li::before {
-  content: '/';
+  content: "/";
   color: var(--oas-color-text-secondary);
 }
 .crumbs a {
@@ -104,7 +104,7 @@ body {
 .crumbs a:hover {
   color: var(--oas-color-primary);
 }
-.crumbs [aria-current='page'] {
+.crumbs [aria-current="page"] {
   color: var(--oas-color-text-primary);
 }
 .stat-grid {
@@ -200,8 +200,12 @@ body {
 }
 
 @media (max-width: 640px) {
-  .form-grid { grid-template-columns: 1fr; }
-  .toolbar { flex-wrap: wrap; }
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .toolbar {
+    flex-wrap: wrap;
+  }
 }
 
 .nav-toggle {
@@ -245,5 +249,7 @@ body {
 }
 
 @media (max-width: 768px) {
-  .app-header { padding-left: var(--oas-space-4); }
+  .app-header {
+    padding-left: var(--oas-space-4);
+  }
 }

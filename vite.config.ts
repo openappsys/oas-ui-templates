@@ -27,7 +27,9 @@ function discoverTemplates() {
       }
     }
   }
-  out.forEach((t, i) => (t.port = 5181 + i))
+  out.forEach((t, i) => {
+    t.port = 5181 + i
+  })
   return out
 }
 

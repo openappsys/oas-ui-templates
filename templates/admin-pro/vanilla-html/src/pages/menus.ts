@@ -500,6 +500,7 @@ function insertChild(nodes: MenuTree[], parentId: number | null, child: MenuTree
   }
   const parent = findNode(nodes, parentId)
   if (parent) {
-    ;(parent.children ??= []).push(child)
+    if (!parent.children) parent.children = []
+    parent.children.push(child)
   }
 }

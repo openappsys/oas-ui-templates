@@ -353,9 +353,6 @@ declare global {
       'oas-tree-select': OasBase
       'oas-transfer': OasBase
       'oas-watermark': OasBase
-
     }
   }
 }
-
-export {}

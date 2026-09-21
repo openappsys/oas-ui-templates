@@ -3,7 +3,12 @@
  * 搜索 + 表格 + 弹窗表单（名称/编码必填、排序、状态开关、描述）
  */
 import { onLocaleChange, t } from './i18n.js'
-import { createCategory, listCategories, removeCategory, updateCategory } from './data/categories.js'
+import {
+  createCategory,
+  listCategories,
+  removeCategory,
+  updateCategory,
+} from './data/categories.js'
 
 const RULES = () =>
   JSON.stringify({
@@ -261,15 +266,18 @@ export function renderCategory(el) {
         if (req) n.append(' ', req)
       }
     })
-    el
-      .querySelector('[data-testid="cf-name"]')
-      .setAttribute('placeholder', t('category.placeholder.name'))
-    el
-      .querySelector('[data-testid="cf-code"]')
-      .setAttribute('placeholder', t('category.placeholder.code'))
-    el
-      .querySelector('[data-testid="cf-desc"]')
-      .setAttribute('placeholder', t('category.placeholder.desc'))
+    el.querySelector('[data-testid="cf-name"]').setAttribute(
+      'placeholder',
+      t('category.placeholder.name'),
+    )
+    el.querySelector('[data-testid="cf-code"]').setAttribute(
+      'placeholder',
+      t('category.placeholder.code'),
+    )
+    el.querySelector('[data-testid="cf-desc"]').setAttribute(
+      'placeholder',
+      t('category.placeholder.desc'),
+    )
     form.setAttribute('rules', RULES())
     el.querySelector('[data-testid="cf-cancel"]').textContent = t('common.cancel')
     el.querySelector('[data-testid="cf-save"]').textContent = t('common.save')

@@ -281,9 +281,9 @@ function renderUsers() {
     void refresh()
   })
 
-  document.querySelector('[data-testid="form-cancel"]').addEventListener('click', () =>
-    closeModal(formModal),
-  )
+  document
+    .querySelector('[data-testid="form-cancel"]')
+    .addEventListener('click', () => closeModal(formModal))
 
   document.querySelector('[data-testid="form-save"]').addEventListener('click', () => {
     form.shadowRoot?.querySelector('form')?.requestSubmit()

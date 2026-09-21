@@ -342,7 +342,9 @@ export function renderProducts(el) {
       OASUI.message.error(t('products.notFound'))
       return
     }
-    OASUI.message.success(updated.status === 'on' ? t('products.status.on') : t('products.status.off'))
+    OASUI.message.success(
+      updated.status === 'on' ? t('products.status.on') : t('products.status.off'),
+    )
     void refresh()
   }
 
@@ -355,7 +357,8 @@ export function renderProducts(el) {
     }
     saving = true
     try {
-      const editing = state.editingId != null ? state.rows.find((r) => r.id === state.editingId) : null
+      const editing =
+        state.editingId != null ? state.rows.find((r) => r.id === state.editingId) : null
       const payload = {
         name: values.name,
         category: values.category || state.categories[0]?.value || '',

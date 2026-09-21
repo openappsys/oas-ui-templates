@@ -69,9 +69,10 @@ export function renderAdvancedForm(el) {
       if (key) item.setAttribute('label', t(key))
     })
     el.querySelector('oas-input[name="company"]')?.setAttribute('placeholder', t('adv.companyPh'))
-    el
-      .querySelector('oas-input[name="creditCode"]')
-      ?.setAttribute('placeholder', t('adv.creditCodePh'))
+    el.querySelector('oas-input[name="creditCode"]')?.setAttribute(
+      'placeholder',
+      t('adv.creditCodePh'),
+    )
     el.querySelector('oas-date-picker')?.setAttribute('placeholder', t('adv.foundedPh'))
     el.querySelector('oas-auto-complete')?.setAttribute('placeholder', t('adv.phonePh'))
     el.querySelector('oas-cascader')?.setAttribute('placeholder', t('adv.addressPh'))

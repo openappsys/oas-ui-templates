@@ -208,7 +208,7 @@ function renderCrumbs() {
 }
 
 window.OASShell = window.OASShell || {}
-window.OASShell.setBreadcrumb = function (items) {
+window.OASShell.setBreadcrumb = (items) => {
   registeredCrumbs = Array.isArray(items) ? items.slice() : []
   renderCrumbs()
 }

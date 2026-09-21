@@ -7,7 +7,15 @@
 // 路由模式：按 localStorage（oas-admin.router-mode）二选一（设置中心可切换，
 // modal.confirm 二次确认后整页刷新，此处模块加载时一次性定型）
 import { useSyncExternalStore } from 'react'
-import { BrowserRouter, HashRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router'
+import {
+  BrowserRouter,
+  HashRouter,
+  Navigate,
+  Outlet,
+  Route,
+  Routes,
+  useLocation,
+} from 'react-router'
 import { AppShell } from '../components/app-shell'
 import LoginPage from '../pages/login'
 import { session } from '../store/session'

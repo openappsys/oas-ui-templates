@@ -52,9 +52,13 @@ export function renderResult(el) {
     const nav = (path) => {
       location.hash = `#${path}`
     }
-    el.querySelector('[data-testid="result-view-order"]')?.addEventListener('click', () => nav('/orders'))
+    el.querySelector('[data-testid="result-view-order"]')?.addEventListener('click', () =>
+      nav('/orders'),
+    )
     el.querySelector('[data-testid="result-reset"]')?.addEventListener('click', () => nav('/form'))
-    el.querySelector('[data-testid="result-back-form"]')?.addEventListener('click', () => nav('/form'))
+    el.querySelector('[data-testid="result-back-form"]')?.addEventListener('click', () =>
+      nav('/form'),
+    )
   }
 
   draw()

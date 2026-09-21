@@ -48,7 +48,7 @@
 }
 
 /* 用户表单弹层内含 oas-select 下拉，需露出弹层 body 溢出部分 */
-oas-modal[data-testid='user-form-modal']::part(body) {
+oas-modal[data-testid="user-form-modal"]::part(body) {
   overflow: visible;
 }
 

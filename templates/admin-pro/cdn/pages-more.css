@@ -3,7 +3,6 @@
  * 上半（通用 / 订单 / 商品）在 pages.css；来源与 token 约定见彼处头注释
  */
 
-
 /* ---------- 数据看板 ---------- */
 .board-grid {
   display: grid;
@@ -137,7 +136,7 @@
 }
 .light-mini::before,
 .light-mini::after {
-  content: '';
+  content: "";
   position: absolute;
   background: var(--oas-color-bg-hover);
   border-radius: 2px;
@@ -159,7 +158,7 @@
 }
 .dark-mini::before,
 .dark-mini::after {
-  content: '';
+  content: "";
   position: absolute;
   background: var(--oas-color-text-secondary);
   border-radius: 2px;
@@ -180,7 +179,7 @@
   background: linear-gradient(90deg, var(--oas-color-bg) 50%, var(--oas-color-text-primary) 50%);
 }
 .system-mini::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 12px;
   left: 10px;

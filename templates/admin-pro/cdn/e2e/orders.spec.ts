@@ -44,7 +44,9 @@ test('订单管理：导出订单 CSV 触发下载', async ({ page }) => {
   await login(page)
   await page.locator('#nav').getByText('订单管理').click()
   // 等数据行就绪再导出：导出按钮先于异步数据可见，空数据分支只弹提示不下载
-  await expect(page.getByTestId('orders-list').locator('tbody tr[part="row"]').first()).toBeVisible()
+  await expect(
+    page.getByTestId('orders-list').locator('tbody tr[part="row"]').first(),
+  ).toBeVisible()
   const downloadPromise = page.waitForEvent('download')
   await page.getByTestId('orders-export').click()
   const download = await downloadPromise
@@ -65,9 +67,7 @@ test('从订单详情抽屉跳转订单详情页（时间线渲染）', async ({
 
   await page.waitForURL('**/#/order-detail')
   // oas-page-header title 为消费式属性：订单号写进 shadow [part="title"]
-  await expect(page.getByTestId('order-page-header').locator('[part="title"]')).toContainText(
-    'SO-',
-  )
+  await expect(page.getByTestId('order-page-header').locator('[part="title"]')).toContainText('SO-')
   await expect(
     page.getByTestId('order-detail-timeline').locator('oas-timeline-item'),
   ).not.toHaveCount(0)
@@ -81,11 +81,7 @@ test('订单详情页状态流转：已支付 → 配送中', async ({ page }) =
   await expect(page.getByTestId('orders-list').locator('tbody tr')).not.toHaveCount(0)
 
   // 种子数据中「云图软件」为已支付单：详情页应有「开始配送」流转动作
-  await page
-    .getByTestId('orders-list')
-    .locator('tbody tr', { hasText: '云图软件' })
-    .first()
-    .click()
+  await page.getByTestId('orders-list').locator('tbody tr', { hasText: '云图软件' }).first().click()
   await expect(page.getByTestId('order-drawer')).toHaveAttribute('visible', '')
   await page.getByTestId('order-detail-link').click()
   await page.waitForURL('**/#/order-detail')

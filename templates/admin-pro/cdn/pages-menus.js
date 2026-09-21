@@ -378,7 +378,7 @@ export function renderMenus(el) {
     permsInput.setAttribute('placeholder', t('menus.placeholder.perms'))
     pathInput.setAttribute('placeholder', t('menus.placeholder.path'))
     el.querySelectorAll('#mf-type .radio-label').forEach((n, i) => {
-      n.textContent = t(`menus.type.${(['M', 'C', 'F'][i] ?? 'C')}`)
+      n.textContent = t(`menus.type.${['M', 'C', 'F'][i] ?? 'C'}`)
     })
     form.setAttribute('rules', RULES())
     el.querySelector('[data-testid="mf-cancel"]').textContent = t('common.cancel')

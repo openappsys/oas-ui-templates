@@ -13,7 +13,7 @@ if (import.meta.env.PROD) {
   }
   window.gtag('js', new Date())
   window.gtag('config', 'G-RXJ8JG9R19')
-  var s = document.createElement('script')
+  const s = document.createElement('script')
   s.async = true
   s.src = 'https://www.googletagmanager.com/gtag/js?id=G-RXJ8JG9R19'
   document.head.appendChild(s)

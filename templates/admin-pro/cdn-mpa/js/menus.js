@@ -78,7 +78,10 @@ function insertChild(nodes, parentId, child) {
     return
   }
   const parent = findNode(nodes, parentId)
-  if (parent) (parent.children ??= []).push(child)
+  if (parent) {
+    if (!parent.children) parent.children = []
+    parent.children.push(child)
+  }
 }
 
 function descendants(nodes, id) {

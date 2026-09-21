@@ -17,17 +17,15 @@ test('设置中心：数据与列表/外观偏好写入 localStorage', async ({ 
   await page.getByTestId('settings-tabs').getByText('数据与列表', { exact: true }).click()
   await expect(page.getByTestId('settings-tabs')).toHaveAttribute('active', 'data')
   await page.getByTestId('form-mode-group').getByText('对话框').click()
-  expect(
-    await page.evaluate(() => localStorage.getItem('oas-admin-cdn-mpa.form-mode')),
-  ).toBe('dialog')
+  expect(await page.evaluate(() => localStorage.getItem('oas-admin-cdn-mpa.form-mode'))).toBe(
+    'dialog',
+  )
   // 密度与字号在「外观」tab
   await page.getByTestId('settings-tabs').getByText('外观', { exact: true }).click()
   await expect(page.getByTestId('settings-tabs')).toHaveAttribute('active', 'appearance')
   await page.getByTestId('density-group').getByText('紧凑').click()
   expect(
-    await page.evaluate(
-      () => localStorage.getItem('oas-admin-cdn-mpa.settings.table-density'),
-    ),
+    await page.evaluate(() => localStorage.getItem('oas-admin-cdn-mpa.settings.table-density')),
   ).toBe('compact')
   await page.getByTestId('font-size-group').getByText('特大').click()
   expect(

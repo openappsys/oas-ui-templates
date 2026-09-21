@@ -236,7 +236,10 @@ export function renderDict(el) {
     state.editingItemId = item?.id ?? null
     el.querySelector('[data-testid="dif-label"]').setAttribute('value', item?.label ?? '')
     el.querySelector('[data-testid="dif-value"]').setAttribute('value', item?.value ?? '')
-    el.querySelector('[data-testid="dif-sort"]').setAttribute('value', item ? String(item.sort) : '')
+    el.querySelector('[data-testid="dif-sort"]').setAttribute(
+      'value',
+      item ? String(item.sort) : '',
+    )
     el.querySelector('#dict-item-title').textContent = item
       ? t('dict.editItem', { label: item.label })
       : t('dict.newItem')
@@ -360,12 +363,14 @@ export function renderDict(el) {
     el.querySelector('#dict-type-title').textContent = editingType
       ? t('dict.editType', { name: editingType.name })
       : t('dict.newType')
-    el
-      .querySelector('[data-testid="dtf-name"]')
-      .setAttribute('placeholder', t('dict.placeholder.typeName'))
-    el
-      .querySelector('[data-testid="dtf-code"]')
-      .setAttribute('placeholder', t('dict.placeholder.typeCode'))
+    el.querySelector('[data-testid="dtf-name"]').setAttribute(
+      'placeholder',
+      t('dict.placeholder.typeName'),
+    )
+    el.querySelector('[data-testid="dtf-code"]').setAttribute(
+      'placeholder',
+      t('dict.placeholder.typeCode'),
+    )
     el.querySelector('#dict-type-form').setAttribute('rules', RULES_TYPE())
     el.querySelector('[data-testid="dtf-cancel"]').textContent = t('common.cancel')
     el.querySelector('[data-testid="dtf-save"]').textContent = t('common.save')
@@ -374,12 +379,14 @@ export function renderDict(el) {
     el.querySelector('#dict-item-title').textContent = editingItem
       ? t('dict.editItem', { label: editingItem.label })
       : t('dict.newItem')
-    el
-      .querySelector('[data-testid="dif-label"]')
-      .setAttribute('placeholder', t('dict.placeholder.label'))
-    el
-      .querySelector('[data-testid="dif-value"]')
-      .setAttribute('placeholder', t('dict.placeholder.value'))
+    el.querySelector('[data-testid="dif-label"]').setAttribute(
+      'placeholder',
+      t('dict.placeholder.label'),
+    )
+    el.querySelector('[data-testid="dif-value"]').setAttribute(
+      'placeholder',
+      t('dict.placeholder.value'),
+    )
     el.querySelector('#dict-item-form').setAttribute('rules', RULES_ITEM())
     el.querySelector('[data-testid="dif-cancel"]').textContent = t('common.cancel')
     el.querySelector('[data-testid="dif-save"]').textContent = t('common.save')

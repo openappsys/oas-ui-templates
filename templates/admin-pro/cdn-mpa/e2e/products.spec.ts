@@ -17,9 +17,9 @@ test('admin 商品管理：卡片/列表双视图切换，列表含开关与操�
   await expect(page.getByTestId('product-view')).toHaveAttribute('value', 'table')
   await expect(page.getByTestId('product-table')).toBeVisible()
   await expect(page.getByTestId('product-table')).toContainText('无线降噪耳机')
-  expect(
-    await page.evaluate(() => localStorage.getItem('oas-admin-cdn-mpa.products-view')),
-  ).toBe('table')
+  expect(await page.evaluate(() => localStorage.getItem('oas-admin-cdn-mpa.products-view'))).toBe(
+    'table',
+  )
 
   await page.getByTestId('product-view').getByText('卡片').click()
   await expect(page.getByTestId('product-view')).toHaveAttribute('value', 'cards')
@@ -54,9 +54,7 @@ test('admin 商品管理：page 模式下新建跳转整页表单（真实导航
   // MPA：page 模式 = location.href 整页跳转（SPA 版是 hash 路由 /#/products/edit）
   await page.waitForURL(/product-edit\.html$/)
   // oas-page-header 的 title 为消费式属性，断言走 shadow [part~=title]
-  await expect(page.getByTestId('pe-page-header').locator('[part~="title"]')).toHaveText(
-    '新建商品',
-  )
+  await expect(page.getByTestId('pe-page-header').locator('[part~="title"]')).toHaveText('新建商品')
   await page.getByTestId('pe-save').click()
   await expect(page.locator('.error-text')).toContainText('请输入商品名称')
   expect(errors).toEqual([])

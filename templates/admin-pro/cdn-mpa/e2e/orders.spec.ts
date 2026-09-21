@@ -46,7 +46,9 @@ test('admin 导出订单 CSV 触发下载', async ({ page }) => {
   await login(page)
   await page.goto('/orders.html')
   // 等行集渲染完成再导出（数据层 100ms 延迟，空数据只会弹「暂无导出」提示）
-  await expect(page.getByTestId('orders-list').locator('tbody tr[part="row"]').first()).toBeVisible()
+  await expect(
+    page.getByTestId('orders-list').locator('tbody tr[part="row"]').first(),
+  ).toBeVisible()
   const downloadPromise = page.waitForEvent('download')
   await page.getByTestId('orders-export').click()
   const download = await downloadPromise
@@ -58,7 +60,9 @@ test('admin 订单抽屉「查看完整详情」真实导航到 order-detail.htm
   const errors = await noConsoleErrors(page)
   await login(page)
   await page.goto('/orders.html')
-  await expect(page.getByTestId('orders-list').locator('tbody tr[part="row"]').first()).toBeVisible()
+  await expect(
+    page.getByTestId('orders-list').locator('tbody tr[part="row"]').first(),
+  ).toBeVisible()
 
   // part="row" 行才派发 oas-row-click（tbody 内还有汇总行）
   await page.getByTestId('orders-list').locator('tbody tr[part="row"]').first().click()

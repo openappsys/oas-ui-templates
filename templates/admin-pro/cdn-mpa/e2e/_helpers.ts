@@ -38,8 +38,8 @@ export async function login(page: Page): Promise<void> {
 
 // 登录后写入 localStorage（MPA 页面脚本在导航时读取，需在 goto 前设置）
 export async function setLocal(page: Page, key: string, value: string): Promise<void> {
-  await page.evaluate(
-    ([k, v]) => localStorage.setItem(k as string, v as string),
-    [key, value] as const,
-  )
+  await page.evaluate(([k, v]) => localStorage.setItem(k as string, v as string), [
+    key,
+    value,
+  ] as const)
 }

@@ -284,27 +284,29 @@ function renderOrders() {
     if (state.selectedId) sessionStorage.setItem('order-detail-id', state.selectedId)
   })
 
-  document.querySelector('[data-testid="order-detail-action"]').addEventListener('click', async (e) => {
-    const button = e.currentTarget
-    const target = button.dataset.target
-    if (!target || !state.selectedId) return
-    button.setAttribute('loading', '')
-    const updated = await updateOrderStatus(state.selectedId, target)
-    button.removeAttribute('loading')
-    if (!updated) {
-      OASUI.message.error(t('orders.notFound'))
-      return
-    }
-    OASUI.message.success(tf('orders.flowApplied', { action: button.textContent }))
-    await refresh()
-    const row = state.rows.find((r) => r.id === state.selectedId)
-    if (row) {
-      const tag = document.querySelector('#order-detail-tag')
-      tag.textContent = statusLabel(row.status)
-      setTagType(tag, row.status)
-      renderAction(row)
-    }
-  })
+  document
+    .querySelector('[data-testid="order-detail-action"]')
+    .addEventListener('click', async (e) => {
+      const button = e.currentTarget
+      const target = button.dataset.target
+      if (!target || !state.selectedId) return
+      button.setAttribute('loading', '')
+      const updated = await updateOrderStatus(state.selectedId, target)
+      button.removeAttribute('loading')
+      if (!updated) {
+        OASUI.message.error(t('orders.notFound'))
+        return
+      }
+      OASUI.message.success(tf('orders.flowApplied', { action: button.textContent }))
+      await refresh()
+      const row = state.rows.find((r) => r.id === state.selectedId)
+      if (row) {
+        const tag = document.querySelector('#order-detail-tag')
+        tag.textContent = statusLabel(row.status)
+        setTagType(tag, row.status)
+        renderAction(row)
+      }
+    })
 
   table.addEventListener('oas-row-click', (e) => {
     const row = e.detail?.row

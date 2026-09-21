@@ -37,8 +37,16 @@ export const TAB_LAYOUT_OPTIONS = () => [
 ]
 
 const FORM_MODE_OPTIONS = () => [
-  { value: 'dialog', label: t('settings.formMode.dialog'), desc: t('settings.formMode.dialogDesc') },
-  { value: 'drawer', label: t('settings.formMode.drawer'), desc: t('settings.formMode.drawerDesc') },
+  {
+    value: 'dialog',
+    label: t('settings.formMode.dialog'),
+    desc: t('settings.formMode.dialogDesc'),
+  },
+  {
+    value: 'drawer',
+    label: t('settings.formMode.drawer'),
+    desc: t('settings.formMode.drawerDesc'),
+  },
   { value: 'page', label: t('settings.formMode.page'), desc: t('settings.formMode.pageDesc') },
 ]
 

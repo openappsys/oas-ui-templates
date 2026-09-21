@@ -201,7 +201,9 @@ export function renderDept(el) {
           <oas-table data-testid="dept-sub-table" row-key="id"></oas-table>
         </div>
       </div>`
-    detailEl.querySelector('[data-md-action="edit"]').addEventListener('click', () => openForm(node))
+    detailEl
+      .querySelector('[data-md-action="edit"]')
+      .addEventListener('click', () => openForm(node))
     detailEl
       .querySelector('[data-md-action="child"]')
       .addEventListener('click', () => openForm(null, node))

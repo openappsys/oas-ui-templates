@@ -514,7 +514,9 @@ function renderProducts() {
       OASUI.message.error(t('products.notFound'))
       return
     }
-    OASUI.message.success(updated.status === 'on' ? t('products.status.on') : t('products.status.off'))
+    OASUI.message.success(
+      updated.status === 'on' ? t('products.status.on') : t('products.status.off'),
+    )
     void refresh()
   })
 
@@ -536,7 +538,9 @@ function renderProducts() {
       OASUI.message.error(t('products.notFound'))
       return
     }
-    OASUI.message.success(updated.status === 'on' ? t('products.status.on') : t('products.status.off'))
+    OASUI.message.success(
+      updated.status === 'on' ? t('products.status.on') : t('products.status.off'),
+    )
     void refresh()
   })
 

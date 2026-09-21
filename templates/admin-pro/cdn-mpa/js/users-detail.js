@@ -49,13 +49,14 @@ export function userPerms(menuTree) {
 // 填充详情弹窗：头像 + 角色标签 + descriptions + 权限标识对照 + 删除按钮可用性
 // ctx: { roleName(target), canMutate() }（避免与列表页 state 循环依赖，经参数注入）
 export function renderDetail(target, ctx) {
-  document.querySelector('#detail-avatar-text').textContent = target.name
-    .charAt(0)
-    .toUpperCase()
+  document.querySelector('#detail-avatar-text').textContent = target.name.charAt(0).toUpperCase()
   document.querySelector('#detail-name').textContent = target.name
   const roleTag = document.querySelector('#detail-role-tag')
   roleTag.textContent = ctx.roleName(target)
-  roleTag.setAttribute('type', target.roleId != null ? roleTagType(target) : tagTypeForRole(target.role))
+  roleTag.setAttribute(
+    'type',
+    target.roleId != null ? roleTagType(target) : tagTypeForRole(target.role),
+  )
   const desc = document.querySelector('#detail-desc')
   desc.innerHTML = `
     <oas-descriptions-item label="ID"><span id="detail-id"></span></oas-descriptions-item>

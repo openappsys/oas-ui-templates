@@ -24,7 +24,10 @@ test('基础表单：合法填写后提交成功', async ({ page }) => {
   await page.locator('#basic-form oas-input[name="name"]').locator('input').fill('门户改版项目')
   await page.locator('#basic-form oas-select[name="category"]').click()
   await page.getByRole('option', { name: 'Web 应用' }).click()
-  await page.locator('#basic-form oas-input[name="contact"]').locator('input').fill('pm@example.com')
+  await page
+    .locator('#basic-form oas-input[name="contact"]')
+    .locator('input')
+    .fill('pm@example.com')
   await page.getByRole('button', { name: '提交' }).click()
   await expect(page.locator('oas-message').filter({ hasText: '提交成功' })).toBeVisible()
   expect(errors).toEqual([])
@@ -50,12 +53,12 @@ test('高级表单：合法填写后提交成功', async ({ page }) => {
     .locator('input')
     .fill('91310000MA1K35X79A')
   // oas-combobox：oas-form 取值直读 value 属性，设值 + 派发 oas-change 同步（避免浮层定位竞态）
-  await page
-    .locator('#advanced-form oas-combobox[name="category"]')
-    .evaluate((el) => {
-      el.setAttribute('value', 'electronics')
-      el.dispatchEvent(new CustomEvent('oas-change', { detail: { value: 'electronics' }, bubbles: true }))
-    })
+  await page.locator('#advanced-form oas-combobox[name="category"]').evaluate((el) => {
+    el.setAttribute('value', 'electronics')
+    el.dispatchEvent(
+      new CustomEvent('oas-change', { detail: { value: 'electronics' }, bubbles: true }),
+    )
+  })
   await page.getByRole('button', { name: '提交登记' }).click()
   await expect(page.locator('oas-message').filter({ hasText: '提交成功' })).toBeVisible()
   expect(errors).toEqual([])

@@ -86,8 +86,9 @@ function renderWizard() {
   })
   document.querySelector('#form-subtitle').textContent = t('form.subtitle')
   document.querySelector('.form-total .total-text').textContent = t('form.total')
-  document.querySelector('#form-products span[slot="label"]').textContent =
-    t('form.placeholder.products')
+  document.querySelector('#form-products span[slot="label"]').textContent = t(
+    'form.placeholder.products',
+  )
   customer.setAttribute('placeholder', t('form.rule.customer'))
   phone.setAttribute('placeholder', t('form.rule.phone'))
   note.setAttribute('placeholder', t('form.placeholder.note'))
@@ -108,7 +109,9 @@ function renderWizard() {
     document.querySelectorAll('.form-error').forEach((e) => {
       e.hidden = true
     })
-    ;[customer, phone, productsGroup].forEach((c) => c.removeAttribute('aria-invalid'))
+    ;[customer, phone, productsGroup].forEach((c) => {
+      c.removeAttribute('aria-invalid')
+    })
   }
 
   function validateStep(n) {

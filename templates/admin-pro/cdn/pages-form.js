@@ -149,7 +149,9 @@ export function renderForm(el) {
     el.querySelectorAll('.form-error').forEach((e) => {
       e.hidden = true
     })
-    ;[customer, phone, productsGroup].forEach((c) => c.removeAttribute('aria-invalid'))
+    ;[customer, phone, productsGroup].forEach((c) => {
+      c.removeAttribute('aria-invalid')
+    })
   }
 
   function validateStep(n) {
@@ -376,8 +378,9 @@ export function renderForm(el) {
       'placeholder',
       t('form.placeholder.note'),
     )
-    el.querySelector('#form-products span[slot="label"]').textContent =
-      t('form.placeholder.products')
+    el.querySelector('#form-products span[slot="label"]').textContent = t(
+      'form.placeholder.products',
+    )
     el.querySelector('.form-total').childNodes[0].textContent = t('form.total')
     el.querySelector('[data-testid="form-confirm"]').textContent = t('form.confirm')
     prev.textContent = t('form.prev')

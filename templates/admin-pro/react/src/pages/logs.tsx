@@ -257,6 +257,7 @@ export default function LogsPage() {
                 item-height={ITEM_HEIGHT}
                 hidden={empty || undefined}
               >
+                {/* biome-ignore lint/security/noDangerouslySetInnerHtml: ITEM_TEMPLATE_HTML 为模块内静态模板字符串，不含用户输入 */}
                 <template slot="item" dangerouslySetInnerHTML={{ __html: ITEM_TEMPLATE_HTML }} />
               </oas-virtual-list>
               <div className="logs-empty" id="logs-empty" hidden={!empty || undefined}>

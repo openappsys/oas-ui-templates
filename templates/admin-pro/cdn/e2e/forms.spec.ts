@@ -42,7 +42,9 @@ test('高级表单：填写必填项后提交成功', async ({ page }) => {
   // combobox 走 value 属性 + change 事件通道（组件受控模式，与设置中心主题色用例同款）
   await page.locator('#advanced-form oas-combobox[name="category"]').evaluate((el) => {
     el.setAttribute('value', 'electronics')
-    el.dispatchEvent(new CustomEvent('oas-change', { detail: { value: 'electronics' }, bubbles: true }))
+    el.dispatchEvent(
+      new CustomEvent('oas-change', { detail: { value: 'electronics' }, bubbles: true }),
+    )
   })
 
   await page.getByRole('button', { name: '提交' }).click()

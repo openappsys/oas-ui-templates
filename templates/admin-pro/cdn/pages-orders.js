@@ -57,8 +57,19 @@ function tableColumns() {
     { key: 'no', title: '#', serialNumber: true, width: '48px' },
     { key: 'id', title: t('orders.th.no') },
     { key: 'customer', title: t('orders.th.customer') },
-    { key: 'items', title: t('orders.th.items'), ellipsis: true, render: (r) => itemSummary(r.items) },
-    { key: 'amount', title: t('orders.th.amount'), align: 'right', summary: 'sum', render: (r) => moneyCell(r) },
+    {
+      key: 'items',
+      title: t('orders.th.items'),
+      ellipsis: true,
+      render: (r) => itemSummary(r.items),
+    },
+    {
+      key: 'amount',
+      title: t('orders.th.amount'),
+      align: 'right',
+      summary: 'sum',
+      render: (r) => moneyCell(r),
+    },
     { key: 'status', title: t('orders.th.status'), render: (r) => statusCell(r) },
     { key: 'created', title: t('orders.th.created') },
   ]
@@ -275,7 +286,9 @@ export function renderOrders(el) {
       }
       const header = t('orders.exportHeader')
       const body = list.map((r) =>
-        [r.id, r.customer, r.amount, statusLabel(r.status), r.items.join(' | '), r.created].join(','),
+        [r.id, r.customer, r.amount, statusLabel(r.status), r.items.join(' | '), r.created].join(
+          ',',
+        ),
       )
       const csv = `\ufeff${[header, ...body].join('\n')}`
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })

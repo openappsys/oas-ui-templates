@@ -4,7 +4,11 @@
  */
 import { t } from './i18n.js'
 import { removeProduct, toggleProductStatus, updateProduct } from './data/products.js'
-import { PRODUCT_COLUMN_KEYS, PRODUCT_COLUMN_MANDATORY, writeProductColumns } from './product-columns.js'
+import {
+  PRODUCT_COLUMN_KEYS,
+  PRODUCT_COLUMN_MANDATORY,
+  writeProductColumns,
+} from './product-columns.js'
 import { tableColumns } from './product-table.js'
 
 /** 列定义 + 可见列（column-keys）一次性写入表格 */
@@ -16,8 +20,12 @@ export function renderColumns(table, columnKeys) {
 /** 批量栏文案 / 显隐 / 按钮可用态 */
 export function updateBatchBar(el, state) {
   const n = state.selected.length
-  el.querySelector('[data-testid="product-batch-count"]').textContent = n > 0 ? t('products.batch.selected', { count: n }) : ''
-  el.querySelector('[data-testid="product-batch-del-pop"]').setAttribute('title', t('products.batch.confirmDelete', { count: n }))
+  el.querySelector('[data-testid="product-batch-count"]').textContent =
+    n > 0 ? t('products.batch.selected', { count: n }) : ''
+  el.querySelector('[data-testid="product-batch-del-pop"]').setAttribute(
+    'title',
+    t('products.batch.confirmDelete', { count: n }),
+  )
   el.querySelector('[data-testid="product-batch-bar"]').hidden = state.view !== 'table' || n === 0
   for (const key of ['product-batch-list', 'product-batch-unlist', 'product-batch-delete']) {
     const btn = el.querySelector(`[data-testid="${key}"]`)
@@ -89,9 +97,18 @@ export function bindBatchBar(el, state, { refresh, clear }) {
     void refresh()
   }
 
-  el.querySelector('[data-testid="product-batch-list"]').addEventListener('click', () => void batchStatus('on'))
-  el.querySelector('[data-testid="product-batch-unlist"]').addEventListener('click', () => void batchStatus('off'))
-  el.querySelector('[data-testid="product-batch-del-pop"]').addEventListener('oas-ok', () => void batchDelete())
+  el.querySelector('[data-testid="product-batch-list"]').addEventListener(
+    'click',
+    () => void batchStatus('on'),
+  )
+  el.querySelector('[data-testid="product-batch-unlist"]').addEventListener(
+    'click',
+    () => void batchStatus('off'),
+  )
+  el.querySelector('[data-testid="product-batch-del-pop"]').addEventListener(
+    'oas-ok',
+    () => void batchDelete(),
+  )
 }
 
 /** 列设置弹窗：打开 / 关闭 / 恢复默认 / 勾选变更即时持久化 */

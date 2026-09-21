@@ -79,8 +79,12 @@ export function fillProductForm(scope, row, categoryOptions) {
       : (categoryOptions[0]?.value ?? '')
   scope.querySelector('[data-testid="pf-name"]').setAttribute('value', row?.name ?? '')
   scope.querySelector('[data-testid="pf-category"]').setAttribute('value', resolveCategory())
-  scope.querySelector('[data-testid="pf-price"]').setAttribute('value', row ? String(row.price) : '')
-  scope.querySelector('[data-testid="pf-stock"]').setAttribute('value', row ? String(row.stock) : '')
+  scope
+    .querySelector('[data-testid="pf-price"]')
+    .setAttribute('value', row ? String(row.price) : '')
+  scope
+    .querySelector('[data-testid="pf-stock"]')
+    .setAttribute('value', row ? String(row.stock) : '')
   scope.querySelector('[data-testid="pf-date"]')?.setAttribute('value', row?.created ?? today())
   const upload = scope.querySelector('[data-testid="pf-cover"]')
   if (upload) upload.files = []

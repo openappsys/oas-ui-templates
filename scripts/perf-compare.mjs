@@ -12,11 +12,12 @@ const N = 5
 const servers = []
 for (const [t, port] of Object.entries(TPL)) {
   const proc = spawn('npx', ['vite', 'preview', '--port', String(port), '--strictPort'], {
-    cwd: `templates/admin-pro/${t}`, stdio: 'ignore',
+    cwd: `templates/admin-pro/${t}`,
+    stdio: 'ignore',
   })
   servers.push(proc)
 }
-await new Promise(r => setTimeout(r, 3000))
+await new Promise((r) => setTimeout(r, 3000))
 
 const browser = await chromium.launch()
 const out = {}
@@ -31,41 +32,78 @@ for (const [name, port] of Object.entries(TPL)) {
   await page.waitForTimeout(2000)
   const times = await page.evaluate(async () => {
     function deepFind(label) {
-      function dq(r, out = []) { out.push(...r.querySelectorAll('*')); for (const e of r.querySelectorAll('*')) if (e.shadowRoot) dq(e.shadowRoot, out); return out }
-      return dq(document).find(e => (e.textContent || '').trim() === label && e.children.length === 0 && e.offsetParent !== null)
+      function dq(r, out = []) {
+        out.push(...r.querySelectorAll('*'))
+        for (const e of r.querySelectorAll('*')) if (e.shadowRoot) dq(e.shadowRoot, out)
+        return out
+      }
+      return dq(document).find(
+        (e) =>
+          (e.textContent || '').trim() === label &&
+          e.children.length === 0 &&
+          e.offsetParent !== null,
+      )
     }
     const results = []
-    for (const [label, path, mark] of [['用户管理', 'users', '用户'], ['商品管理', 'products', '商品'], ['权限管理', 'roles', '权限']]) {
+    for (const [label, path, mark] of [
+      ['用户管理', 'users', '用户'],
+      ['商品管理', 'products', '商品'],
+      ['权限管理', 'roles', '权限'],
+    ]) {
       const elapsed = await new Promise((resolve) => {
         const t0 = performance.now()
         let settled = false
-        const finish = (ms) => { if (!settled) { settled = true; resolve(Math.round(ms)) } }
+        const finish = (ms) => {
+          if (!settled) {
+            settled = true
+            resolve(Math.round(ms))
+          }
+        }
         const check = () => {
           if (!location.hash.includes(path)) return
           const table = document.querySelector('oas-table')
-          if ((table?.shadowRoot?.querySelectorAll('tr').length ?? 0) > 0) finish(performance.now() - t0)
+          if ((table?.shadowRoot?.querySelectorAll('tr').length ?? 0) > 0)
+            finish(performance.now() - t0)
         }
         const observer = new MutationObserver(check)
         observer.observe(document.body, { childList: true, subtree: true })
         const poll = setInterval(check, 16)
         const el = deepFind(label)
-        if (!el) { clearInterval(poll); finish(-1); return }
+        if (!el) {
+          clearInterval(poll)
+          finish(-1)
+          return
+        }
         el.click()
-        setTimeout(() => { clearInterval(poll); finish(performance.now() - t0) }, 8000)
+        setTimeout(() => {
+          clearInterval(poll)
+          finish(performance.now() - t0)
+        }, 8000)
       })
       results.push(elapsed)
-      await new Promise(r => setTimeout(r, 250))
+      await new Promise((r) => setTimeout(r, 250))
     }
     // 冷加载：DCL + FCP + 传输体积
     const nav = performance.getEntriesByType('navigation')[0]
-    const fcp = performance.getEntriesByType('paint').find(p => p.name === 'first-contentful-paint')
-    const transfer = performance.getEntriesByType('resource').reduce((s, e) => s + (e.transferSize || 0), 0)
-    return { results, dcl: Math.round(nav?.domContentLoadedEventEnd ?? -1), fcp: Math.round(fcp?.startTime ?? -1), transferKB: Math.round(transfer / 1024) }
+    const fcp = performance
+      .getEntriesByType('paint')
+      .find((p) => p.name === 'first-contentful-paint')
+    const transfer = performance
+      .getEntriesByType('resource')
+      .reduce((s, e) => s + (e.transferSize || 0), 0)
+    return {
+      results,
+      dcl: Math.round(nav?.domContentLoadedEventEnd ?? -1),
+      fcp: Math.round(fcp?.startTime ?? -1),
+      transferKB: Math.round(transfer / 1024),
+    }
   })
   out[name] = {
     navMed: [...times.results].sort((a, b) => a - b)[1],
     navAll: times.results.join('/'),
-    dcl: times.dcl, fcp: times.fcp, transferKB: times.transferKB,
+    dcl: times.dcl,
+    fcp: times.fcp,
+    transferKB: times.transferKB,
   }
   await ctx.close()
 }
@@ -74,5 +112,7 @@ for (const s of servers) s.kill()
 
 console.log('\n===== 性能对比（生产构建，5 次中位数）=====')
 for (const [name, r] of Object.entries(out)) {
-  console.log(`${name.padEnd(7)} 路由切换: ${String(r.navMed).padStart(4)}ms（${r.navAll}）| DCL: ${r.dcl}ms | FCP: ${r.fcp}ms | 传输: ${r.transferKB}KB`)
+  console.log(
+    `${name.padEnd(7)} 路由切换: ${String(r.navMed).padStart(4)}ms（${r.navAll}）| DCL: ${r.dcl}ms | FCP: ${r.fcp}ms | 传输: ${r.transferKB}KB`,
+  )
 }

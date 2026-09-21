@@ -180,10 +180,7 @@ export function renderUsers(el) {
       'value',
       row?.roleId != null ? String(row.roleId) : String(state.roles[0]?.id ?? ''),
     )
-    el.querySelector('[data-testid="field-status"]').setAttribute(
-      'value',
-      row?.status ?? 'active',
-    )
+    el.querySelector('[data-testid="field-status"]').setAttribute('value', row?.status ?? 'active')
     el.querySelector('#form-title').textContent = row
       ? t('users.editUser').replace('#{id}', String(row.id))
       : t('users.new')

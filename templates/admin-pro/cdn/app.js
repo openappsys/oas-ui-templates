@@ -53,7 +53,11 @@ function renderLogin() {
       // loginAt 供个人中心「登录时间」展示；role 供仪表盘快捷操作 / 用户页只读判断（对齐 vanilla session 语义）
       localStorage.setItem(
         SESSION_KEY,
-        JSON.stringify({ name, role: roleSelect.getAttribute('value') === 'viewer' ? 'viewer' : 'admin', loginAt: Date.now() }),
+        JSON.stringify({
+          name,
+          role: roleSelect.getAttribute('value') === 'viewer' ? 'viewer' : 'admin',
+          loginAt: Date.now(),
+        }),
       )
     } catch {
       /* 隐私模式 */

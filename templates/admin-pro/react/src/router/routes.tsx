@@ -54,7 +54,7 @@ export const appRoutes: AppRoute[] = [
       iconColor: 'var(--oas-color-primary)',
       group: 'nav.output',
     },
-    Component: DashboardPage
+    Component: DashboardPage,
   },
   {
     path: '/orders',
@@ -64,7 +64,7 @@ export const appRoutes: AppRoute[] = [
       iconColor: 'var(--oas-tint-cyan)',
       group: 'nav.business',
     },
-    Component: OrdersPage
+    Component: OrdersPage,
   },
   {
     path: '/products',
@@ -75,7 +75,7 @@ export const appRoutes: AppRoute[] = [
       roles: ['admin'],
       group: 'nav.business',
     },
-    Component: ProductsPage
+    Component: ProductsPage,
   },
   {
     path: '/users',
@@ -86,7 +86,7 @@ export const appRoutes: AppRoute[] = [
       roles: ['admin', 'viewer'],
       group: 'nav.business',
     },
-    Component: UsersPage
+    Component: UsersPage,
   },
   {
     path: '/data-board',
@@ -96,7 +96,7 @@ export const appRoutes: AppRoute[] = [
       iconColor: 'var(--oas-color-primary)',
       group: 'nav.output',
     },
-    Component: DataBoardPage
+    Component: DataBoardPage,
   },
   {
     path: '/profile',
@@ -107,7 +107,7 @@ export const appRoutes: AppRoute[] = [
       hidden: true,
       group: 'nav.output',
     },
-    Component: ProfilePage
+    Component: ProfilePage,
   },
   {
     path: '/form',
@@ -117,17 +117,17 @@ export const appRoutes: AppRoute[] = [
       iconColor: 'var(--oas-color-warning)',
       group: 'nav.business',
     },
-    Component: FormPage
+    Component: FormPage,
   },
   {
     path: '/order-detail',
     meta: { titleKey: 'nav.orderDetail', icon: 'calendar', hidden: true, parent: '/orders' },
-    Component: OrderDetailPage
+    Component: OrderDetailPage,
   },
   {
     path: '/result',
     meta: { titleKey: 'nav.result', icon: 'check', hidden: true, parent: '/form' },
-    Component: ResultPage
+    Component: ResultPage,
   },
   {
     path: '/system/roles',
@@ -138,7 +138,7 @@ export const appRoutes: AppRoute[] = [
       roles: ['admin'],
       group: 'nav.system',
     },
-    Component: RolesPage
+    Component: RolesPage,
   },
   {
     path: '/system/menus',
@@ -149,7 +149,7 @@ export const appRoutes: AppRoute[] = [
       roles: ['admin'],
       group: 'nav.system',
     },
-    Component: MenusPage
+    Component: MenusPage,
   },
   {
     path: '/system/dept',
@@ -160,7 +160,7 @@ export const appRoutes: AppRoute[] = [
       roles: ['admin'],
       group: 'nav.system',
     },
-    Component: DeptPage
+    Component: DeptPage,
   },
   {
     path: '/system/category',
@@ -171,7 +171,7 @@ export const appRoutes: AppRoute[] = [
       roles: ['admin'],
       group: 'nav.system',
     },
-    Component: CategoryPage
+    Component: CategoryPage,
   },
   {
     path: '/system/dict',
@@ -182,7 +182,7 @@ export const appRoutes: AppRoute[] = [
       roles: ['admin'],
       group: 'nav.system',
     },
-    Component: DictPage
+    Component: DictPage,
   },
   {
     path: '/system/logs',
@@ -193,7 +193,7 @@ export const appRoutes: AppRoute[] = [
       roles: ['admin'],
       group: 'nav.system',
     },
-    Component: LogsPage
+    Component: LogsPage,
   },
   {
     path: '/settings',
@@ -214,7 +214,7 @@ export const appRoutes: AppRoute[] = [
       hidden: true,
       parent: '/products',
     },
-    Component: ProductEditPage
+    Component: ProductEditPage,
   },
   {
     path: '/forbidden',
@@ -224,7 +224,7 @@ export const appRoutes: AppRoute[] = [
       iconColor: 'var(--oas-color-danger)',
       group: 'nav.demo',
     },
-    Component: ForbiddenPage
+    Component: ForbiddenPage,
   },
   {
     path: '/not-found',
@@ -234,7 +234,7 @@ export const appRoutes: AppRoute[] = [
       iconColor: 'var(--oas-color-primary)',
       group: 'nav.demo',
     },
-    Component: NotFoundPage
+    Component: NotFoundPage,
   },
   {
     path: '/500',
@@ -244,7 +244,7 @@ export const appRoutes: AppRoute[] = [
       iconColor: 'var(--oas-color-warning)',
       group: 'nav.demo',
     },
-    Component: ServerErrorPage
+    Component: ServerErrorPage,
   },
   {
     path: '/basic-form',
@@ -254,7 +254,7 @@ export const appRoutes: AppRoute[] = [
       iconColor: 'var(--oas-color-success)',
       group: 'nav.demo',
     },
-    Component: BasicFormPage
+    Component: BasicFormPage,
   },
   {
     path: '/advanced-form',
@@ -264,12 +264,12 @@ export const appRoutes: AppRoute[] = [
       iconColor: 'var(--oas-tint-cyan)',
       group: 'nav.demo',
     },
-    Component: AdvancedFormPage
+    Component: AdvancedFormPage,
   },
   {
     path: '/login',
     meta: { titleKey: 'login.welcome', icon: 'lock', hidden: true },
-    Component: LoginPage
+    Component: LoginPage,
   },
 ]
 

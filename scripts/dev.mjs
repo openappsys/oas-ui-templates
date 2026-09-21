@@ -72,11 +72,20 @@ if (templates.length === 0) {
 
 // 释放门户端口 + 各模板端口（门户 5300，模板 5181..）
 freePort(portalPort)
-templates.forEach((_, i) => freePort(5181 + i))
+templates.forEach((_, i) => {
+  freePort(5181 + i)
+})
 
 const children = []
+// DEP0190：shell:true 时 args 只拼接不转义，Node 要求传单个字符串
+// 这里自行对含空格/特殊字符的参数加引号（参数均为仓库内部控制的可信值）
+const escapeArg = (a) => (/[\s"^&|<>()%!]/.test(a) ? `"${a.replace(/"/g, '""')}"` : a)
 const run = (cmd, args) => {
-  const child = spawn(cmd, args, { stdio: 'inherit', shell: true, cwd: root })
+  const child = spawn([cmd, ...args.map(escapeArg)].join(' '), {
+    stdio: 'inherit',
+    shell: true,
+    cwd: root,
+  })
   children.push(child)
 }
 
