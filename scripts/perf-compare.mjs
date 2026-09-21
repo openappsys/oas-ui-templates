@@ -6,7 +6,6 @@ import { chromium } from '/private/var/www/zandy/oas-ui-templates/node_modules/.
 import { spawn } from 'node:child_process'
 
 const TPL = { react: 4301, vue: 4302, svelte: 4303 }
-const N = 5
 
 // 起 preview 服务
 const servers = []
@@ -45,7 +44,7 @@ for (const [name, port] of Object.entries(TPL)) {
       )
     }
     const results = []
-    for (const [label, path, mark] of [
+    for (const [label, path] of [
       ['用户管理', 'users', '用户'],
       ['商品管理', 'products', '商品'],
       ['权限管理', 'roles', '权限'],

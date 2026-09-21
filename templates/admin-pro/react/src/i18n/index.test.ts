@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { detectLocale, initI18n, t, setLocale, currentLocale, onLocaleChange } from './index'
+import { detectLocale, t, setLocale, currentLocale, onLocaleChange } from './index'
 
 describe('i18n adapter', () => {
   beforeEach(() => {

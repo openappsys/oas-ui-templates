@@ -10,10 +10,8 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router'
 import type { OrderRow, OrderStatus } from '../data/orders'
-import { updateOrderStatus } from '../data/orders'
 import { useOasEvent } from '../hooks/use-oas-event'
 import { useT } from '../hooks/use-t'
-import { appMessage } from '../lib/app-message'
 import { formatMoney, statusLabel, tagTypeFor } from './orders-table'
 
 /** vanilla FLOW_TO + flowFor：状态流转（pending→paid→shipping→done） */

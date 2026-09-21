@@ -281,7 +281,13 @@ export default function DashboardPage() {
 
       <div className="bottom-grid">
         <oas-card title={t('dashboard.recentOrders')}>
-          <button id="orders-view-all" className="link-btn" slot="extra" onClick={viewAllOrders}>
+          <button
+            type="button"
+            id="orders-view-all"
+            className="link-btn"
+            slot="extra"
+            onClick={viewAllOrders}
+          >
             {t('dashboard.viewAll')} <oas-icon name="chevron-right" size="12" />
           </button>
           <oas-table

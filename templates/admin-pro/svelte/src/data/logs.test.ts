@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { listLogs, resetLogs } from './logs'
-import type { LogEntry, LogLevel } from './logs'
+import type { LogLevel } from './logs'
 
 const LEVELS: LogLevel[] = ['info', 'warn', 'error']
 

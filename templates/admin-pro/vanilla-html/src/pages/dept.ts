@@ -78,18 +78,6 @@ function descendants(nodes: DeptTree[], id: number): Set<number> {
   return set
 }
 
-function flatten(nodes: DeptTree[]): DeptNode[] {
-  const out: DeptNode[] = []
-  const walk = (list: DeptTree[]) => {
-    for (const n of list) {
-      out.push(n)
-      if (n.children?.length) walk(n.children)
-    }
-  }
-  walk(nodes)
-  return out
-}
-
 function toTreeNodes(nodes: DeptTree[]): DeptTreeNode[] {
   return nodes.map((n) => ({
     key: String(n.id),
@@ -211,10 +199,6 @@ export function render(el: HTMLElement): () => void {
     tree.setAttribute('expanded', JSON.stringify(expandKeys(state.tree)))
     if (state.selectedId != null) tree.setAttribute('selected', String(state.selectedId))
     else tree.removeAttribute('selected')
-  }
-
-  function memberCountOf(id: number): number {
-    return state.flat.find((d) => d.id === id)?.members ?? 0
   }
 
   function renderSubTable(node: DeptTree): void {

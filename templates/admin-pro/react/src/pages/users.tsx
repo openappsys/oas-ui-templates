@@ -10,7 +10,7 @@
 //    详情弹窗 ./user-detail.tsx
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { UserRow, UserRole } from '../data/users'
-import type { MenuTree, RoleRow } from '../data/system'
+import type { MenuTree } from '../data/system'
 import './users.css'
 import { useOasEvent } from '../hooks/use-oas-event'
 import { useMenuTree, useRolesList } from '../hooks/use-system'

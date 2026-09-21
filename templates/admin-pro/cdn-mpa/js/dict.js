@@ -7,7 +7,6 @@ import {
   listDictItems,
   listDictTypes,
   removeDictItem,
-  removeDictType,
   updateDictItem,
   updateDictType,
 } from './data/system.js'

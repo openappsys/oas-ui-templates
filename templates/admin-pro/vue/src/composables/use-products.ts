@@ -30,7 +30,7 @@ export function useProductsList(options: UseProductsListOptions = {}) {
     const opts = cats.map((c) => ({ label: c.name, value: c.name }))
     categories.value = opts
     const category = options.category
-    if (category && category.value && !opts.some((c) => c.value === category.value)) {
+    if (category?.value && !opts.some((c) => c.value === category.value)) {
       category.value = ''
     }
   }

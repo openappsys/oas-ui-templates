@@ -49,13 +49,6 @@ const FONT_SIZE_MAP: Record<FontSize, string> = {
 const FONT_SIZE_ITEMS = (): Array<{ label: string; value: FontSize }> =>
   FONT_SIZE_OPTIONS.map((o) => ({ label: t(FONT_SIZE_MAP[o.value]), value: o.value }))
 
-const TABS = (): Array<{ label: string; value: string }> => [
-  { label: t('settings.tab.appearance'), value: 'appearance' },
-  { label: t('settings.tab.layout'), value: 'layout' },
-  { label: t('settings.tab.data'), value: 'data' },
-  { label: t('settings.tab.notification'), value: 'notification' },
-]
-
 const FORM_MODE_OPTIONS = (): Array<{ label: string; value: FormMode; desc: string }> => [
   {
     label: t('settings.formMode.dialog'),

@@ -4,7 +4,7 @@ let value = 0
 let timer: number | undefined
 
 function ensure(): HTMLElement {
-  if (root && root.isConnected) return root
+  if (root?.isConnected) return root
   if (timer !== undefined) {
     clearInterval(timer)
     timer = undefined
@@ -40,7 +40,7 @@ export const progress = {
   },
 
   done(): void {
-    if (!root || !root.classList.contains('is-active')) return
+    if (!root?.classList.contains('is-active')) return
     if (timer !== undefined) {
       clearInterval(timer)
       timer = undefined

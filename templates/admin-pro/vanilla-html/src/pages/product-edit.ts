@@ -65,7 +65,6 @@ export function render(el: HTMLElement): () => void {
 
   const form = el.querySelector<HTMLElement>('#product-form')!
   const datePicker = el.querySelector<HTMLElement>('[data-testid="pf-date"]')!
-  const upload = el.querySelector<HTMLElement>('[data-testid="pf-cover"]')!
   const catSel = el.querySelector<HTMLElement>('[data-testid="pf-category"]')!
   let categoryOptions: Array<{ label: string; value: string }> = []
 

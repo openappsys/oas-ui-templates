@@ -6,8 +6,6 @@ import { onLocaleChange, t } from './i18n.js'
 import { boardData } from './data/board.js'
 
 const STAT_KEYS = ['board.gmv', 'board.orders', 'board.users', 'board.conversion']
-const CHART_KEYS = ['board.monthRevenue', 'board.categoryShare', 'board.channelTrend']
-const PROGRESS_KEYS = ['board.targetOrder', 'board.targetRevenue', 'board.targetUsers']
 
 function statCard(s, idx) {
   const value = s.anim

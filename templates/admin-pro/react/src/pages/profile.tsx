@@ -145,6 +145,7 @@ export default function ProfilePage() {
         <div className="theme-previews">
           {THEME_PREVIEWS.map((p) => (
             <button
+              type="button"
               key={p.theme}
               className={`theme-preview ${p.cls}${theme === p.theme ? ' is-selected' : ''}`}
               data-theme={p.theme}

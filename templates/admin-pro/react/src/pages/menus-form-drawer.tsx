@@ -12,8 +12,6 @@ import { useOasEvent } from '../hooks/use-oas-event'
 import { useT } from '../hooks/use-t'
 import { parentOf } from './menus-tree'
 
-type TFunc = (key: string, params?: Record<string, string | number>) => string
-
 /** vanilla PERM_RE/autoPerms：C 类型按 path 首段自动生成 perms */
 export function autoPerms(type: MenuType, path: string): string {
   if (type !== 'C') return ''

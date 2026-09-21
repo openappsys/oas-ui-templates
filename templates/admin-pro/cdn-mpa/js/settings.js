@@ -206,8 +206,6 @@ function renderSettings() {
   // ── 布局与导航：菜单形态矩阵 / 多页签栏开关 ──
   // 差异说明：vanilla 的「路由模式」控件此处不渲染——cdn-mpa 为原生多页应用，
   // 无 hash/history 双路由模式概念，隐藏该控件（i18n key settings.general.routerMode* 保留未用）
-  const matrixStyle = localStorage.getItem(MENU_STYLE_KEY) ?? 'sidebar'
-  const matrixPosition = localStorage.getItem(MENU_POSITION_KEY) ?? 'left'
   const matrixHeader =
     `<div class="menu-matrix-corner"></div>` +
     MENU_POSITIONS.map(

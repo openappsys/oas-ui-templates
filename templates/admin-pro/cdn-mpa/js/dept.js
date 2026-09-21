@@ -41,18 +41,6 @@ function descendants(nodes, id) {
   return set
 }
 
-function flatten(nodes) {
-  const out = []
-  const walk = (list) => {
-    for (const n of list) {
-      out.push(n)
-      if (n.children?.length) walk(n.children)
-    }
-  }
-  walk(nodes)
-  return out
-}
-
 function toTreeNodes(nodes) {
   return nodes.map((n) => ({
     key: String(n.id),

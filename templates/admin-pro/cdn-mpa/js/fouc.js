@@ -10,7 +10,7 @@
       const nav = (navigator.language || '').toLowerCase()
       document.documentElement.lang = nav === 'zh' || nav.indexOf('zh-') === 0 ? 'zh-CN' : 'en'
     }
-  } catch (e) {
+  } catch {
     /* 无 storage / noop */
   }
 
@@ -23,7 +23,7 @@
     const stored = (k) => {
       try {
         return localStorage.getItem(k)
-      } catch (e2) {
+      } catch {
         return null
       }
     }
@@ -51,7 +51,7 @@
           root.style.setProperty(k, map[k])
       }
     }
-  } catch (e) {
+  } catch {
     /* 忽略损坏数据 */
   }
 })()

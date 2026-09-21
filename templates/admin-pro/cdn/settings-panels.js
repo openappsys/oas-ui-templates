@@ -5,8 +5,6 @@
 import { t } from './i18n.js'
 import {
   canPosition,
-  MENU_POSITIONS,
-  MENU_STYLES,
   readBool,
   readColor,
   readDensity,

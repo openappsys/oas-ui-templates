@@ -19,7 +19,7 @@ describe('request', () => {
             calls.push('req1')
             c.url += '?a=1'
           },
-          onResponse: (c) => {
+          onResponse: () => {
             calls.push('res1')
           },
         },
