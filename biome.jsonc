@@ -37,11 +37,20 @@
       "recommended": true,
       "style": {
         // 测试代码大量使用 `!` 断言，业界（ESLint no-non-null-assertion）普遍关闭
-        "noNonNullAssertion": "off"
+        "noNonNullAssertion": "off",
+        // 只看特异性顺序、不看属性是否真冲突：本仓库双视图（表格/卡片）平行规则与
+        // dark 主题覆盖均为有意排列；stylelint 同名规则默认也不启用
+        "noDescendingSpecificity": "off"
       },
       "correctness": {
         // React 官方 exhaustive-deps 默认即 warn；i18n 场景常故意依赖 locale 而非 t 触发重算
         "useExhaustiveDependencies": "warn"
+      },
+      "complexity": {
+        // 全部 !important 均为受控正当用法：隐藏工具类（.table-hidden/.table-hidden [hidden]）、
+        // web component 的 [hidden] 失效修复与 ::part 穿透、prefers-reduced-motion 无障碍重置；
+        // stylelint 同名规则 declaration-no-important 默认也不启用
+        "noImportantStyles": "off"
       },
       "a11y": {
         // oas-* web component 的语义 biome 不识别（label 无法 for 关联非 form-associated 元素、
