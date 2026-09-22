@@ -3,7 +3,7 @@
 //    oas-submit/oas-close 自定义事件仍走 useOasEvent
 //    React state 单一持有，必须监听 oas-close 回写 state，否则组件自闭后与 state 失同步
 //    声明式 JSON attribute 随 categories state 重算，回填仅写 value attribute
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import type { ProductRow } from '../data/products'
 import { useOasEvent } from '../hooks/use-oas-event'
 import { useProductMutations } from '../hooks/use-products'
@@ -66,10 +66,13 @@ export function ProductForm({
   const onCloseRef = useRef(onClose)
   onCloseRef.current = onClose
 
-  const resolveCategory = (value?: string): string => {
-    if (value && categories.some((c) => c.value === value)) return value
-    return categories[0]?.value ?? ''
-  }
+  const resolveCategory = useCallback(
+    (value?: string): string => {
+      if (value && categories.some((c) => c.value === value)) return value
+      return categories[0]?.value ?? ''
+    },
+    [categories],
+  )
 
   useEffect(() => {
     if (!open) return
@@ -79,8 +82,7 @@ export function ProductForm({
     stockRef.current?.setAttribute('value', editing ? String(editing.stock) : '')
     dateRef.current?.setAttribute('value', editing?.created ?? today())
     if (uploadRef.current) (uploadRef.current as unknown as { files: unknown[] }).files = []
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, editing, categories])
+  }, [open, editing, resolveCategory])
 
   // panel 内原生 click 例外直绑：取消=关闭；保存=触发内部原生 form 提交
   useEffect(() => {

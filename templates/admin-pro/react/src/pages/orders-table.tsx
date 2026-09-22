@@ -121,10 +121,8 @@ export function OrdersTable({
   onRowOpen,
   onClearFilter,
 }: OrdersTableProps) {
-  const { t, locale } = useT()
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const columns = useMemo<TableColumn[]>(() => buildColumns(t), [locale])
+  const { t } = useT()
+  const columns = useMemo<TableColumn[]>(() => buildColumns(t), [t])
 
   useOasEvent<{ row: OrderRow }>(tableRef, 'oas-row-click', (detail) => {
     if (detail.row?.id) onRowOpen(detail.row)

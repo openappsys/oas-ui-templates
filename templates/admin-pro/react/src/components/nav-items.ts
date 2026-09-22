@@ -101,53 +101,53 @@ export interface CommandEntry {
 }
 
 /** 命令面板 items = 页面 + 分隔 + 操作（theme/refresh/logout/locale）+ 分隔 + 主题组 */
-export function buildCommandItems(): CommandEntry[] {
+export function buildCommandItems(tt: typeof t = t): CommandEntry[] {
   const pageItems = appRoutes
     .filter((r) => !r.meta.hidden)
     .map((r) => ({
-      label: t(r.meta.titleKey),
+      label: tt(r.meta.titleKey),
       value: r.path,
       group: groupLabel(r.meta.group),
-      keywords: [t(r.meta.titleKey), r.path],
+      keywords: [tt(r.meta.titleKey), r.path],
     }))
   const actionItems: CommandEntry[] = [
     {
-      label: t('cmd.switchTheme'),
+      label: tt('cmd.switchTheme'),
       value: 'action:theme',
-      group: t('cmd.action'),
-      keywords: [t('cmd.switchTheme'), 'theme'],
+      group: tt('cmd.action'),
+      keywords: [tt('cmd.switchTheme'), 'theme'],
     },
     {
-      label: t('cmd.refresh'),
+      label: tt('cmd.refresh'),
       value: 'action:refresh',
-      group: t('cmd.action'),
+      group: tt('cmd.action'),
       keywords: ['refresh', 'reload'],
     },
     {
-      label: t('cmd.logout'),
+      label: tt('cmd.logout'),
       value: 'action:logout',
-      group: t('cmd.action'),
+      group: tt('cmd.action'),
       keywords: ['logout'],
     },
     {
-      label: currentLocale() === 'en' ? t('cmd.switchToZh') : t('cmd.switchToEn'),
+      label: currentLocale() === 'en' ? tt('cmd.switchToZh') : tt('cmd.switchToEn'),
       value: 'action:locale',
-      group: t('cmd.action'),
+      group: tt('cmd.action'),
       keywords: ['locale', 'language', '语言', '中文', 'english'],
     },
   ]
   const themeItems: CommandEntry[] = [
     {
-      label: t('cmd.light'),
+      label: tt('cmd.light'),
       value: 'theme:light',
-      group: t('cmd.themeGroup'),
+      group: tt('cmd.themeGroup'),
       keywords: ['light'],
     },
-    { label: t('cmd.dark'), value: 'theme:dark', group: t('cmd.themeGroup'), keywords: ['dark'] },
+    { label: tt('cmd.dark'), value: 'theme:dark', group: tt('cmd.themeGroup'), keywords: ['dark'] },
     {
-      label: t('cmd.system'),
+      label: tt('cmd.system'),
       value: 'theme:system',
-      group: t('cmd.themeGroup'),
+      group: tt('cmd.themeGroup'),
       keywords: ['system', 'auto'],
     },
   ]

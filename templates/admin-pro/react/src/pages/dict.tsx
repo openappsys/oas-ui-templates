@@ -59,7 +59,7 @@ function buildColumns(t: TFunc): TableColumn[] {
 }
 
 export default function DictPage() {
-  const { t, locale } = useT()
+  const { t } = useT()
   const [selectedState, setSelectedState] = useState<number | null>(null)
   const [editingTypeId, setEditingTypeId] = useState<number | null>(null)
   const [editingItemId, setEditingItemId] = useState<number | null>(null)
@@ -167,9 +167,7 @@ export default function DictPage() {
       savingRef.current = false
     }
   }
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const columns = useMemo<TableColumn[]>(() => buildColumns(t), [locale])
+  const columns = useMemo<TableColumn[]>(() => buildColumns(t), [t])
 
   return (
     <div className="page">

@@ -59,11 +59,11 @@ export default function FormPage() {
   const confirmRef = useRef<HTMLElement | null>(null)
   const submitRef = useRef<HTMLElement | null>(null)
 
-  const productById = (id: string): ProductRow | undefined =>
-    productsData.find((p) => p.id === Number(id))
   const items = useMemo(
-    () => products.map((id) => productById(id)).filter((p): p is ProductRow => !!p),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    () =>
+      products
+        .map((id) => productsData.find((p) => p.id === Number(id)))
+        .filter((p): p is ProductRow => !!p),
     [products, productsData],
   )
   const total = items.reduce((sum, p) => sum + p.price, 0) * quantity

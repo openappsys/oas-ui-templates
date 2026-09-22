@@ -115,6 +115,7 @@ export default function ProductsPage() {
   // 依赖必须含 filtered.length（即 total）——total 变化本身就触发组件摘 hidden，
   // 即使 shouldHidePager 逻辑值未变也要补写（「卡片视图搜索」场景）
   const shouldHidePager = view !== 'table' || filtered.length === 0
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 故意宽依赖——翻页/总数/语言变化时都需重写 hidden（注释见上）
   useEffect(() => {
     if (pagerRef.current) pagerRef.current.hidden = shouldHidePager
   }, [shouldHidePager, filtered.length, current, locale])

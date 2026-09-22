@@ -52,11 +52,13 @@ export default function ProductEditPage() {
 
   // 数据就绪边沿回填（字段非受控，与原异步加载完成后的 setAttribute 同时机）：
   // 新建=分类就绪即填；编辑=分类与商品详情都就绪再填
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 数据就绪回填快照——editing/t 仅用于回填瞬间，编辑中不随数据刷新或语言切换覆盖未保存输入
   useEffect(() => {
     if (!catOptions.length) return
-    if (id != null && productQuery.isPending) return
+    if (id != null && productQuery.status === 'pending') return
     const row = editing
-    if (id != null && productQuery.isSuccess && !row) appMessage.error(t('products.notFound'))
+    if (id != null && productQuery.status === 'success' && !row)
+      appMessage.error(t('products.notFound'))
     const fallbackCat =
       row && catOptions.some((c) => c.value === row.category)
         ? row.category
@@ -66,8 +68,7 @@ export default function ProductEditPage() {
     priceRef.current?.setAttribute('value', row ? String(row.price) : '')
     stockRef.current?.setAttribute('value', row ? String(row.stock) : '')
     dateRef.current?.setAttribute('value', row?.created ?? today())
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [catOptions, productQuery.status])
+  }, [catOptions, productQuery.status, id])
 
   const onSave = () => {
     ;(formRef.current?.shadowRoot?.querySelector('form') as HTMLFormElement | null)?.requestSubmit()

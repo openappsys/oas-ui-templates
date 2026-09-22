@@ -84,16 +84,14 @@ export function UsersTable({
   onEditRow,
   onClearFilters,
 }: UsersTableProps) {
-  const { t, locale } = useT()
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const { t } = useT()
   const columns = useMemo<TableColumn[]>(
     () =>
       buildColumns(
         t,
         roles.map((r) => ({ label: r.name, value: r.name })),
       ),
-    [locale, roles],
+    [t, roles],
   )
 
   useOasEvent<{ row: Record<string, unknown> }>(tableRef, 'oas-row-click', (detail) => {

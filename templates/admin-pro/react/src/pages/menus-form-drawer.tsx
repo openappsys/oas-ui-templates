@@ -52,7 +52,7 @@ export function MenusFormDrawer({
   onClose,
   onSubmit,
 }: MenusFormDrawerProps) {
-  const { t, locale } = useT()
+  const { t } = useT()
   const [formType, setFormType] = useState<MenuType>('C')
   const drawerRef = useRef<HTMLElement | null>(null)
   const formRef = useRef<HTMLElement | null>(null)
@@ -80,6 +80,7 @@ export function MenusFormDrawer({
     }
   }
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 打开/切换编辑对象时初始化快照——syncMenuType/t/tree 仅用于初始化，编辑中不随数据或语言刷新重置表单
   useEffect(() => {
     if (!open) return
     const node = editing
@@ -117,16 +118,16 @@ export function MenusFormDrawer({
       else r.removeAttribute('checked')
     })
     syncMenuType(nextType)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, editing, presetParentId])
 
   // 重建 radio 组后 setRadioChecked 同款时机）
   useEffect(() => {
+    if (!open) return
     typeGroupRef.current?.querySelectorAll<HTMLElement>('oas-radio').forEach((r) => {
       if (r.getAttribute('value') === formType) r.setAttribute('checked', '')
       else r.removeAttribute('checked')
     })
-  }, [locale, formType, open])
+  }, [formType, open])
 
   // panel 内原生 click 例外直绑（取消=关闭；保存=触发内部原生 form 提交）
   useEffect(() => {

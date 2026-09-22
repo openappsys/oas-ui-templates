@@ -141,6 +141,7 @@ export default function DeptPage() {
   const selectedNode = selectedId != null ? findNode(tree, selectedId) : null
   const editingNode = editingId != null ? findNode(tree, editingId) : null
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: editingId 为触发器——编辑中不随数据刷新重置表单；editingNode/t/tree 仅用于初始化快照
   useEffect(() => {
     if (!drawerOpen) return
     nameRef.current?.setAttribute('value', editingNode?.name ?? '')
@@ -152,7 +153,6 @@ export default function DeptPage() {
       JSON.stringify(buildParentOptions(tree, editingId, t)),
     )
     parentRef.current?.setAttribute('expanded', JSON.stringify(expandKeys(tree)))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drawerOpen, editingId, formParentId])
 
   // panel 内原生 click 例外直绑：取消=关闭；保存=触发内部原生 form 提交

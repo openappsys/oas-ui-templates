@@ -56,9 +56,8 @@ export function NavMenu({
       navRef.current?.setAttribute('items', JSON.stringify(groupMenuItems(activePath, true)))
     })
     return () => cancelAnimationFrame(raf)
-    // 仅挂载时兜底一次；activePath 变化由 React 正常重设 items
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [popover, style, navRef])
+    // 延迟一帧补设一次（oas-navigation-menu 数据缺口修复）；幂等写入，activePath 变化多设一次无害
+  }, [popover, style, navRef, activePath])
 
   if (style === 'menubar') {
     return (

@@ -132,11 +132,10 @@ export function ProductsTable({
   onCheck,
   onInlineEdit,
 }: ProductsTableProps) {
-  const { t, locale } = useT()
+  const { t } = useT()
 
-  // 列定义按 locale 重建（t 内部读当前 locale，闭包随 locale 变化才需重算）
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const columns = useMemo<TableColumn[]>(() => buildColumns(t), [locale])
+  // 列定义随语言重建（t 引用随 locale 变化，依赖 [t] 即驱动重算）
+  const columns = useMemo<TableColumn[]>(() => buildColumns(t), [t])
 
   useOasEvent<{ keys: string[] }>(tableRef, 'oas-check', (detail) => {
     onCheck(detail.keys.map(Number).filter((n) => Number.isFinite(n)))

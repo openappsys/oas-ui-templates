@@ -28,7 +28,7 @@ import {
 } from './logs-shared'
 
 export default function LogsPage() {
-  const { t, locale } = useT()
+  const { t } = useT()
   const [level, setLevel] = useState<LogLevel | 'all'>('all')
   const [keyword, setKeyword] = useState('')
   const [dateRange, setDateRange] = useState<[string, string] | null>(null)
@@ -58,10 +58,11 @@ export default function LogsPage() {
   const rows = allRows ?? []
   const filtered = filteredData ?? []
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: t 为版本号——语言切换需重设 items 触发已渲染行文本重建
   useEffect(() => {
     const vlist = vlistRef.current as (HTMLElement & { items?: LogEntry[] }) | null
     if (vlist) vlist.items = filtered
-  }, [filtered, locale])
+  }, [filtered, t])
 
   // buffer 必须走 attribute 通道：React 19 对 custom element 上 `in` 命中的键一律 property
   // 赋值，而 oas-virtual-list 原型上的 buffer() 是方法（virtual-list.js 内 this.buffer()），
@@ -87,9 +88,7 @@ export default function LogsPage() {
       warnCount: rows.filter((r) => r.level === 'warn').length,
     }
   }, [rows])
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const groups = useMemo(() => buildDateGroups(filtered, t), [filtered, locale])
+  const groups = useMemo(() => buildDateGroups(filtered, t), [filtered, t])
   const anchorItemsJson = useMemo(
     () =>
       JSON.stringify(

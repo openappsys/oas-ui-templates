@@ -99,7 +99,7 @@ interface FormValues {
 }
 
 export default function CategoryPage() {
-  const { t, locale } = useT()
+  const { t } = useT()
   const [keyword, setKeyword] = useState('')
   const [editingId, setEditingId] = useState<number | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
@@ -128,12 +128,11 @@ export default function CategoryPage() {
   }, [rows, keyword])
 
   const dataJson = useMemo(() => JSON.stringify(filtered), [filtered])
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const columns = useMemo<TableColumn[]>(() => buildColumns(t), [locale])
+  const columns = useMemo<TableColumn[]>(() => buildColumns(t), [t])
 
   const editing = editingId != null ? (rows.find((r) => r.id === editingId) ?? null) : null
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: editingId 为触发器——编辑中不随数据刷新重置表单；editing 仅用于初始化快照
   useEffect(() => {
     if (!modalOpen) return
     nameRef.current?.setAttribute('value', editing?.name ?? '')
@@ -149,7 +148,6 @@ export default function CategoryPage() {
       }
     }
     descRef.current?.setAttribute('value', editing?.desc ?? '')
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modalOpen, editingId])
 
   // panel 内原生 click 例外直绑：取消=关闭；保存=触发内部原生 form 提交

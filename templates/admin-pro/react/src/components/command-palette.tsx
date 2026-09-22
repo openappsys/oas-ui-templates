@@ -19,13 +19,13 @@ export interface CommandPaletteProps {
 }
 
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
-  const { locale, setLocale } = useT()
+  const { t, locale, setLocale } = useT()
   const location = useLocation()
   const navigate = useNavigate()
   const commandRef = useRef<HTMLElement>(null)
 
   // locale 变化时重建 items（文案与 keywords 均含翻译）
-  const items = useMemo(() => JSON.stringify(buildCommandItems()), [locale])
+  const items = useMemo(() => JSON.stringify(buildCommandItems(t)), [t])
 
   useOasEvent<{ open: boolean }>(commandRef, 'oas-open-change', (detail) => {
     // 同步栈内直接 setState 会被 navigate 触发的渲染吞吐覆盖（实测丢失）：

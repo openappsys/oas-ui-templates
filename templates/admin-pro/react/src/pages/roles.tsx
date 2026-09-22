@@ -11,7 +11,7 @@
 //    本模版在 open 边沿的 useEffect 做同样的事（transfer value 只在回填时写，切换数据权限
 //    effect 里命令式同步（setRadioChecked 同款通道，避免与组件 excludeSameName 打架）
 //    回写 state（product-form 同款）
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { TableColumn } from '@oas-ui/ui/data/table'
 import type { DataScope, DeptTree, RoleRow } from '../data/system'
 import './roles.css'
@@ -114,7 +114,7 @@ interface FormValues {
 }
 
 export default function RolesPage() {
-  const { t, locale } = useT()
+  const { t } = useT()
   const [editingId, setEditingId] = useState<number | null>(null)
   const [dataScope, setDataScope] = useState<DataScope>(1)
   const [deptIds, setDeptIds] = useState<number[]>([])
@@ -139,13 +139,14 @@ export default function RolesPage() {
 
   const editingRow = editingId != null ? (roles.find((r) => r.id === editingId) ?? null) : null
 
-  const setRadioChecked = (scope: DataScope) => {
+  const setRadioChecked = useCallback((scope: DataScope) => {
     scopeGroupRef.current?.querySelectorAll<HTMLElement>('oas-radio').forEach((radio) => {
       if (Number(radio.getAttribute('value')) === scope) radio.setAttribute('checked', '')
       else radio.removeAttribute('checked')
     })
-  }
+  }, [])
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: editingId 为触发器——编辑中不随数据刷新重置表单；editingRow 仅用于初始化快照
   useEffect(() => {
     if (!drawerOpen) return
     const row = editingRow
@@ -157,14 +158,12 @@ export default function RolesPage() {
     setDeptIds(ids)
     transferRef.current?.setAttribute('value', JSON.stringify(ids.map(String)))
     setRadioChecked(scope)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [drawerOpen, editingId])
+  }, [drawerOpen, editingId, setRadioChecked])
 
-  // radio 组后 setRadioChecked 同款时机）
+  // radio 组随 setRadioChecked 同步时机
   useEffect(() => {
     setRadioChecked(dataScope)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [locale, dataScope, drawerOpen])
+  }, [setRadioChecked, dataScope])
 
   // panel 内原生 click 例外直绑：取消=关闭；保存=触发内部原生 form 提交
   useEffect(() => {
@@ -247,9 +246,7 @@ export default function RolesPage() {
       savingRef.current = false
     }
   })
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const columns = useMemo<TableColumn[]>(() => buildColumns(t), [locale])
+  const columns = useMemo<TableColumn[]>(() => buildColumns(t), [t])
 
   const rules = JSON.stringify({
     name: [{ required: true, message: t('roles.rule.name') }],

@@ -76,11 +76,9 @@ function DeptDetailInner({
   onEditRow,
   onSubDelete,
 }: DeptDetailProps & { node: DeptTree }) {
-  const { t, locale } = useT()
+  const { t } = useT()
   const wrapRef = useRef<HTMLDivElement | null>(null)
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const columns = useMemo<TableColumn[]>(() => buildColumns(t), [locale])
+  const columns = useMemo<TableColumn[]>(() => buildColumns(t), [t])
 
   // 否则是详情删除 popconfirm（#md-del-pop）→ 删除当前选中节点
   useOasEvent<{ source: HTMLElement }>(wrapRef, 'oas-ok', (detail) => {
