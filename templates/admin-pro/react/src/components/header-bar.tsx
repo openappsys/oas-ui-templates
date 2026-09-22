@@ -11,6 +11,7 @@ import { LANG_ITEMS, userMenuItems } from './nav-items'
 
 const EXPAND_ICON = (
   <svg
+    aria-hidden="true"
     viewBox="0 0 16 16"
     fill="none"
     stroke="currentColor"
@@ -25,6 +26,7 @@ const EXPAND_ICON = (
 )
 const COMPRESS_ICON = (
   <svg
+    aria-hidden="true"
     viewBox="0 0 16 16"
     fill="none"
     stroke="currentColor"
@@ -39,6 +41,7 @@ const COMPRESS_ICON = (
 )
 const BELL_ICON = (
   <svg
+    aria-hidden="true"
     viewBox="0 0 16 16"
     fill="none"
     stroke="currentColor"
@@ -52,6 +55,7 @@ const BELL_ICON = (
 )
 const GLOBE_ICON = (
   <svg
+    aria-hidden="true"
     viewBox="0 0 16 16"
     fill="none"
     stroke="currentColor"

@@ -62,11 +62,7 @@ export function LayoutTab() {
     })
   })
 
-  const onMatrixClick = (e: React.MouseEvent): void => {
-    const cell = (e.target as HTMLElement).closest<HTMLElement>('.menu-matrix-cell')
-    if (!cell || cell.hasAttribute('disabled')) return
-    const style = cell.dataset.style as MenuStyle
-    const position = cell.dataset.position as MenuPosition
+  const onMatrixSelect = (style: MenuStyle, position: MenuPosition): void => {
     if (!canPosition(style, position)) return
     setMenuStyle(style)
     setMenuPosition(position)
@@ -81,13 +77,7 @@ export function LayoutTab() {
           {t('settings.general.menuStyleLabel')}
         </div>
         <div className="setting-hint">{t('settings.general.menuStyleHint')}</div>
-        <div
-          className="menu-matrix"
-          data-testid="menu-matrix"
-          role="radiogroup"
-          aria-label={t('settings.general.menuStyleLabel')}
-          onClick={onMatrixClick}
-        >
+        <div className="menu-matrix" data-testid="menu-matrix">
           <div className="menu-matrix-corner" />
           {MENU_POSITIONS_META.map((p) => (
             <div key={p.value} className="menu-matrix-head">
@@ -105,12 +95,10 @@ export function LayoutTab() {
                     key={p.value}
                     type="button"
                     className={`menu-matrix-cell${ok ? '' : ' is-disabled'}`}
-                    role="radio"
-                    data-style={s.value}
-                    data-position={p.value}
                     disabled={!ok}
-                    aria-checked={nav.style === s.value && nav.position === p.value}
+                    aria-pressed={nav.style === s.value && nav.position === p.value}
                     aria-label={`${t(`settings.general.${s.labelKey}`)} · ${t(`settings.general.${p.labelKey}`)}`}
+                    onClick={() => onMatrixSelect(s.value, p.value)}
                   />
                 )
               })}

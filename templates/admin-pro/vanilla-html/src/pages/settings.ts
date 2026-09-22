@@ -322,7 +322,7 @@ function draw(el: HTMLElement): () => void {
             ${NOTIF_CHANNELS()
               .map(
                 (c) =>
-                  `<span class="notif-col"><oas-switch data-testid="notif-${row.key}-${c.key}" data-key="${row.key}.${c.key}"${readBool(NOTIF_PREFIX + row.key + '.' + c.key, true) ? ' checked' : ''}></oas-switch></span>`,
+                  `<span class="notif-col"><oas-switch data-testid="notif-${row.key}-${c.key}" data-key="${row.key}.${c.key}"${readBool(`${NOTIF_PREFIX + row.key}.${c.key}`, true) ? ' checked' : ''}></oas-switch></span>`,
               )
               .join('')}
           </div>`,

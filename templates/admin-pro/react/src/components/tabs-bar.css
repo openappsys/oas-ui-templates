@@ -36,6 +36,11 @@ html[data-tabs-bar="off"] .tabs-bar {
   width: 14px;
   height: 14px;
   margin-inline-end: calc(-1 * var(--oas-space-1));
+  /* 原生 button 的 UA 样式重置（14×14 圆形图标钮） */
+  border: 0;
+  padding: 0;
+  font: inherit;
+  background: transparent;
   border-radius: 50%;
   cursor: pointer;
   color: var(--oas-color-text-secondary);

@@ -44,7 +44,7 @@ function renderPerms(el, role, menuTree) {
   const listEl = el.querySelector('#detail-perms-list')
   const perms = userPerms(menuTree)
   if (perms.length === 0) {
-    listEl.innerHTML = '<oas-tag type="default">' + t('users.nonePerm') + '</oas-tag>'
+    listEl.innerHTML = `<oas-tag type="default">${t('users.nonePerm')}</oas-tag>`
     return
   }
   const allowed = new Set(ALLOWED[role])

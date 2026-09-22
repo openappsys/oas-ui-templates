@@ -9,7 +9,7 @@
 // 7. 子组件拆分（单文件 ≤400 行纪律）：纯函数助手与行模板 ./logs-shared.ts
 // 8. oas-virtual-list 的 buffer 属性必须走 setAttribute：React 19 的 property 通道会覆写
 //    组件原型方法 buffer()（字符串赋值），实测崩溃；详见挂载 effect 处注释
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import './logs.css'
 import type { LogEntry, LogLevel } from '../data/logs'
 import { useOasEvent } from '../hooks/use-oas-event'
@@ -37,6 +37,11 @@ export default function LogsPage() {
   const [compact, setCompact] = useState(() => window.matchMedia('(max-width: 768px)').matches)
 
   const vlistRef = useRef<HTMLElement | null>(null)
+  // template 内容在元素创建时注入（callback ref 在 commit 阶段执行，早于 items 设置的 effect）——
+  // 替代 dangerouslySetInnerHTML：ITEM_TEMPLATE_HTML 为模块内静态模板，oas-virtual-list lazy 读取
+  const tplRef = useCallback((el: HTMLTemplateElement | null) => {
+    if (el) el.innerHTML = ITEM_TEMPLATE_HTML
+  }, [])
   const levelRef = useRef<HTMLElement | null>(null)
   const keywordRef = useRef<HTMLElement | null>(null)
   const dateRef = useRef<HTMLElement | null>(null)
@@ -257,8 +262,7 @@ export default function LogsPage() {
                 item-height={ITEM_HEIGHT}
                 hidden={empty || undefined}
               >
-                {/* biome-ignore lint/security/noDangerouslySetInnerHtml: ITEM_TEMPLATE_HTML 为模块内静态模板字符串，不含用户输入 */}
-                <template slot="item" dangerouslySetInnerHTML={{ __html: ITEM_TEMPLATE_HTML }} />
+                <template slot="item" ref={tplRef} />
               </oas-virtual-list>
               <div className="logs-empty" id="logs-empty" hidden={!empty || undefined}>
                 <oas-empty description={t('logs.empty')} />

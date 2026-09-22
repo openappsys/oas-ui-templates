@@ -62,7 +62,7 @@ function renderLogin() {
     } catch {
       /* 隐私模式 */
     }
-    location.hash = '#' + HOME
+    location.hash = `#${HOME}`
   }
   app.querySelector('[data-testid="login-submit"]').addEventListener('click', submit)
   input.addEventListener('oas-enter', submit)
@@ -140,7 +140,7 @@ function resolve() {
     return
   }
   if (hash === '/login') {
-    location.hash = '#' + HOME
+    location.hash = `#${HOME}`
     return
   }
   const route = matchRoute(hash)

@@ -88,16 +88,16 @@ export function TabsBar() {
               <span slot="label" className="ptab">
                 {label}
                 {key !== HOME_PATH && (
-                  <span
+                  <button
+                    type="button"
                     className="ptab-close"
-                    role="button"
                     tabIndex={-1}
                     title={t('tabs.closeTab')}
                     aria-label={t('tabs.closeTab')}
                     data-ptab-close=""
                   >
                     <oas-icon name="close" size="12" />
-                  </span>
+                  </button>
                 )}
               </span>
             </oas-tab-panel>

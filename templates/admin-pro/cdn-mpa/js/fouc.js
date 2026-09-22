@@ -27,11 +27,11 @@
         return null
       }
     }
-    const color = stored('oas-admin-cdn-mpa.settings.theme.' + theme)
+    const color = stored(`oas-admin-cdn-mpa.settings.theme.${theme}`)
     if (color) root.style.setProperty('--oas-color-primary', color)
     const radius = Number(stored('oas-admin-cdn-mpa.settings.radius'))
     if (Number.isFinite(radius) && radius > 0)
-      root.style.setProperty('--oas-radius-md', radius + 'px')
+      root.style.setProperty('--oas-radius-md', `${radius}px`)
     const density = stored('oas-admin-cdn-mpa.settings.table-density')
     const pad = density === 'compact' ? '6px' : density === 'large' ? '16px' : '12px'
     root.style.setProperty('--oas-table-cell-padding-block', pad)

@@ -26,7 +26,7 @@ describe('request', () => {
         {
           onRequest: (c) => {
             calls.push('req2')
-            c.headers['X'] = 'y'
+            c.headers.X = 'y'
           },
         },
       ],

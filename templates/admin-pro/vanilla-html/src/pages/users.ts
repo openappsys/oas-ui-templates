@@ -310,7 +310,7 @@ export function render(el: HTMLElement): () => void {
     const listEl = el.querySelector<HTMLElement>('#detail-perms-list')!
     const perms = userPerms()
     if (perms.length === 0) {
-      listEl.innerHTML = '<oas-tag type="default">' + t('users.nonePerm') + '</oas-tag>'
+      listEl.innerHTML = `<oas-tag type="default">${t('users.nonePerm')}</oas-tag>`
       return
     }
     const allowed = new Set(ALLOWED[role])
