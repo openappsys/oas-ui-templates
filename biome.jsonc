@@ -34,7 +34,7 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
+      "preset": "recommended",
       "style": {
         // 测试代码大量使用 `!` 断言，业界（ESLint no-non-null-assertion）普遍关闭
         "noNonNullAssertion": "off",
