@@ -97,7 +97,7 @@ function DeptDetailInner({
 
   const children = node.children ?? []
   return (
-    <div ref={wrapRef} className="dept-detail" onClick={onWrapClick}>
+    <div ref={wrapRef} role="presentation" className="dept-detail" onClick={onWrapClick}>
       <div className="dept-detail-head">
         <div className="dept-detail-title">{node.name}</div>
         <oas-tag type="primary" data-testid="dept-detail-members">

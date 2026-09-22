@@ -160,11 +160,11 @@ export function renderDict(el) {
     typeList.innerHTML = state.types
       .map(
         (ty) =>
-          `<div class="dict-type-item${ty.id === state.selectedTypeId ? ' is-selected' : ''}" data-id="${ty.id}" data-testid="dict-type-item">
+          `<button type="button" class="dict-type-item${ty.id === state.selectedTypeId ? ' is-selected' : ''}" data-id="${ty.id}" data-testid="dict-type-item">
           <span class="dict-type-name">${ty.name}</span>
           <span class="dict-type-code mono">${ty.code}</span>
           <span class="dict-type-count">${state.counts[ty.id] ?? 0}</span>
-        </div>`,
+        </button>`,
       )
       .join('')
   }

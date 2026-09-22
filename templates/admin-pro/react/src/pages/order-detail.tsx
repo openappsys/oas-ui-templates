@@ -161,16 +161,16 @@ export default function OrderDetailPage() {
               <span className="mono">{order?.created ?? ''}</span>
             </oas-descriptions-item>
             <oas-descriptions-item label={t('orders.th.items')}>
-              {order?.items.map((it, i) => (
-                <oas-tag key={`${it}-${i}`}>{it}</oas-tag>
+              {order?.items.map((it) => (
+                <oas-tag key={it}>{it}</oas-tag>
               ))}
             </oas-descriptions-item>
           </oas-descriptions>
           <div className="order-timeline-head">{t('orderDetail.timelineTitle')}</div>
           <div id="order-detail-timeline-wrap">
             <oas-timeline data-testid="order-detail-timeline">
-              {timeline.map((n, i) => (
-                <oas-timeline-item key={`${n.time}-${i}`} time={n.time} color={n.color}>
+              {timeline.map((n) => (
+                <oas-timeline-item key={n.title} time={n.time} color={n.color}>
                   {n.title}
                 </oas-timeline-item>
               ))}

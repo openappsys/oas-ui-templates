@@ -265,6 +265,7 @@ export default function CategoryPage() {
         </div>
         <div
           id="category-items-wrap"
+          role="presentation"
           className={filtered.length === 0 ? 'table-hidden' : undefined}
           onClick={onWrapClick}
         >

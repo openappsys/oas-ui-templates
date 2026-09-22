@@ -109,7 +109,12 @@ export function UsersTable({
   }
 
   return (
-    <div className={`table-wrap${empty ? ' is-empty' : ''}`} id="table-wrap" onClick={onWrapClick}>
+    <div
+      className={`table-wrap${empty ? ' is-empty' : ''}`}
+      id="table-wrap"
+      role="presentation"
+      onClick={onWrapClick}
+    >
       <oas-table
         ref={tableRef}
         data-testid="users-table"

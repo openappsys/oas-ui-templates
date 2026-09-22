@@ -184,6 +184,11 @@
   padding: var(--oas-space-1);
 }
 .dict-type-item {
+  width: 100%;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
   display: flex;
   align-items: center;
   gap: var(--oas-space-2);

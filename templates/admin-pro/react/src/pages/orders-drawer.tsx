@@ -129,8 +129,8 @@ export function OrdersDrawer({ open, row, onClose, onApplyFlow }: OrdersDrawerPr
             <span className="mono">{row?.created ?? ''}</span>
           </oas-descriptions-item>
           <oas-descriptions-item label={t('orders.dl.items')}>
-            {row?.items.map((it, i) => (
-              <oas-tag key={`${it}-${i}`}>{it}</oas-tag>
+            {row?.items.map((it) => (
+              <oas-tag key={it}>{it}</oas-tag>
             ))}
           </oas-descriptions-item>
         </oas-descriptions>

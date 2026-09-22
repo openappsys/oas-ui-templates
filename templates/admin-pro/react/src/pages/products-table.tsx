@@ -166,7 +166,12 @@ export function ProductsTable({
   }
 
   return (
-    <div className="table-wrap products-table-wrap" hidden={hidden} onClick={onWrapClick}>
+    <div
+      className="table-wrap products-table-wrap"
+      role="presentation"
+      hidden={hidden}
+      onClick={onWrapClick}
+    >
       <oas-table
         ref={tableRef}
         data-testid="product-table"

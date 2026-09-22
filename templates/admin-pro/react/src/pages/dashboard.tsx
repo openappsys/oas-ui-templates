@@ -218,8 +218,8 @@ export default function DashboardPage() {
                 </oas-card>
               )
             })
-          : Array.from({ length: 4 }, (_, i) => (
-              <oas-card key={i} className="stat-card stat-card--skeleton">
+          : STATS.map((s) => (
+              <oas-card key={s.labelKey} className="stat-card stat-card--skeleton">
                 <oas-skeleton active rows="3" />
               </oas-card>
             ))}

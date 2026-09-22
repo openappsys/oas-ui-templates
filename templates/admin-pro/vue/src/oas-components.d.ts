@@ -78,4 +78,3 @@ declare module 'vue' {
     'oas-checkbox-group': OasComponent
   }
 }
-export {}

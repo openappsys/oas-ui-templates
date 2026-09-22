@@ -86,12 +86,6 @@ export default function DictPage() {
   const editingType = types.find((x) => x.id === editingTypeId) ?? null
   const editingItem = loadedItems.find((x) => x.id === editingItemId) ?? null
 
-  const onTypeListClick = (e: React.MouseEvent) => {
-    const item = (e.target as HTMLElement).closest<HTMLElement>('[data-id]')
-    if (!item) return
-    setSelectedState(Number(item.getAttribute('data-id')))
-  }
-
   const onTableWrapClick = (e: React.MouseEvent) => {
     const btn = e.nativeEvent
       .composedPath()
@@ -179,21 +173,23 @@ export default function DictPage() {
       </div>
       <div className="dict-layout">
         <oas-card className="dict-type-card" title={t('dict.typeTitle')}>
-          <div className="dict-type-list" data-testid="dict-type-list" onClick={onTypeListClick}>
+          <div className="dict-type-list" data-testid="dict-type-list">
             {types.length === 0 ? (
               <div className="dict-empty">{t('dict.empty.types')}</div>
             ) : (
               types.map((ty) => (
-                <div
+                <button
                   key={ty.id}
+                  type="button"
                   className={`dict-type-item${ty.id === selectedTypeId ? ' is-selected' : ''}`}
                   data-id={ty.id}
                   data-testid="dict-type-item"
+                  onClick={() => setSelectedState(ty.id)}
                 >
                   <span className="dict-type-name">{ty.name}</span>
                   <span className="dict-type-code mono">{ty.code}</span>
                   <span className="dict-type-count">{counts[ty.id] ?? 0}</span>
-                </div>
+                </button>
               ))
             )}
           </div>
@@ -244,6 +240,7 @@ export default function DictPage() {
           </div>
           <div
             id="dict-items-wrap"
+            role="presentation"
             hidden={selectedTypeId == null || undefined}
             className={loadedItems.length === 0 ? 'table-hidden' : undefined}
             onClick={onTableWrapClick}

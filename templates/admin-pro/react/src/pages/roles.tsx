@@ -278,7 +278,7 @@ export default function RolesPage() {
         </oas-button>
       </div>
       <oas-card className="list-card" title={t('roles.list')}>
-        <div className="table-wrap" id="roles-wrap" onClick={onTableWrapClick}>
+        <div className="table-wrap" id="roles-wrap" role="presentation" onClick={onTableWrapClick}>
           <oas-table
             ref={tableRef}
             data-testid="roles-table"

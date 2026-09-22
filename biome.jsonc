@@ -56,7 +56,10 @@
         // oas-* web component 的语义 biome 不识别（label 无法 for 关联非 form-associated 元素、
         // 组件内部自行处理键盘交互），按 ESLint jsx-a11y 惯例整体降为 warn 提示
         "noLabelWithoutControl": "warn",
-        "noStaticElementInteractions": "warn",
+        // react 模板对 oas-table 等 web component 的行内按钮统一走容器 onClick + composedPath
+        // 事件委托（React 事件无法绑进 shadow DOM），容器自身非交互元素（已标 role="presentation"
+        // 豁免 useKeyWithClickEvents）；此规则对该固定模式全部误报
+        "noStaticElementInteractions": "off",
         "useKeyWithClickEvents": "warn",
         "noSvgWithoutTitle": "warn",
         "useSemanticElements": "warn",

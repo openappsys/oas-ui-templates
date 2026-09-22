@@ -181,11 +181,11 @@ export function render(el: HTMLElement): () => void {
       .map(
         (
           t,
-        ) => `<div class="dict-type-item${t.id === state.selectedTypeId ? ' is-selected' : ''}" data-id="${t.id}" data-testid="dict-type-item">
+        ) => `<button type="button" class="dict-type-item${t.id === state.selectedTypeId ? ' is-selected' : ''}" data-id="${t.id}" data-testid="dict-type-item">
           <span class="dict-type-name">${t.name}</span>
           <span class="dict-type-code mono">${t.code}</span>
           <span class="dict-type-count">${state.counts[t.id] ?? 0}</span>
-        </div>`,
+        </button>`,
       )
       .join('')
   }

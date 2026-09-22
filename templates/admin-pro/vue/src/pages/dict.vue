@@ -178,9 +178,10 @@ function onItemSaved(): void {
         <div class="dict-type-list" data-testid="dict-type-list">
           <div v-if="types.length === 0" class="dict-empty">{{ t('dict.empty.types') }}</div>
           <template v-else>
-            <div
+            <button
               v-for="ty in types"
               :key="ty.id"
+              type="button"
               class="dict-type-item"
               :class="{ 'is-selected': ty.id === selectedTypeId }"
               :data-id="ty.id"
@@ -190,7 +191,7 @@ function onItemSaved(): void {
               <span class="dict-type-name">{{ ty.name }}</span>
               <span class="dict-type-code mono">{{ ty.code }}</span>
               <span class="dict-type-count">{{ counts[ty.id] ?? 0 }}</span>
-            </div>
+            </button>
           </template>
         </div>
       </oas-card>
@@ -265,6 +266,11 @@ function onItemSaved(): void {
   padding: var(--oas-space-1);
 }
 .dict-type-item {
+  width: 100%;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
   display: flex;
   align-items: center;
   gap: var(--oas-space-2);

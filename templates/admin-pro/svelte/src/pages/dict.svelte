@@ -139,13 +139,6 @@
     return () => el.removeEventListener('oas-ok', onTableOk)
   })
 
-  /** 类型列表点击：closest [data-id] 命中即切换选中 */
-  function onTypeListClick(e: MouseEvent): void {
-    const item = (e.target as HTMLElement).closest<HTMLElement>('[data-id]')
-    if (!item) return
-    selectedState = Number(item.getAttribute('data-id'))
-  }
-
   /** 表格行内编辑：composedPath 匹配 [data-edit]（点击源在 oas-table shadow 内，composed 可达） */
   function onTableWrapClick(e: MouseEvent): void {
     const btn = e
@@ -222,22 +215,23 @@
   </div>
   <div class="dict-layout">
     <oas-card class="dict-type-card" title={tt('dict.typeTitle')}>
-      <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-      <div class="dict-type-list" data-testid="dict-type-list" onclick={onTypeListClick}>
+      <div class="dict-type-list" data-testid="dict-type-list">
         {#if types.length === 0}
           <div class="dict-empty">{tt('dict.empty.types')}</div>
         {:else}
           {#each types as ty (ty.id)}
-            <div
+            <button
+              type="button"
               class="dict-type-item"
               class:is-selected={ty.id === selectedTypeId}
               data-id={ty.id}
               data-testid="dict-type-item"
+              onclick={() => (selectedState = ty.id)}
             >
               <span class="dict-type-name">{ty.name}</span>
               <span class="dict-type-code mono">{ty.code}</span>
               <span class="dict-type-count">{counts[ty.id] ?? 0}</span>
-            </div>
+            </button>
           {/each}
         {/if}
       </div>
