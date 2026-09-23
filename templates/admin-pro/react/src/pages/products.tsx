@@ -53,7 +53,7 @@ function formatMoney(n: number): string {
 }
 
 export default function ProductsPage() {
-  const { t, locale } = useT()
+  const { t } = useT()
   const navigate = useNavigate()
   const [keyword, setKeyword] = useState('')
   const [category, setCategory] = useState('')
