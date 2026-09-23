@@ -2,9 +2,12 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { gzipSync } from 'node:zlib'
 
-// 全量 import '@oas-ui/ui' 的教学型模版，预算按实际产物 + 余量设定（2026-09 收口时校准）
+// 全量 import '@oas-ui/ui' 的教学型模版，预算按实际产物 + 余量设定（2026-09 收口时校准）。
+// entry 2026-09-24 重定档 512→640KB：@oas-ui/* 2.5.x（form-associated/对比度门禁等批次）
+// 体积自然增长，同版本 entry 实测 611.8KB gzip；大头是全量组件注册，按需注册优化另列
+// 待办，届时可回落。dashboard/total 不变。
 const BUDGETS = {
-  entry: 512000,
+  entry: 640000,
   dashboard: 20480,
   total: 770100,
 }

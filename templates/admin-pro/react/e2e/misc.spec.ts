@@ -63,11 +63,18 @@ test('admin 导出订单 CSV 触发下载', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page, '张伟', 'admin')
   await page.locator('#nav').getByText('订单管理').click()
-  await expect(page.getByTestId('orders-export')).toBeVisible()
-  const downloadPromise = page.waitForEvent('download')
-  await page.getByTestId('orders-export').click()
-  const download = await downloadPromise
-  expect(download.suggestedFilename()).toMatch(/^orders-.*\.csv$/)
+  // 等数据行渲染再导出：路由懒加载后点击可能落在 query 返回前，空表导出会被
+  // 「无可导出」守卫拦下（真实用户同理），download 事件不触发
+  await expect(page.getByTestId('orders-list').locator('tbody tr').first()).toBeVisible()
+  // React 19 对 custom element 的监听器在 effect 阶段挂接，「DOM 可见但事件未挂」
+  // 的窗口在慢环境下会吞掉单击——toPass 语义重试点击直至下载真正发生
+  let filename = ''
+  await expect(async () => {
+    const downloadPromise = page.waitForEvent('download', { timeout: 2000 })
+    await page.getByTestId('orders-export').click()
+    filename = (await downloadPromise).suggestedFilename()
+    expect(filename).toMatch(/^orders-.*\.csv$/)
+  }).toPass({ timeout: 15_000 })
   expect(errors).toEqual([])
 })
 

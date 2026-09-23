@@ -1,29 +1,34 @@
 // src/router/routes.tsx —— 路由表事实来源
-// 本模版为 HashRouter 组装需要补入，meta 为本模版新增（titleKey 取 i18n 已存在的 login.welcome）
-import type { ComponentType } from 'react'
-import AdvancedFormPage from '../pages/advanced-form'
-import BasicFormPage from '../pages/basic-form'
-import CategoryPage from '../pages/category'
-import DashboardPage from '../pages/dashboard'
-import DataBoardPage from '../pages/data-board'
-import DeptPage from '../pages/dept'
-import DictPage from '../pages/dict'
-import ForbiddenPage from '../pages/forbidden'
-import FormPage from '../pages/form'
-import LoginPage from '../pages/login'
-import LogsPage from '../pages/logs'
-import MenusPage from '../pages/menus'
-import NotFoundPage from '../pages/not-found'
-import OrderDetailPage from '../pages/order-detail'
-import OrdersPage from '../pages/orders'
-import ProductEditPage from '../pages/product-edit'
-import ProductsPage from '../pages/products'
-import ProfilePage from '../pages/profile'
-import ResultPage from '../pages/result'
-import RolesPage from '../pages/roles'
-import ServerErrorPage from '../pages/server-error'
-import SettingsPage from '../pages/settings'
-import UsersPage from '../pages/users'
+// 本模版为 HashRouter 组装需要补入，meta 为本模版新增（titleKey 取 i18n 已存在的 login.welcome）。
+// 页面全部走 React.lazy 路由级代码分割（对齐 vue 版 () => import()）：每页独立 chunk，
+// 首屏只加载当前路由；Suspense 已由 app-shell 的 <Suspense><Outlet/></Suspense> 承接。
+// LoginPage 在 index.tsx 未登录分支另有静态 import（登录首屏不等待 chunk），表内条目仅为表完整性。
+import { lazy } from 'react'
+import type { ComponentType, LazyExoticComponent } from 'react'
+
+const AdvancedFormPage = lazy(() => import('../pages/advanced-form'))
+const BasicFormPage = lazy(() => import('../pages/basic-form'))
+const CategoryPage = lazy(() => import('../pages/category'))
+const DashboardPage = lazy(() => import('../pages/dashboard'))
+const DataBoardPage = lazy(() => import('../pages/data-board'))
+const DeptPage = lazy(() => import('../pages/dept'))
+const DictPage = lazy(() => import('../pages/dict'))
+const ForbiddenPage = lazy(() => import('../pages/forbidden'))
+const FormPage = lazy(() => import('../pages/form'))
+const LoginPage = lazy(() => import('../pages/login'))
+const LogsPage = lazy(() => import('../pages/logs'))
+const MenusPage = lazy(() => import('../pages/menus'))
+const NotFoundPage = lazy(() => import('../pages/not-found'))
+const OrderDetailPage = lazy(() => import('../pages/order-detail'))
+const OrdersPage = lazy(() => import('../pages/orders'))
+const ProductEditPage = lazy(() => import('../pages/product-edit'))
+const ProductsPage = lazy(() => import('../pages/products'))
+const ProfilePage = lazy(() => import('../pages/profile'))
+const ResultPage = lazy(() => import('../pages/result'))
+const RolesPage = lazy(() => import('../pages/roles'))
+const ServerErrorPage = lazy(() => import('../pages/server-error'))
+const SettingsPage = lazy(() => import('../pages/settings'))
+const UsersPage = lazy(() => import('../pages/users'))
 
 export type RouteGroup = 'nav.output' | 'nav.business' | 'nav.system' | 'nav.demo'
 
@@ -42,7 +47,7 @@ export interface AppRouteMeta {
 export interface AppRoute {
   path: string
   meta: AppRouteMeta
-  Component: ComponentType
+  Component: ComponentType | LazyExoticComponent<ComponentType>
 }
 
 export const appRoutes: AppRoute[] = [

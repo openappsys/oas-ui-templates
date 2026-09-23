@@ -133,7 +133,9 @@ export default function OrdersPage() {
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
-    setTimeout(() => URL.revokeObjectURL(url), 1000)
+    // revoke 前留足「click → 浏览器启动下载」的间隙：窗口太短（<1s）在机器繁忙时
+    // 会把未启动的下载掐掉（e2e download 事件偶发丢失实证），10s 足够且无感
+    setTimeout(() => URL.revokeObjectURL(url), 10_000)
     appMessage.success(t('orders.exported', { count: list.length }))
   }
 
