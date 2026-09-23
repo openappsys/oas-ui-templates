@@ -10,7 +10,9 @@
     "site": "node scripts/build-site.mjs",
     "test": "pnpm -r test",
     "check": "biome check .",
-    "up": "pnpm -r up --latest"
+    "up": "pnpm -r up --latest",
+    "cdn:check": "node scripts/bump-cdn.mjs --check",
+    "cdn:bump": "node scripts/bump-cdn.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.14",

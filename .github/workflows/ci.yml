@@ -47,6 +47,11 @@ jobs:
         if: matrix.template.e2e == 'true'
       - run: pnpm test:e2e
         if: matrix.template.e2e == 'true'
+      - name: CDN unpkg 版本对齐检查（schedule/dispatch 联动验证）
+        if: >-
+          (github.event_name == 'schedule' || github.event_name == 'repository_dispatch') &&
+          (matrix.template.name == 'admin-pro/cdn' || matrix.template.name == 'admin-pro/cdn-mpa')
+        run: pnpm -w run cdn:check
       - name: 提醒升级依赖（schedule/dispatch 才有意义）
         if: (github.event_name == 'schedule' || github.event_name == 'repository_dispatch') && matrix.template.e2e == 'true'
         run: |
