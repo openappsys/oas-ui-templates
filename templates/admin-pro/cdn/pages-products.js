@@ -1,6 +1,6 @@
 /**
  * 商品列表页（自 vanilla src/pages/products.ts 去 TS 移植）
- * 卡片 / 列表双视图 + 外部分页（pager hidden 命令式补写）+ 批量操作 + 列设置 + 三形态表单
+ * 卡片 / 列表双视图 + 外部分页（pager hidden 命令式赋值）+ 批量操作 + 列设置 + 三形态表单
  * 列定义见 product-table.js、批量/列设置/行内编辑见 product-extras.js、表单体见 product-form.js
  */
 import { onLocaleChange, t } from './i18n.js'
@@ -194,8 +194,6 @@ export function renderProducts(el) {
     pager.setAttribute('total', String(list.length))
     pager.setAttribute('current', String(state.page))
     pager.setAttribute('page-size', String(state.pageSize))
-    // oas-pagination 的 update() 在 total/current 变更与语言自刷时无条件自摘 hidden
-    //（为 hide-on-single 预留；hidden 非 observedAttributes，补写不回环）——渲染后命令式补写权威值
     pager.hidden = false
     q('[data-testid="product-empty"]').hidden = true
   }

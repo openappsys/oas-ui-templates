@@ -320,7 +320,6 @@ function renderProducts() {
       table.classList.add('table-hidden')
       pager.setAttribute('total', '0')
       pager.setAttribute('current', '1')
-      // oas-pagination update() 会自摘 hidden，属性更新后命令式补写
       pager.setAttribute('hidden', '')
       empty.hidden = false
       return
@@ -349,7 +348,6 @@ function renderProducts() {
   function applyView() {
     grid.hidden = state.view !== 'cards'
     tableWrap.hidden = state.view !== 'table'
-    // hidden 属性切换同样会被 pagination 内部 update 干扰，统一命令式补写
     if (state.view !== 'table') pager.setAttribute('hidden', '')
     updateBatchBar()
     renderList()

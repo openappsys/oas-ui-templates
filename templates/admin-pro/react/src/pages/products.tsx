@@ -9,16 +9,11 @@
 // 3. visible 受控同步：表单容器/列设置弹窗的 visible 由 state 持有，组件侧关闭（遮罩/Esc）
 //    不回头改 state（显示结果一致，避免渲染期 setState）
 //    重渲染，rules/options/columns/标签随 locale 自动重算（dashboard 同款模式）
-// 6. 子组件拆分（主体 ≤400 行纪律；本文件加分页器 hidden 补写逻辑与头注释后贴线 408 行）：表格 ./products-table.tsx、表单 ./product-form.tsx、
+// 6. 子组件拆分（主体 ≤400 行纪律）：表格 ./products-table.tsx、表单 ./product-form.tsx、
 //    批量栏 ./products-batch-bar.tsx、列设置弹窗 ./products-columns-modal.tsx；
-// 7. oas-pagination 的 hidden 声明式失效：组件 update() 在非 hide-on-single 路径无条件
-//    removeAttribute("hidden")（node_modules/@oas-ui/ui/dist/navigation/pagination/
-//    oas-pagination.js:93），hidden 不在 observedAttributes（补写不回环）。后果：total/
-//    current 任一变更（卡片视图搜索、切视图且 page≠1、表格搜空）及组件基类语言自刷
-//    在 setAttribute total/current 之后命令式赋 pager.hidden）与 vue 版（watch flush:post）：
-//    保留 JSX 声明式 hidden 作首渲染兜底，useEffect 在提交后（晚于 React 的 attribute 补丁
-//    与组件同步 update）以 pager.hidden 属性赋值命令式补写，依赖覆盖 hidden 全部输入
-//    （view/filtered.length/current）+ locale（基类切语言自刷 update 同样摘 hidden）
+// 7. oas-pagination 的 hidden 声明式直用：上游旧版 update() 会无条件自摘 hidden，曾需
+//    useEffect 命令式补写；2.5.6 起组件以 hidSelf 所有权标志只摘自己设置的 hidden，
+//    宿主声明式 hidden 不再被 total/current 变化撕掉，已回归纯声明式
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import './products.css'
@@ -110,15 +105,7 @@ export default function ProductsPage() {
   const current = Math.min(page, maxPage)
   const pageRows = filtered.slice((current - 1) * pageSize, current * pageSize)
 
-  // 组件 update() 在 total/current 变化与语言自刷时无条件摘 hidden，声明式写入会被吞；
-  // hidden 不在 observedAttributes，补写不触发回环，故提交后赋权威值是安全的。
-  // 依赖必须含 filtered.length（即 total）——total 变化本身就触发组件摘 hidden，
-  // 即使 shouldHidePager 逻辑值未变也要补写（「卡片视图搜索」场景）
   const shouldHidePager = view !== 'table' || filtered.length === 0
-  // biome-ignore lint/correctness/useExhaustiveDependencies: 故意宽依赖——翻页/总数/语言变化时都需重写 hidden（注释见上）
-  useEffect(() => {
-    if (pagerRef.current) pagerRef.current.hidden = shouldHidePager
-  }, [shouldHidePager, filtered.length, current, locale])
 
   const openForm = (row: ProductRow | null) => {
     if (formMode === 'page') {
@@ -343,7 +330,6 @@ export default function ProductsPage() {
         onCheck={setSelected}
         onInlineEdit={inlineEdit}
       />
-      {/* hidden 声明式仅首渲染兜底，权威值由上方 useEffect 命令式补写（头注释第 7 条） */}
       <oas-pagination
         ref={pagerRef}
         data-testid="product-pager"

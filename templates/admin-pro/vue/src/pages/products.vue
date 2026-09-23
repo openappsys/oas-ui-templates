@@ -7,15 +7,14 @@
 // 3. visible 受控同步：表单容器/列设置弹窗的 visible 由 state 持有，组件侧关闭（遮罩/Esc）
 //    不回头改 state（显示结果一致，避免渲染期写状态）
 //    重渲染，rules/options/columns/标签随 locale 自动重算（dashboard 同款模式）
-// 6. 子组件拆分（主体 ≤400 行纪律；本文件加分页器 hidden 补写逻辑与头注释后贴线 401 行）：表格 ./products-table.vue、表单 ./product-form.vue、
+// 6. 子组件拆分（主体 ≤400 行纪律）：表格 ./products-table.vue、表单 ./product-form.vue、
 //    批量栏 ./products-batch-bar.vue、列设置弹窗 ./products-columns-modal.vue；
 // 7. 布尔 attribute 一律存在性语义（:checked="cond ? '' : null"，//    hidden 走原生属性反射（:hidden="bool"）；options 等复杂数据传 JSON 字符串（第 3 条）
-// 8. oas-pagination 的 hidden 例外：组件 update() 会无条件自摘 hidden（为 hide-on-single
-//    预留），声明式 :hidden 会被 total/current 变更触发的同步 update 吞掉（react 版「卡片
-//    视图下搜索」场景同样会丢 hidden）。故 pager 的 hidden 改由 watch(flush:'post') 在 Vue
-//    补丁与组件同步反应落完后命令式补写（hidden 不在 observedAttributes，不会回环）；
-//    依赖必须含 locale——组件基类在语言切换时自刷 update() 同样会摘 hidden
-import { computed, onMounted, ref, watch } from 'vue'
+// 8. oas-pagination 的 hidden 声明式直用：上游旧版 update() 会无条件自摘 hidden（为
+//    hide-on-single 预留），声明式 :hidden 会被 total/current 变更触发的同步 update 吞掉，
+//    曾改由 watch(flush:'post') 命令式补写；2.5.6 起组件以 hidSelf 所有权标志只摘自己
+//    设置的 hidden，宿主声明式 hidden 不再被撕掉，已回归纯声明式
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { stockLevel } from '../data/products'
 import type { ProductRow } from '../data/products'
@@ -106,17 +105,10 @@ const pageRows = computed(() =>
   filtered.value.slice((current.value - 1) * pageSize, current.value * pageSize),
 )
 
-// oas-pagination hidden 命令式补写（原因见头注释第 8 条；依赖覆盖 total/current/hidden
-// 全部输入 + locale——切语言时组件基类自刷 update() 也会摘 hidden）
+// oas-pagination hidden 声明式直用（上游旧版 update() 会无条件自摘 hidden，曾需
+// watch(flush:'post') 命令式补写；2.5.6 起组件以 hidSelf 所有权标志只摘自己设置的
+// hidden，宿主声明式 hidden 不再被 total/current 变化撕掉，已回归纯声明式）
 const pagerHidden = computed(() => view.value !== 'table' || filtered.value.length === 0)
-watch(
-  [pagerHidden, current, filtered, locale],
-  () => {
-    if (pagerHidden.value) pagerRef.value?.setAttribute('hidden', '')
-    else pagerRef.value?.removeAttribute('hidden')
-  },
-  { flush: 'post', immediate: true },
-)
 
 const editing = computed(() => rows.value.find((r) => r.id === editingId.value) ?? null)
 
@@ -297,6 +289,7 @@ const viewOptions = computed(() =>
     <oas-pagination
       ref="pagerRef"
       data-testid="product-pager"
+      :hidden="pagerHidden"
       :total="filtered.length"
       :page-size="pageSize"
       :current="current"

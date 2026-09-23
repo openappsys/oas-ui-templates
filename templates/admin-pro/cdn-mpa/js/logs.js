@@ -82,9 +82,6 @@ function renderLogs() {
   const dateIndexMap = new Map()
   const hrefDateMap = new Map()
 
-  // buffer 用命令式补写（组件对该属性的静态 HTML 解析时机不可靠，沉淀做法）
-  vlist.setAttribute('buffer', '8')
-
   function renderVirtualList() {
     // items 走 property 赋值（数组对象直传，对齐 vanilla）
     vlist.items = state.filtered

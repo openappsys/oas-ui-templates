@@ -10,10 +10,9 @@
   // 4. 子组件拆分（单文件 ≤400 行纪律，拆分边界对齐 react 版）：表格 ./products/products-table.svelte、
   //    表单 ./products/product-form.svelte、批量栏 ./products/products-batch-bar.svelte、
   //    列设置弹窗 ./products/products-columns-modal.svelte
-  // 5. oas-pagination 的 hidden 声明式失效（陷阱沉淀）：组件 update() 在 total/current 变更与
-  //    语言自刷路径会自摘 hidden，声明式写入会被吞；hidden 不在 observedAttributes（补写不回环），
-  //    故保留声明式 hidden 作首渲染兜底，$effect 在提交后以 pagerEl.hidden 命令式补写权威值，
-  //    依赖覆盖 hidden 全部输入（view/filtered.length/current + locale）
+  // 5. oas-pagination 的 hidden 声明式直用：上游旧版 update() 会无条件自摘 hidden，曾需
+  //    $effect 命令式补写；2.5.6 起组件以 hidSelf 所有权标志只摘自己设置的 hidden，
+  //    宿主声明式 hidden 不再被 total/current 变化撕掉，已回归纯声明式
   import '../styles/pages/products.css'
   import { navigate } from '../router'
   import { listCategories } from '../data/categories'
@@ -114,14 +113,6 @@
   const current = $derived(Math.min(page, maxPage))
   const pageRows = $derived(filtered.slice((current - 1) * pageSize, current * pageSize))
   const shouldHidePager = $derived(view !== 'table' || filtered.length === 0)
-
-  // 分页器 hidden 权威值命令式补写（见头注释第 5 条）；依赖须含 filtered.length 与 locale
-  $effect(() => {
-    void filtered.length
-    void current
-    void $locale
-    if (pagerEl) pagerEl.hidden = shouldHidePager
-  })
 
   // 分类被删后回落到「全部分类」（react 版由 query 数据变化驱动，此处同语义）
   $effect(() => {

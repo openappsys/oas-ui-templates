@@ -1,7 +1,6 @@
 /**
  * 日志中心页（自 vanilla src/pages/logs.ts 去 TS 移植，DOM/类名/testid 对齐）
  * 统计卡 + 过滤工具栏（级别/关键字/日期范围）+ oas-virtual-list 虚拟列表 + 日期锚点 + 详情弹窗 + CSV 导出
- * 注意：oas-virtual-list 的 buffer 是原型方法，用 setAttribute/HTML 属性通道设置
  */
 import { onLocaleChange, t } from './i18n.js'
 import { listLogs } from './data/logs.js'
