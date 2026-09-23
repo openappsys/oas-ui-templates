@@ -309,28 +309,35 @@ export default function DeptPage() {
         <oas-form ref={formRef} rules={rules}>
           <div className="dept-form-body">
             <div className="form-field">
-              <label className="form-label">
+              <label className="form-label" htmlFor="df-name">
                 {t('dept.form.name')} <span className="req">*</span>
               </label>
               <oas-input
                 ref={nameRef}
+                id="df-name"
                 data-testid="df-name"
                 name="name"
                 placeholder={t('dept.rule.name')}
               />
             </div>
             <div className="form-field">
-              <label className="form-label">{t('dept.form.parent')}</label>
+              <label className="form-label" htmlFor="df-parent">
+                {t('dept.form.parent')}
+              </label>
               <oas-tree-select
                 ref={parentRef}
+                id="df-parent"
                 data-testid="df-parent"
                 placeholder={t('dept.placeholder.top')}
               />
             </div>
             <div className="form-field">
-              <label className="form-label">{t('dept.form.members')}</label>
+              <label className="form-label" htmlFor="df-members">
+                {t('dept.form.members')}
+              </label>
               <oas-input-number
                 ref={membersRef}
+                id="df-members"
                 data-testid="df-members"
                 name="members"
                 min="0"

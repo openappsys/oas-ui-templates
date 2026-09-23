@@ -89,31 +89,36 @@ export function DictItemModal({ open, editing, onClose, onSubmit }: DictItemModa
         <oas-form ref={formRef} rules={buildItemRules(t)}>
           <div className="dict-form-body">
             <div className="form-field">
-              <label className="form-label">
+              <label className="form-label" htmlFor="dif-label">
                 {t('dict.form.label')} <span className="req">*</span>
               </label>
               <oas-input
                 ref={labelRef}
+                id="dif-label"
                 data-testid="dif-label"
                 name="label"
                 placeholder={t('dict.placeholder.label')}
               />
             </div>
             <div className="form-field">
-              <label className="form-label">
+              <label className="form-label" htmlFor="dif-value">
                 {t('dict.form.value')} <span className="req">*</span>
               </label>
               <oas-input
                 ref={valueRef}
+                id="dif-value"
                 data-testid="dif-value"
                 name="value"
                 placeholder={t('dict.placeholder.value')}
               />
             </div>
             <div className="form-field">
-              <label className="form-label">{t('dict.form.sort')}</label>
+              <label className="form-label" htmlFor="dif-sort">
+                {t('dict.form.sort')}
+              </label>
               <oas-input-number
                 ref={sortRef}
+                id="dif-sort"
                 data-testid="dif-sort"
                 name="sort"
                 min="0"

@@ -146,22 +146,23 @@ async function onSubmit(e: Event): Promise<void> {
     <oas-form ref="formRef" :rules="rules" @oas-submit="void onSubmit($event)">
       <div class="role-form-body">
         <div class="form-field">
-          <label class="form-label">
+          <label class="form-label" for="rf-name">
             {{ t('roles.form.name') }}
             <span class="req">*</span>
           </label>
-          <oas-input ref="nameRef" data-testid="rf-name" name="name" :placeholder="t('roles.rule.name')" />
+          <oas-input ref="nameRef" id="rf-name" data-testid="rf-name" name="name" :placeholder="t('roles.rule.name')" />
         </div>
         <div class="form-field">
-          <label class="form-label">
+          <label class="form-label" for="rf-code">
             {{ t('roles.form.code') }}
             <span class="req">*</span>
           </label>
-          <oas-input ref="codeRef" data-testid="rf-code" name="code" :placeholder="t('roles.placeholder.code')" />
+          <oas-input ref="codeRef" id="rf-code" data-testid="rf-code" name="code" :placeholder="t('roles.placeholder.code')" />
           <div class="form-hint">{{ t('roles.hint.code') }}</div>
         </div>
         <div class="form-field">
-          <label class="form-label">{{ t('roles.form.dataScope') }}</label>
+          <!-- radio-group 非 form-associated，无从关联，用非 label 元素承载标题 -->
+          <div class="form-label">{{ t('roles.form.dataScope') }}</div>
           <div class="radio-group" @oas-change="onScopeChange">
             <oas-radio
               v-for="o in scopeOptions"
@@ -178,7 +179,8 @@ async function onSubmit(e: Event): Promise<void> {
           </div>
         </div>
         <div class="form-field" :hidden="dataScope !== 2">
-          <label class="form-label">{{ t('roles.form.customScope') }}</label>
+          <!-- transfer 非 form-associated，无从关联，用非 label 元素承载标题 -->
+          <div class="form-label">{{ t('roles.form.customScope') }}</div>
           <oas-transfer
             ref="transferRef"
             data-testid="rf-transfer"

@@ -86,22 +86,24 @@ export function DictTypeModal({ open, editing, onClose, onSubmit }: DictTypeModa
         <oas-form ref={formRef} rules={buildTypeRules(t)}>
           <div className="dict-form-body">
             <div className="form-field">
-              <label className="form-label">
+              <label className="form-label" htmlFor="dtf-name">
                 {t('dict.form.typeName')} <span className="req">*</span>
               </label>
               <oas-input
                 ref={nameRef}
+                id="dtf-name"
                 data-testid="dtf-name"
                 name="name"
                 placeholder={t('dict.placeholder.typeName')}
               />
             </div>
             <div className="form-field">
-              <label className="form-label">
+              <label className="form-label" htmlFor="dtf-code">
                 {t('dict.form.typeCode')} <span className="req">*</span>
               </label>
               <oas-input
                 ref={codeRef}
+                id="dtf-code"
                 data-testid="dtf-code"
                 name="code"
                 placeholder={t('dict.placeholder.typeCode')}

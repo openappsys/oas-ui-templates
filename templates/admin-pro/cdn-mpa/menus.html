@@ -48,23 +48,23 @@
             <oas-form id="menu-form">
               <div class="menu-form-body">
                 <div class="form-field">
-                  <label class="form-label"><span data-i18n="menus.form.name">菜单名称</span> <span class="req">*</span></label>
+                  <label class="form-label" for="mf-name"><span data-i18n="menus.form.name">菜单名称</span> <span class="req">*</span></label>
                   <oas-input data-testid="mf-name" name="name" data-i18n-attr='{"placeholder":"menus.rule.name"}' placeholder="请输入菜单名称"></oas-input>
                 </div>
                 <div class="form-field">
-                  <label class="form-label" data-i18n="menus.form.type">类型</label>
+                  <div class="form-label" data-i18n="menus.form.type">类型</div>
                   <div class="radio-group inline" id="mf-type"></div>
                 </div>
                 <div class="form-field">
-                  <label class="form-label" data-i18n="menus.form.parent">上级菜单</label>
+                  <label class="form-label" for="mf-parent" data-i18n="menus.form.parent">上级菜单</label>
                   <oas-tree-select data-testid="mf-parent" id="mf-parent" data-i18n-attr='{"placeholder":"menus.placeholder.top"}' placeholder="顶级菜单" options="[]" value="0"></oas-tree-select>
                 </div>
                 <div class="form-field">
-                  <label class="form-label"><span data-i18n="menus.form.perms">权限标识</span> <span class="form-hint-inline" id="mf-perms-hint"></span></label>
+                  <label class="form-label" for="mf-perms"><span data-i18n="menus.form.perms">权限标识</span> <span class="form-hint-inline" id="mf-perms-hint"></span></label>
                   <oas-input data-testid="mf-perms" name="perms" data-i18n-attr='{"placeholder":"menus.placeholder.perms"}' placeholder="如 order:list"></oas-input>
                 </div>
                 <div class="form-field">
-                  <label class="form-label"><span data-i18n="menus.form.path">路由地址</span> <span class="req" id="mf-path-req"></span></label>
+                  <label class="form-label" for="mf-path"><span data-i18n="menus.form.path">路由地址</span> <span class="req" id="mf-path-req"></span></label>
                   <oas-input data-testid="mf-path" name="path" data-i18n-attr='{"placeholder":"menus.placeholder.path"}' placeholder="如 /orders"></oas-input>
                 </div>
                 <div class="form-actions">

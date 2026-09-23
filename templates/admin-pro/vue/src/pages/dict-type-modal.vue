@@ -101,18 +101,18 @@ async function onSubmit(e: Event): Promise<void> {
       <oas-form ref="formRef" :rules="rules" @oas-submit="void onSubmit($event)">
         <div class="dict-form-body">
           <div class="form-field">
-            <label class="form-label">
+            <label class="form-label" for="dtf-name">
               {{ t('dict.form.typeName') }}
               <span class="req">*</span>
             </label>
-            <oas-input ref="nameRef" data-testid="dtf-name" name="name" :placeholder="t('dict.placeholder.typeName')" />
+            <oas-input ref="nameRef" id="dtf-name" data-testid="dtf-name" name="name" :placeholder="t('dict.placeholder.typeName')" />
           </div>
           <div class="form-field">
-            <label class="form-label">
+            <label class="form-label" for="dtf-code">
               {{ t('dict.form.typeCode') }}
               <span class="req">*</span>
             </label>
-            <oas-input ref="codeRef" data-testid="dtf-code" name="code" :placeholder="t('dict.placeholder.typeCode')" />
+            <oas-input ref="codeRef" id="dtf-code" data-testid="dtf-code" name="code" :placeholder="t('dict.placeholder.typeCode')" />
           </div>
           <div class="form-actions">
             <oas-space justify="end">

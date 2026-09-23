@@ -86,8 +86,9 @@ export function ProductsColumnsModal({
           const title = key === 'category' ? t('products.category') : t(`products.th.${key}`)
           const mandatory = PRODUCT_COLUMN_MANDATORY.includes(key)
           return (
-            <label key={key} className="product-column-check">
+            <label key={key} className="product-column-check" htmlFor={`product-columns-${key}`}>
               <oas-checkbox
+                id={`product-columns-${key}`}
                 data-testid={`product-columns-${key}`}
                 value={key}
                 checked={mandatory || columnKeys.includes(key) || undefined}

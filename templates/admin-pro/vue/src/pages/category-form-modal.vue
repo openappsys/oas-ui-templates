@@ -119,31 +119,31 @@ async function onSubmit(e: Event): Promise<void> {
       <oas-form ref="formRef" id="category-form" :rules="rules" @oas-submit="void onSubmit($event)">
         <div class="dict-form-body">
           <div class="form-field">
-            <label class="form-label">
+            <label class="form-label" for="cf-name">
               {{ t('category.form.name') }}
               <span class="req">*</span>
             </label>
-            <oas-input ref="nameRef" data-testid="cf-name" name="name" :placeholder="t('category.placeholder.name')" />
+            <oas-input ref="nameRef" id="cf-name" data-testid="cf-name" name="name" :placeholder="t('category.placeholder.name')" />
           </div>
           <div class="form-field">
-            <label class="form-label">
+            <label class="form-label" for="cf-code">
               {{ t('category.form.code') }}
               <span class="req">*</span>
             </label>
-            <oas-input ref="codeRef" data-testid="cf-code" name="code" :placeholder="t('category.placeholder.code')" />
+            <oas-input ref="codeRef" id="cf-code" data-testid="cf-code" name="code" :placeholder="t('category.placeholder.code')" />
           </div>
           <div class="form-field">
-            <label class="form-label">{{ t('category.form.sort') }}</label>
-            <oas-input-number ref="sortRef" data-testid="cf-sort" name="sort" min="0" placeholder="1" />
+            <label class="form-label" for="cf-sort">{{ t('category.form.sort') }}</label>
+            <oas-input-number ref="sortRef" id="cf-sort" data-testid="cf-sort" name="sort" min="0" placeholder="1" />
           </div>
           <div class="form-field">
-            <label class="form-label">{{ t('category.form.status') }}</label>
+            <label class="form-label" for="cf-status">{{ t('category.form.status') }}</label>
             <!-- switch 与其他字段同为非受控：初始无 checked，开关态由 open 边沿 watch 回填 -->
-            <oas-switch ref="statusRef" data-testid="cf-status" name="status" />
+            <oas-switch ref="statusRef" id="cf-status" data-testid="cf-status" name="status" />
           </div>
           <div class="form-field">
-            <label class="form-label">{{ t('category.form.desc') }}</label>
-            <oas-input ref="descRef" data-testid="cf-desc" name="desc" :placeholder="t('category.placeholder.desc')" />
+            <label class="form-label" for="cf-desc">{{ t('category.form.desc') }}</label>
+            <oas-input ref="descRef" id="cf-desc" data-testid="cf-desc" name="desc" :placeholder="t('category.placeholder.desc')" />
           </div>
           <div class="form-actions">
             <oas-space justify="end">

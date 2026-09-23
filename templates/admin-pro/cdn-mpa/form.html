@@ -38,23 +38,23 @@
             <oas-steps data-testid="form-steps" id="form-steps" current="0" clickable></oas-steps>
             <div class="form-step" data-testid="form-step1" data-index="0">
               <div class="form-field">
-                <label class="form-label"><span class="label-text"></span><span class="req">*</span></label>
+                <label class="form-label" for="form-customer"><span class="label-text"></span><span class="req">*</span></label>
                 <oas-input data-testid="form-customer" clearable></oas-input>
                 <div class="form-error" data-testid="form-error-customer" hidden></div>
               </div>
               <div class="form-field">
-                <label class="form-label"><span class="label-text"></span><span class="req">*</span></label>
+                <label class="form-label" for="form-phone"><span class="label-text"></span><span class="req">*</span></label>
                 <oas-input data-testid="form-phone" clearable></oas-input>
                 <div class="form-error" data-testid="form-error-phone" hidden></div>
               </div>
               <div class="form-field">
-                <label class="form-label"><span class="label-text"></span></label>
+                <label class="form-label" for="form-note"><span class="label-text"></span></label>
                 <oas-textarea data-testid="form-note" rows="3"></oas-textarea>
               </div>
             </div>
             <div class="form-step" data-testid="form-step2" data-index="1" hidden>
               <div class="form-field">
-                <label class="form-label"><span class="label-text"></span><span class="req">*</span></label>
+                <div class="form-label"><span class="label-text"></span><span class="req">*</span></div>
                 <oas-checkbox-group data-testid="form-products" id="form-products" value="[]">
                   <span slot="label"></span>
                 </oas-checkbox-group>
@@ -62,18 +62,18 @@
               </div>
               <div class="form-grid">
                 <div class="form-field">
-                  <label class="form-label"><span class="label-text"></span></label>
+                  <label class="form-label" for="form-qty"><span class="label-text"></span></label>
                   <oas-input-number data-testid="form-qty" min="1" precision="0" value="1"></oas-input-number>
                 </div>
                 <div class="form-field">
-                  <label class="form-label"><span class="label-text"></span></label>
+                  <label class="form-label" for="form-urgent"><span class="label-text"></span></label>
                   <div class="switch-line">
                     <oas-switch data-testid="form-urgent"></oas-switch>
                   </div>
                 </div>
               </div>
               <div class="form-field">
-                <label class="form-label"><span class="label-text"></span></label>
+                <label class="form-label" for="form-date"><span class="label-text"></span></label>
                 <oas-date-picker data-testid="form-date"></oas-date-picker>
               </div>
             </div>

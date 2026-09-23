@@ -96,12 +96,12 @@ export function renderDict(el) {
           <oas-form id="dict-type-form" rules='${RULES_TYPE()}'>
             <div class="dict-form-body">
               <div class="form-field">
-                <label class="form-label">${t('dict.form.typeName')} <span class="req">*</span></label>
-                <oas-input data-testid="dtf-name" name="name" placeholder="${t('dict.placeholder.typeName')}"></oas-input>
+                <label class="form-label" for="dtf-name">${t('dict.form.typeName')} <span class="req">*</span></label>
+                <oas-input id="dtf-name" data-testid="dtf-name" name="name" placeholder="${t('dict.placeholder.typeName')}"></oas-input>
               </div>
               <div class="form-field">
-                <label class="form-label">${t('dict.form.typeCode')} <span class="req">*</span></label>
-                <oas-input data-testid="dtf-code" name="code" placeholder="${t('dict.placeholder.typeCode')}"></oas-input>
+                <label class="form-label" for="dtf-code">${t('dict.form.typeCode')} <span class="req">*</span></label>
+                <oas-input id="dtf-code" data-testid="dtf-code" name="code" placeholder="${t('dict.placeholder.typeCode')}"></oas-input>
               </div>
               <div class="form-actions">
                 <oas-space justify="end">
@@ -120,16 +120,16 @@ export function renderDict(el) {
           <oas-form id="dict-item-form" rules='${RULES_ITEM()}'>
             <div class="dict-form-body">
               <div class="form-field">
-                <label class="form-label">${t('dict.form.label')} <span class="req">*</span></label>
-                <oas-input data-testid="dif-label" name="label" placeholder="${t('dict.placeholder.label')}"></oas-input>
+                <label class="form-label" for="dif-label">${t('dict.form.label')} <span class="req">*</span></label>
+                <oas-input id="dif-label" data-testid="dif-label" name="label" placeholder="${t('dict.placeholder.label')}"></oas-input>
               </div>
               <div class="form-field">
-                <label class="form-label">${t('dict.form.value')} <span class="req">*</span></label>
-                <oas-input data-testid="dif-value" name="value" placeholder="${t('dict.placeholder.value')}"></oas-input>
+                <label class="form-label" for="dif-value">${t('dict.form.value')} <span class="req">*</span></label>
+                <oas-input id="dif-value" data-testid="dif-value" name="value" placeholder="${t('dict.placeholder.value')}"></oas-input>
               </div>
               <div class="form-field">
-                <label class="form-label">${t('dict.form.sort')}</label>
-                <oas-input-number data-testid="dif-sort" name="sort" min="0" placeholder="1"></oas-input-number>
+                <label class="form-label" for="dif-sort">${t('dict.form.sort')}</label>
+                <oas-input-number id="dif-sort" data-testid="dif-sort" name="sort" min="0" placeholder="1"></oas-input-number>
               </div>
               <div class="form-actions">
                 <oas-space justify="end">

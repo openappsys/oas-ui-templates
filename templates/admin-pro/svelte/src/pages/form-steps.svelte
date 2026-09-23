@@ -127,11 +127,12 @@
 <!-- 步骤 1：基本信息（客户/电话/备注） -->
 <div class="form-step" data-testid="form-step1" data-index="0" hidden={step !== 0}>
   <div class="form-field">
-    <label class="form-label">
+    <label class="form-label" for="form-customer">
       {tt('form.label.customer')}
       <span class="req">*</span>
     </label>
     <oas-input
+      id="form-customer"
       data-testid="form-customer"
       placeholder={tt('form.rule.customer')}
       clearable
@@ -143,11 +144,12 @@
     </div>
   </div>
   <div class="form-field">
-    <label class="form-label">
+    <label class="form-label" for="form-phone">
       {tt('form.label.phone')}
       <span class="req">*</span>
     </label>
     <oas-input
+      id="form-phone"
       data-testid="form-phone"
       placeholder={tt('form.rule.phone')}
       clearable
@@ -159,8 +161,9 @@
     </div>
   </div>
   <div class="form-field">
-    <label class="form-label">{tt('form.label.note')}</label>
+    <label class="form-label" for="form-note">{tt('form.label.note')}</label>
     <oas-textarea
+      id="form-note"
       data-testid="form-note"
       {...{ rows: '3' }}
       placeholder={tt('form.placeholder.note')}
@@ -172,10 +175,11 @@
 <!-- 步骤 2：商品与配送（多选商品/数量/加急/期望日期） -->
 <div class="form-step" data-testid="form-step2" data-index="1" hidden={step !== 1}>
   <div class="form-field">
-    <label class="form-label">
+    <!-- checkbox-group 非 form-associated，无从关联，用非 label 元素承载标题 -->
+    <div class="form-label">
       {tt('form.label.products')}
       <span class="req">*</span>
-    </label>
+    </div>
     <oas-checkbox-group
       bind:this={productsGroupEl}
       id="form-products"
@@ -194,19 +198,19 @@
   </div>
   <div class="form-grid">
     <div class="form-field">
-      <label class="form-label">{tt('form.label.qty')}</label>
-      <oas-input-number data-testid="form-qty" {...qtyAttrs}></oas-input-number>
+      <label class="form-label" for="form-qty">{tt('form.label.qty')}</label>
+      <oas-input-number id="form-qty" data-testid="form-qty" {...qtyAttrs}></oas-input-number>
     </div>
     <div class="form-field">
-      <label class="form-label">{tt('form.label.urgent')}</label>
+      <label class="form-label" for="form-urgent">{tt('form.label.urgent')}</label>
       <div class="switch-line">
-        <oas-switch data-testid="form-urgent" {...urgentAttrs}></oas-switch>
+        <oas-switch id="form-urgent" data-testid="form-urgent" {...urgentAttrs}></oas-switch>
       </div>
     </div>
   </div>
   <div class="form-field">
-    <label class="form-label">{tt('form.label.expectDate')}</label>
-    <oas-date-picker data-testid="form-date" {...dateAttrs}></oas-date-picker>
+    <label class="form-label" for="form-date">{tt('form.label.expectDate')}</label>
+    <oas-date-picker id="form-date" data-testid="form-date" {...dateAttrs}></oas-date-picker>
   </div>
 </div>
 

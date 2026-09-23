@@ -203,14 +203,15 @@
   >
     <div class="menu-form-body">
       <div class="form-field">
-        <label class="form-label">
+        <label class="form-label" for="mf-name">
           {tt('menus.form.name')} <span class="req">*</span>
         </label>
-        <oas-input bind:this={nameEl} data-testid="mf-name" name="name" placeholder={tt('menus.rule.name')}>
+        <oas-input bind:this={nameEl} id="mf-name" data-testid="mf-name" name="name" placeholder={tt('menus.rule.name')}>
         </oas-input>
       </div>
       <div class="form-field">
-        <label class="form-label">{tt('menus.form.type')}</label>
+        <!-- radio-group 非 form-associated，无从关联，用非 label 元素承载标题 -->
+        <div class="form-label">{tt('menus.form.type')}</div>
         <div class="radio-group inline" id="mf-type" bind:this={typeGroupEl}>
           {#each ['M', 'C', 'F'] as ty (ty)}
             <oas-radio name="menuType" value={ty}>
@@ -220,25 +221,26 @@
         </div>
       </div>
       <div class="form-field">
-        <label class="form-label">{tt('menus.form.parent')}</label>
-        <oas-tree-select bind:this={parentEl} data-testid="mf-parent" placeholder={tt('menus.placeholder.top')}>
+        <label class="form-label" for="mf-parent">{tt('menus.form.parent')}</label>
+        <oas-tree-select bind:this={parentEl} id="mf-parent" data-testid="mf-parent" placeholder={tt('menus.placeholder.top')}>
         </oas-tree-select>
       </div>
       <div class="form-field">
-        <label class="form-label">
+        <label class="form-label" for="mf-perms">
           {tt('menus.form.perms')}
           <span class="form-hint-inline" id="mf-perms-hint">{permsHint}</span>
         </label>
-        <oas-input bind:this={permsEl} data-testid="mf-perms" name="perms" placeholder={tt('menus.placeholder.perms')}>
+        <oas-input bind:this={permsEl} id="mf-perms" data-testid="mf-perms" name="perms" placeholder={tt('menus.placeholder.perms')}>
         </oas-input>
       </div>
       <div class="form-field">
-        <label class="form-label">
+        <label class="form-label" for="mf-path">
           {tt('menus.form.path')}
           <span class="req" id="mf-path-req">{formType === 'C' ? '*' : ''}</span>
         </label>
         <oas-input
           bind:this={pathEl}
+          id="mf-path"
           data-testid="mf-path"
           name="path"
           placeholder={tt('menus.placeholder.path')}

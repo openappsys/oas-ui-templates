@@ -50,23 +50,23 @@ export function renderForm(el) {
         <oas-steps data-testid="form-steps" id="form-steps" steps='${JSON.stringify(STEPS())}' current="0" clickable></oas-steps>
         <div class="form-step" data-testid="form-step1" data-index="0">
           <div class="form-field">
-            <label class="form-label">${t('form.label.customer')}<span class="req">*</span></label>
-            <oas-input data-testid="form-customer" placeholder="${t('form.rule.customer')}" clearable></oas-input>
+            <label class="form-label" for="form-customer">${t('form.label.customer')}<span class="req">*</span></label>
+            <oas-input id="form-customer" data-testid="form-customer" placeholder="${t('form.rule.customer')}" clearable></oas-input>
             <div class="form-error" data-testid="form-error-customer" hidden></div>
           </div>
           <div class="form-field">
-            <label class="form-label">${t('form.label.phone')}<span class="req">*</span></label>
-            <oas-input data-testid="form-phone" placeholder="${t('form.rule.phone')}" clearable></oas-input>
+            <label class="form-label" for="form-phone">${t('form.label.phone')}<span class="req">*</span></label>
+            <oas-input id="form-phone" data-testid="form-phone" placeholder="${t('form.rule.phone')}" clearable></oas-input>
             <div class="form-error" data-testid="form-error-phone" hidden></div>
           </div>
           <div class="form-field">
-            <label class="form-label">${t('form.label.note')}</label>
-            <oas-textarea data-testid="form-note" rows="3" placeholder="${t('form.placeholder.note')}"></oas-textarea>
+            <label class="form-label" for="form-note">${t('form.label.note')}</label>
+            <oas-textarea id="form-note" data-testid="form-note" rows="3" placeholder="${t('form.placeholder.note')}"></oas-textarea>
           </div>
         </div>
         <div class="form-step" data-testid="form-step2" data-index="1" hidden>
           <div class="form-field">
-            <label class="form-label">${t('form.label.products')}<span class="req">*</span></label>
+            <div class="form-label">${t('form.label.products')}<span class="req">*</span></div>
             <oas-checkbox-group data-testid="form-products" id="form-products" value="[]">
               <span slot="label">${t('form.placeholder.products')}</span>
             </oas-checkbox-group>
@@ -74,19 +74,19 @@ export function renderForm(el) {
           </div>
           <div class="form-grid">
             <div class="form-field">
-              <label class="form-label">${t('form.label.qty')}</label>
-              <oas-input-number data-testid="form-qty" min="1" precision="0" value="1"></oas-input-number>
+              <label class="form-label" for="form-qty">${t('form.label.qty')}</label>
+              <oas-input-number id="form-qty" data-testid="form-qty" min="1" precision="0" value="1"></oas-input-number>
             </div>
             <div class="form-field">
-              <label class="form-label">${t('form.label.urgent')}</label>
+              <label class="form-label" for="form-urgent">${t('form.label.urgent')}</label>
               <div class="switch-line">
-                <oas-switch data-testid="form-urgent"></oas-switch>
+                <oas-switch id="form-urgent" data-testid="form-urgent"></oas-switch>
               </div>
             </div>
           </div>
           <div class="form-field">
-            <label class="form-label">${t('form.label.expectDate')}</label>
-            <oas-date-picker data-testid="form-date"></oas-date-picker>
+            <label class="form-label" for="form-date">${t('form.label.expectDate')}</label>
+            <oas-date-picker id="form-date" data-testid="form-date"></oas-date-picker>
           </div>
         </div>
         <div class="form-step" data-testid="form-step3" data-index="2" hidden>

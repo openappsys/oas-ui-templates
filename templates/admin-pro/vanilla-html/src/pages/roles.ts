@@ -127,16 +127,16 @@ export function render(el: HTMLElement): () => void {
         <oas-form id="role-form" rules='${RULES()}'>
           <div class="role-form-body">
             <div class="form-field">
-              <label class="form-label">${t('roles.form.name')} <span class="req">*</span></label>
-              <oas-input data-testid="rf-name" name="name" placeholder="${t('roles.rule.name')}"></oas-input>
+              <label class="form-label" for="rf-name">${t('roles.form.name')} <span class="req">*</span></label>
+              <oas-input id="rf-name" data-testid="rf-name" name="name" placeholder="${t('roles.rule.name')}"></oas-input>
             </div>
             <div class="form-field">
-              <label class="form-label">${t('roles.form.code')} <span class="req">*</span></label>
-              <oas-input data-testid="rf-code" name="code" placeholder="${t('roles.placeholder.code')}"></oas-input>
+              <label class="form-label" for="rf-code">${t('roles.form.code')} <span class="req">*</span></label>
+              <oas-input id="rf-code" data-testid="rf-code" name="code" placeholder="${t('roles.placeholder.code')}"></oas-input>
               <div class="form-hint">${t('roles.hint.code')}</div>
             </div>
             <div class="form-field">
-              <label class="form-label">${t('roles.form.dataScope')}</label>
+              <div class="form-label">${t('roles.form.dataScope')}</div>
               <div class="radio-group" id="rf-scope">
                 ${DATA_SCOPE_OPTIONS()
                   .map(
@@ -147,7 +147,7 @@ export function render(el: HTMLElement): () => void {
               </div>
             </div>
             <div class="form-field" id="rf-custom" hidden>
-              <label class="form-label">${t('roles.form.customScope')}</label>
+              <div class="form-label">${t('roles.form.customScope')}</div>
               <oas-transfer data-testid="rf-transfer" id="rf-transfer" source-title="${t('roles.transfer.source')}" target-title="${t('roles.transfer.target')}" searchable data="[]" value="[]"></oas-transfer>
             </div>
             <div class="form-actions">

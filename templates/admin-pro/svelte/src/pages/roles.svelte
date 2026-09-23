@@ -320,22 +320,23 @@
     <oas-form bind:this={formEl} {rules} onoas-submit={onFormSubmit}>
       <div class="role-form-body">
         <div class="form-field">
-          <label class="form-label">
+          <label class="form-label" for="rf-name">
             {tt('roles.form.name')} <span class="req">*</span>
           </label>
-          <oas-input bind:this={nameEl} data-testid="rf-name" name="name" placeholder={tt('roles.rule.name')}>
+          <oas-input bind:this={nameEl} id="rf-name" data-testid="rf-name" name="name" placeholder={tt('roles.rule.name')}>
           </oas-input>
         </div>
         <div class="form-field">
-          <label class="form-label">
+          <label class="form-label" for="rf-code">
             {tt('roles.form.code')} <span class="req">*</span>
           </label>
-          <oas-input bind:this={codeEl} data-testid="rf-code" name="code" placeholder={tt('roles.placeholder.code')}>
+          <oas-input bind:this={codeEl} id="rf-code" data-testid="rf-code" name="code" placeholder={tt('roles.placeholder.code')}>
           </oas-input>
           <div class="form-hint">{tt('roles.hint.code')}</div>
         </div>
         <div class="form-field">
-          <label class="form-label">{tt('roles.form.dataScope')}</label>
+          <!-- radio-group 非 form-associated，无从关联，用非 label 元素承载标题 -->
+          <div class="form-label">{tt('roles.form.dataScope')}</div>
           <div class="radio-group" id="rf-scope" bind:this={scopeGroupEl}>
             {#each scopeOptions as o (o.value)}
               <oas-radio name="dataScope" value={String(o.value)}>
@@ -348,7 +349,8 @@
           </div>
         </div>
         <div class="form-field" id="rf-custom" hidden={dataScope !== 2}>
-          <label class="form-label">{tt('roles.form.customScope')}</label>
+          <!-- transfer 非 form-associated，无从关联，用非 label 元素承载标题 -->
+          <div class="form-label">{tt('roles.form.customScope')}</div>
           <oas-transfer
             bind:this={transferEl}
             data-testid="rf-transfer"

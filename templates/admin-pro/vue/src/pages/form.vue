@@ -227,11 +227,12 @@ function onProductsChange(e: Event): void {
       />
       <div class="form-step" data-testid="form-step1" :hidden="step !== 0">
         <div class="form-field">
-          <label class="form-label">
+          <label class="form-label" for="form-customer">
             {{ t('form.label.customer') }}<span class="req">*</span>
           </label>
           <oas-input
             ref="customerRef"
+            id="form-customer"
             data-testid="form-customer"
             :placeholder="t('form.rule.customer')"
             clearable
@@ -243,9 +244,10 @@ function onProductsChange(e: Event): void {
           </div>
         </div>
         <div class="form-field">
-          <label class="form-label">{{ t('form.label.phone') }}<span class="req">*</span></label>
+          <label class="form-label" for="form-phone">{{ t('form.label.phone') }}<span class="req">*</span></label>
           <oas-input
             ref="phoneRef"
+            id="form-phone"
             data-testid="form-phone"
             :placeholder="t('form.rule.phone')"
             clearable
@@ -257,8 +259,9 @@ function onProductsChange(e: Event): void {
           </div>
         </div>
         <div class="form-field">
-          <label class="form-label">{{ t('form.label.note') }}</label>
+          <label class="form-label" for="form-note">{{ t('form.label.note') }}</label>
           <oas-textarea
+            id="form-note"
             data-testid="form-note"
             rows="3"
             :placeholder="t('form.placeholder.note')"
@@ -268,7 +271,8 @@ function onProductsChange(e: Event): void {
       </div>
       <div class="form-step" data-testid="form-step2" :hidden="step !== 1">
         <div class="form-field">
-          <label class="form-label">{{ t('form.label.products') }}<span class="req">*</span></label>
+          <!-- checkbox-group 非 form-associated，无从关联，用非 label 元素承载标题 -->
+          <div class="form-label">{{ t('form.label.products') }}<span class="req">*</span></div>
           <oas-checkbox-group
             ref="productsRef"
             data-testid="form-products"
@@ -286,8 +290,9 @@ function onProductsChange(e: Event): void {
         </div>
         <div class="form-grid">
           <div class="form-field">
-            <label class="form-label">{{ t('form.label.qty') }}</label>
+            <label class="form-label" for="form-qty">{{ t('form.label.qty') }}</label>
             <oas-input-number
+              id="form-qty"
               data-testid="form-qty"
               min="1"
               precision="0"
@@ -296,15 +301,15 @@ function onProductsChange(e: Event): void {
             />
           </div>
           <div class="form-field">
-            <label class="form-label">{{ t('form.label.urgent') }}</label>
+            <label class="form-label" for="form-urgent">{{ t('form.label.urgent') }}</label>
             <div class="switch-line">
-              <oas-switch data-testid="form-urgent" @oas-change="onUrgentChange" />
+              <oas-switch id="form-urgent" data-testid="form-urgent" @oas-change="onUrgentChange" />
             </div>
           </div>
         </div>
         <div class="form-field">
-          <label class="form-label">{{ t('form.label.expectDate') }}</label>
-          <oas-date-picker data-testid="form-date" :min="minDate" @oas-change="onDateChange" />
+          <label class="form-label" for="form-date">{{ t('form.label.expectDate') }}</label>
+          <oas-date-picker id="form-date" data-testid="form-date" :min="minDate" @oas-change="onDateChange" />
         </div>
       </div>
       <div class="form-step" data-testid="form-step3" :hidden="step !== 2">

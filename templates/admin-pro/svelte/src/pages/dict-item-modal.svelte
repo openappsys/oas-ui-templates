@@ -78,31 +78,34 @@
     <oas-form bind:this={formEl} {rules} onoas-submit={onFormSubmit}>
       <div class="dict-form-body">
         <div class="form-field">
-          <label class="form-label">
+          <label class="form-label" for="dif-label">
             {tt('dict.form.label')} <span class="req">*</span>
           </label>
           <oas-input
             bind:this={labelEl}
+            id="dif-label"
             data-testid="dif-label"
             name="label"
             placeholder={tt('dict.placeholder.label')}
           ></oas-input>
         </div>
         <div class="form-field">
-          <label class="form-label">
+          <label class="form-label" for="dif-value">
             {tt('dict.form.value')} <span class="req">*</span>
           </label>
           <oas-input
             bind:this={valueEl}
+            id="dif-value"
             data-testid="dif-value"
             name="value"
             placeholder={tt('dict.placeholder.value')}
           ></oas-input>
         </div>
         <div class="form-field">
-          <label class="form-label">{tt('dict.form.sort')}</label>
+          <label class="form-label" for="dif-sort">{tt('dict.form.sort')}</label>
           <oas-input-number
             bind:this={sortEl}
+            id="dif-sort"
             data-testid="dif-sort"
             name="sort"
             min="0"

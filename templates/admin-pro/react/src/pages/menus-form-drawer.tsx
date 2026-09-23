@@ -204,18 +204,20 @@ export function MenusFormDrawer({
       >
         <div className="menu-form-body">
           <div className="form-field">
-            <label className="form-label">
+            <label className="form-label" htmlFor="mf-name">
               {t('menus.form.name')} <span className="req">*</span>
             </label>
             <oas-input
               ref={nameRef}
+              id="mf-name"
               data-testid="mf-name"
               name="name"
               placeholder={t('menus.rule.name')}
             />
           </div>
           <div className="form-field">
-            <label className="form-label">{t('menus.form.type')}</label>
+            {/* radio-group 非 form-associated，无从关联，用非 label 元素承载标题 */}
+            <div className="form-label">{t('menus.form.type')}</div>
             <div className="radio-group inline" id="mf-type" ref={typeGroupRef}>
               {(['M', 'C', 'F'] as const).map((ty) => (
                 <oas-radio key={ty} name="menuType" value={ty}>
@@ -225,15 +227,18 @@ export function MenusFormDrawer({
             </div>
           </div>
           <div className="form-field">
-            <label className="form-label">{t('menus.form.parent')}</label>
+            <label className="form-label" htmlFor="mf-parent">
+              {t('menus.form.parent')}
+            </label>
             <oas-tree-select
               ref={parentRef}
+              id="mf-parent"
               data-testid="mf-parent"
               placeholder={t('menus.placeholder.top')}
             />
           </div>
           <div className="form-field">
-            <label className="form-label">
+            <label className="form-label" htmlFor="mf-perms">
               {t('menus.form.perms')}{' '}
               <span className="form-hint-inline" id="mf-perms-hint">
                 {permsHint}
@@ -241,13 +246,14 @@ export function MenusFormDrawer({
             </label>
             <oas-input
               ref={permsRef}
+              id="mf-perms"
               data-testid="mf-perms"
               name="perms"
               placeholder={t('menus.placeholder.perms')}
             />
           </div>
           <div className="form-field">
-            <label className="form-label">
+            <label className="form-label" htmlFor="mf-path">
               {t('menus.form.path')}{' '}
               <span className="req" id="mf-path-req">
                 {formType === 'C' ? '*' : ''}
@@ -255,6 +261,7 @@ export function MenusFormDrawer({
             </label>
             <oas-input
               ref={pathRef}
+              id="mf-path"
               data-testid="mf-path"
               name="path"
               placeholder={t('menus.placeholder.path')}

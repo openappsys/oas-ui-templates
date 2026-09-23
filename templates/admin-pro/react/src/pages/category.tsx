@@ -294,31 +294,36 @@ export default function CategoryPage() {
           <oas-form ref={formRef} id="category-form" rules={rules}>
             <div className="dict-form-body">
               <div className="form-field">
-                <label className="form-label">
+                <label className="form-label" htmlFor="cf-name">
                   {t('category.form.name')} <span className="req">*</span>
                 </label>
                 <oas-input
                   ref={nameRef}
+                  id="cf-name"
                   data-testid="cf-name"
                   name="name"
                   placeholder={t('category.placeholder.name')}
                 />
               </div>
               <div className="form-field">
-                <label className="form-label">
+                <label className="form-label" htmlFor="cf-code">
                   {t('category.form.code')} <span className="req">*</span>
                 </label>
                 <oas-input
                   ref={codeRef}
+                  id="cf-code"
                   data-testid="cf-code"
                   name="code"
                   placeholder={t('category.placeholder.code')}
                 />
               </div>
               <div className="form-field">
-                <label className="form-label">{t('category.form.sort')}</label>
+                <label className="form-label" htmlFor="cf-sort">
+                  {t('category.form.sort')}
+                </label>
                 <oas-input-number
                   ref={sortRef}
+                  id="cf-sort"
                   data-testid="cf-sort"
                   name="sort"
                   min="0"
@@ -326,13 +331,18 @@ export default function CategoryPage() {
                 />
               </div>
               <div className="form-field">
-                <label className="form-label">{t('category.form.status')}</label>
-                <oas-switch ref={statusRef} data-testid="cf-status" name="status" />
+                <label className="form-label" htmlFor="cf-status">
+                  {t('category.form.status')}
+                </label>
+                <oas-switch ref={statusRef} id="cf-status" data-testid="cf-status" name="status" />
               </div>
               <div className="form-field">
-                <label className="form-label">{t('category.form.desc')}</label>
+                <label className="form-label" htmlFor="cf-desc">
+                  {t('category.form.desc')}
+                </label>
                 <oas-input
                   ref={descRef}
+                  id="cf-desc"
                   data-testid="cf-desc"
                   name="desc"
                   placeholder={t('category.placeholder.desc')}

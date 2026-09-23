@@ -33,28 +33,28 @@ export function productFormBody(formId) {
     <oas-form id="${formId}" rules='${JSON.stringify({ name: [{ required: true, message: t('products.rule.name') }] })}'>
       <div class="product-form">
         <div class="form-field">
-          <label class="form-label">${t('products.form.name')}</label>
-          <oas-input data-testid="pf-name" name="name" placeholder="${t('products.form.namePlaceholder')}"></oas-input>
+          <label class="form-label" for="pf-name">${t('products.form.name')}</label>
+          <oas-input id="pf-name" data-testid="pf-name" name="name" placeholder="${t('products.form.namePlaceholder')}"></oas-input>
         </div>
         <div class="form-field">
-          <label class="form-label">${t('products.category')}</label>
-          <oas-select data-testid="pf-category" name="category"></oas-select>
+          <label class="form-label" for="pf-category">${t('products.category')}</label>
+          <oas-select id="pf-category" data-testid="pf-category" name="category"></oas-select>
         </div>
         <div class="form-field">
-          <label class="form-label">${t('products.th.price')}</label>
-          <oas-input-number data-testid="pf-price" name="price" min="0.01" precision="2" placeholder="0.00"></oas-input-number>
+          <label class="form-label" for="pf-price">${t('products.th.price')}</label>
+          <oas-input-number id="pf-price" data-testid="pf-price" name="price" min="0.01" precision="2" placeholder="0.00"></oas-input-number>
         </div>
         <div class="form-field">
-          <label class="form-label">${t('products.th.stock')}</label>
-          <oas-input-number data-testid="pf-stock" name="stock" min="0" placeholder="0"></oas-input-number>
+          <label class="form-label" for="pf-stock">${t('products.th.stock')}</label>
+          <oas-input-number id="pf-stock" data-testid="pf-stock" name="stock" min="0" placeholder="0"></oas-input-number>
         </div>
         <div class="form-field">
-          <label class="form-label">${t('products.form.listedDate')}</label>
-          <oas-date-picker data-testid="pf-date" placeholder="${t('products.form.datePlaceholder')}"></oas-date-picker>
+          <label class="form-label" for="pf-date">${t('products.form.listedDate')}</label>
+          <oas-date-picker id="pf-date" data-testid="pf-date" placeholder="${t('products.form.datePlaceholder')}"></oas-date-picker>
         </div>
         <div class="form-field">
-          <label class="form-label">${t('products.form.cover')}</label>
-          <oas-upload data-testid="pf-cover" accept="image/*" list-type="picture"></oas-upload>
+          <label class="form-label" for="pf-cover">${t('products.form.cover')}</label>
+          <oas-upload id="pf-cover" data-testid="pf-cover" accept="image/*" list-type="picture"></oas-upload>
         </div>
         <div class="form-actions">
           <oas-space justify="end">

@@ -117,39 +117,42 @@
     <oas-form bind:this={formEl} id="category-form" {rules} onoas-submit={onSubmit}>
       <div class="dict-form-body">
         <div class="form-field">
-          <label class="form-label">
+          <label class="form-label" for="cf-name">
             {tt('category.form.name')} <span class="req">*</span>
           </label>
           <oas-input
             bind:this={nameEl}
+            id="cf-name"
             data-testid="cf-name"
             name="name"
             placeholder={tt('category.placeholder.name')}
           ></oas-input>
         </div>
         <div class="form-field">
-          <label class="form-label">
+          <label class="form-label" for="cf-code">
             {tt('category.form.code')} <span class="req">*</span>
           </label>
           <oas-input
             bind:this={codeEl}
+            id="cf-code"
             data-testid="cf-code"
             name="code"
             placeholder={tt('category.placeholder.code')}
           ></oas-input>
         </div>
         <div class="form-field">
-          <label class="form-label">{tt('category.form.sort')}</label>
-          <oas-input-number bind:this={sortEl} data-testid="cf-sort" name="sort" min="0" placeholder="1"></oas-input-number>
+          <label class="form-label" for="cf-sort">{tt('category.form.sort')}</label>
+          <oas-input-number bind:this={sortEl} id="cf-sort" data-testid="cf-sort" name="sort" min="0" placeholder="1"></oas-input-number>
         </div>
         <div class="form-field">
-          <label class="form-label">{tt('category.form.status')}</label>
-          <oas-switch bind:this={statusEl} data-testid="cf-status" name="status"></oas-switch>
+          <label class="form-label" for="cf-status">{tt('category.form.status')}</label>
+          <oas-switch bind:this={statusEl} id="cf-status" data-testid="cf-status" name="status"></oas-switch>
         </div>
         <div class="form-field">
-          <label class="form-label">{tt('category.form.desc')}</label>
+          <label class="form-label" for="cf-desc">{tt('category.form.desc')}</label>
           <oas-input
             bind:this={descEl}
+            id="cf-desc"
             data-testid="cf-desc"
             name="desc"
             placeholder={tt('category.placeholder.desc')}

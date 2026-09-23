@@ -45,20 +45,20 @@
             <oas-form id="role-form">
               <div class="role-form-body">
                 <div class="form-field">
-                  <label class="form-label"><span data-i18n="roles.form.name">角色名称</span> <span class="req">*</span></label>
+                  <label class="form-label" for="rf-name"><span data-i18n="roles.form.name">角色名称</span> <span class="req">*</span></label>
                   <oas-input data-testid="rf-name" name="name" data-i18n-attr='{"placeholder":"roles.rule.name"}' placeholder="请输入角色名称"></oas-input>
                 </div>
                 <div class="form-field">
-                  <label class="form-label"><span data-i18n="roles.form.code">角色编码</span> <span class="req">*</span></label>
+                  <label class="form-label" for="rf-code"><span data-i18n="roles.form.code">角色编码</span> <span class="req">*</span></label>
                   <oas-input data-testid="rf-code" name="code" data-i18n-attr='{"placeholder":"roles.placeholder.code"}' placeholder="如 ops_manager"></oas-input>
                   <div class="form-hint" data-i18n="roles.hint.code">小写字母开头，可含数字 / 冒号 / 下划线 / 连字符</div>
                 </div>
                 <div class="form-field">
-                  <label class="form-label" data-i18n="roles.form.dataScope">数据权限</label>
+                  <div class="form-label" data-i18n="roles.form.dataScope">数据权限</div>
                   <div class="radio-group" id="rf-scope"></div>
                 </div>
                 <div class="form-field" id="rf-custom" hidden>
-                  <label class="form-label" data-i18n="roles.form.customScope">自定义权限部门</label>
+                  <div class="form-label" data-i18n="roles.form.customScope">自定义权限部门</div>
                   <oas-transfer data-testid="rf-transfer" id="rf-transfer" source-title="可选部门" target-title="已选部门" searchable data="[]" value="[]" data-i18n-attr='{"source-title":"roles.transfer.source","target-title":"roles.transfer.target"}'></oas-transfer>
                 </div>
                 <div class="form-actions">

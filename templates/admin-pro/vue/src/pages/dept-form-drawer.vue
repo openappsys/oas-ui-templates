@@ -177,23 +177,24 @@ async function onSubmit(e: Event): Promise<void> {
     <oas-form ref="formRef" :rules="rules" @oas-submit="void onSubmit($event)">
       <div class="dept-form-body">
         <div class="form-field">
-          <label class="form-label">
+          <label class="form-label" for="df-name">
             {{ t('dept.form.name') }}
             <span class="req">*</span>
           </label>
-          <oas-input ref="nameRef" data-testid="df-name" name="name" :placeholder="t('dept.rule.name')" />
+          <oas-input ref="nameRef" id="df-name" data-testid="df-name" name="name" :placeholder="t('dept.rule.name')" />
         </div>
         <div class="form-field">
-          <label class="form-label">{{ t('dept.form.parent') }}</label>
+          <label class="form-label" for="df-parent">{{ t('dept.form.parent') }}</label>
           <oas-tree-select
             ref="parentRef"
+            id="df-parent"
             data-testid="df-parent"
             :placeholder="t('dept.placeholder.top')"
           />
         </div>
         <div class="form-field">
-          <label class="form-label">{{ t('dept.form.members') }}</label>
-          <oas-input-number ref="membersRef" data-testid="df-members" name="members" min="0" placeholder="0" />
+          <label class="form-label" for="df-members">{{ t('dept.form.members') }}</label>
+          <oas-input-number ref="membersRef" id="df-members" data-testid="df-members" name="members" min="0" placeholder="0" />
         </div>
         <div class="form-actions">
           <oas-space justify="end">

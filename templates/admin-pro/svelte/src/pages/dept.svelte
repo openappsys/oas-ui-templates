@@ -313,20 +313,20 @@
     >
       <div class="dept-form-body">
         <div class="form-field">
-          <label class="form-label">
+          <label class="form-label" for="df-name">
             {tt('dept.form.name')} <span class="req">*</span>
           </label>
-          <oas-input bind:this={nameEl} data-testid="df-name" name="name" placeholder={tt('dept.rule.name')}>
+          <oas-input bind:this={nameEl} id="df-name" data-testid="df-name" name="name" placeholder={tt('dept.rule.name')}>
           </oas-input>
         </div>
         <div class="form-field">
-          <label class="form-label">{tt('dept.form.parent')}</label>
-          <oas-tree-select bind:this={parentEl} data-testid="df-parent" placeholder={tt('dept.placeholder.top')}>
+          <label class="form-label" for="df-parent">{tt('dept.form.parent')}</label>
+          <oas-tree-select bind:this={parentEl} id="df-parent" data-testid="df-parent" placeholder={tt('dept.placeholder.top')}>
           </oas-tree-select>
         </div>
         <div class="form-field">
-          <label class="form-label">{tt('dept.form.members')}</label>
-          <oas-input-number bind:this={membersEl} data-testid="df-members" name="members" min="0" placeholder="0">
+          <label class="form-label" for="df-members">{tt('dept.form.members')}</label>
+          <oas-input-number bind:this={membersEl} id="df-members" data-testid="df-members" name="members" min="0" placeholder="0">
           </oas-input-number>
         </div>
         <div class="form-actions">

@@ -109,22 +109,22 @@ async function onSubmit(e: Event): Promise<void> {
       <oas-form ref="formRef" :rules="rules" @oas-submit="void onSubmit($event)">
         <div class="dict-form-body">
           <div class="form-field">
-            <label class="form-label">
+            <label class="form-label" for="dif-label">
               {{ t('dict.form.label') }}
               <span class="req">*</span>
             </label>
-            <oas-input ref="labelRef" data-testid="dif-label" name="label" :placeholder="t('dict.placeholder.label')" />
+            <oas-input ref="labelRef" id="dif-label" data-testid="dif-label" name="label" :placeholder="t('dict.placeholder.label')" />
           </div>
           <div class="form-field">
-            <label class="form-label">
+            <label class="form-label" for="dif-value">
               {{ t('dict.form.value') }}
               <span class="req">*</span>
             </label>
-            <oas-input ref="valueRef" data-testid="dif-value" name="value" :placeholder="t('dict.placeholder.value')" />
+            <oas-input ref="valueRef" id="dif-value" data-testid="dif-value" name="value" :placeholder="t('dict.placeholder.value')" />
           </div>
           <div class="form-field">
-            <label class="form-label">{{ t('dict.form.sort') }}</label>
-            <oas-input-number ref="sortRef" data-testid="dif-sort" name="sort" min="0" placeholder="1" />
+            <label class="form-label" for="dif-sort">{{ t('dict.form.sort') }}</label>
+            <oas-input-number ref="sortRef" id="dif-sort" data-testid="dif-sort" name="sort" min="0" placeholder="1" />
           </div>
           <div class="form-actions">
             <oas-space justify="end">

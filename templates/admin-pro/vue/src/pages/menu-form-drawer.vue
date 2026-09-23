@@ -152,14 +152,15 @@ function onSubmit(e: Event): void {
     <oas-form ref="formRef" :rules="rules" @oas-submit="onSubmit">
       <div class="menu-form-body">
         <div class="form-field">
-          <label class="form-label">
+          <label class="form-label" for="mf-name">
             {{ t('menus.form.name') }}
             <span class="req">*</span>
           </label>
-          <oas-input ref="nameRef" data-testid="mf-name" name="name" :placeholder="t('menus.rule.name')" />
+          <oas-input ref="nameRef" id="mf-name" data-testid="mf-name" name="name" :placeholder="t('menus.rule.name')" />
         </div>
         <div class="form-field">
-          <label class="form-label">{{ t('menus.form.type') }}</label>
+          <!-- radio-group 非 form-associated，无从关联，用非 label 元素承载标题 -->
+          <div class="form-label">{{ t('menus.form.type') }}</div>
           <div class="radio-group inline" @oas-change="onTypeChange">
             <oas-radio name="menuType" value="M" :checked="formType === 'M' ? '' : null">
               <span class="radio-label">{{ t('menus.type.M') }}</span>
@@ -173,9 +174,10 @@ function onSubmit(e: Event): void {
           </div>
         </div>
         <div class="form-field">
-          <label class="form-label">{{ t('menus.form.parent') }}</label>
+          <label class="form-label" for="mf-parent">{{ t('menus.form.parent') }}</label>
           <oas-tree-select
             ref="parentRef"
+            id="mf-parent"
             data-testid="mf-parent"
             :placeholder="t('menus.placeholder.top')"
             :options="parentOptions"
@@ -183,19 +185,20 @@ function onSubmit(e: Event): void {
           />
         </div>
         <div class="form-field">
-          <label class="form-label">
+          <label class="form-label" for="mf-perms">
             {{ t('menus.form.perms') }}
             <span class="form-hint-inline">{{ permsHint }}</span>
           </label>
-          <oas-input ref="permsRef" data-testid="mf-perms" name="perms" :placeholder="t('menus.placeholder.perms')" />
+          <oas-input ref="permsRef" id="mf-perms" data-testid="mf-perms" name="perms" :placeholder="t('menus.placeholder.perms')" />
         </div>
         <div class="form-field">
-          <label class="form-label">
+          <label class="form-label" for="mf-path">
             {{ t('menus.form.path') }}
             <span v-if="pathReq" class="req">{{ pathReq }}</span>
           </label>
           <oas-input
             ref="pathRef"
+            id="mf-path"
             data-testid="mf-path"
             name="path"
             :placeholder="t('menus.placeholder.path')"

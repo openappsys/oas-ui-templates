@@ -43,12 +43,13 @@ export function FormStepBasic({
       hidden={!visible || undefined}
     >
       <div className="form-field">
-        <label className="form-label">
+        <label className="form-label" htmlFor="form-customer">
           {t('form.label.customer')}
           <span className="req">*</span>
         </label>
         <oas-input
           ref={customerRef}
+          id="form-customer"
           data-testid="form-customer"
           placeholder={t('form.rule.customer')}
           clearable
@@ -63,12 +64,13 @@ export function FormStepBasic({
         </div>
       </div>
       <div className="form-field">
-        <label className="form-label">
+        <label className="form-label" htmlFor="form-phone">
           {t('form.label.phone')}
           <span className="req">*</span>
         </label>
         <oas-input
           ref={phoneRef}
+          id="form-phone"
           data-testid="form-phone"
           placeholder={t('form.rule.phone')}
           clearable
@@ -83,9 +85,12 @@ export function FormStepBasic({
         </div>
       </div>
       <div className="form-field">
-        <label className="form-label">{t('form.label.note')}</label>
+        <label className="form-label" htmlFor="form-note">
+          {t('form.label.note')}
+        </label>
         <oas-textarea
           ref={noteRef}
+          id="form-note"
           data-testid="form-note"
           rows="3"
           placeholder={t('form.placeholder.note')}
@@ -125,10 +130,11 @@ export function FormStepProducts({
       hidden={!visible || undefined}
     >
       <div className="form-field">
-        <label className="form-label">
+        {/* checkbox-group 非 form-associated，无从关联，用非 label 元素承载标题 */}
+        <div className="form-label">
           {t('form.label.products')}
           <span className="req">*</span>
-        </label>
+        </div>
         <oas-checkbox-group
           ref={productsGroupRef}
           id="form-products"
@@ -153,19 +159,32 @@ export function FormStepProducts({
       </div>
       <div className="form-grid">
         <div className="form-field">
-          <label className="form-label">{t('form.label.qty')}</label>
-          <oas-input-number ref={qtyRef} data-testid="form-qty" min="1" precision="0" value="1" />
+          <label className="form-label" htmlFor="form-qty">
+            {t('form.label.qty')}
+          </label>
+          <oas-input-number
+            ref={qtyRef}
+            id="form-qty"
+            data-testid="form-qty"
+            min="1"
+            precision="0"
+            value="1"
+          />
         </div>
         <div className="form-field">
-          <label className="form-label">{t('form.label.urgent')}</label>
+          <label className="form-label" htmlFor="form-urgent">
+            {t('form.label.urgent')}
+          </label>
           <div className="switch-line">
-            <oas-switch ref={urgentRef} data-testid="form-urgent" />
+            <oas-switch ref={urgentRef} id="form-urgent" data-testid="form-urgent" />
           </div>
         </div>
       </div>
       <div className="form-field">
-        <label className="form-label">{t('form.label.expectDate')}</label>
-        <oas-date-picker ref={dateRef} data-testid="form-date" min={today()} />
+        <label className="form-label" htmlFor="form-date">
+          {t('form.label.expectDate')}
+        </label>
+        <oas-date-picker ref={dateRef} id="form-date" data-testid="form-date" min={today()} />
       </div>
     </div>
   )

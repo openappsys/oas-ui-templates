@@ -75,22 +75,24 @@
     <oas-form bind:this={formEl} {rules} onoas-submit={onFormSubmit}>
       <div class="dict-form-body">
         <div class="form-field">
-          <label class="form-label">
+          <label class="form-label" for="dtf-name">
             {tt('dict.form.typeName')} <span class="req">*</span>
           </label>
           <oas-input
             bind:this={nameEl}
+            id="dtf-name"
             data-testid="dtf-name"
             name="name"
             placeholder={tt('dict.placeholder.typeName')}
           ></oas-input>
         </div>
         <div class="form-field">
-          <label class="form-label">
+          <label class="form-label" for="dtf-code">
             {tt('dict.form.typeCode')} <span class="req">*</span>
           </label>
           <oas-input
             bind:this={codeEl}
+            id="dtf-code"
             data-testid="dtf-code"
             name="code"
             placeholder={tt('dict.placeholder.typeCode')}

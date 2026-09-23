@@ -104,24 +104,24 @@ export function render(el: HTMLElement): () => void {
           <oas-form id="category-form" rules='${RULES()}'>
             <div class="dict-form-body">
               <div class="form-field">
-                <label class="form-label">${t('category.form.name')} <span class="req">*</span></label>
-                <oas-input data-testid="cf-name" name="name" placeholder="${t('category.placeholder.name')}"></oas-input>
+                <label class="form-label" for="cf-name">${t('category.form.name')} <span class="req">*</span></label>
+                <oas-input id="cf-name" data-testid="cf-name" name="name" placeholder="${t('category.placeholder.name')}"></oas-input>
               </div>
               <div class="form-field">
-                <label class="form-label">${t('category.form.code')} <span class="req">*</span></label>
-                <oas-input data-testid="cf-code" name="code" placeholder="${t('category.placeholder.code')}"></oas-input>
+                <label class="form-label" for="cf-code">${t('category.form.code')} <span class="req">*</span></label>
+                <oas-input id="cf-code" data-testid="cf-code" name="code" placeholder="${t('category.placeholder.code')}"></oas-input>
               </div>
               <div class="form-field">
-                <label class="form-label">${t('category.form.sort')}</label>
-                <oas-input-number data-testid="cf-sort" name="sort" min="0" placeholder="1"></oas-input-number>
+                <label class="form-label" for="cf-sort">${t('category.form.sort')}</label>
+                <oas-input-number id="cf-sort" data-testid="cf-sort" name="sort" min="0" placeholder="1"></oas-input-number>
               </div>
               <div class="form-field">
-                <label class="form-label">${t('category.form.status')}</label>
-                <oas-switch data-testid="cf-status" name="status" checked></oas-switch>
+                <label class="form-label" for="cf-status">${t('category.form.status')}</label>
+                <oas-switch id="cf-status" data-testid="cf-status" name="status" checked></oas-switch>
               </div>
               <div class="form-field">
-                <label class="form-label">${t('category.form.desc')}</label>
-                <oas-input data-testid="cf-desc" name="desc" placeholder="${t('category.placeholder.desc')}"></oas-input>
+                <label class="form-label" for="cf-desc">${t('category.form.desc')}</label>
+                <oas-input id="cf-desc" data-testid="cf-desc" name="desc" placeholder="${t('category.placeholder.desc')}"></oas-input>
               </div>
               <div class="form-actions">
                 <oas-space justify="end">

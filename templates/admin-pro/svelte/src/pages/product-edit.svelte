@@ -157,23 +157,23 @@
     <oas-form bind:this={formEl} id="product-form" rules={rules} onoas-submit={(e) => void onSubmit(e)}>
       <div class="product-form">
         <div class="form-field">
-          <!-- svelte-ignore a11y_label_has_associated_control -->
-          <label class="form-label">
+          <label class="form-label" for="pf-name">
             {tt('products.form.name')}
             <span class="req">*</span>
           </label>
           <oas-input
             bind:this={nameEl}
+            id="pf-name"
             data-testid="pf-name"
             name="name"
             placeholder={tt('products.form.namePlaceholder')}
           ></oas-input>
         </div>
         <div class="form-field">
-          <!-- svelte-ignore a11y_label_has_associated_control -->
-          <label class="form-label">{tt('products.category')}</label>
+          <label class="form-label" for="pf-category">{tt('products.category')}</label>
           <oas-select
             bind:this={catEl}
+            id="pf-category"
             data-testid="pf-category"
             name="category"
             options={catOptionsJson}
@@ -181,10 +181,10 @@
         </div>
         <div class="form-grid">
           <div class="form-field">
-            <!-- svelte-ignore a11y_label_has_associated_control -->
-            <label class="form-label">{tt('products.th.price')}</label>
+            <label class="form-label" for="pf-price">{tt('products.th.price')}</label>
             <oas-input-number
               bind:this={priceEl}
+              id="pf-price"
               data-testid="pf-price"
               name="price"
               min="0.01"
@@ -193,10 +193,10 @@
             ></oas-input-number>
           </div>
           <div class="form-field">
-            <!-- svelte-ignore a11y_label_has_associated_control -->
-            <label class="form-label">{tt('products.th.stock')}</label>
+            <label class="form-label" for="pf-stock">{tt('products.th.stock')}</label>
             <oas-input-number
               bind:this={stockEl}
+              id="pf-stock"
               data-testid="pf-stock"
               name="stock"
               min="0"
@@ -205,18 +205,17 @@
           </div>
         </div>
         <div class="form-field">
-          <!-- svelte-ignore a11y_label_has_associated_control -->
-          <label class="form-label">{tt('products.form.listedDate')}</label>
+          <label class="form-label" for="pf-date">{tt('products.form.listedDate')}</label>
           <oas-date-picker
             bind:this={dateEl}
+            id="pf-date"
             data-testid="pf-date"
             placeholder={tt('products.form.datePlaceholder')}
           ></oas-date-picker>
         </div>
         <div class="form-field">
-          <!-- svelte-ignore a11y_label_has_associated_control -->
-          <label class="form-label">{tt('products.form.cover')}</label>
-          <oas-upload data-testid="pf-cover" accept="image/*" list-type="picture"></oas-upload>
+          <label class="form-label" for="pf-cover">{tt('products.form.cover')}</label>
+          <oas-upload id="pf-cover" data-testid="pf-cover" accept="image/*" list-type="picture"></oas-upload>
         </div>
         <div class="form-actions">
           <oas-space justify="end">

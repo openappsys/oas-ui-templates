@@ -53,11 +53,11 @@ export function renderMenus(el) {
         <oas-form id="menu-form" rules='${RULES()}'>
           <div class="menu-form-body">
             <div class="form-field">
-              <label class="form-label">${t('menus.form.name')} <span class="req">*</span></label>
-              <oas-input data-testid="mf-name" name="name" placeholder="${t('menus.rule.name')}"></oas-input>
+              <label class="form-label" for="mf-name">${t('menus.form.name')} <span class="req">*</span></label>
+              <oas-input id="mf-name" data-testid="mf-name" name="name" placeholder="${t('menus.rule.name')}"></oas-input>
             </div>
             <div class="form-field">
-              <label class="form-label">${t('menus.form.type')}</label>
+              <div class="form-label">${t('menus.form.type')}</div>
               <div class="radio-group inline" id="mf-type">
                 <oas-radio name="menuType" value="M"><span class="radio-label">${t('menus.type.M')}</span></oas-radio>
                 <oas-radio name="menuType" value="C"><span class="radio-label">${t('menus.type.C')}</span></oas-radio>
@@ -65,16 +65,16 @@ export function renderMenus(el) {
               </div>
             </div>
             <div class="form-field">
-              <label class="form-label">${t('menus.form.parent')}</label>
+              <label class="form-label" for="mf-parent">${t('menus.form.parent')}</label>
               <oas-tree-select data-testid="mf-parent" id="mf-parent" placeholder="${t('menus.placeholder.top')}" options="[]" value="0"></oas-tree-select>
             </div>
             <div class="form-field">
-              <label class="form-label">${t('menus.form.perms')} <span class="form-hint-inline" id="mf-perms-hint"></span></label>
-              <oas-input data-testid="mf-perms" name="perms" placeholder="${t('menus.placeholder.perms')}"></oas-input>
+              <label class="form-label" for="mf-perms">${t('menus.form.perms')} <span class="form-hint-inline" id="mf-perms-hint"></span></label>
+              <oas-input id="mf-perms" data-testid="mf-perms" name="perms" placeholder="${t('menus.placeholder.perms')}"></oas-input>
             </div>
             <div class="form-field">
-              <label class="form-label">${t('menus.form.path')} <span class="req" id="mf-path-req"></span></label>
-              <oas-input data-testid="mf-path" name="path" placeholder="${t('menus.placeholder.path')}"></oas-input>
+              <label class="form-label" for="mf-path">${t('menus.form.path')} <span class="req" id="mf-path-req"></span></label>
+              <oas-input id="mf-path" data-testid="mf-path" name="path" placeholder="${t('menus.placeholder.path')}"></oas-input>
             </div>
             <div class="form-actions">
               <oas-space justify="end">

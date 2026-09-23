@@ -141,21 +141,23 @@ const catOptionsJson = computed(() => JSON.stringify(catOptions.value))
       <oas-form ref="formRef" id="product-form" :rules="rules" @oas-submit="onSubmit">
         <div class="product-form">
           <div class="form-field">
-            <label class="form-label">
+            <label class="form-label" for="pf-name">
               {{ t('products.form.name') }}
               <span class="req">*</span>
             </label>
             <oas-input
               ref="nameRef"
+              id="pf-name"
               data-testid="pf-name"
               name="name"
               :placeholder="t('products.form.namePlaceholder')"
             />
           </div>
           <div class="form-field">
-            <label class="form-label">{{ t('products.category') }}</label>
+            <label class="form-label" for="pf-category">{{ t('products.category') }}</label>
             <oas-select
               ref="catRef"
+              id="pf-category"
               data-testid="pf-category"
               name="category"
               :options="catOptionsJson"
@@ -163,9 +165,10 @@ const catOptionsJson = computed(() => JSON.stringify(catOptions.value))
           </div>
           <div class="form-grid">
             <div class="form-field">
-              <label class="form-label">{{ t('products.th.price') }}</label>
+              <label class="form-label" for="pf-price">{{ t('products.th.price') }}</label>
               <oas-input-number
                 ref="priceRef"
+                id="pf-price"
                 data-testid="pf-price"
                 name="price"
                 min="0.01"
@@ -174,9 +177,10 @@ const catOptionsJson = computed(() => JSON.stringify(catOptions.value))
               />
             </div>
             <div class="form-field">
-              <label class="form-label">{{ t('products.th.stock') }}</label>
+              <label class="form-label" for="pf-stock">{{ t('products.th.stock') }}</label>
               <oas-input-number
                 ref="stockRef"
+                id="pf-stock"
                 data-testid="pf-stock"
                 name="stock"
                 min="0"
@@ -185,16 +189,17 @@ const catOptionsJson = computed(() => JSON.stringify(catOptions.value))
             </div>
           </div>
           <div class="form-field">
-            <label class="form-label">{{ t('products.form.listedDate') }}</label>
+            <label class="form-label" for="pf-date">{{ t('products.form.listedDate') }}</label>
             <oas-date-picker
               ref="dateRef"
+              id="pf-date"
               data-testid="pf-date"
               :placeholder="t('products.form.datePlaceholder')"
             />
           </div>
           <div class="form-field">
-            <label class="form-label">{{ t('products.form.cover') }}</label>
-            <oas-upload data-testid="pf-cover" accept="image/*" list-type="picture" />
+            <label class="form-label" for="pf-cover">{{ t('products.form.cover') }}</label>
+            <oas-upload id="pf-cover" data-testid="pf-cover" accept="image/*" list-type="picture" />
           </div>
           <div class="form-actions">
             <oas-space justify="end">

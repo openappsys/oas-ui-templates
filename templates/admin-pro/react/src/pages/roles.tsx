@@ -306,22 +306,24 @@ export default function RolesPage() {
         <oas-form ref={formRef} rules={rules}>
           <div className="role-form-body">
             <div className="form-field">
-              <label className="form-label">
+              <label className="form-label" htmlFor="rf-name">
                 {t('roles.form.name')} <span className="req">*</span>
               </label>
               <oas-input
                 ref={nameRef}
+                id="rf-name"
                 data-testid="rf-name"
                 name="name"
                 placeholder={t('roles.rule.name')}
               />
             </div>
             <div className="form-field">
-              <label className="form-label">
+              <label className="form-label" htmlFor="rf-code">
                 {t('roles.form.code')} <span className="req">*</span>
               </label>
               <oas-input
                 ref={codeRef}
+                id="rf-code"
                 data-testid="rf-code"
                 name="code"
                 placeholder={t('roles.placeholder.code')}
@@ -329,7 +331,8 @@ export default function RolesPage() {
               <div className="form-hint">{t('roles.hint.code')}</div>
             </div>
             <div className="form-field">
-              <label className="form-label">{t('roles.form.dataScope')}</label>
+              {/* radio-group 非 form-associated，无从关联，用非 label 元素承载标题 */}
+              <div className="form-label">{t('roles.form.dataScope')}</div>
               <div className="radio-group" id="rf-scope" ref={scopeGroupRef}>
                 {scopeOptions.map((o) => (
                   <oas-radio key={o.value} name="dataScope" value={String(o.value)}>
@@ -342,7 +345,8 @@ export default function RolesPage() {
               </div>
             </div>
             <div className="form-field" id="rf-custom" hidden={dataScope !== 2 || undefined}>
-              <label className="form-label">{t('roles.form.customScope')}</label>
+              {/* transfer 非 form-associated，无从关联，用非 label 元素承载标题 */}
+              <div className="form-label">{t('roles.form.customScope')}</div>
               <oas-transfer
                 ref={transferRef}
                 data-testid="rf-transfer"

@@ -36,29 +36,29 @@
             <oas-form id="product-form">
               <div class="product-form">
                 <div class="form-field">
-                  <label class="form-label"><span data-i18n="products.form.name">商品名称</span><span class="req">*</span></label>
+                  <label class="form-label" for="pf-name"><span data-i18n="products.form.name">商品名称</span><span class="req">*</span></label>
                   <oas-input data-testid="pf-name" name="name" data-i18n-attr='{"placeholder":"products.form.namePlaceholder"}' placeholder="请输入名称"></oas-input>
                 </div>
                 <div class="form-field">
-                  <label class="form-label" data-i18n="products.category">分类</label>
+                  <label class="form-label" for="pf-category" data-i18n="products.category">分类</label>
                   <oas-select data-testid="pf-category" name="category" options='[]'></oas-select>
                 </div>
                 <div class="form-grid">
                   <div class="form-field">
-                    <label class="form-label" data-i18n="products.th.price">价格</label>
+                    <label class="form-label" for="pf-price" data-i18n="products.th.price">价格</label>
                     <oas-input-number data-testid="pf-price" name="price" min="0.01" precision="2" placeholder="0.00"></oas-input-number>
                   </div>
                   <div class="form-field">
-                    <label class="form-label" data-i18n="products.th.stock">库存</label>
+                    <label class="form-label" for="pf-stock" data-i18n="products.th.stock">库存</label>
                     <oas-input-number data-testid="pf-stock" name="stock" min="0" placeholder="0"></oas-input-number>
                   </div>
                 </div>
                 <div class="form-field">
-                  <label class="form-label" data-i18n="products.form.listedDate">上架日期</label>
+                  <label class="form-label" for="pf-date" data-i18n="products.form.listedDate">上架日期</label>
                   <oas-date-picker data-testid="pf-date" data-i18n-attr='{"placeholder":"products.form.datePlaceholder"}' placeholder="选择日期"></oas-date-picker>
                 </div>
                 <div class="form-field">
-                  <label class="form-label" data-i18n="products.form.cover">封面</label>
+                  <label class="form-label" for="pf-cover" data-i18n="products.form.cover">封面</label>
                   <oas-upload data-testid="pf-cover" accept="image/*" list-type="picture"></oas-upload>
                 </div>
                 <div class="form-actions">

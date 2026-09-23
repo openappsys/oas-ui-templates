@@ -166,16 +166,16 @@ export function render(el: HTMLElement): () => void {
         <oas-form id="dept-form" rules='${RULES()}'>
           <div class="dept-form-body">
             <div class="form-field">
-              <label class="form-label">${t('dept.form.name')} <span class="req">*</span></label>
-              <oas-input data-testid="df-name" name="name" placeholder="${t('dept.rule.name')}"></oas-input>
+              <label class="form-label" for="df-name">${t('dept.form.name')} <span class="req">*</span></label>
+              <oas-input id="df-name" data-testid="df-name" name="name" placeholder="${t('dept.rule.name')}"></oas-input>
             </div>
             <div class="form-field">
-              <label class="form-label">${t('dept.form.parent')}</label>
+              <label class="form-label" for="df-parent">${t('dept.form.parent')}</label>
               <oas-tree-select data-testid="df-parent" id="df-parent" placeholder="${t('dept.placeholder.top')}" options="[]" value="0"></oas-tree-select>
             </div>
             <div class="form-field">
-              <label class="form-label">${t('dept.form.members')}</label>
-              <oas-input-number data-testid="df-members" name="members" min="0" placeholder="0"></oas-input-number>
+              <label class="form-label" for="df-members">${t('dept.form.members')}</label>
+              <oas-input-number id="df-members" data-testid="df-members" name="members" min="0" placeholder="0"></oas-input-number>
             </div>
             <div class="form-actions">
               <oas-space justify="end">
