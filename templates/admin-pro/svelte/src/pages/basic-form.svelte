@@ -104,12 +104,10 @@
       </div>
       <oas-space>
         
-<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
         <oas-button type="primary" data-action="submit" onclick={onSubmit}>
           {tt('basic.submit')}
         </oas-button>
         
-<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
         <oas-button data-action="reset" onclick={onReset}>{tt('basic.reset')}</oas-button>
       </oas-space>
     </oas-form>

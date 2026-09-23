@@ -100,7 +100,6 @@
      用展开属性绕过其 slot 位置静态校验 -->
 <header class="app-header" {...{ slot: 'header' }}>
   <!-- oas-button 内部渲染原生 button，键盘事件由组件自带 -->
-  <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
   <oas-button
     id="nav-toggle"
     class="nav-toggle"

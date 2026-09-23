@@ -289,7 +289,6 @@
       <p class="page-subtitle">{tt('roles.subtitle')}</p>
     </div>
     
-<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
     <oas-button
       data-testid="role-create"
       type="primary"
@@ -303,7 +302,6 @@
     </oas-button>
   </div>
   <oas-card class="list-card" title={tt('roles.list')}>
-    <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
     <div class="table-wrap" id="roles-wrap" bind:this={tableWrapEl} onclick={onTableWrapClick}>
       <oas-table data-testid="roles-table" {...{ 'row-key': 'id', ...tableAttrs }}></oas-table>
     </div>
@@ -363,10 +361,8 @@
         <div class="form-actions">
           <oas-space justify="end">
             
-<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
             <oas-button data-testid="rf-cancel" onclick={onCancel}>{tt('common.cancel')}</oas-button>
             
-<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
             <oas-button data-testid="rf-save" type="primary" onclick={onSave}>{tt('common.save')}</oas-button>
           </oas-space>
         </div>

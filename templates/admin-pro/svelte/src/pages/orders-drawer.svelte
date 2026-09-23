@@ -113,7 +113,6 @@
       <div class="order-detail-foot-row">
         {#if flow}
           
-<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
           <oas-button
             data-testid="order-detail-action"
             id="order-detail-action"

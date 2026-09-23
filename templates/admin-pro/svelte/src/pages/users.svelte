@@ -220,7 +220,6 @@
       <h1 class="page-title">{tt('users.title')}</h1>
       <p class="page-subtitle">{tt('users.subtitle')}</p>
     </div>
-    <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
     <oas-button
       data-testid="user-create"
       type="primary"
@@ -244,7 +243,6 @@
         onoas-input={onSearchInput}
         onoas-clear={onSearchClear}
       ></oas-input>
-      <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
       <oas-button
         id="users-refresh"
         icon="refresh"

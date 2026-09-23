@@ -100,7 +100,6 @@
 </script>
 
 {#if node}
-  <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
   <div bind:this={wrapEl} class="dept-detail" onclick={onWrapClick}>
     <div class="dept-detail-head">
       <div class="dept-detail-title">{node.name}</div>

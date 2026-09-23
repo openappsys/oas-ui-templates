@@ -230,7 +230,6 @@
 </div>
 <div class="setting-group">
   <!-- oas-button 内部渲染原生 button，键盘事件由组件自带 -->
-  <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
   <oas-button data-testid="appearance-reset" type="default" onclick={onReset}>
     {tt('settings.appearance.reset')}
   </oas-button>

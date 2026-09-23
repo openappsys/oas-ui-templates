@@ -27,11 +27,9 @@
   <h1 class="notice-title">{tt('common.500.title')}</h1>
   <p class="notice-desc">{tt('common.500.desc')}</p>
   <div class="notice-actions">
-    <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
     <oas-button type="default" variant="outlined" data-action="back" onclick={goBack}>
       {tt('common.back')}
     </oas-button>
-    <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
     <oas-button type="primary" data-action="home" onclick={goHome}>
       {tt('common.home')}
     </oas-button>

@@ -222,17 +222,14 @@
       <div class="form-actions">
         <oas-space justify="end">
           
-<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
           <oas-button data-testid="form-prev" hidden={step === 0} onclick={goPrev}>
             {tt('form.prev')}
           </oas-button>
           
-<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
           <oas-button data-testid="form-next" type="primary" hidden={step === 2} onclick={goNext}>
             {tt('form.next')}
           </oas-button>
           
-<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
           <oas-button
             bind:this={submitEl}
             data-testid="form-submit"

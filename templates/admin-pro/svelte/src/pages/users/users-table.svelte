@@ -126,7 +126,6 @@
   }
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
 <div class={`table-wrap${empty ? ' is-empty' : ''}`} id="table-wrap" onclick={onWrapClick}>
   <oas-table
     bind:this={tableEl}
@@ -141,7 +140,6 @@
   ></oas-table>
   <div class="empty-overlay" id="empty-overlay" hidden={!empty}>
     <oas-empty description={tt('users.empty')}></oas-empty>
-    <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
     <oas-button id="clear-filters" type="primary" onclick={onClearFilters}>
       {tt('common.clearFilter')}
     </oas-button>

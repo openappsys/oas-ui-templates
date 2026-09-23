@@ -115,7 +115,6 @@
       </div>
       <oas-divider></oas-divider>
       <div class="profile-logout-wrap">
-        <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
         <oas-button id="profile-logout" type="danger" variant="text" onclick={() => logoutFlow()}>
           {tt('header.logout')}
         </oas-button>

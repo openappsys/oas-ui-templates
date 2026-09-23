@@ -243,7 +243,6 @@
       <h1 class="page-title">{tt('nav.products')}</h1>
       <p class="page-subtitle">{tt('products.subtitle')}</p>
     </div>
-    <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
     <oas-button
       data-testid="product-create"
       type="primary"
@@ -277,7 +276,6 @@
       value={view}
       onoas-change={onViewChange}
     ></oas-segmented>
-    <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
     <oas-button
       data-testid="product-columns"
       class="products-columns-btn"
@@ -294,7 +292,6 @@
     onBatchStatus={(target) => void batchStatus(target)}
     onBatchDelete={() => void batchDelete()}
   />
-  <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
   <oas-masonry
     class="product-grid"
     data-testid="product-grid"

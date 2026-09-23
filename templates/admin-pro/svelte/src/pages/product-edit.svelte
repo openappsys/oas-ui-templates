@@ -219,9 +219,7 @@
         </div>
         <div class="form-actions">
           <oas-space justify="end">
-            <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
             <oas-button data-testid="pe-cancel" onclick={onBack}>{tt('common.cancel')}</oas-button>
-            <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
             <oas-button data-testid="pe-save" type="primary" onclick={onSave}>
               {tt('common.save')}
             </oas-button>

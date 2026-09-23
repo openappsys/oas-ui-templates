@@ -48,7 +48,6 @@
   <div class="notif-content">
     <div id="notif-list" class="notif-list">
       <!-- 列表项点击已读：条目本身是 oas-list-item 交互元素，容器仅做委托，不重复绑键盘事件 -->
-      <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
       <oas-list split onclick={onListClick}>
         {#each items as n (n.id)}
           <oas-list-item

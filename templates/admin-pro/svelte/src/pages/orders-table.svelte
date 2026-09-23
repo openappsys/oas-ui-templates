@@ -107,7 +107,6 @@
   <div class="empty-overlay" id="orders-empty" hidden={!empty}>
     <oas-empty description={tt('orders.empty')}></oas-empty>
     
-<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
     <oas-button id="orders-clear" type="primary" onclick={onClearFilter}
       >{tt('common.clearFilter')}</oas-button
     >

@@ -33,7 +33,6 @@
     {selectedCount > 0 ? tt('products.batch.selected', { count: selectedCount }) : ''}
   </span>
   <oas-space class="product-batch-actions" justify="end">
-    <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
     <oas-button
       data-testid="product-batch-unlist"
       size="small"
@@ -42,7 +41,6 @@
     >
       {tt('products.batch.unlist')}
     </oas-button>
-    <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
     <oas-button
       data-testid="product-batch-list"
       size="small"
@@ -57,7 +55,6 @@
       title={tt('products.batch.confirmDelete', { count: selectedCount })}
       onoas-ok={() => onBatchDelete()}
     >
-      <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
       <oas-button
         data-testid="product-batch-delete"
         size="small"
