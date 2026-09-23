@@ -176,11 +176,11 @@ importers:
   templates/admin-pro/cdn:
     devDependencies:
       '@oas-ui/theme':
-        specifier: ^2.5.5
-        version: 2.5.5
+        specifier: ^2.5.6
+        version: 2.5.6
       '@oas-ui/ui':
-        specifier: ^2.5.5
-        version: 2.5.5
+        specifier: ^2.5.6
+        version: 2.5.6
       '@playwright/test':
         specifier: ^1.63.0
         version: 1.63.0
@@ -188,11 +188,11 @@ importers:
   templates/admin-pro/cdn-mpa:
     devDependencies:
       '@oas-ui/theme':
-        specifier: ^2.5.5
-        version: 2.5.5
+        specifier: ^2.5.6
+        version: 2.5.6
       '@oas-ui/ui':
-        specifier: ^2.5.5
-        version: 2.5.5
+        specifier: ^2.5.6
+        version: 2.5.6
       '@playwright/test':
         specifier: ^1.63.0
         version: 1.63.0
@@ -200,17 +200,17 @@ importers:
   templates/admin-pro/react:
     dependencies:
       '@oas-ui/i18n':
-        specifier: ^2.5.5
-        version: 2.5.5
+        specifier: ^2.5.6
+        version: 2.5.6
       '@oas-ui/icons':
-        specifier: ^2.5.5
-        version: 2.5.5
+        specifier: ^2.5.6
+        version: 2.5.6
       '@oas-ui/theme':
-        specifier: ^2.5.5
-        version: 2.5.5
+        specifier: ^2.5.6
+        version: 2.5.6
       '@oas-ui/ui':
-        specifier: ^2.5.5
-        version: 2.5.5
+        specifier: ^2.5.6
+        version: 2.5.6
       '@tanstack/react-query':
         specifier: ^5.103.1
         version: 5.103.1(react@19.3.0)
@@ -258,17 +258,17 @@ importers:
   templates/admin-pro/svelte:
     dependencies:
       '@oas-ui/i18n':
-        specifier: ^2.5.5
-        version: 2.5.5
+        specifier: ^2.5.6
+        version: 2.5.6
       '@oas-ui/icons':
-        specifier: ^2.5.5
-        version: 2.5.5
+        specifier: ^2.5.6
+        version: 2.5.6
       '@oas-ui/theme':
-        specifier: ^2.5.5
-        version: 2.5.5
+        specifier: ^2.5.6
+        version: 2.5.6
       '@oas-ui/ui':
-        specifier: ^2.5.5
-        version: 2.5.5
+        specifier: ^2.5.6
+        version: 2.5.6
       svelte:
         specifier: ^5.57.1
         version: 5.57.1
@@ -301,17 +301,17 @@ importers:
   templates/admin-pro/vanilla-html:
     dependencies:
       '@oas-ui/i18n':
-        specifier: ^2.5.5
-        version: 2.5.5
+        specifier: ^2.5.6
+        version: 2.5.6
       '@oas-ui/icons':
-        specifier: ^2.5.5
-        version: 2.5.5
+        specifier: ^2.5.6
+        version: 2.5.6
       '@oas-ui/theme':
-        specifier: ^2.5.5
-        version: 2.5.5
+        specifier: ^2.5.6
+        version: 2.5.6
       '@oas-ui/ui':
-        specifier: ^2.5.5
-        version: 2.5.5
+        specifier: ^2.5.6
+        version: 2.5.6
     devDependencies:
       '@playwright/test':
         specifier: ^1.63.0
@@ -332,17 +332,17 @@ importers:
   templates/admin-pro/vue:
     dependencies:
       '@oas-ui/i18n':
-        specifier: ^2.5.5
-        version: 2.5.5
+        specifier: ^2.5.6
+        version: 2.5.6
       '@oas-ui/icons':
-        specifier: ^2.5.5
-        version: 2.5.5
+        specifier: ^2.5.6
+        version: 2.5.6
       '@oas-ui/theme':
-        specifier: ^2.5.5
-        version: 2.5.5
+        specifier: ^2.5.6
+        version: 2.5.6
       '@oas-ui/ui':
-        specifier: ^2.5.5
-        version: 2.5.5
+        specifier: ^2.5.6
+        version: 2.5.6
       pinia:
         specifier: ^4.0.3
         version: 4.0.3(@typescript/typescript6@6.0.2)(@vue/devtools-api@8.2.1)(vue@3.5.43(@typescript/typescript6@6.0.2))
@@ -478,20 +478,20 @@ packages:
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
 
-  '@oas-ui/core@2.5.5':
-    resolution: {integrity: sha512-Ip/LofD9LJN5lyRlrqfIjT7WK7++funpR3+lB2WbwVpc9HHWoqI7KTbKkqVqt0oUuKx+b4sF7qOVO51DZJetgA==}
+  '@oas-ui/core@2.5.6':
+    resolution: {integrity: sha512-QlmBaEKu6AqlBtS+dwnm0W0pE51itC3axGN+X0YUINpp1xwAHM0nBFUhR6LUJTOYUHhxujDJMBIRgjj+dN7MOQ==}
 
-  '@oas-ui/i18n@2.5.5':
-    resolution: {integrity: sha512-9paood8aZq2d/HoJF4L/R6TWvMo/5cn4GrQSSY5Sb1GlenYa4hLEg1Owc8ArgXDcjLfNUb2e7204p3wHsbXzbw==}
+  '@oas-ui/i18n@2.5.6':
+    resolution: {integrity: sha512-F9kWTlb3cr9dT4AKluR4qbovXDCPlim9zjH0WKA6MK/YkIpI1EqPPib8hzEIzBO8HjC5T9SeIJz8jpv9cxvHbQ==}
 
-  '@oas-ui/icons@2.5.5':
-    resolution: {integrity: sha512-vgpQDXrXJmKBsSndYR46kRQPIOEGB0u0rd7KmD78oJJk0nmbi8ubd4fj4FaN3fpvoSER3yGgPsuU8xnMPDhnKQ==}
+  '@oas-ui/icons@2.5.6':
+    resolution: {integrity: sha512-HOdXmNttEK4HvsMPRZWC0UESWpsm3enq+yvpZayWpuKL97CuT0vjnynuq7mloADueituyx40Ep+tTYdYfcvvlQ==}
 
-  '@oas-ui/theme@2.5.5':
-    resolution: {integrity: sha512-uhrxbS3niz1zVCQ9OmFoY4n50X+U+x23vegkm/awKI+5qM0h189uWijteaJ5/qyiAmw/UJe47+BQzk3hFAWgbQ==}
+  '@oas-ui/theme@2.5.6':
+    resolution: {integrity: sha512-DhOobR8u4Et4KSj4EpBtiHwVlf3Z80gr7f93Vu9/sjisapjXp2VLgdnT/63+X/ZHXAcSVUaPk/g5bfwMV9MYfQ==}
 
-  '@oas-ui/ui@2.5.5':
-    resolution: {integrity: sha512-h+/vfaohKiTjTMOCv0YZR+wojKcxZgLhMqFnK4v7R8yJXqThSqjemqFkiFCfdKCeiWbAo/4C7KGNEkZAhtABBg==}
+  '@oas-ui/ui@2.5.6':
+    resolution: {integrity: sha512-L1ebz+nIFZkADac1kLW292Nj2DS85FjCqgfUVsdfoYSx8WZ+aaHKpCaYn5hUAciw+nH4miVYwzrwYXaOkzc6UA==}
 
   '@one-ini/wasm@0.2.1':
     resolution: {integrity: sha512-TUqERXGNTifZ9y2g3wPxQrw3HpHv/02DsW3D90T9x0hhonrL1ZqpSmNrU2XkoIq0fP1N6gZfVQzy2Fw1ZvGBNg==}
@@ -1674,21 +1674,21 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.6.0
 
-  '@oas-ui/core@2.5.5': {}
+  '@oas-ui/core@2.5.6': {}
 
-  '@oas-ui/i18n@2.5.5':
+  '@oas-ui/i18n@2.5.6':
     dependencies:
-      '@oas-ui/core': 2.5.5
+      '@oas-ui/core': 2.5.6
 
-  '@oas-ui/icons@2.5.5': {}
+  '@oas-ui/icons@2.5.6': {}
 
-  '@oas-ui/theme@2.5.5': {}
+  '@oas-ui/theme@2.5.6': {}
 
-  '@oas-ui/ui@2.5.5':
+  '@oas-ui/ui@2.5.6':
     dependencies:
-      '@oas-ui/core': 2.5.5
-      '@oas-ui/i18n': 2.5.5
-      '@oas-ui/icons': 2.5.5
+      '@oas-ui/core': 2.5.6
+      '@oas-ui/i18n': 2.5.6
+      '@oas-ui/icons': 2.5.6
 
   '@one-ini/wasm@0.2.1': {}
 

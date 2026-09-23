@@ -1,9 +1,5 @@
 import { message } from '@oas-ui/ui/feedback/message'
-/** oas-sidebar 的抽屉 API：方法在官方类型中标为 private 但运行时可用（已提需求改 public，见 oas-ui demands） */
-interface SidebarDrawerApi extends HTMLElement {
-  closeDrawer(): void
-  openDrawer(): void
-}
+import type { OASSidebar } from '@oas-ui/ui'
 import { listNotifications, markAllRead, markRead, unreadCount } from '../data/notifications'
 import { matchRoute, resolve } from '../router/router'
 import { currentPath, href, navigate, onRouteChange } from '../router/mode'
@@ -346,8 +342,8 @@ export function mountApp(root: HTMLElement): void {
     // sidebar 走自身抽屉；menubar/navigation 走 ☰ 悬浮菜单（内嵌垂直 menubar）
     const nav = navEl()
     if (nav.tagName === 'OAS-SIDEBAR') {
-      if (nav.hasAttribute('drawer-open')) (nav as SidebarDrawerApi).closeDrawer()
-      else (nav as SidebarDrawerApi).openDrawer()
+      if (nav.hasAttribute('drawer-open')) (nav as OASSidebar).closeDrawer()
+      else (nav as OASSidebar).openDrawer()
     } else {
       toggleMenuPopover()
     }
