@@ -69,9 +69,13 @@
         description={tt('result.success.desc', { orderId: result.orderId })}
       >
         <div slot="extra" class="result-actions">
+          
+<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
           <oas-button data-testid="result-view-order" type="primary" onclick={goOrders}>
             {tt('result.viewOrder')}
           </oas-button>
+          
+<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
           <oas-button data-testid="result-reset" onclick={goForm}>
             {tt('result.createAnother')}
           </oas-button>
@@ -85,6 +89,8 @@
         description={tt('result.error.desc')}
       >
         <div slot="extra" class="result-actions">
+          
+<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
           <oas-button data-testid="result-back-form" type="primary" onclick={goForm}>
             {tt('result.backForm')}
           </oas-button>

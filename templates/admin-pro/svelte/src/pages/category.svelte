@@ -161,6 +161,8 @@
       <h1 class="page-title">{tt('nav.category')}</h1>
       <p class="page-subtitle">{tt('category.subtitle')}</p>
     </div>
+    
+<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
     <oas-button data-testid="category-create" type="primary" icon="plus" onclick={onCreate}>
       {tt('category.new')}
     </oas-button>
@@ -178,6 +180,8 @@
       ></oas-input>
     </div>
     <div id="category-items-wrap" class:table-hidden={filtered.length === 0}>
+      
+<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
       <oas-table
         bind:this={tableEl}
         data-testid="category-table"

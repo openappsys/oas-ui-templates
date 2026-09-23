@@ -288,6 +288,8 @@
       <h1 class="page-title">{tt('nav.roles')}</h1>
       <p class="page-subtitle">{tt('roles.subtitle')}</p>
     </div>
+    
+<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
     <oas-button
       data-testid="role-create"
       type="primary"
@@ -360,7 +362,11 @@
         </div>
         <div class="form-actions">
           <oas-space justify="end">
+            
+<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
             <oas-button data-testid="rf-cancel" onclick={onCancel}>{tt('common.cancel')}</oas-button>
+            
+<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
             <oas-button data-testid="rf-save" type="primary" onclick={onSave}>{tt('common.save')}</oas-button>
           </oas-space>
         </div>

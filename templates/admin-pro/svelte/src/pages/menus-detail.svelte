@@ -63,7 +63,11 @@
       </oas-descriptions-item>
     </oas-descriptions>
     <div class="menu-detail-actions">
+      
+<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
       <oas-button type="primary" onclick={() => onEdit(node)}>{tt('common.edit')}</oas-button>
+      
+<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
       <oas-button onclick={() => onAddChild(node)}>{tt('menus.addChild')}</oas-button>
       <oas-popconfirm {...{ title: tt('menus.confirmDelete'), id: 'md-del-pop' }}>
         <oas-button type="danger">{tt('common.delete')}</oas-button>

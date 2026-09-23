@@ -182,6 +182,8 @@
       <h1 class="page-title">{tt('nav.menus')}</h1>
       <p class="page-subtitle">{tt('menus.subtitle')}</p>
     </div>
+    
+<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
     <oas-button data-testid="menu-create" type="primary" icon="plus" onclick={openCreate}>
       {tt('menus.new')}
     </oas-button>

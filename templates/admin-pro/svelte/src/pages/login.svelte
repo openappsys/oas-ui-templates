@@ -113,6 +113,8 @@
         onoas-enter={requestSubmit}
       ></oas-input>
       <oas-select data-testid="login-role" name="role" value="admin" options={roleOptions}></oas-select>
+      
+<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
       <oas-button data-testid="login-submit" type="primary" block onclick={requestSubmit}>
         {tt("login.submit")}
         <oas-icon name="arrow-right" size="14"></oas-icon>

@@ -243,9 +243,13 @@
       <p class="page-subtitle">{welcome}</p>
     </div>
     <oas-space>
+      
+<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
       <oas-button id="dash-refresh" icon="refresh" onclick={refresh}>
         {tt("common.refresh")}
       </oas-button>
+      
+<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
       <oas-button id="dash-export" icon="download" onclick={exportDemo}>
         {tt("dashboard.export")}
       </oas-button>

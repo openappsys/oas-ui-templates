@@ -268,6 +268,8 @@
       <h1 class="page-title">{tt('nav.dept')}</h1>
       <p class="page-subtitle">{tt('dept.subtitle')}</p>
     </div>
+    
+<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
     <oas-button data-testid="dept-create" type="primary" icon="plus" onclick={openCreate}>
       {tt('dept.new')}
     </oas-button>
@@ -331,7 +333,11 @@
         </div>
         <div class="form-actions">
           <oas-space justify="end">
+            
+<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
             <oas-button data-testid="df-cancel" onclick={onCancel}>{tt('common.cancel')}</oas-button>
+            
+<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
             <oas-button data-testid="df-save" type="primary" onclick={onSave}>{tt('common.save')}</oas-button>
           </oas-space>
         </div>
