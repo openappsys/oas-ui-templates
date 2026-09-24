@@ -4,15 +4,15 @@
   "license": "MIT OR Apache-2.0",
   "version": "0.1.0",
   "type": "module",
-    "scripts": {
-      "dev": "vite",
-      "build": "svelte-check --tsgo --compiler-warnings \"a11y_click_events_have_key_events:ignore,a11y_no_static_element_interactions:ignore\" && vite build",
-      "check": "svelte-check --tsgo --compiler-warnings \"a11y_click_events_have_key_events:ignore,a11y_no_static_element_interactions:ignore\" && node scripts/check-a11y-onclick.mjs",
-      "preview": "vite preview",
-      "test": "vitest run",
-      "test:e2e": "playwright test",
-      "size": "node scripts/size.mjs"
-    },
+  "scripts": {
+    "dev": "vite",
+    "build": "svelte-check --tsgo --compiler-warnings \"a11y_click_events_have_key_events:ignore,a11y_no_static_element_interactions:ignore\" && vite build",
+    "check": "svelte-check --tsgo --compiler-warnings \"a11y_click_events_have_key_events:ignore,a11y_no_static_element_interactions:ignore\" && node scripts/check-a11y-onclick.mjs",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "size": "node scripts/size.mjs"
+  },
   "dependencies": {
     "@oas-ui/i18n": "^2.5.6",
     "@oas-ui/icons": "^2.5.6",

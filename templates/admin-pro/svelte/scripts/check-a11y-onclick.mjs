@@ -16,15 +16,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const root = join(import.meta.dirname, '..')
-const ALLOWED = new Set([
-  'button',
-  'a',
-  'input',
-  'select',
-  'textarea',
-  'label',
-  'summary',
-])
+const ALLOWED = new Set(['button', 'a', 'input', 'select', 'textarea', 'label', 'summary'])
 
 function* walk(dir) {
   for (const e of readdirSync(dir, { withFileTypes: true })) {
