@@ -100,7 +100,7 @@
 </script>
 
 {#if node}
-  <div bind:this={wrapEl} class="dept-detail" onclick={onWrapClick}>
+  <div bind:this={wrapEl} role="presentation" class="dept-detail" onclick={onWrapClick}>
     <div class="dept-detail-head">
       <div class="dept-detail-title">{node.name}</div>
       <oas-tag type="primary" data-testid="dept-detail-members">

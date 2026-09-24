@@ -7,7 +7,7 @@
     "scripts": {
       "dev": "vite",
       "build": "svelte-check --tsgo --compiler-warnings \"a11y_click_events_have_key_events:ignore,a11y_no_static_element_interactions:ignore\" && vite build",
-      "check": "svelte-check --tsgo --compiler-warnings \"a11y_click_events_have_key_events:ignore,a11y_no_static_element_interactions:ignore\"",
+      "check": "svelte-check --tsgo --compiler-warnings \"a11y_click_events_have_key_events:ignore,a11y_no_static_element_interactions:ignore\" && node scripts/check-a11y-onclick.mjs",
       "preview": "vite preview",
       "test": "vitest run",
       "test:e2e": "playwright test",

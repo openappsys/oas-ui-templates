@@ -126,7 +126,7 @@
   }
 </script>
 
-<div class={`table-wrap${empty ? ' is-empty' : ''}`} id="table-wrap" onclick={onWrapClick}>
+<div class={`table-wrap${empty ? ' is-empty' : ''}`} id="table-wrap" role="presentation" onclick={onWrapClick}>
   <oas-table
     bind:this={tableEl}
     data-testid="users-table"

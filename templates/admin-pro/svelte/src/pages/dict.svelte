@@ -281,6 +281,7 @@
       </div>
       <div
         id="dict-items-wrap"
+        role="presentation"
         hidden={selectedTypeId == null}
         class:table-hidden={items.length === 0}
         bind:this={itemsWrapEl}

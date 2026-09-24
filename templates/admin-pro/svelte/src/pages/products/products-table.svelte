@@ -181,7 +181,7 @@
   }
 </script>
 
-<div class="table-wrap products-table-wrap" hidden={hidden} onclick={onWrapClick}>
+<div class="table-wrap products-table-wrap" role="presentation" hidden={hidden} onclick={onWrapClick}>
   <oas-table
     bind:this={tableEl}
     data-testid="product-table"

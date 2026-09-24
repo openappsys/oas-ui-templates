@@ -302,7 +302,7 @@
     </oas-button>
   </div>
   <oas-card class="list-card" title={tt('roles.list')}>
-    <div class="table-wrap" id="roles-wrap" bind:this={tableWrapEl} onclick={onTableWrapClick}>
+    <div class="table-wrap" id="roles-wrap" role="presentation" bind:this={tableWrapEl} onclick={onTableWrapClick}>
       <oas-table data-testid="roles-table" {...{ 'row-key': 'id', ...tableAttrs }}></oas-table>
     </div>
   </oas-card>
