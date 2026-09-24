@@ -315,10 +315,6 @@ export function mountApp(root: HTMLElement): void {
       ? `<oas-menubar id="nav-popover" orientation="vertical" trigger="click" items='${items}'></oas-menubar>`
       : `<oas-navigation-menu id="nav-popover" orientation="vertical" items='${items}'></oas-navigation-menu>`
     const nav = popoverNav()
-    // navigation 浮层测量坍缩兜底：挂载稳定后重设 items 触发重新测量，确保面板有真实宽高
-    if (!isMenuBar) {
-      requestAnimationFrame(() => nav.setAttribute('items', groupMenuItems(currentPath(), true)))
-    }
     nav.addEventListener('oas-select', (e) => {
       const value = (e as CustomEvent<{ value: string }>).detail.value
       if (!value) return

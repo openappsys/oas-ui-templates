@@ -2,7 +2,7 @@
 //   高亮三机制——sidebar 用 active 属性；menubar 用 value 属性（radio ✓ 高亮）；
 //   navigation 用 items 内 active 字段（value 必须留空，否则 findItem 落空面板空白）
 // 形态/位置切换由调用方用 key 重挂载本组件，保证 useOasEvent 绑定到新元素
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import './nav-menu.css'
 import { useOasEvent } from '../hooks/use-oas-event'
@@ -48,16 +48,6 @@ export function NavMenu({
       setCollapsed(detail.collapsed)
     }
   })
-
-  // navigation 在浮层容器里首帧测量会坍缩成 0×0（oas-navigation-menu 浮层测量缺陷）：
-  useEffect(() => {
-    if (!popover || style !== 'navigation') return
-    const raf = requestAnimationFrame(() => {
-      navRef.current?.setAttribute('items', JSON.stringify(groupMenuItems(activePath, true)))
-    })
-    return () => cancelAnimationFrame(raf)
-    // 延迟一帧补设一次（oas-navigation-menu 数据缺口修复）；幂等写入，activePath 变化多设一次无害
-  }, [popover, style, navRef, activePath])
 
   if (style === 'menubar') {
     return (

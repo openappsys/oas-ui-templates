@@ -55,17 +55,6 @@
       collapsed = detail.collapsed
     }
   }
-
-  // navigation 在浮层容器里首帧测量会坍缩成 0×0（oas-navigation-menu 浮层测量缺陷）：
-  // 仅挂载时兜底一次；activePath 变化由响应式重设 items
-  $effect(() => {
-    if (!popover || menuStyle !== 'navigation') return
-    const el = navEl
-    const raf = requestAnimationFrame(() => {
-      el?.setAttribute('items', JSON.stringify(groupMenuItems(activePath, true)))
-    })
-    return () => cancelAnimationFrame(raf)
-  })
 </script>
 
 {#if menuStyle === 'menubar'}
