@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { login, openNavItem } from './_helpers'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
@@ -16,14 +17,6 @@ test.beforeEach(async ({ page }) => {
   })
 })
 
-async function login(page: Page): Promise<void> {
-  await page.goto('/')
-  await page.getByTestId('login-name').locator('input').fill('张伟')
-  await page.getByTestId('login-submit').click()
-  await page.waitForURL(/dashboard\.html/)
-  await expect(page.getByTestId('stat-visits')).toBeVisible()
-}
-
 test('登录 → dashboard 渲染统计卡与趋势图', async ({ page }) => {
   await login(page)
   await expect(page).toHaveURL(/dashboard\.html/)
@@ -33,7 +26,7 @@ test('登录 → dashboard 渲染统计卡与趋势图', async ({ page }) => {
 
 test('users 表格渲染种子数据 + 弹窗新建入表', async ({ page }) => {
   await login(page)
-  await page.locator('#nav').getByText('用户管理').click()
+  await openNavItem(page, '业务', '用户管理')
   await page.waitForURL(/users\.html/)
   await expect(page.getByTestId('users-table')).toContainText('张伟')
   await page.getByTestId('user-create').click()
