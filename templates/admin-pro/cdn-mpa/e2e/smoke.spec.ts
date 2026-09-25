@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { login, openNavItem } from './_helpers'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -38,7 +38,7 @@ test('users 表格渲染种子数据 + 弹窗新建入表', async ({ page }) => 
 
 test('form 空值提交触发必填校验且不跳转', async ({ page }) => {
   await login(page)
-  await page.locator('#nav').getByText('基础表单').click()
+  await openNavItem(page, '示例', '基础表单')
   await page.waitForURL(/form\.html/)
   await page.getByRole('button', { name: '提交' }).click()
   await expect(page.locator('#basic-form')).toContainText('请输入项目名称')

@@ -136,18 +136,38 @@ const NAV = [
 // active：当前页路径（如 './users.html'），须与 NAV href 逐字节全等（组件全等匹配）
 export function initShell({ active }) {
   const nav = document.querySelector('#nav')
+  // 树形导航：分组父节点 + children（对齐 vanilla sidebarTreeItems），accordion 同组互斥；
+  // 含 active 子项的组由组件 autoExpand 自动展开，当前项高亮走 sidebar 的 active 属性
+  const GROUP_ICONS = {
+    'nav.group.overview': 'eye',
+    'nav.group.business': 'organization',
+    'nav.group.system': 'gear',
+    'nav.group.demo': 'menu',
+  }
+  const groups = new Map()
+  for (const n of NAV) {
+    const list = groups.get(n.group) ?? []
+    list.push({ label: t(n.key), value: n.href, icon: n.icon, iconColor: n.color })
+    groups.set(n.group, list)
+  }
+  const GROUP_ORDER = [
+    'nav.group.overview',
+    'nav.group.business',
+    'nav.group.system',
+    'nav.group.demo',
+  ]
   nav.setAttribute(
     'items',
     JSON.stringify(
-      NAV.map((n) => ({
-        label: t(n.key),
-        value: n.href,
-        icon: n.icon,
-        iconColor: n.color,
-        group: t(n.group),
+      GROUP_ORDER.filter((g) => groups.has(g)).map((g) => ({
+        label: t(g),
+        value: g,
+        icon: GROUP_ICONS[g],
+        children: groups.get(g),
       })),
     ),
   )
+  nav.setAttribute('accordion', '')
   nav.setAttribute('active', active)
   nav.addEventListener('oas-select', (e) => {
     const value = e.detail?.value
