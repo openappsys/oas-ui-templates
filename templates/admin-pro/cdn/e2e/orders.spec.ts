@@ -3,14 +3,14 @@
 // 适配点：oas-page-header 的 title 为消费式属性（渲染进 shadow [part="title"]），
 // 订单号断言走 shadow part；cdn 无角色系统，viewer 数据权限分支用例不移植
 import { expect, test } from '@playwright/test'
-import { beforeEachMock, login, noConsoleErrors } from './helpers'
+import { beforeEachMock, login, noConsoleErrors, openNavItem } from './helpers'
 
 beforeEachMock()
 
 test('订单管理：tabs 筛选只显对应状态 + 抽屉状态流转', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page)
-  await page.locator('#nav').getByText('订单管理').click()
+  await openNavItem(page, '业务', '订单管理')
   await expect(page.getByTestId('orders-export')).toBeVisible()
   await expect(page.locator('#orders-stats').locator('oas-card')).toHaveCount(3)
 
@@ -42,7 +42,7 @@ test('订单管理：tabs 筛选只显对应状态 + 抽屉状态流转', async 
 test('订单管理：导出订单 CSV 触发下载', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page)
-  await page.locator('#nav').getByText('订单管理').click()
+  await openNavItem(page, '业务', '订单管理')
   // 等数据行就绪再导出：导出按钮先于异步数据可见，空数据分支只弹提示不下载
   await expect(
     page.getByTestId('orders-list').locator('tbody tr[part="row"]').first(),
@@ -57,7 +57,7 @@ test('订单管理：导出订单 CSV 触发下载', async ({ page }) => {
 test('从订单详情抽屉跳转订单详情页（时间线渲染）', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page)
-  await page.locator('#nav').getByText('订单管理').click()
+  await openNavItem(page, '业务', '订单管理')
   await expect(page.getByTestId('orders-export')).toBeVisible()
 
   // tbody 首个 tr 可能是合计行（amount 列 summary），数据行带 part="row" 才派发行点击
@@ -77,7 +77,7 @@ test('从订单详情抽屉跳转订单详情页（时间线渲染）', async ({
 test('订单详情页状态流转：已支付 → 配送中', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page)
-  await page.locator('#nav').getByText('订单管理').click()
+  await openNavItem(page, '业务', '订单管理')
   await expect(page.getByTestId('orders-list').locator('tbody tr')).not.toHaveCount(0)
 
   // 种子数据中「云图软件」为已支付单：详情页应有「开始配送」流转动作

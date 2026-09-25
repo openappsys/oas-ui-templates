@@ -3,6 +3,7 @@
 // 断言语义逐条对齐）：订单 tabs 筛选与状态流转、CSV 导出、订单详情归父页签、
 // 基础表单必填校验、面包屑、Ctrl+K 命令面板直达
 import { expect, test, type Page } from '@playwright/test'
+import { openNavItem } from './helpers'
 
 async function noConsoleErrors(page: Page): Promise<string[]> {
   const errors: string[] = []
@@ -27,7 +28,7 @@ async function login(page: Page, name: string, role: 'admin' | 'viewer'): Promis
 test('admin 订单管理：tabs 筛选只显对应状态 + 抽屉状态流转', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page, '张伟', 'admin')
-  await page.locator('#nav').getByText('订单管理').click()
+  await openNavItem(page, '业务', '订单管理')
   await expect(page.getByTestId('orders-export')).toBeVisible()
   await expect(page.locator('#orders-stats').locator('oas-card')).toHaveCount(3)
 
@@ -62,7 +63,7 @@ test('admin 订单管理：tabs 筛选只显对应状态 + 抽屉状态流转', 
 test('admin 导出订单 CSV 触发下载', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page, '张伟', 'admin')
-  await page.locator('#nav').getByText('订单管理').click()
+  await openNavItem(page, '业务', '订单管理')
   // 等数据行渲染再导出：路由懒加载后点击可能落在 query 返回前，空表导出会被
   // 「无可导出」守卫拦下（真实用户同理），download 事件不触发
   await expect(page.getByTestId('orders-list').locator('tbody tr').first()).toBeVisible()
@@ -81,7 +82,7 @@ test('admin 导出订单 CSV 触发下载', async ({ page }) => {
 test('admin 隐藏路由归属父级页签：订单详情不新增独立页签', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page, '张伟', 'admin')
-  await page.locator('#nav').getByText('订单管理').click()
+  await openNavItem(page, '业务', '订单管理')
   await page.getByTestId('orders-list').locator('tbody tr').first().click()
   await expect(page.getByTestId('order-drawer')).toHaveAttribute('visible', '')
   await page.getByTestId('order-detail-link').click()
@@ -106,7 +107,7 @@ test('基础表单：空值提交触发必填校验', async ({ page }) => {
 test('admin 面包屑新页显示 应用 / 创建订单', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page, '张伟', 'admin')
-  await page.locator('#nav').getByText('创建订单').click()
+  await openNavItem(page, '业务', '创建订单')
   await expect(page.getByTestId('form-steps')).toBeVisible()
   await expect(page.locator('#crumbs')).toContainText('应用')
   await expect(page.locator('#crumbs')).toContainText('创建订单')

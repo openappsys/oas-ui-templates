@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { openNavItem } from './helpers'
 
 async function noConsoleErrors(page: Page): Promise<string[]> {
   const errors: string[] = []
@@ -38,7 +39,7 @@ test('admin 登录 → 仪表盘统计卡渲染', async ({ page }) => {
 test('admin 全链路：用户管理新建/删除', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page, '张伟', 'admin')
-  await page.locator('#nav').getByText('用户管理').click()
+  await openNavItem(page, '业务', '用户管理')
   await expect(page.getByTestId('users-table')).toContainText('张伟')
 
   await page.getByTestId('user-create').click()
@@ -57,7 +58,7 @@ test('admin 全链路：用户管理新建/删除', async ({ page }) => {
 test('admin 操作列：用户行编辑按钮打开回填表单', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page, '张伟', 'admin')
-  await page.locator('#nav').getByText('用户管理').click()
+  await openNavItem(page, '业务', '用户管理')
   await expect(page.getByTestId('users-table')).toContainText('张伟')
 
   await page.getByTestId('user-row-edit').first().click()
@@ -83,7 +84,7 @@ test('主题切换写 data-theme', async ({ page }) => {
 test('admin 编辑用户弹窗无滚动条且下拉浮层展开', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page, '张伟', 'admin')
-  await page.locator('#nav').getByText('用户管理').click()
+  await openNavItem(page, '业务', '用户管理')
   await expect(page.getByTestId('users-table')).toContainText('张伟')
 
   await page.getByTestId('users-table').locator('tbody tr').first().click()

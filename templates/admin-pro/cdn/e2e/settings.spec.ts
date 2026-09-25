@@ -3,14 +3,14 @@
 // localStorage 持久化，不断言 DOM 显隐；cdn 无角色系统，viewer 可访问设置中心用例不移植；
 // 主题色存储键为 cdn 前缀（oas-admin-cdn.settings.theme.*）
 import { expect, test } from '@playwright/test'
-import { beforeEachMock, login, noConsoleErrors } from './helpers'
+import { beforeEachMock, login, noConsoleErrors, openNavItem } from './helpers'
 
 beforeEachMock()
 
 test('设置中心：表单呈现/密度/字号切换写入 localStorage', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page)
-  await page.locator('#nav').getByText('设置中心').click()
+  await openNavItem(page, '系统', '设置中心')
   // 表单呈现方式在「数据与列表」tab
   await page.getByTestId('settings-tabs').getByText('数据与列表', { exact: true }).click()
   await expect(page.getByTestId('settings-tabs')).toHaveAttribute('active', 'data')
@@ -33,7 +33,7 @@ test('设置中心：表单呈现/密度/字号切换写入 localStorage', async
 test('设置中心：多页签栏开关写入 localStorage（cdn 壳层暂不消费）', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page)
-  await page.locator('#nav').getByText('设置中心').click()
+  await openNavItem(page, '系统', '设置中心')
   await page.getByTestId('settings-tabs').getByText('布局与导航', { exact: true }).click()
   await expect(page.getByTestId('settings-tabs')).toHaveAttribute('active', 'layout')
 
@@ -51,7 +51,7 @@ test('设置中心：多页签栏开关写入 localStorage（cdn 壳层暂不消
 test('设置中心：字号较大档位写入 localStorage 且 reload 后保持选中', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page)
-  await page.locator('#nav').getByText('设置中心').click()
+  await openNavItem(page, '系统', '设置中心')
   // 字号在「外观」tab
   await page.getByTestId('settings-tabs').getByText('外观', { exact: true }).click()
   await expect(page.getByTestId('settings-tabs')).toHaveAttribute('active', 'appearance')
@@ -73,7 +73,7 @@ test('设置中心：字号较大档位写入 localStorage 且 reload 后保持�
 test('设置中心：外观页主题色即时作用于 --oas-color-primary', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page)
-  await page.locator('#nav').getByText('设置中心').click()
+  await openNavItem(page, '系统', '设置中心')
   await page.getByTestId('settings-tabs').getByText('外观', { exact: true }).click()
   const picker = page.getByTestId('appearance-color')
   await picker.locator('[part="trigger"]').click()

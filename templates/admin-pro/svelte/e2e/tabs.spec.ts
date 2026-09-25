@@ -2,6 +2,7 @@
 // Svelte 适配记录：oas-tabs 页签头 label 克隆进 shadow，Playwright 的 text/filter 引擎
 // 默认穿透 open shadow，`[role="tab"]` + hasText 的 deep query 写法与 react 版逐字一致
 import { expect, test, type Page } from '@playwright/test'
+import { openNavItem } from './helpers'
 
 async function noConsoleErrors(page: Page): Promise<string[]> {
   const errors: string[] = []
@@ -29,8 +30,8 @@ test('admin 页签累积：访问多页后页签追加且激活随路由同步',
   await expect(tabs(page).locator('[role="tab"]')).toHaveCount(1)
   await expect(tabs(page)).toHaveAttribute('active', '/dashboard')
 
-  await page.locator('#nav').getByText('商品管理').click()
-  await page.locator('#nav').getByText('用户管理').click()
+  await openNavItem(page, '业务', '商品管理')
+  await openNavItem(page, '业务', '用户管理')
   await expect(tabs(page).locator('[role="tab"]')).toHaveCount(3)
   await expect(tabs(page)).toHaveAttribute('active', '/users')
   await expect(tab(page, '仪表盘')).toBeVisible()
@@ -41,8 +42,8 @@ test('admin 页签累积：访问多页后页签追加且激活随路由同步',
 test('admin 点击页签切换路由并回写激活', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page)
-  await page.locator('#nav').getByText('商品管理').click()
-  await page.locator('#nav').getByText('用户管理').click()
+  await openNavItem(page, '业务', '商品管理')
+  await openNavItem(page, '业务', '用户管理')
   await tab(page, '商品管理').click()
   await expect(page).toHaveURL(/#\/products/)
   await expect(tabs(page)).toHaveAttribute('active', '/products')
@@ -52,8 +53,8 @@ test('admin 点击页签切换路由并回写激活', async ({ page }) => {
 test('admin 关闭当前页签切到相邻页签', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page)
-  await page.locator('#nav').getByText('商品管理').click()
-  await page.locator('#nav').getByText('用户管理').click()
+  await openNavItem(page, '业务', '商品管理')
+  await openNavItem(page, '业务', '用户管理')
   await expect(tabs(page)).toHaveAttribute('active', '/users')
 
   await tab(page, '商品管理').locator('[data-ptab-close]').click()
@@ -71,7 +72,7 @@ test('admin 隐藏路由归属父级页签：商品编辑页不新增独立页�
   await login(page)
   // form-mode=page：新建商品整页跳转 /products/edit（hidden，parent=/products）
   await page.evaluate(() => localStorage.setItem('oas-admin.form-mode', 'page'))
-  await page.locator('#nav').getByText('商品管理').click()
+  await openNavItem(page, '业务', '商品管理')
   await expect(page.getByTestId('product-create')).toBeVisible()
   await page.getByTestId('product-create').click()
   await page.waitForURL('**/#/products/edit')
@@ -91,8 +92,8 @@ test('admin 仪表盘页签固定不可关闭', async ({ page }) => {
 test('admin 右键页签弹批量关闭菜单：关闭其他', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page)
-  await page.locator('#nav').getByText('商品管理').click()
-  await page.locator('#nav').getByText('用户管理').click()
+  await openNavItem(page, '业务', '商品管理')
+  await openNavItem(page, '业务', '用户管理')
   await expect(tabs(page).locator('[role="tab"]')).toHaveCount(3)
 
   await tab(page, '用户管理').click({ button: 'right' })
@@ -108,8 +109,8 @@ test('admin 右键页签弹批量关闭菜单：关闭其他', async ({ page }) 
 test('admin 右键页签：关闭全部清空并回首页', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page)
-  await page.locator('#nav').getByText('商品管理').click()
-  await page.locator('#nav').getByText('用户管理').click()
+  await openNavItem(page, '业务', '商品管理')
+  await openNavItem(page, '业务', '用户管理')
 
   await tab(page, '用户管理').click({ button: 'right' })
   const menu = tabs(page).locator('[part="context-menu"]')

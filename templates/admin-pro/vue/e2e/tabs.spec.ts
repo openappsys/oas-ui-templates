@@ -14,6 +14,7 @@
 //    expect(tabs).toHaveAttribute('active', '/products')——tabs 的 active 随路由提交更新，
 //    等价确认导航落定（与第 3 条同一异步窗口），随后点击 product-create 由自动重试兜底
 import { expect, test, type Page } from '@playwright/test'
+import { openNavItem } from './helpers'
 
 async function noConsoleErrors(page: Page): Promise<string[]> {
   const errors: string[] = []
@@ -41,9 +42,9 @@ test('admin 页签累积：访问多页后页签追加且激活随路由同步',
   await expect(tabs(page).locator('[role="tab"]')).toHaveCount(1)
   await expect(tabs(page)).toHaveAttribute('active', '/dashboard')
 
-  await page.locator('#nav').getByText('商品管理').click()
+  await openNavItem(page, '业务', '商品管理')
   await expect(page).toHaveURL(/#\/products$/)
-  await page.locator('#nav').getByText('用户管理').click()
+  await openNavItem(page, '业务', '用户管理')
   await expect(page).toHaveURL(/#\/users$/)
   await expect(tabs(page).locator('[role="tab"]')).toHaveCount(3)
   await expect(tabs(page)).toHaveAttribute('active', '/users')
@@ -55,9 +56,9 @@ test('admin 页签累积：访问多页后页签追加且激活随路由同步',
 test('admin 点击页签切换路由并回写激活', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page)
-  await page.locator('#nav').getByText('商品管理').click()
+  await openNavItem(page, '业务', '商品管理')
   await expect(page).toHaveURL(/#\/products$/)
-  await page.locator('#nav').getByText('用户管理').click()
+  await openNavItem(page, '业务', '用户管理')
   await expect(page).toHaveURL(/#\/users$/)
   await tab(page, '商品管理').click()
   await expect(page).toHaveURL(/#\/products/)
@@ -68,9 +69,9 @@ test('admin 点击页签切换路由并回写激活', async ({ page }) => {
 test('admin 关闭当前页签切到相邻页签', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page)
-  await page.locator('#nav').getByText('商品管理').click()
+  await openNavItem(page, '业务', '商品管理')
   await expect(page).toHaveURL(/#\/products$/)
-  await page.locator('#nav').getByText('用户管理').click()
+  await openNavItem(page, '业务', '用户管理')
   await expect(page).toHaveURL(/#\/users$/)
   await expect(tabs(page)).toHaveAttribute('active', '/users')
 
@@ -90,7 +91,7 @@ test('admin 隐藏路由归属父级页签：商品编辑页不新增独立页�
   // page 表单模式下「新建商品」跳 /products/edit（隐藏路由，parent=/products）——
   // 等价 vanilla 的 /order-detail 场景（子集无 /orders//order-detail）
   await page.evaluate(() => localStorage.setItem('oas-admin.form-mode', 'page'))
-  await page.locator('#nav').getByText('商品管理').click()
+  await openNavItem(page, '业务', '商品管理')
   await expect(tabs(page)).toHaveAttribute('active', '/products')
   await page.getByTestId('product-create').click()
   await page.waitForURL('**/#/products/edit')
@@ -110,9 +111,9 @@ test('admin 仪表盘页签固定不可关闭', async ({ page }) => {
 test('admin 右键页签弹批量关闭菜单：关闭其他', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page)
-  await page.locator('#nav').getByText('商品管理').click()
+  await openNavItem(page, '业务', '商品管理')
   await expect(page).toHaveURL(/#\/products$/)
-  await page.locator('#nav').getByText('用户管理').click()
+  await openNavItem(page, '业务', '用户管理')
   await expect(page).toHaveURL(/#\/users$/)
   await expect(tabs(page).locator('[role="tab"]')).toHaveCount(3)
 
@@ -129,9 +130,9 @@ test('admin 右键页签弹批量关闭菜单：关闭其他', async ({ page }) 
 test('admin 右键页签：关闭全部清空并回首页', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page)
-  await page.locator('#nav').getByText('商品管理').click()
+  await openNavItem(page, '业务', '商品管理')
   await expect(page).toHaveURL(/#\/products$/)
-  await page.locator('#nav').getByText('用户管理').click()
+  await openNavItem(page, '业务', '用户管理')
   await expect(page).toHaveURL(/#\/users$/)
 
   await tab(page, '用户管理').click({ button: 'right' })

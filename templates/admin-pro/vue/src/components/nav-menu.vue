@@ -32,7 +32,7 @@ const id = props.popover ? 'nav-popover' : 'nav'
 // items 随 activePath/locale 重建（locale 为共享响应式源，读取即建立依赖）
 const sidebarJson = computed(() => {
   void locale.value
-  return JSON.stringify(sidebarItems())
+  return JSON.stringify(sidebarItems(collapsed.value))
 })
 const groupJsonNoHref = computed(() => {
   void locale.value
@@ -96,6 +96,7 @@ onUnmounted(() => cancelAnimationFrame(rafId))
     <oas-sidebar
       :id="id"
       ref="navEl"
+      accordion
       :items="sidebarJson"
       :active="activePath"
       :collapsed="collapsed ? '' : null"

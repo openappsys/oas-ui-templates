@@ -83,7 +83,7 @@ function renderShell() {
         <button id="logout" class="icon-btn" type="button">${t('header.logout')}</button>
       </header>
       <oas-sider slot="sider">
-        <oas-sidebar id="nav"></oas-sidebar>
+        <oas-sidebar id="nav" accordion></oas-sidebar>
       </oas-sider>
       <div slot="content" id="view"></div>
     </oas-layout>`
@@ -109,24 +109,37 @@ function renderShell() {
 function syncNav() {
   const nav = app.querySelector('#nav')
   if (!nav) return
-  // 与 vanilla sidebarItems 同构：过滤隐藏路由 → 按分组排序 → items JSON
-  // cdn 过渡期附加过滤 navHidden（/basic-form，见 routes.js 注释）
-  const items = routes
-    .filter((r) => !r.hidden && !r.navHidden && r.group)
-    .slice()
-    .sort(
-      (a, b) =>
-        GROUP_ORDER.indexOf(a.group) - GROUP_ORDER.indexOf(b.group) ||
-        routes.indexOf(a) - routes.indexOf(b),
-    )
-    .map((r) => ({
+  // ⚠ 与 vanilla sidebarTreeItems 同构：可见路由 → 分组父节点 + children 树形 items
+  // cdn 版本额外过滤 navHidden（/basic-form，见 routes.js 注释）
+  const GROUP_ICONS = {
+    'nav.output': 'eye',
+    'nav.business': 'organization',
+    'nav.system': 'gear',
+    'nav.demo': 'menu',
+  }
+  const groups = new Map()
+  for (const r of routes) {
+    if (r.hidden || r.navHidden || !r.group) continue
+    const list = groups.get(r.group) ?? []
+    list.push({
       label: t(r.navKey ?? r.titleKey),
       value: r.path,
       icon: r.icon,
       iconColor: r.iconColor,
-      group: t(GROUP_KEYS[r.group]),
-    }))
-  nav.setAttribute('items', JSON.stringify(items))
+    })
+    groups.set(r.group, list)
+  }
+  nav.setAttribute(
+    'items',
+    JSON.stringify(
+      GROUP_ORDER.filter((g) => groups.has(g)).map((g) => ({
+        label: t(GROUP_KEYS[g]),
+        value: g,
+        icon: GROUP_ICONS[g],
+        children: groups.get(g),
+      })),
+    ),
+  )
   nav.setAttribute('active', parseHash())
 }
 

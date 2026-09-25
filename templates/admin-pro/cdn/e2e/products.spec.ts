@@ -1,14 +1,14 @@
 // e2e/products.spec.ts —— 商品管理用例（移植自 react/e2e/products.spec.ts，断言语义逐条对齐）
 // 适配点：localStorage 键改 cdn 前缀（oas-admin-cdn.*）；cdn 无角色系统，登录固定 admin 视角
 import { expect, test } from '@playwright/test'
-import { beforeEachMock, login, noConsoleErrors, setLocal } from './helpers'
+import { beforeEachMock, login, noConsoleErrors, setLocal, openNavItem } from './helpers'
 
 beforeEachMock()
 
 test('商品管理：卡片/列表双视图切换，列表含开关与操作列', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page)
-  await page.locator('#nav').getByText('商品管理').click()
+  await openNavItem(page, '业务', '商品管理')
   await expect(page.getByTestId('product-grid')).toContainText('无线降噪耳机')
   await expect(page.getByTestId('product-view')).toHaveAttribute('value', 'cards')
 
@@ -30,7 +30,7 @@ test('商品管理：dialog 模式下新建表单以对话框呈现', async ({ p
   const errors = await noConsoleErrors(page)
   await login(page)
   await setLocal(page, 'oas-admin-cdn.form-mode', 'dialog')
-  await page.locator('#nav').getByText('商品管理').click()
+  await openNavItem(page, '业务', '商品管理')
   await page.getByTestId('product-create').click()
   await expect(page.getByTestId('product-dialog')).toHaveAttribute('visible', '')
   await page.getByTestId('pf-save').click()
@@ -43,7 +43,7 @@ test('商品管理：page 模式下新建跳转整页表单', async ({ page }) =
   const errors = await noConsoleErrors(page)
   await login(page)
   await setLocal(page, 'oas-admin-cdn.form-mode', 'page')
-  await page.locator('#nav').getByText('商品管理').click()
+  await openNavItem(page, '业务', '商品管理')
   // 等首屏数据渲染完再跳转：refresh() 的异步续体在 100ms 数据延迟内无 stale 守卫，
   // 数据未返回就路由切换会在新页面 DOM 上抛 TypeError（真实缺陷，见报告）
   await expect(page.getByTestId('product-grid').locator('.product-card').first()).toBeVisible()
@@ -56,7 +56,7 @@ test('商品管理：page 模式下新建跳转整页表单', async ({ page }) =
 })
 
 async function openProductsTable(page: import('@playwright/test').Page): Promise<void> {
-  await page.locator('#nav').getByText('商品管理').click()
+  await openNavItem(page, '业务', '商品管理')
   await expect(page.getByTestId('product-view')).toBeVisible()
   if ((await page.getByTestId('product-view').getAttribute('value')) !== 'table') {
     await page.getByTestId('product-view').getByText('列表').click()

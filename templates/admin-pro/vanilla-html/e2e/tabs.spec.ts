@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { openNavItem } from './helpers'
 
 async function noConsoleErrors(page: Page): Promise<string[]> {
   const errors: string[] = []
@@ -26,8 +27,8 @@ test('admin 页签累积：访问多页后页签追加且激活随路由同步',
   await expect(tabs(page).locator('[role="tab"]')).toHaveCount(1)
   await expect(tabs(page)).toHaveAttribute('active', '/dashboard')
 
-  await page.locator('#nav').getByText('订单管理').click()
-  await page.locator('#nav').getByText('用户管理').click()
+  await openNavItem(page, '业务', '订单管理')
+  await openNavItem(page, '业务', '用户管理')
   await expect(tabs(page).locator('[role="tab"]')).toHaveCount(3)
   await expect(tabs(page)).toHaveAttribute('active', '/users')
   await expect(tab(page, '仪表盘')).toBeVisible()
@@ -38,8 +39,8 @@ test('admin 页签累积：访问多页后页签追加且激活随路由同步',
 test('admin 点击页签切换路由并回写激活', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page)
-  await page.locator('#nav').getByText('订单管理').click()
-  await page.locator('#nav').getByText('用户管理').click()
+  await openNavItem(page, '业务', '订单管理')
+  await openNavItem(page, '业务', '用户管理')
   await tab(page, '订单管理').click()
   await expect(page).toHaveURL(/#\/orders/)
   await expect(tabs(page)).toHaveAttribute('active', '/orders')
@@ -49,8 +50,8 @@ test('admin 点击页签切换路由并回写激活', async ({ page }) => {
 test('admin 关闭当前页签切到相邻页签', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page)
-  await page.locator('#nav').getByText('订单管理').click()
-  await page.locator('#nav').getByText('用户管理').click()
+  await openNavItem(page, '业务', '订单管理')
+  await openNavItem(page, '业务', '用户管理')
   await expect(tabs(page)).toHaveAttribute('active', '/users')
 
   await tab(page, '订单管理').locator('[data-ptab-close]').click()
@@ -66,7 +67,7 @@ test('admin 关闭当前页签切到相邻页签', async ({ page }) => {
 test('admin 隐藏路由归属父级页签：订单详情不新增独立页签', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page)
-  await page.locator('#nav').getByText('订单管理').click()
+  await openNavItem(page, '业务', '订单管理')
   await page.getByTestId('orders-list').locator('tbody tr').first().click()
   await expect(page.getByTestId('order-drawer')).toHaveAttribute('visible', '')
   await page.getByTestId('order-detail-link').click()
@@ -87,8 +88,8 @@ test('admin 仪表盘页签固定不可关闭', async ({ page }) => {
 test('admin 右键页签弹批量关闭菜单：关闭其他', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page)
-  await page.locator('#nav').getByText('订单管理').click()
-  await page.locator('#nav').getByText('用户管理').click()
+  await openNavItem(page, '业务', '订单管理')
+  await openNavItem(page, '业务', '用户管理')
   await expect(tabs(page).locator('[role="tab"]')).toHaveCount(3)
 
   await tab(page, '用户管理').click({ button: 'right' })
@@ -104,8 +105,8 @@ test('admin 右键页签弹批量关闭菜单：关闭其他', async ({ page }) 
 test('admin 右键页签：关闭全部清空并回首页', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page)
-  await page.locator('#nav').getByText('订单管理').click()
-  await page.locator('#nav').getByText('用户管理').click()
+  await openNavItem(page, '业务', '订单管理')
+  await openNavItem(page, '业务', '用户管理')
 
   await tab(page, '用户管理').click({ button: 'right' })
   const menu = tabs(page).locator('[part="context-menu"]')

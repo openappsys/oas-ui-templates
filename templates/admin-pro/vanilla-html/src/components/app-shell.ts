@@ -28,23 +28,61 @@ function groupLabel(group: RouteGroup | undefined): string {
   return t('nav.group.overview')
 }
 
-function groupOrder(group: RouteGroup | undefined): number {
-  return group ? GROUP_ORDER.indexOf(group) : GROUP_ORDER.length
+/** 分组父节点图标（sidebar 树形形态的一级节点用） */
+const GROUP_ICONS: Record<RouteGroup, string> = {
+  'nav.output': 'eye',
+  'nav.business': 'organization',
+  'nav.system': 'gear',
+  'nav.demo': 'menu',
 }
 
-function sidebarItems(): string {
+/** sidebar 树形导航：分组父节点 + children 子菜单，配合 accordion 属性同组互斥展开。
+ *  含 active 子项的组由组件 autoExpand 自动展开；当前项高亮走 sidebar 的 active 属性
+ *  （见 applyNavActive），不依赖 items 内标记 */
+function sidebarTreeItems(): string {
+  const groups = new Map<
+    RouteGroup,
+    Array<{ label: string; value: string; icon?: string; iconColor?: string }>
+  >()
+  for (const r of routes) {
+    if (r.meta.hidden) continue
+    const g = (r.meta.group ?? 'nav.demo') as RouteGroup
+    const items = groups.get(g) ?? []
+    items.push({
+      label: t(r.meta.titleKey),
+      value: r.path,
+      icon: r.meta.icon,
+      iconColor: r.meta.iconColor,
+    })
+    groups.set(g, items)
+  }
+  return JSON.stringify(
+    GROUP_ORDER.filter((g) => groups.has(g)).map((g) => ({
+      label: groupLabel(g),
+      value: g,
+      icon: GROUP_ICONS[g],
+      children: groups.get(g),
+    })),
+  )
+}
+
+/** sidebar 扁平导航（collapsed 折叠态专用）：上游「collapsed × children」组合缺陷
+ *  期间子菜单不可达（已登记 oas-ui demands 2026-09-24），折叠态暂用平铺 icon 列表；
+ *  上游修复后删除本函数并让 setNavItems 统一走树形 */
+function sidebarFlatItems(): string {
   const items = routes
     .filter((r) => !r.meta.hidden)
-    .slice()
-    .sort((a, b) => groupOrder(a.meta.group) - groupOrder(b.meta.group))
     .map((r) => ({
       label: t(r.meta.titleKey),
       value: r.path,
       icon: r.meta.icon,
       iconColor: r.meta.iconColor,
-      group: groupLabel(r.meta.group),
     }))
   return JSON.stringify(items)
+}
+
+function sidebarItems(collapsed: boolean): string {
+  return collapsed ? sidebarFlatItems() : sidebarTreeItems()
 }
 
 /** 顶部/竖排菜单（menubar / navigation-menu）：顶级=分组、children=组内路由，点击弹出子菜单。
@@ -88,7 +126,8 @@ function menuHTML(vertical: boolean, activePath: string): string {
   if (style === 'navigation') {
     return `<oas-navigation-menu id="nav" orientation="${vertical ? 'vertical' : 'horizontal'}" items='${groupMenuItems(activePath, true)}'></oas-navigation-menu>`
   }
-  return `<oas-sider id="nav-sider"><oas-sidebar id="nav" items='${sidebarItems()}'${readSidebarCollapsed() ? ' collapsed' : ''}></oas-sidebar></oas-sider>`
+  const collapsed = readSidebarCollapsed()
+  return `<oas-sider id="nav-sider"><oas-sidebar id="nav" accordion items='${sidebarItems(collapsed)}'${collapsed ? ' collapsed' : ''}></oas-sidebar></oas-sider>`
 }
 
 function userMenuItems(): string {
@@ -255,7 +294,9 @@ export function mountApp(root: HTMLElement): void {
   function setNavItems(activePath: string): void {
     const style = menuStyle()
     const items =
-      style === 'sidebar' ? sidebarItems() : groupMenuItems(activePath, style === 'navigation')
+      style === 'sidebar'
+        ? sidebarItems(navEl().hasAttribute('collapsed'))
+        : groupMenuItems(activePath, style === 'navigation')
     navEl().setAttribute('items', items)
   }
   /** 按形态映射当前路由高亮（各组件高亮机制不同，须分开处理，避免 navigation-menu 把 value 当「已展开面板」）：
@@ -357,7 +398,11 @@ export function mountApp(root: HTMLElement): void {
     if (nav.tagName === 'OAS-SIDEBAR') {
       nav.addEventListener('oas-collapse', (e) => {
         const collapsed = (e as CustomEvent<{ collapsed: boolean }>).detail?.collapsed
-        if (typeof collapsed === 'boolean') writeSidebarCollapsed(collapsed)
+        if (typeof collapsed === 'boolean') {
+          writeSidebarCollapsed(collapsed)
+          // 树形/扁平 items 随折叠态切换（上游 collapsed×children 缺陷期间的规避，见 sidebarFlatItems）
+          setNavItems(currentPath())
+        }
       })
     }
   }

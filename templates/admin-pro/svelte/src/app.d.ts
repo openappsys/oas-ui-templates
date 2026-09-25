@@ -127,6 +127,7 @@ declare global {
         items?: string
         active?: string
         collapsed?: OasFlag
+        accordion?: OasFlag
         'onoas-select'?: OasEvent
         'onoas-collapse'?: OasEvent
       }

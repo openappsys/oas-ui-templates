@@ -3,6 +3,7 @@
 // 适配记录：dashboard 的 #trend-range/#chart-trend/#chart-orders/#top5-list、#crumbs、
 // #command 等锚点在 vue 版（app-shell/dashboard/command-palette）中同名保留，选择器不变。
 import { expect, test, type Page } from '@playwright/test'
+import { openNavItem } from './helpers'
 
 async function noConsoleErrors(page: Page): Promise<string[]> {
   const errors: string[] = []
@@ -27,7 +28,7 @@ async function login(page: Page, name: string, role: 'admin' | 'viewer'): Promis
 test('admin 商品持久化：新建后 reload 仍在（localStorage 生效）', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page, '张伟', 'admin')
-  await page.locator('#nav').getByText('商品管理').click()
+  await openNavItem(page, '业务', '商品管理')
   await expect(page.getByTestId('product-grid')).toContainText('无线降噪耳机')
 
   await page.getByTestId('product-create').click()
@@ -110,7 +111,7 @@ test('admin Command 面板 Ctrl+K 输「订单」Enter 直达 /orders', async ({
 test('admin 面包屑新页显示 应用 / 创建订单', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page, '张伟', 'admin')
-  await page.locator('#nav').getByText('创建订单').click()
+  await openNavItem(page, '业务', '创建订单')
   await expect(page.getByTestId('form-steps')).toBeVisible()
   await expect(page.locator('#crumbs')).toContainText('应用')
   await expect(page.locator('#crumbs')).toContainText('创建订单')

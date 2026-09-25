@@ -4,6 +4,7 @@
 // 与 react 计划 Task 10 的 settings.spec 覆盖范围一致）。
 // 断言语义逐条对齐 vanilla spec。
 import { expect, test, type Page } from '@playwright/test'
+import { openNavItem } from './helpers'
 
 async function noConsoleErrors(page: Page): Promise<string[]> {
   const errors: string[] = []
@@ -28,7 +29,7 @@ async function login(page: Page, name: string, role: 'admin' | 'viewer'): Promis
 test('设置中心：通用页切换表单呈现方式写入 localStorage', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page, '张伟', 'admin')
-  await page.locator('#nav').getByText('设置中心').click()
+  await openNavItem(page, '系统', '设置中心')
   // 表单呈现方式在「数据与列表」tab
   await page.getByTestId('settings-tabs').getByText('数据与列表', { exact: true }).click()
   await expect(page.getByTestId('settings-tabs')).toHaveAttribute('active', 'data')
@@ -50,10 +51,10 @@ test('设置中心：关闭多页签栏立即生效，再开启恢复', async ({
   const errors = await noConsoleErrors(page)
   await login(page, '张伟', 'admin')
 
-  await page.locator('#nav').getByText('商品管理').click()
+  await openNavItem(page, '业务', '商品管理')
   await expect(page.locator('#page-tabs')).toBeVisible()
 
-  await page.locator('#nav').getByText('设置中心').click()
+  await openNavItem(page, '系统', '设置中心')
   // 多页签栏在「布局与导航」tab
   await page.getByTestId('settings-tabs').getByText('布局与导航', { exact: true }).click()
   await expect(page.getByTestId('settings-tabs')).toHaveAttribute('active', 'layout')
@@ -63,11 +64,11 @@ test('设置中心：关闭多页签栏立即生效，再开启恢复', async ({
   )
   await expect(page.locator('.tabs-bar')).toBeHidden()
 
-  await page.locator('#nav').getByText('商品管理').click()
+  await openNavItem(page, '业务', '商品管理')
   await expect(page.locator('.tabs-bar')).toBeHidden()
   await expect(page.locator('#view')).toContainText('商品管理')
 
-  await page.locator('#nav').getByText('设置中心').click()
+  await openNavItem(page, '系统', '设置中心')
   await page.getByTestId('settings-tabs').getByText('布局与导航', { exact: true }).click()
   await page.getByTestId('tabs-bar-toggle').click()
   expect(await page.evaluate(() => localStorage.getItem('oas-admin.settings.tabs-bar'))).toBe(
@@ -81,7 +82,7 @@ test('设置中心：关闭多页签栏立即生效，再开启恢复', async ({
 test('设置中心：字号较大档位写入 localStorage 且 reload 后保持选中', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page, '张伟', 'admin')
-  await page.locator('#nav').getByText('设置中心').click()
+  await openNavItem(page, '系统', '设置中心')
   // 字号在「外观」tab
   await page.getByTestId('settings-tabs').getByText('外观', { exact: true }).click()
   await expect(page.getByTestId('settings-tabs')).toHaveAttribute('active', 'appearance')
@@ -99,7 +100,7 @@ test('设置中心：字号较大档位写入 localStorage 且 reload 后保持�
 test('设置中心：外观页主题色即时作用于 --oas-color-primary', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page, '张伟', 'admin')
-  await page.locator('#nav').getByText('设置中心').click()
+  await openNavItem(page, '系统', '设置中心')
   await page.getByTestId('settings-tabs').getByText('外观', { exact: true }).click()
   const picker = page.getByTestId('appearance-color')
   await picker.locator('[part="trigger"]').click()

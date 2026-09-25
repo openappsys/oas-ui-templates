@@ -28,7 +28,7 @@
   // items 随 activePath/locale 重建（读 $locale 建立响应式依赖）
   const sidebarJson = $derived.by(() => {
     void $locale
-    return JSON.stringify(sidebarItems())
+    return JSON.stringify(sidebarItems(collapsed))
   })
   const groupJsonNoHref = $derived.by(() => {
     void $locale
@@ -80,6 +80,7 @@
     <oas-sidebar
       {id}
       bind:this={navEl}
+      accordion
       items={sidebarJson}
       active={activePath}
       collapsed={collapsed ? '' : null}

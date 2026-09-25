@@ -3,6 +3,7 @@
 // 适配记录：vanilla「viewer 访问商品管理显示 403」与本模版既有 smoke.spec 同名用例
 // 完全重复（同走 /#/products），不重复移植，仅保留其余 3 例。
 import { expect, test, type Page } from '@playwright/test'
+import { openNavItem } from './helpers'
 
 async function noConsoleErrors(page: Page): Promise<string[]> {
   const errors: string[] = []
@@ -27,7 +28,7 @@ async function login(page: Page, name: string, role: 'admin' | 'viewer'): Promis
 test('admin 订单管理：tabs 筛选只显对应状态 + 抽屉状态流转', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page, '张伟', 'admin')
-  await page.locator('#nav').getByText('订单管理').click()
+  await openNavItem(page, '业务', '订单管理')
   await expect(page.getByTestId('orders-export')).toBeVisible()
   await expect(page.locator('#orders-stats').locator('oas-card')).toHaveCount(3)
 
@@ -55,7 +56,7 @@ test('admin 订单管理：tabs 筛选只显对应状态 + 抽屉状态流转', 
 test('admin 商品管理：上下架切换 + 新建表单校验', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page, '张伟', 'admin')
-  await page.locator('#nav').getByText('商品管理').click()
+  await openNavItem(page, '业务', '商品管理')
   await expect(page.getByTestId('product-grid')).toContainText('无线降噪耳机')
 
   const firstCard = page.getByTestId('product-grid').locator('oas-card.product-card').first()
@@ -76,7 +77,7 @@ test('admin 商品管理：上下架切换 + 新建表单校验', async ({ page 
 test('admin 导出订单 CSV 触发下载', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page, '张伟', 'admin')
-  await page.locator('#nav').getByText('订单管理').click()
+  await openNavItem(page, '业务', '订单管理')
   await expect(page.getByTestId('orders-export')).toBeVisible()
   const downloadPromise = page.waitForEvent('download')
   await page.getByTestId('orders-export').click()

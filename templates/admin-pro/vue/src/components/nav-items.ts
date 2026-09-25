@@ -31,8 +31,41 @@ export interface SidebarItem {
   group: string
 }
 
-/** sidebar 形态：扁平列表带 group 字段（组件内分组渲染），高亮走 active 属性 */
-export function sidebarItems(): SidebarItem[] {
+/** 分组父节点图标（sidebar 树形形态的一级节点用） */
+export const GROUP_ICONS: Record<RouteGroup, string> = {
+  'nav.output': 'eye',
+  'nav.business': 'organization',
+  'nav.system': 'gear',
+  'nav.demo': 'menu',
+}
+
+export interface SidebarTreeItem {
+  label: string
+  value: string
+  icon: string
+  children: Array<{ label: string; value: string; icon?: string; iconColor?: string }>
+}
+
+/** sidebar 树形导航（展开态）：分组父节点 + children 子菜单，配合 accordion 属性同组互斥展开；
+ *  含 active 子项的组由组件 autoExpand 自动展开，当前项高亮走 sidebar 的 active 属性 */
+export function sidebarTreeItems(): SidebarTreeItem[] {
+  return GROUP_ORDER.map((g) => {
+    const children = appRoutes
+      .filter((r) => !r.meta.hidden && (r.meta.group ?? 'nav.demo') === g)
+      .map((r) => ({
+        label: t(r.meta.titleKey),
+        value: r.path,
+        icon: r.meta.icon,
+        iconColor: r.meta.iconColor,
+      }))
+    return { label: groupLabel(g), value: g, icon: GROUP_ICONS[g], children }
+  }).filter((g) => g.children.length > 0)
+}
+
+/** sidebar 扁平导航（collapsed 折叠态专用）：上游「collapsed × children」组合缺陷
+ *  期间子菜单不可达（已登记 oas-ui demands 2026-09-24），折叠态暂用平铺 icon 列表；
+ *  上游修复后删除本函数并让 sidebarItems 统一走树形 */
+export function sidebarFlatItems(): SidebarItem[] {
   return appRoutes
     .filter((r) => !r.meta.hidden)
     .slice()
@@ -44,6 +77,10 @@ export function sidebarItems(): SidebarItem[] {
       iconColor: r.meta.iconColor,
       group: groupLabel(r.meta.group),
     }))
+}
+
+export function sidebarItems(collapsed: boolean): SidebarItem[] | SidebarTreeItem[] {
+  return collapsed ? sidebarFlatItems() : sidebarTreeItems()
 }
 
 export interface GroupMenuChild {

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { openNavItem } from './helpers'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
@@ -32,7 +33,7 @@ test('登录 → dashboard 渲染统计卡与趋势图', async ({ page }) => {
 
 test('users 表格渲染种子数据 + 弹窗新建入表', async ({ page }) => {
   await login(page)
-  await page.locator('#nav').getByText('用户管理').click()
+  await openNavItem(page, '业务', '用户管理')
   await expect(page.getByTestId('users-table')).toContainText('张伟')
   await page.getByTestId('user-create').click()
   await page.getByTestId('field-name').locator('input').fill('测试用户')
@@ -43,7 +44,7 @@ test('users 表格渲染种子数据 + 弹窗新建入表', async ({ page }) => 
 
 test('form 三步向导：空值下一步拦截且不跳转', async ({ page }) => {
   await login(page)
-  await page.locator('#nav').getByText('创建订单').click()
+  await openNavItem(page, '业务', '创建订单')
   await expect(page.getByTestId('form-steps')).toBeVisible()
   await page.getByTestId('form-next').click()
   await expect(page.getByTestId('form-error-customer')).toContainText('请输入客户名称')

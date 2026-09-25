@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { openNavItem } from './helpers'
 
 async function login(page: Page): Promise<void> {
   await page.goto('/')
@@ -40,7 +41,8 @@ test('admin 折叠态菜单项 hover 显示 tooltip 提示（组件原生）', a
   await page.locator('#nav [part="toggle"]').click()
   await expect(page.locator('oas-sider')).toHaveAttribute('collapsed', '')
 
-  const item = page.locator('#nav [part="item"]').first()
+  // 树形导航：跳过分组父节点（带 aria-expanded），hover 叶子项（页面项）验证 tooltip
+  const item = page.locator('#nav [part="item"]:not([aria-expanded])').first()
   await item.hover()
   const tip = page.locator('#nav oas-tooltip [part="tip"]').first()
   await expect(tip).toBeVisible()
@@ -86,11 +88,11 @@ test('admin 选中高亮随路由同步：aria-current 高亮项随路由迁移'
   await expect(page.locator('#nav')).toHaveAttribute('active', '/dashboard')
   await expect(page.locator('#nav [aria-current="page"]')).toContainText('仪表盘')
 
-  await page.locator('#nav').getByText('用户管理').click()
+  await openNavItem(page, '业务', '用户管理')
   await expect(page.locator('#nav')).toHaveAttribute('active', '/users')
   await expect(page.locator('#nav [aria-current="page"]')).toContainText('用户管理')
 
-  await page.locator('#nav').getByText('数据看板').click()
+  await openNavItem(page, '总览', '数据看板')
   await expect(page.locator('#nav')).toHaveAttribute('active', '/data-board')
   await expect(page.locator('#nav [aria-current="page"]')).toContainText('数据看板')
 })

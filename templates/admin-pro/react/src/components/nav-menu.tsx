@@ -76,7 +76,8 @@ export function NavMenu({
       <oas-sidebar
         id={id}
         ref={navRef as React.Ref<HTMLElement>}
-        items={JSON.stringify(sidebarItems())}
+        accordion
+        items={JSON.stringify(sidebarItems(collapsed))}
         active={activePath}
         collapsed={collapsed}
       />

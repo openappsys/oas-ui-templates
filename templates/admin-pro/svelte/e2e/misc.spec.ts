@@ -4,6 +4,7 @@
 // Svelte 适配记录：#command 的 open 为存在性布尔 attribute（{open ? '' : null}），
 // toHaveAttribute('open','') 写法与 react 版逐字一致；订单行集过滤用 expect.poll 防重渲染竞态
 import { expect, test, type Page } from '@playwright/test'
+import { openNavItem } from './helpers'
 
 async function noConsoleErrors(page: Page): Promise<string[]> {
   const errors: string[] = []
@@ -28,7 +29,7 @@ async function login(page: Page, name: string, role: 'admin' | 'viewer'): Promis
 test('admin 订单管理：tabs 筛选只显对应状态 + 抽屉状态流转', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page, '张伟', 'admin')
-  await page.locator('#nav').getByText('订单管理').click()
+  await openNavItem(page, '业务', '订单管理')
   await expect(page.getByTestId('orders-export')).toBeVisible()
   await expect(page.locator('#orders-stats').locator('oas-card')).toHaveCount(3)
 
@@ -63,7 +64,7 @@ test('admin 订单管理：tabs 筛选只显对应状态 + 抽屉状态流转', 
 test('admin 导出订单 CSV 触发下载', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page, '张伟', 'admin')
-  await page.locator('#nav').getByText('订单管理').click()
+  await openNavItem(page, '业务', '订单管理')
   await expect(page.getByTestId('orders-export')).toBeVisible()
   const downloadPromise = page.waitForEvent('download')
   await page.getByTestId('orders-export').click()
@@ -75,7 +76,7 @@ test('admin 导出订单 CSV 触发下载', async ({ page }) => {
 test('admin 隐藏路由归属父级页签：订单详情不新增独立页签', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page, '张伟', 'admin')
-  await page.locator('#nav').getByText('订单管理').click()
+  await openNavItem(page, '业务', '订单管理')
   await page.getByTestId('orders-list').locator('tbody tr').first().click()
   await expect(page.getByTestId('order-drawer')).toHaveAttribute('visible', '')
   await page.getByTestId('order-detail-link').click()
@@ -100,7 +101,7 @@ test('基础表单：空值提交触发必填校验', async ({ page }) => {
 test('admin 面包屑新页显示 应用 / 创建订单', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page, '张伟', 'admin')
-  await page.locator('#nav').getByText('创建订单').click()
+  await openNavItem(page, '业务', '创建订单')
   await expect(page.getByTestId('form-steps')).toBeVisible()
   await expect(page.locator('#crumbs')).toContainText('应用')
   await expect(page.locator('#crumbs')).toContainText('创建订单')

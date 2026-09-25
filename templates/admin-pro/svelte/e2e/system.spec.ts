@@ -2,6 +2,7 @@
 // Svelte 适配记录：oas-radio host 中心合成点击有死区——点击 shadow 内 input（与 react 版
 // 同款写法逐字沿用）；/system/* 六页均已真实实现，viewer 403 用例直接移植
 import { expect, test, type Page } from '@playwright/test'
+import { openNavItem } from './helpers'
 
 async function noConsoleErrors(page: Page): Promise<string[]> {
   const errors: string[] = []
@@ -26,7 +27,7 @@ async function login(page: Page, name: string, role: 'admin' | 'viewer'): Promis
 test('admin 新建角色：自定义数据范围 + transfer 选部门后入表', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page, '张伟', 'admin')
-  await page.locator('#nav').getByText('角色管理').click()
+  await openNavItem(page, '系统', '角色管理')
   await expect(page.getByTestId('roles-table')).toContainText('超级管理员')
 
   await page.getByTestId('role-create').click()
@@ -54,7 +55,7 @@ test('admin 新建角色：自定义数据范围 + transfer 选部门后入表',
 test('admin 权限树选中按钮节点：详情卡显示权限标识', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page, '张伟', 'admin')
-  await page.locator('#nav').getByText('权限管理').click()
+  await openNavItem(page, '系统', '权限管理')
   await expect(page.getByTestId('menu-tree')).toBeVisible()
 
   await page.getByTestId('menu-tree').getByText('用户:删除').click()

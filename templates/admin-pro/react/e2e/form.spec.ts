@@ -2,6 +2,7 @@
 // 三步向导 → /result 成功态、校验拦截、订单抽屉跳订单详情页
 // 控件适配：oas-checkbox host 中心合成点击有死区——点击 shadow 内 input（vue 版实测结论）
 import { expect, test, type Page } from '@playwright/test'
+import { openNavItem } from './helpers'
 
 async function noConsoleErrors(page: Page): Promise<string[]> {
   const errors: string[] = []
@@ -22,7 +23,7 @@ async function login(page: Page): Promise<void> {
 test('admin 创建订单完整向导 → /result 成功态 + sessionStorage 清理', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page)
-  await page.locator('#nav').getByText('创建订单').click()
+  await openNavItem(page, '业务', '创建订单')
   await expect(page.getByTestId('form-steps')).toBeVisible()
 
   await page.getByTestId('form-customer').locator('input').fill('测试客户')
@@ -50,7 +51,7 @@ test('admin 创建订单完整向导 → /result 成功态 + sessionStorage 清�
 test('admin 创建订单校验拦截：步1 空名点下一步停留步1', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page)
-  await page.locator('#nav').getByText('创建订单').click()
+  await openNavItem(page, '业务', '创建订单')
   await expect(page.getByTestId('form-steps')).toBeVisible()
 
   await page.getByTestId('form-next').click()
@@ -63,7 +64,7 @@ test('admin 创建订单校验拦截：步1 空名点下一步停留步1', async
 test('admin 从订单详情抽屉跳转订单详情页', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page)
-  await page.locator('#nav').getByText('订单管理').click()
+  await openNavItem(page, '业务', '订单管理')
   await expect(page.getByTestId('orders-export')).toBeVisible()
 
   await page.getByTestId('orders-list').locator('tbody tr').first().click()

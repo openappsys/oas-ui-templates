@@ -145,6 +145,7 @@ declare module 'react/jsx-runtime' {
         items?: string
         active?: string
         collapsed?: boolean
+        accordion?: boolean
         onOasSelect?: (e: Event) => void
         onOasCollapse?: (e: Event) => void
       }

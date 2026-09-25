@@ -2,6 +2,7 @@
 // 移植自 vanilla-html/e2e/products.spec.ts 的商品管理段（断言语义逐条对齐）；
 // 其中 5 例设置中心用例按简报归并到 settings.spec.ts。
 import { expect, test, type Page } from '@playwright/test'
+import { openNavItem } from './helpers'
 
 async function noConsoleErrors(page: Page): Promise<string[]> {
   const errors: string[] = []
@@ -33,7 +34,7 @@ async function setLocal(page: Page, key: string, value: string): Promise<void> {
 test('admin 商品管理：卡片/列表双视图切换，列表含开关与操作列', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page, '张伟', 'admin')
-  await page.locator('#nav').getByText('商品管理').click()
+  await openNavItem(page, '业务', '商品管理')
   await expect(page.getByTestId('product-grid')).toContainText('无线降噪耳机')
   await expect(page.getByTestId('product-view')).toHaveAttribute('value', 'cards')
 
@@ -53,7 +54,7 @@ test('admin 商品管理：dialog 模式下新建表单以对话框呈现', asyn
   const errors = await noConsoleErrors(page)
   await login(page, '张伟', 'admin')
   await setLocal(page, 'oas-admin.form-mode', 'dialog')
-  await page.locator('#nav').getByText('商品管理').click()
+  await openNavItem(page, '业务', '商品管理')
   await page.getByTestId('product-create').click()
   await expect(page.getByTestId('product-dialog')).toHaveAttribute('visible', '')
   await page.getByTestId('pf-save').click()
@@ -66,7 +67,7 @@ test('admin 商品管理：page 模式下新建跳转整页表单', async ({ pag
   const errors = await noConsoleErrors(page)
   await login(page, '张伟', 'admin')
   await setLocal(page, 'oas-admin.form-mode', 'page')
-  await page.locator('#nav').getByText('商品管理').click()
+  await openNavItem(page, '业务', '商品管理')
   await expect(page.getByTestId('product-create')).toBeVisible()
   await page.getByTestId('product-create').click()
   await expect(page).toHaveURL(/#\/products\/edit$/)
@@ -77,7 +78,7 @@ test('admin 商品管理：page 模式下新建跳转整页表单', async ({ pag
 })
 
 async function openProductsTable(page: Page): Promise<void> {
-  await page.locator('#nav').getByText('商品管理').click()
+  await openNavItem(page, '业务', '商品管理')
   await expect(page.getByTestId('product-view')).toBeVisible()
   if ((await page.getByTestId('product-view').getAttribute('value')) !== 'table') {
     await page.getByTestId('product-view').getByText('列表').click()

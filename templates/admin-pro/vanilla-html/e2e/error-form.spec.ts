@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { openNavItem } from './helpers'
 
 async function login(page: Page, name = '张伟', role?: string): Promise<void> {
   await page.goto('/')
@@ -60,13 +61,13 @@ test('错误页：home 按钮文案随语言切换', async ({ page }) => {
 test('示例分组：侧栏提供错误页入口并可导航', async ({ page }) => {
   await login(page)
   await expect(page.locator('#nav')).toContainText('示例')
-  await page.locator('#nav').getByText('无权访问').click()
+  await openNavItem(page, '示例', '无权访问')
   await expect(page).toHaveURL(/#\/forbidden/)
   await expect(page.locator('.notice-code')).toHaveText('403')
-  await page.locator('#nav').getByText('页面不存在').click()
+  await openNavItem(page, '示例', '页面不存在')
   await expect(page).toHaveURL(/#\/not-found/)
   await expect(page.locator('.notice-code')).toHaveText('404')
-  await page.locator('#nav').getByText('页面加载失败').click()
+  await openNavItem(page, '示例', '页面加载失败')
   await expect(page).toHaveURL(/#\/500/)
   await expect(page.locator('.notice-code')).toHaveText('500')
 })
