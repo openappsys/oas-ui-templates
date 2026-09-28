@@ -3,6 +3,8 @@ import { defineConfig } from '@playwright/test'
 export default defineConfig({
   testDir: 'e2e',
   timeout: 30_000,
+  // 全量并行下机器负载会拉长保存/刷新链路，5s 缺省被击穿（2.5.7 升级实测），放宽到 10s
+  expect: { timeout: 10_000 },
   retries: process.env.CI ? 1 : 0,
   use: {
     baseURL: 'http://localhost:5190',

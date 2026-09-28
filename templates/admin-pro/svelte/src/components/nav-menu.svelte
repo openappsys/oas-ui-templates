@@ -28,7 +28,7 @@
   // items 随 activePath/locale 重建（读 $locale 建立响应式依赖）
   const sidebarJson = $derived.by(() => {
     void $locale
-    return JSON.stringify(sidebarItems(collapsed))
+    return JSON.stringify(sidebarItems())
   })
   const groupJsonNoHref = $derived.by(() => {
     void $locale

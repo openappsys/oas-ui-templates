@@ -32,7 +32,7 @@ const id = props.popover ? 'nav-popover' : 'nav'
 // items 随 activePath/locale 重建（locale 为共享响应式源，读取即建立依赖）
 const sidebarJson = computed(() => {
   void locale.value
-  return JSON.stringify(sidebarItems(collapsed.value))
+  return JSON.stringify(sidebarItems())
 })
 const groupJsonNoHref = computed(() => {
   void locale.value

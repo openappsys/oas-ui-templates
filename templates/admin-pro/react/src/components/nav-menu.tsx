@@ -77,7 +77,7 @@ export function NavMenu({
         id={id}
         ref={navRef as React.Ref<HTMLElement>}
         accordion
-        items={JSON.stringify(sidebarItems(collapsed))}
+        items={JSON.stringify(sidebarItems())}
         active={activePath}
         collapsed={collapsed}
       />

@@ -34,19 +34,19 @@ test('admin 桌面侧栏折叠收窄到 64px，再展开恢复 200px', async ({ 
   await expect.poll(() => siderWidth(page)).toBe(200)
 })
 
-test('admin 折叠态菜单项 hover 显示 tooltip 提示（组件原生）', async ({ page }) => {
+test('admin 折叠态 hover 分组弹出 flyout 子菜单（组件原生）', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 })
   await login(page)
 
   await page.locator('#nav [part="toggle"]').click()
   await expect(page.locator('oas-sider')).toHaveAttribute('collapsed', '')
 
-  // 树形导航：跳过分组父节点（带 aria-expanded），hover 叶子项（页面项）验证 tooltip
-  const item = page.locator('#nav [part="item"]:not([aria-expanded])').first()
-  await item.hover()
-  const tip = page.locator('#nav oas-tooltip [part="tip"]').first()
-  await expect(tip).toBeVisible()
-  await expect(tip).toContainText('仪表盘')
+  // 2.5.7 树形折叠态：分组父节点 hover 弹出 flyout 子菜单（叶子 role=menuitem 在浮层中可见）
+  const group = page.locator('#nav [part="item"]').first()
+  await group.hover()
+  const leaf = page.locator('#nav [part="item"][role="menuitem"]').first()
+  await expect(leaf).toBeVisible()
+  await expect(leaf).toContainText('仪表盘')
 })
 
 test('admin 移动端抽屉开合：汉堡打开、遮罩关闭、Esc 关闭', async ({ page }) => {

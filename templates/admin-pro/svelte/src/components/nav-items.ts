@@ -17,7 +17,7 @@ export function groupLabel(group: RouteGroup | undefined): string {
   return t('nav.group.overview')
 }
 
-function groupOrder(group: RouteGroup | undefined): number {
+function _groupOrder(group: RouteGroup | undefined): number {
   return group ? GROUP_ORDER.indexOf(group) : GROUP_ORDER.length
 }
 
@@ -60,25 +60,18 @@ export function sidebarTreeItems(): SidebarTreeItem[] {
   }).filter((g) => g.children.length > 0)
 }
 
-/** sidebar 扁平导航（collapsed 折叠态专用）：上游「collapsed × children」组合缺陷
- *  期间子菜单不可达（已登记 oas-ui demands 2026-09-24），折叠态暂用平铺 icon 列表；
- *  上游修复后删除本函数并让 sidebarItems 统一走树形 */
-export function sidebarFlatItems(): SidebarItem[] {
-  return appRoutes
-    .filter((r) => !r.meta.hidden)
-    .slice()
-    .sort((a, b) => groupOrder(a.meta.group) - groupOrder(b.meta.group))
-    .map((r) => ({
-      label: t(r.meta.titleKey),
-      value: r.path,
-      icon: r.meta.icon,
-      iconColor: r.meta.iconColor,
-      group: groupLabel(r.meta.group),
-    }))
-}
-
-export function sidebarItems(collapsed: boolean): SidebarItem[] | SidebarTreeItem[] {
-  return collapsed ? sidebarFlatItems() : sidebarTreeItems()
+export function sidebarItems(): SidebarTreeItem[] {
+  return GROUP_ORDER.map((g) => {
+    const children = appRoutes
+      .filter((r) => !r.meta.hidden && (r.meta.group ?? 'nav.demo') === g)
+      .map((r) => ({
+        label: t(r.meta.titleKey),
+        value: r.path,
+        icon: r.meta.icon,
+        iconColor: r.meta.iconColor,
+      }))
+    return { label: groupLabel(g), value: g, icon: GROUP_ICONS[g], children }
+  }).filter((g) => g.children.length > 0)
 }
 
 export interface GroupMenuChild {
