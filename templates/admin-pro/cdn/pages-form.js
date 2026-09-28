@@ -105,8 +105,7 @@ export function renderForm(el) {
             <oas-space justify="end">
               <oas-button data-testid="form-prev">${t('form.prev')}</oas-button>
               <oas-button data-testid="form-next" type="primary">${t('form.next')}</oas-button>
-              <!-- 显隐由 syncStepVis 以 style.display 切换（vanilla 同款）；不放 hidden 属性，
-                   否则被 cdn 的 oas-button[hidden]{display:none!important} 怪癖修复规则永久隐藏 -->
+              <!-- 提交按钮由 syncStepVis 以 style.display 切换（vanilla 同款），不用 hidden 属性 -->
               <oas-button data-testid="form-submit" type="primary">${t('form.submit')}</oas-button>
             </oas-space>
           </div>

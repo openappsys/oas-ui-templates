@@ -81,12 +81,6 @@
   margin: 0 0 var(--oas-space-3);
   font-size: 16px;
 }
-/* oas-button 组件样式无 :host([hidden]) 规则，UA 的 [hidden] 被组件 :host{display:inline-block} 压过，
-   hidden 按钮会渲染成空色块（vanilla/react 同源潜在瑕疵，cdn 侧 document 规则优先于 :host，先修） */
-oas-button[hidden] {
-  display: none !important;
-}
-
 /* ---------- 订单列表 ---------- */
 .orders-scope {
   display: flex;
