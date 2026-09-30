@@ -39,6 +39,18 @@
     { value: 'large', labelKey: 'settings.density.large' },
   ]
 
+  /** 主题预设色板（theme 11 预设的常用子集，色值与 --oas-preset-* 一致） */
+  const PRIMARY_SWATCHES = [
+    '#1677ff', // blue
+    '#2f54eb', // geekblue
+    '#722ed1', // purple
+    '#13c2c2', // cyan
+    '#52c41a', // green
+    '#faad14', // gold
+    '#fa541c', // volcano
+    '#f5222d', // red
+  ]
+
   const { t, locale } = useT()
   /** 模板文案函数：读 $locale 建立响应式依赖，切语言时重渲 */
   const tt = $derived.by(() => {
@@ -165,6 +177,22 @@
       value={color}
       onoas-change={onColorChange}
     ></oas-color-picker>
+  </div>
+  <div class="setting-row">
+    <div>
+      <div class="setting-label">{tt('settings.appearance.primaryLabel')}</div>
+      <div class="setting-hint">{tt('settings.appearance.swatchHint')}</div>
+    </div>
+    <oas-swatch-group
+      id="appearance-swatch"
+      data-testid="appearance-swatch"
+      value={color}
+      onoas-change={onColorChange}
+    >
+      {#each PRIMARY_SWATCHES as c (c)}
+        <oas-swatch color={c}></oas-swatch>
+      {/each}
+    </oas-swatch-group>
   </div>
 </div>
 <div class="setting-group">

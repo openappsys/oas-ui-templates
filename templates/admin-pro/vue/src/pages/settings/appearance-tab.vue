@@ -31,6 +31,18 @@ const DENSITY_OPTIONS: Array<{ value: Density; labelKey: string }> = [
   { value: 'large', labelKey: 'settings.density.large' },
 ]
 
+/** 主题预设色板（theme 11 预设的常用子集，色值与 --oas-preset-* 一致） */
+const PRIMARY_SWATCHES = [
+  '#1677ff', // blue
+  '#2f54eb', // geekblue
+  '#722ed1', // purple
+  '#13c2c2', // cyan
+  '#52c41a', // green
+  '#faad14', // gold
+  '#fa541c', // volcano
+  '#f5222d', // red
+]
+
 const { t: tt, locale } = useT()
 /** 模板文案函数：读 locale.value 建立响应式依赖，切语言时重渲 */
 function t(key: string, params?: Record<string, string | number>): string {
@@ -121,6 +133,20 @@ function onReset(): void {
         :value="color"
         @oas-change="onColorChange"
       />
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">{{ t('settings.appearance.primaryLabel') }}</div>
+        <div class="setting-hint">{{ t('settings.appearance.swatchHint') }}</div>
+      </div>
+      <oas-swatch-group
+        id="appearance-swatch"
+        data-testid="appearance-swatch"
+        :value="color"
+        @oas-change="onColorChange"
+      >
+        <oas-swatch v-for="c in PRIMARY_SWATCHES" :key="c" :color="c" />
+      </oas-swatch-group>
     </div>
   </div>
   <div class="setting-group">

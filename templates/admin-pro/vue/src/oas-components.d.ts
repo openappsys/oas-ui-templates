@@ -23,6 +23,8 @@ declare module 'vue' {
     'oas-checkbox': OasComponent
     'oas-radio': OasComponent
     'oas-color-picker': OasComponent
+    'oas-swatch': OasComponent
+    'oas-swatch-group': OasComponent
     'oas-slider': OasComponent
     'oas-segmented': OasComponent
     'oas-input-number': OasComponent

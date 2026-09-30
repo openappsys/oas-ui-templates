@@ -201,6 +201,19 @@ declare global {
         value?: string
         'onoas-change'?: OasEvent
       }
+      'oas-swatch': OasBase & {
+        color?: string
+        size?: 'xs' | 'small' | 'medium' | 'large' | 'xl'
+        shape?: 'square' | 'rounded' | 'circle'
+        selected?: OasFlag
+        disabled?: boolean
+      }
+      'oas-swatch-group': OasBase & {
+        value?: string
+        multiple?: OasFlag
+        disabled?: boolean
+        'onoas-change'?: OasEvent
+      }
       'oas-slider': OasBase & {
         min?: string | number
         max?: string | number
