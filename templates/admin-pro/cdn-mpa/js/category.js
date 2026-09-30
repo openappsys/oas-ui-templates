@@ -103,6 +103,11 @@ function renderCategory() {
     tableWrap.classList.toggle('table-hidden', list.length === 0)
   }
 
+  // 导出当前表格数据（全量渲染无分页，exportData 即全量语义）：组件内置 Blob 下载
+  document.querySelector('[data-testid="category-export"]').addEventListener('click', () => {
+    table.exportData('csv', { fileName: `category-${Date.now()}` })
+  })
+
   function fillForm(row) {
     state.editingId = row?.id ?? null
     document.querySelector('[data-testid="cf-name"]').setAttribute('value', row?.name ?? '')

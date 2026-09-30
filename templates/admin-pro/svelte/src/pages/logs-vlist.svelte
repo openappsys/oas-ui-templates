@@ -14,14 +14,16 @@
 
   interface Props {
     rows: LogEntry[]
-    /** 筛选结果为空：列表隐藏（空态 overlay 由父组件显示） */
+    /** 筛选后为空（列表隐藏，动态 overlay 覆盖提示显示用） */
     empty: boolean
+    /** 当前过滤关键词（命中列 oas-highlight 高亮），空串不高亮 */
+    keyword: string
     onOpenDetail: (entry: LogEntry) => void
-    /** oas-scroll 透传给父组件做锚点 active 联动 */
+    /** oas-scroll 透传（驱动锚点 active 联动） */
     onScroll: () => void
   }
 
-  let { rows, empty, onOpenDetail, onScroll }: Props = $props()
+  let { rows, empty, keyword, onOpenDetail, onScroll }: Props = $props()
 
   const { t, locale } = useT()
 
@@ -57,9 +59,17 @@
     const tag = element.querySelector('oas-tag')!
     tag.textContent = levelLabel(row.level, t)
     tag.setAttribute('type', LEVEL_TAG[row.level])
-    element.querySelector<HTMLElement>('[data-col="operator"]')!.textContent = row.operator
-    element.querySelector<HTMLElement>('[data-col="action"]')!.textContent = row.action
-    element.querySelector<HTMLElement>('[data-col="ip"]')!.textContent = row.IP
+    // 关键词命中高亮（operator/action/IP 与过滤字段一致）：oas-highlight 属性通道，无注入风险
+    const kw = keyword.trim()
+    const paint = (col: string, text: string) => {
+      const cell = element.querySelector<HTMLElement>(`[data-col="${col}"]`)!
+      cell.setAttribute('text', text)
+      if (kw) cell.setAttribute('highlight', kw)
+      else cell.removeAttribute('highlight')
+    }
+    paint('operator', row.operator)
+    paint('action', row.action)
+    paint('ip', row.IP)
     element.addEventListener('click', () => onOpenDetail(row))
   }
 

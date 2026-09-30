@@ -187,3 +187,18 @@ test('viewer 订单管理：仅见本人订单 + 数据权限提示条', async (
   await expect(page.getByTestId('orders-list')).not.toContainText('蓝海贸易')
   expect(errors).toEqual([])
 })
+
+test('admin 分类数据导出 CSV 下载（oas-table exportData）', async ({ page }) => {
+  const errors = await noConsoleErrors(page)
+  await login(page, '张伟', 'admin')
+  await page.goto('/#/system/category')
+  await expect(page.getByTestId('category-table')).toBeVisible()
+  // 组件内置 Blob 下载（downloadText），toPass 重试点击直至下载真正发生
+  await expect(async () => {
+    const dl = page.waitForEvent('download', { timeout: 2000 })
+    await page.getByTestId('category-export').click()
+    const download = await dl
+    expect(download.suggestedFilename()).toMatch(/^category-.*\.csv$/)
+  }).toPass({ timeout: 15_000 })
+  expect(errors).toEqual([])
+})

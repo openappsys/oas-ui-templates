@@ -119,6 +119,11 @@
   }
 
   /** 行点击委托：composedPath 识别行内编辑按钮（shadow 内原生 click 可冒出 oas-table） */
+  // 导出当前表格数据（全量渲染无分页，exportData 即全量语义）：组件内置 Blob 下载
+  function onExport(): void {
+    ;(tableEl as (HTMLElement & { exportData?: (f?: 'csv', o?: { fileName?: string }) => string }) | null)
+      ?.exportData?.('csv', { fileName: `category-${Date.now()}` })
+  }
   function onTableClick(e: MouseEvent): void {
     const btn = e
       .composedPath()
@@ -177,6 +182,9 @@
         onoas-input={onSearchInput}
         onoas-clear={onSearchClear}
       ></oas-input>
+      <oas-button data-testid="category-export" icon="download" onclick={onExport}>
+        {tt('logs.export')}
+      </oas-button>
     </div>
     <div id="category-items-wrap" class:table-hidden={filtered.length === 0}>
       

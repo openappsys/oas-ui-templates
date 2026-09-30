@@ -238,6 +238,7 @@ declare module 'react/jsx-runtime' {
         'page-size'?: string | number
         current?: string | number
         loading?: boolean
+        exportData?: (format?: 'csv' | 'excel', options?: { fileName?: string }) => string
         onOasSortChange?: (e: Event) => void
       }
       'oas-masonry': OasBase & {

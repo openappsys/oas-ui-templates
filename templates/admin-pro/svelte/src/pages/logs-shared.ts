@@ -92,6 +92,6 @@ export const ITEM_TEMPLATE_HTML = `
   </style>
   <span class="logs-cell logs-time mono" data-col="time"></span>
   <span class="logs-cell logs-level" data-col="level"><oas-tag size="small"></oas-tag></span>
-  <span class="logs-cell logs-operator" data-col="operator"></span>
-  <span class="logs-cell logs-action" data-col="action"></span>
-  <span class="logs-cell logs-ip mono" data-col="ip"></span>`
+  <span class="logs-cell logs-operator"><oas-highlight data-col="operator"></oas-highlight></span>
+  <span class="logs-cell logs-action"><oas-highlight data-col="action"></oas-highlight></span>
+  <span class="logs-cell logs-ip mono"><oas-highlight data-col="ip"></oas-highlight></span>`

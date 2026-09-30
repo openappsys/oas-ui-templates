@@ -150,9 +150,9 @@ export function render(el: HTMLElement): () => void {
     </style>
     <span class="logs-cell logs-time mono" data-col="time"></span>
     <span class="logs-cell logs-level" data-col="level"><oas-tag size="small"></oas-tag></span>
-    <span class="logs-cell logs-operator" data-col="operator"></span>
-    <span class="logs-cell logs-action" data-col="action"></span>
-    <span class="logs-cell logs-ip mono" data-col="ip"></span>`
+    <span class="logs-cell logs-operator"><oas-highlight data-col="operator"></oas-highlight></span>
+    <span class="logs-cell logs-action"><oas-highlight data-col="action"></oas-highlight></span>
+    <span class="logs-cell logs-ip mono"><oas-highlight data-col="ip"></oas-highlight></span>`
   vlist.appendChild(template)
 
   const levelSelect = el.querySelector<HTMLElement>('[data-testid="logs-level"]')!
@@ -322,9 +322,17 @@ export function render(el: HTMLElement): () => void {
     const tag = element.querySelector('oas-tag')!
     tag.textContent = levelLabel(row.level)
     tag.setAttribute('type', LEVEL_TAG[row.level])
-    element.querySelector<HTMLElement>('[data-col="operator"]')!.textContent = row.operator
-    element.querySelector<HTMLElement>('[data-col="action"]')!.textContent = row.action
-    element.querySelector<HTMLElement>('[data-col="ip"]')!.textContent = row.IP
+    // 关键词命中高亮（operator/action/IP 与过滤字段一致）：oas-highlight 属性通道，无注入风险
+    const kw = state.keyword.trim()
+    const paint = (col: string, text: string) => {
+      const cell = element.querySelector<HTMLElement>(`[data-col="${col}"]`)!
+      cell.setAttribute('text', text)
+      if (kw) cell.setAttribute('highlight', kw)
+      else cell.removeAttribute('highlight')
+    }
+    paint('operator', row.operator)
+    paint('action', row.action)
+    paint('ip', row.IP)
     element.addEventListener('click', () => openDetail(row))
   })
 

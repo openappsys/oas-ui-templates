@@ -45,3 +45,15 @@ test('admin 过滤 error 后列表 tag 为 danger 红色', async ({ page }) => {
   ).toBeVisible()
   expect(errors).toEqual([])
 })
+
+test('admin 关键词过滤命中高亮（oas-highlight）', async ({ page }) => {
+  const errors = await noConsoleErrors(page)
+  await login(page, '张伟', 'admin')
+  await page.goto('/#/system/logs')
+  await expect(page.getByTestId('logs-list')).toBeVisible()
+
+  await page.getByTestId('logs-keyword').locator('input').fill('删除')
+  // 输入即过滤：命中行 action 文本被 oas-highlight 的 mark 包裹（穿透 virtual-list 与 highlight 双层 shadow）
+  await expect(page.locator('#logs-list').locator('mark').first()).toBeVisible()
+  expect(errors).toEqual([])
+})

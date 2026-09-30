@@ -131,6 +131,13 @@ function onSearchInput(e: Event): void {
 function onSearchClear(): void {
   keyword.value = ''
 }
+
+// 导出当前表格数据（全量渲染无分页，exportData 即全量语义）：组件内置 Blob 下载
+const tableRef = ref<HTMLElement | null>(null)
+function onExport(): void {
+  ;(tableRef.value as (HTMLElement & { exportData?: (f?: 'csv', o?: { fileName?: string }) => string }) | null)
+    ?.exportData?.('csv', { fileName: `category-${Date.now()}` })
+}
 </script>
 
 <template>
@@ -155,9 +162,13 @@ function onSearchClear(): void {
           @oas-input="onSearchInput"
           @oas-clear="onSearchClear"
         />
+        <oas-button data-testid="category-export" icon="download" @click="onExport">
+          {{ t('logs.export') }}
+        </oas-button>
       </div>
       <div id="category-items-wrap">
         <oas-table
+          ref="tableRef"
           data-testid="category-table"
           row-key="id"
           :class="{ 'table-hidden': empty }"

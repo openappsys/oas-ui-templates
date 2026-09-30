@@ -76,6 +76,7 @@ export function renderCategory(el) {
       <div class="dict-items-card">
         <div class="dict-pane-head">
           <oas-input data-testid="category-search" placeholder="${t('category.search')}" prefix-icon="search" clearable class="category-search"></oas-input>
+          <oas-button data-testid="category-export" icon="download">${t('logs.export')}</oas-button>
         </div>
         <div id="category-items-wrap">
           <oas-table data-testid="category-table" row-key="id"></oas-table>
@@ -138,6 +139,11 @@ export function renderCategory(el) {
     empty.hidden = list.length !== 0
     tableWrap.classList.toggle('table-hidden', list.length === 0)
   }
+
+  // 导出当前表格数据（全量渲染无分页，exportData 即全量语义）：组件内置 Blob 下载
+  el.querySelector('[data-testid="category-export"]').addEventListener('click', () => {
+    table.exportData('csv', { fileName: `category-${Date.now()}` })
+  })
 
   async function refresh() {
     state.rows = await listCategories()

@@ -245,6 +245,7 @@
             bind:this={vlistComp}
             rows={filtered}
             {empty}
+            {keyword}
             onOpenDetail={(entry) => {
               selected = entry
               detailOpen = true

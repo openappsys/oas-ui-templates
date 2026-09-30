@@ -244,6 +244,7 @@ onUnmounted(() => {
               ref="vlistCompRef"
               :rows="filtered"
               :empty="empty"
+              :keyword="keyword"
               @open-detail="
                 (entry) => {
                   selected = entry

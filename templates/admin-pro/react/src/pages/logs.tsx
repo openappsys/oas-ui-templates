@@ -106,9 +106,17 @@ export default function LogsPage() {
     const tag = element.querySelector('oas-tag')!
     tag.textContent = levelLabel(item.level, t)
     tag.setAttribute('type', LEVEL_TAG[item.level])
-    element.querySelector<HTMLElement>('[data-col="operator"]')!.textContent = item.operator
-    element.querySelector<HTMLElement>('[data-col="action"]')!.textContent = item.action
-    element.querySelector<HTMLElement>('[data-col="ip"]')!.textContent = item.IP
+    // 关键词命中高亮（operator/action/IP 与过滤字段一致）：oas-highlight 属性通道，无注入风险
+    const kw = keyword.trim()
+    const paint = (col: string, text: string) => {
+      const cell = element.querySelector<HTMLElement>(`[data-col="${col}"]`)!
+      cell.setAttribute('text', text)
+      if (kw) cell.setAttribute('highlight', kw)
+      else cell.removeAttribute('highlight')
+    }
+    paint('operator', item.operator)
+    paint('action', item.action)
+    paint('ip', item.IP)
     element.addEventListener('click', () => {
       setSelected(item)
       setDetailOpen(true)

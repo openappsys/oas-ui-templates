@@ -121,9 +121,9 @@ export function renderLogs(el) {
     </style>
     <span class="logs-cell logs-time mono" data-col="time"></span>
     <span class="logs-cell logs-level" data-col="level"><oas-tag size="small"></oas-tag></span>
-    <span class="logs-cell logs-operator" data-col="operator"></span>
-    <span class="logs-cell logs-action" data-col="action"></span>
-    <span class="logs-cell logs-ip mono" data-col="ip"></span>`
+    <span class="logs-cell logs-operator"><oas-highlight data-col="operator"></oas-highlight></span>
+    <span class="logs-cell logs-action"><oas-highlight data-col="action"></oas-highlight></span>
+    <span class="logs-cell logs-ip mono"><oas-highlight data-col="ip"></oas-highlight></span>`
   vlist.appendChild(template)
 
   const levelSelect = el.querySelector('[data-testid="logs-level"]')
@@ -291,9 +291,17 @@ export function renderLogs(el) {
     const tag = element.querySelector('oas-tag')
     tag.textContent = levelLabel(item.level)
     tag.setAttribute('type', LEVEL_TAG[item.level])
-    element.querySelector('[data-col="operator"]').textContent = item.operator
-    element.querySelector('[data-col="action"]').textContent = item.action
-    element.querySelector('[data-col="ip"]').textContent = item.IP
+    // 关键词命中高亮（operator/action/IP 与过滤字段一致）：oas-highlight 属性通道，无注入风险
+    const kw = state.keyword.trim()
+    const paint = (col, text) => {
+      const cell = element.querySelector(`[data-col="${col}"]`)
+      cell.setAttribute('text', text)
+      if (kw) cell.setAttribute('highlight', kw)
+      else cell.removeAttribute('highlight')
+    }
+    paint('operator', item.operator)
+    paint('action', item.action)
+    paint('ip', item.IP)
     element.addEventListener('click', () => openDetail(item))
   })
 

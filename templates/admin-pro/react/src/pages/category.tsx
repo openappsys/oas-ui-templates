@@ -171,6 +171,15 @@ export default function CategoryPage() {
   // 组件侧关闭（遮罩/Esc/✕）→ 回写 React 状态（visible 单一事实来源）
   useOasEvent(modalRef, 'oas-close', () => setModalOpen(false))
 
+  // 导出当前表格数据（全量渲染无分页，exportData 即全量语义）：组件内置 Blob 下载
+  const onExport = () => {
+    ;(
+      tableRef.current as
+        | (HTMLElement & { exportData?: (f?: 'csv', o?: { fileName?: string }) => string })
+        | null
+    )?.exportData?.('csv', { fileName: `category-${Date.now()}` })
+  }
+
   const onWrapClick = (e: React.MouseEvent) => {
     const btn = e.nativeEvent
       .composedPath()
@@ -262,6 +271,9 @@ export default function CategoryPage() {
             clearable
             className="category-search"
           />
+          <oas-button data-testid="category-export" icon="download" onClick={onExport}>
+            {t('logs.export')}
+          </oas-button>
         </div>
         <div
           id="category-items-wrap"

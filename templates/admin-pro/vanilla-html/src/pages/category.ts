@@ -89,6 +89,7 @@ export function render(el: HTMLElement): () => void {
       <div class="dict-items-card">
         <div class="dict-pane-head">
           <oas-input data-testid="category-search" placeholder="${t('category.search')}" prefix-icon="search" clearable class="category-search"></oas-input>
+          <oas-button data-testid="category-export" icon="download">${t('logs.export')}</oas-button>
         </div>
         <div id="category-items-wrap">
           <oas-table data-testid="category-table" row-key="id"></oas-table>
@@ -264,6 +265,16 @@ export function render(el: HTMLElement): () => void {
     state.keyword = ''
     renderTable()
   })
+
+  // 导出当前表格数据（全量渲染无分页，exportData 即全量语义）：组件内置 Blob 下载，
+  // 文件名带时间戳对齐 orders 导出习惯
+  el.querySelector<HTMLElement>('[data-testid="category-export"]')!.addEventListener(
+    'click',
+    () => {
+      table.exportData('csv', { fileName: `category-${Date.now()}` })
+      message.success(t('logs.export'))
+    },
+  )
 
   function refreshText(): void {
     el.querySelector<HTMLElement>('h1.page-title')!.textContent = t('nav.category')
