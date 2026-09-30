@@ -116,6 +116,19 @@ declare module 'react/jsx-runtime' {
         disabled?: boolean
         onOasChange?: (e: Event) => void
       }
+      'oas-swatch': OasBase & {
+        color?: string
+        size?: 'xs' | 'small' | 'medium' | 'large' | 'xl'
+        shape?: 'square' | 'rounded' | 'circle'
+        selected?: boolean
+        disabled?: boolean
+      }
+      'oas-swatch-group': OasBase & {
+        value?: string
+        multiple?: boolean
+        disabled?: boolean
+        onOasChange?: (e: Event) => void
+      }
       'oas-slider': OasBase & {
         name?: string
         min?: string | number

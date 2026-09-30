@@ -68,3 +68,19 @@ test('设置中心：主题色按明暗主题独立存储并联动生效', async
   ).toBeNull()
   expect(errors).toEqual([])
 })
+
+test('admin 外观预设色板一键切换主色（oas-swatch-group）', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto('/')
+  await page.getByTestId('login-name').locator('input').fill('张伟')
+  await page.getByTestId('login-submit').click()
+  await page.goto('/#/settings')
+  await page.getByTestId('appearance-swatch').locator('oas-swatch').nth(2).click()
+  // oas-change → 写 --oas-color-primary + 按明暗主题分键持久化
+  await expect
+    .poll(() =>
+      page.evaluate(() => document.documentElement.style.getPropertyValue('--oas-color-primary')),
+    )
+    .toBe('#722ed1')
+  await expect(page.locator('#appearance-swatch')).toHaveAttribute('value', '#722ed1')
+})

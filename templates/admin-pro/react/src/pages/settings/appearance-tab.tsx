@@ -40,6 +40,17 @@ const DENSITY_OPTIONS: Array<{ value: Density; labelKey: string }> = [
   { value: 'large', labelKey: 'settings.density.large' },
 ]
 
+/** 主题预设色板（theme 11 预设的常用子集，色值与 --oas-preset-* 一致） */
+const PRIMARY_SWATCHES = [
+  '#1677ff', // blue
+  '#2f54eb', // geekblue
+  '#722ed1', // purple
+  '#13c2c2', // cyan
+  '#52c41a', // green
+  '#faad14', // gold
+  '#fa541c', // volcano
+  '#f5222d', // red
+]
 /** oas-radio 组的 oas-change 在组容器上委托：composedPath[0] 取实际变动的 radio（vanilla 同款） */
 function changedRadioValue(ev: Event): string | null {
   const radio = ev.composedPath()[0] as HTMLElement
@@ -55,17 +66,28 @@ export function AppearanceTab() {
   const [density, setDensity] = useState(readDensity)
 
   const colorRef = useRef<HTMLElement | null>(null)
+  const swatchRef = useRef<HTMLElement | null>(null)
   const radiusRef = useRef<HTMLElement | null>(null)
   const fontSizeGroupRef = useRef<HTMLDivElement | null>(null)
   const densityGroupRef = useRef<HTMLDivElement | null>(null)
   const themeEditorRef = useRef<HTMLElement | null>(null)
 
   // 主题色：即时写 --oas-color-primary；按当前明暗主题分键持久化（无 toast）
+  const applyPrimaryColor = (value: string): void => {
+    document.documentElement.style.setProperty('--oas-color-primary', value)
+    localStorage.setItem(`${THEME_PREFIX}${currentTheme()}`, value)
+    setColor(value)
+  }
+
   useOasEvent<{ value: string }>(colorRef, 'oas-change', (detail) => {
     if (!detail.value) return
-    document.documentElement.style.setProperty('--oas-color-primary', detail.value)
-    localStorage.setItem(`${THEME_PREFIX}${currentTheme()}`, detail.value)
-    setColor(detail.value)
+    applyPrimaryColor(detail.value)
+  })
+
+  // 预设色板：一键切换（拾色器保留精确自定义，二者写入同一持久化键）
+  useOasEvent<{ value: string }>(swatchRef, 'oas-change', (detail) => {
+    if (!detail.value) return
+    applyPrimaryColor(detail.value)
   })
 
   // 圆角：即时写 --oas-radius-md 并持久化（无 toast）
@@ -150,6 +172,17 @@ export function AppearanceTab() {
             id="appearance-color"
             value={color}
           />
+        </div>
+        <div className="setting-row">
+          <div>
+            <div className="setting-label">{t('settings.appearance.primaryLabel')}</div>
+            <div className="setting-hint">{t('settings.appearance.swatchHint')}</div>
+          </div>
+          <oas-swatch-group ref={swatchRef} data-testid="appearance-swatch" value={color}>
+            {PRIMARY_SWATCHES.map((c) => (
+              <oas-swatch key={c} color={c} />
+            ))}
+          </oas-swatch-group>
         </div>
       </div>
       <div className="setting-group">

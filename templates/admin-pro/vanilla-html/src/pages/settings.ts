@@ -85,6 +85,18 @@ const MENU_STYLES_META: Array<{ value: MenuStyle; label: string }> = [
   { value: 'menubar', label: 'menuStyleMenubar' },
   { value: 'navigation', label: 'menuStyleNavigation' },
 ]
+
+/** 主题预设色板（theme 11 预设的常用子集，色值与 --oas-preset-* 一致） */
+const PRIMARY_SWATCHES = [
+  '#1677ff',
+  '#2f54eb',
+  '#722ed1',
+  '#13c2c2',
+  '#52c41a',
+  '#faad14',
+  '#fa541c',
+  '#f5222d',
+]
 const MENU_POSITIONS_META: Array<{ value: MenuPosition; label: string }> = [
   { value: 'left', label: 'menuLeft' },
   { value: 'right', label: 'menuRight' },
@@ -206,6 +218,15 @@ function draw(el: HTMLElement): () => void {
           <div class="setting-hint">${t('settings.appearance.primaryHint')}</div>
         </div>
         <oas-color-picker data-testid="appearance-color" id="appearance-color" value="${readColor()}"></oas-color-picker>
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">${t('settings.appearance.primaryLabel')}</div>
+          <div class="setting-hint">${t('settings.appearance.swatchHint')}</div>
+        </div>
+        <oas-swatch-group data-testid="appearance-swatch" id="appearance-swatch" value="${readColor()}">
+          ${PRIMARY_SWATCHES.map((c) => `<oas-swatch color="${c}"></oas-swatch>`).join('')}
+        </oas-swatch-group>
       </div>
     </div>
     <div class="setting-group">
@@ -464,6 +485,15 @@ function draw(el: HTMLElement): () => void {
     applyColor(color)
   })
 
+  // 预设色板：一键切换（拾色器保留精确自定义，二者写同一 applyColor/持久化）
+  const swatchGroup = appearance.node.querySelector<HTMLElement>('#appearance-swatch')!
+  swatchGroup.addEventListener('oas-change', (e) => {
+    const color = (e as CustomEvent<{ value: string }>).detail.value
+    if (!color) return
+    applyColor(color)
+    swatchGroup.setAttribute('value', color)
+  })
+
   radiusSlider.addEventListener('oas-change', (e) => {
     const value = (e as CustomEvent<{ value: number }>).detail.value
     const n = Number(value)
@@ -491,6 +521,8 @@ function draw(el: HTMLElement): () => void {
     const theme = currentTheme()
     const cp = appearance.node.querySelector<HTMLElement>('#appearance-color')!
     cp.setAttribute('value', readColor())
+    const sg = appearance.node.querySelector<HTMLElement>('#appearance-swatch')
+    sg?.setAttribute('value', readColor())
     const stored = localStorage.getItem(`${THEME_PREFIX}${theme}`)
     if (stored) document.documentElement.style.setProperty('--oas-color-primary', stored)
     else document.documentElement.style.removeProperty('--oas-color-primary')
