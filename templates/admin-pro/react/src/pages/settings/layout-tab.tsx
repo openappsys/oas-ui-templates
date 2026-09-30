@@ -5,7 +5,7 @@
 // modal.confirm 的确认按钮在 oas-modal panel 内，其原生 click 被 stopPropagation——
 // 但确认动作走 modal.confirm 的 onOk 选项（库内部直绑），无需也不应手动绑事件。
 import { Fragment, useRef, useState } from 'react'
-import { modal } from '@oas-ui/ui'
+import { modal } from '@oas-ui/ui/feedback/modal'
 import { useOasEvent } from '../../hooks/use-oas-event'
 import { useT } from '../../hooks/use-t'
 import { appMessage } from '../../lib/app-message'
