@@ -38,7 +38,6 @@ const VIEW_TITLES: Record<string, string> = { home: 'OAS Mobile', mine: '我的'
 
 let feed: FeedItem[] = [...feedSeed]
 
-
 export function mountApp(root: HTMLElement): void {
   root.innerHTML = `
     <oas-app-bar heading="${VIEW_TITLES.home}" elevated hide-on-scroll>
@@ -186,5 +185,5 @@ export function mountApp(root: HTMLElement): void {
     renderFeed()
   })
 
-    renderFeed()
+  renderFeed()
 }

@@ -4,7 +4,7 @@
 //    useOasEvent 桥接）；提交/重置按钮原生 click 直绑 @click
 // 3. 提交/重置仍走命令式：oas-form 内部 <form> 在 shadowRoot 里，
 //    requestSubmit()/reset() 跨 shadow 调用（login.vue 同款 playground 实测模式）
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { advFormData } from '../data/adv-form'
 import { useT } from '../composables/use-t'
 import { appMessage } from '../lib/app-message'
@@ -18,6 +18,20 @@ function t(key: string, params?: Record<string, string | number>): string {
 
 const formRef = ref<HTMLElement | null>(null)
 let formValues: Record<string, string> = {}
+
+// form-list 行模板经 JS 注入（logs-vlist.vue 同款 innerHTML 通道）：Vue 编译器对 SFC 内
+// <template> 传透不稳（子元素不落 content）；且 oas-form-list 连接时克隆行，须连接后以
+// 新 template 元素挂载（MutationObserver 感知重建）
+const listRef = ref<HTMLElement | null>(null)
+onMounted(() => {
+  const list = listRef.value
+  if (!list || list.querySelector('template')) return
+  const tpl = document.createElement('template')
+  tpl.innerHTML =
+    '<oas-input name="projects[{index}].name"></oas-input>' +
+    '<oas-input name="projects[{index}].role"></oas-input>'
+  list.appendChild(tpl)
+})
 
 const data = advFormData()
 
@@ -138,6 +152,9 @@ function onSubmitClick(): void {
           </oas-form-item>
         </div>
       </oas-card>
+      <oas-form-item class="adv-projects" :label="t('advanced.projects')">
+        <oas-form-list ref="listRef" name="projects" min="1" max="5"></oas-form-list>
+      </oas-form-item>
       <oas-space>
         <oas-button type="primary" data-action="submit" @click="onSubmitClick">
           {{ t('adv.submit') }}
@@ -152,6 +169,18 @@ function onSubmitClick(): void {
 /* 高级表单样式（自 advanced-form.css 迁入） */
 .adv-card {
   margin-bottom: var(--oas-space-4);
+}
+/* 项目经验（oas-form-list）：行 wrapper 为 light DOM，两输入并排 */
+.adv-projects {
+  margin-bottom: var(--oas-space-4);
+}
+.adv-projects :deep([data-oas-form-list-item]) {
+  display: flex;
+  gap: var(--oas-space-2);
+}
+.adv-projects :deep([data-oas-form-list-item] oas-input) {
+  flex: 1;
+  min-width: 0;
 }
 .adv-grid {
   display: grid;

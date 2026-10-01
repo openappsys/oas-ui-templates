@@ -160,6 +160,15 @@
         </oas-form-item>
       </div>
     </oas-card>
+    <oas-form-item class="adv-projects" label={tt('advanced.projects')}>
+      <oas-form-list {...{ name: 'projects', min: '1', max: '5' }}>
+        <!-- 行模板 name 用 {index} 占位（组件索引化）；属性值用字符串字面量防 Svelte 表达式插值 -->
+        <template>
+          <oas-input name={'projects[{index}].name'}></oas-input>
+          <oas-input name={'projects[{index}].role'}></oas-input>
+        </template>
+      </oas-form-list>
+    </oas-form-item>
     <oas-space>
       
       <oas-button type="primary" data-action="submit" onclick={onSubmit}>

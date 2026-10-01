@@ -207,6 +207,7 @@ export default {
   'adv.coop': '合作设置',
   'adv.channels': '合作渠道',
   'adv.notify': '接收通知',
+  'advanced.projects': '项目经验',
   'adv.submit': '提交登记',
   'adv.submitted': '提交成功',
   'adv.ruleCompany': '请输入公司名称',

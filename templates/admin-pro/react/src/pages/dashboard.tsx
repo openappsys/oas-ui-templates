@@ -179,6 +179,11 @@ export default function DashboardPage() {
         </oas-space>
       </div>
 
+      <oas-marquee className="dash-notice" speed="36" pause-on-hover>
+        <oas-tag size="small">公告</oas-tag>
+        <span>oas-ui v2.5.7 发布：swatch 色板 / upload 裁剪 / 移动端 flyout 子菜单同步落地</span>
+      </oas-marquee>
+
       <div className="stat-grid" id="stat-grid">
         {statsReady
           ? STATS.map((s) => {

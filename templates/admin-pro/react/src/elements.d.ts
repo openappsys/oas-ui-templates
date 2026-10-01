@@ -63,6 +63,12 @@ declare module 'react/jsx-runtime' {
         name?: string
         required?: boolean
       }
+      'oas-form-list': OasBase & {
+        name?: string
+        min?: string | number
+        max?: string | number
+        disabled?: boolean
+      }
       'oas-card': OasBase & {
         title?: string
       }
@@ -397,6 +403,14 @@ declare module 'react/jsx-runtime' {
         value?: string | number
         duration?: string | number
         'to-fixed'?: string | number
+      }
+      'oas-marquee': OasBase & {
+        speed?: string | number
+        'pause-on-hover'?: boolean
+        'fade-edges'?: boolean
+        orientation?: string
+        reverse?: boolean
+        'max-loops'?: string | number
       }
       'oas-descriptions': OasBase & {
         column?: string | number

@@ -568,6 +568,7 @@ export default {
   'adv.coop': 'Cooperation',
   'adv.channels': 'Channels',
   'adv.notify': 'Notifications',
+  'advanced.projects': 'Projects',
   'adv.submit': 'Submit',
   'adv.submitted': 'Submitted',
   'adv.ruleCompany': 'Please enter company name',

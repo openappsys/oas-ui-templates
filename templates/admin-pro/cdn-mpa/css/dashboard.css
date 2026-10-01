@@ -14,6 +14,17 @@
   );
 }
 
+/* 公告跑马灯：细条卡片化，与 stat-grid 呼应 */
+.dash-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));

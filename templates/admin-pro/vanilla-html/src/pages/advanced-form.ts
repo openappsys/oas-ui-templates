@@ -55,6 +55,7 @@ export function render(el: HTMLElement): () => void {
     'adv.region',
     'adv.channels',
     'adv.notify',
+    'advanced.projects',
   ]
 
   function refreshText(): void {
@@ -188,6 +189,14 @@ export function render(el: HTMLElement): () => void {
             </oas-form-item>
           </div>
         </oas-card>
+        <oas-form-item class="adv-projects" label="${t('advanced.projects')}">
+          <oas-form-list name="projects" min="1" max="5">
+            <template>
+              <oas-input name="projects[{index}].name"></oas-input>
+              <oas-input name="projects[{index}].role"></oas-input>
+            </template>
+          </oas-form-list>
+        </oas-form-item>
         <oas-space>
           <oas-button type="primary" data-action="submit">${t('adv.submit')}</oas-button>
           <oas-button data-action="reset">${t('basic.reset')}</oas-button>

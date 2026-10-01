@@ -192,6 +192,11 @@ function viewAllOrders(): void {
       </oas-space>
     </div>
 
+    <oas-marquee class="dash-notice" speed="36" pause-on-hover>
+      <oas-tag size="small">公告</oas-tag>
+      <span>oas-ui v2.5.7 发布：swatch 色板 / upload 裁剪 / 移动端 flyout 子菜单同步落地</span>
+    </oas-marquee>
+
     <div id="stat-grid" class="stat-grid">
       <template v-if="statsReady">
         <oas-card
@@ -339,6 +344,17 @@ function viewAllOrders(): void {
 
 <style scoped>
 /* 仪表盘样式（自 app.css 迁入）：仅本页使用的栅格/榜单/快捷入口/指标卡细节 */
+/* 公告跑马灯：细条卡片化，与 stat-grid 呼应 */
+.dash-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));

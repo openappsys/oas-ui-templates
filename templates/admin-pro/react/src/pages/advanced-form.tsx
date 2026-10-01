@@ -3,7 +3,7 @@
 //    JSON attribute 随之重算（dashboard 同款模式）
 // 2. 事件：oas-form 的 oas-submit 自定义事件走 useOasEvent//    提交/重置按钮为 light DOM 原生 click，直绑 onClick；提交经 shadowRoot 内原生 form
 //    仅保留 message.success 提示（可观察行为一致）
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import './advanced-form.css'
 import { advFormData } from '../data/adv-form'
 import { useOasEvent } from '../hooks/use-oas-event'
@@ -18,6 +18,19 @@ function nativeForm(form: HTMLElement | null): HTMLFormElement | null {
 export default function AdvancedFormPage() {
   const { t } = useT()
   const formRef = useRef<HTMLElement | null>(null)
+  const listRef = useRef<HTMLElement | null>(null)
+  // form-list 行模板经 effect 注入（logs.tsx tplRef 同款 innerHTML 通道）：React 19 把 JSX
+  // 写法的 <template> 子元素放进 childNodes 而非 content；且 oas-form-list 在连接时克隆行，
+  // 后填 content 不触发重建——须连接后以新 template 元素挂载（MutationObserver 感知重建）
+  useEffect(() => {
+    const list = listRef.current
+    if (!list || list.querySelector('template')) return
+    const tpl = document.createElement('template')
+    tpl.innerHTML =
+      '<oas-input name="projects[{index}].name"></oas-input>' +
+      '<oas-input name="projects[{index}].role"></oas-input>'
+    list.appendChild(tpl)
+  }, [])
 
   useOasEvent<{ values: Record<string, string> }>(formRef, 'oas-submit', () => {
     appMessage.success(t('adv.submitted'))
@@ -140,6 +153,9 @@ export default function AdvancedFormPage() {
             </oas-form-item>
           </div>
         </oas-card>
+        <oas-form-item className="adv-projects" label={t('advanced.projects')}>
+          <oas-form-list ref={listRef} name="projects" min="1" max="5"></oas-form-list>
+        </oas-form-item>
         <oas-space>
           <oas-button type="primary" data-action="submit" onClick={onSubmit}>
             {t('adv.submit')}

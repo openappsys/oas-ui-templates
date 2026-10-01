@@ -3,6 +3,17 @@
    .stat-card/.stat-label/.stat-value 等被 orders/logs/data-board 共用且被其页级 CSS 覆盖，
    故基础规则留在全局 app.css（保证先于页级覆盖加载），此处只放仪表盘独有规则。 */
 
+/* 公告跑马灯：细条卡片化，与 stat-grid 呼应 */
+.dash-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));

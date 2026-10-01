@@ -557,6 +557,18 @@
 .adv-card {
   margin-bottom: var(--oas-space-4);
 }
+/* 项目经验（oas-form-list）：行 wrapper 为 light DOM，两输入并排 */
+.adv-projects {
+  margin-bottom: var(--oas-space-4);
+}
+.adv-projects [data-oas-form-list-item] {
+  display: flex;
+  gap: var(--oas-space-2);
+}
+.adv-projects [data-oas-form-list-item] oas-input {
+  flex: 1;
+  min-width: 0;
+}
 .adv-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

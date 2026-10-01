@@ -52,6 +52,51 @@ test('高级表单：填写必填项后提交成功', async ({ page }) => {
   expect(errors).toEqual([])
 })
 
+test('项目经验：form-list 行渲染、增行与提交 values.projects 收集', async ({ page }) => {
+  const errors = await noConsoleErrors(page)
+  await login(page)
+  await page.goto('/#/advanced-form')
+  const list = page.locator('#advanced-form oas-form-list')
+  await expect(list).toBeVisible()
+  // min=1 → 初始一行，行内字段 name 经 {index} 索引化
+  await expect(list.locator('[data-oas-form-list-item]')).toHaveCount(1)
+  await expect(list.locator('oas-input[name="projects[0].name"]')).toBeVisible()
+  // 挂 oas-submit 监听（在提交前）捕获 detail.values
+  await page.evaluate(() => {
+    window.__advVals = null
+    document.getElementById('advanced-form')?.addEventListener('oas-submit', (e) => {
+      window.__advVals = e.detail.values
+    })
+  })
+  await list.locator('oas-input[name="projects[0].name"]').locator('input').fill('CRM 系统')
+  await list.locator('oas-input[name="projects[0].role"]').locator('input').fill('负责人')
+  // 增行：第二行 name 索引 +1
+  await list.getByRole('button', { name: '添加' }).click()
+  await expect(list.locator('[data-oas-form-list-item]')).toHaveCount(2)
+  await list.locator('oas-input[name="projects[1].name"]').locator('input').fill('数据中台')
+  await list.locator('oas-input[name="projects[1].role"]').locator('input').fill('开发')
+  // 必填三项（校验不过 oas-submit 不派发）
+  await page.locator('#advanced-form oas-input[name="company"]').locator('input').fill('测试供应商')
+  await page
+    .locator('#advanced-form oas-input[name="creditCode"]')
+    .locator('input')
+    .fill('91330106MA27X8LT0A')
+  await page.locator('#advanced-form oas-combobox[name="category"]').evaluate((el) => {
+    el.setAttribute('value', 'electronics')
+    el.dispatchEvent(
+      new CustomEvent('oas-change', { detail: { value: 'electronics' }, bubbles: true }),
+    )
+  })
+  await page.getByRole('button', { name: '提交登记' }).click()
+  await expect.poll(() => page.evaluate(() => window.__advVals)).not.toBeNull()
+  const values = await page.evaluate(() => window.__advVals)
+  expect(values.projects).toEqual([
+    { name: 'CRM 系统', role: '负责人' },
+    { name: '数据中台', role: '开发' },
+  ])
+  expect(errors).toEqual([])
+})
+
 test('结果页：默认失败态（无提交数据）', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page)

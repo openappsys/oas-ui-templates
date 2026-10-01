@@ -621,6 +621,16 @@ html[data-tabs-bar="off"] .tabs-bar {
   margin: 0 0 var(--oas-space-4);
 }
 
+/* 公告跑马灯：细条卡片化，与 stat-grid 呼应（仅置于基础区块，不进媒体查询重复） */
+.dash-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
@@ -1659,6 +1669,16 @@ oas-sidebar[collapsed]::part(group) {
   .page-head {
     flex-direction: column;
     align-items: flex-start;
+  }
+  /* 公告跑马灯：细条卡片化，与 stat-grid 呼应（仅置于基础区块，不进媒体查询重复） */
+  .dash-notice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
   }
   .stat-grid {
     grid-template-columns: 1fr;

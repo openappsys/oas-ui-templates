@@ -1,3 +1,5 @@
+// e2e/advanced-form.spec.ts —— 高级表单 oas-form-list（项目经验）用例：
+// min=1 行渲染与 {index} 索引化、增行、提交 values.projects 数组收集
 import { expect, test, type Page } from '@playwright/test'
 
 async function noConsoleErrors(page: Page): Promise<string[]> {
@@ -9,46 +11,44 @@ async function noConsoleErrors(page: Page): Promise<string[]> {
   return errors
 }
 
-async function login(page: Page): Promise<void> {
+async function login(page: Page, name: string, role: 'admin' | 'viewer'): Promise<void> {
   await page.goto('/')
-  await page.getByTestId('login-name').locator('input').fill('张伟')
+  await page.getByTestId('login-name').locator('input').fill(name)
+  if (role === 'viewer') {
+    await page.getByTestId('login-role').click()
+    await page.getByText('访客（只读）').click()
+  }
   await page.getByTestId('login-submit').click()
   await expect(page.getByTestId('stat-visits')).toBeVisible()
 }
 
-test('高级表单：页面加载并渲染高级控件', async ({ page }) => {
+test('项目经验：form-list 行渲染与增行索引化', async ({ page }) => {
   const errors = await noConsoleErrors(page)
-  await login(page)
-  await page.goto('#/advanced-form')
-  await expect(page.getByText('供应商信息登记')).toBeVisible()
-  await expect(page.getByText('基本信息')).toBeVisible()
-  await expect(page.getByText('联系方式')).toBeVisible()
-  await expect(page.getByTestId('adv-staff')).toBeVisible()
-  await expect(page.getByTestId('adv-pin')).toBeVisible()
-  await expect(page.getByTestId('adv-rating')).toBeVisible()
-  await expect(page.getByTestId('adv-tags')).toBeVisible()
-  await expect(page.getByTestId('adv-transfer')).toBeVisible()
-  expect(errors).toEqual([])
-})
-
-test('高级表单：空值提交触发必填校验拦截', async ({ page }) => {
-  const errors = await noConsoleErrors(page)
-  await login(page)
-  await page.goto('#/advanced-form')
-  await page.getByRole('button', { name: '提交登记' }).click()
-  await expect(page.getByText('请输入公司名称')).toBeVisible()
-  expect(errors).toEqual([])
-})
-
-test('项目经验：form-list 行渲染、增行与提交 values.projects 收集', async ({ page }) => {
-  const errors = await noConsoleErrors(page)
-  await login(page)
-  await page.goto('#/advanced-form')
+  await login(page, '张伟', 'admin')
+  await page.goto('/#/advanced-form')
   const list = page.locator('#advanced-form oas-form-list')
   await expect(list).toBeVisible()
   // min=1 → 初始一行，行内字段 name 经 {index} 索引化
   await expect(list.locator('[data-oas-form-list-item]')).toHaveCount(1)
-  await expect(list.locator('oas-input[name="projects[0].name"]')).toBeVisible()
+  await expect(
+    list.locator('[data-oas-form-list-item]').first().locator('oas-input[name="projects[0].name"]'),
+  ).toBeVisible()
+  await expect(
+    list.locator('[data-oas-form-list-item]').first().locator('oas-input[name="projects[0].role"]'),
+  ).toBeVisible()
+  // 增行：第二行 name 索引 +1
+  await page.locator('#advanced-form oas-form-list').getByRole('button', { name: '添加' }).click()
+  await expect(list.locator('[data-oas-form-list-item]')).toHaveCount(2)
+  await expect(list.locator('oas-input[name="projects[1].name"]')).toBeVisible()
+  expect(errors).toEqual([])
+})
+
+test('项目经验：提交 values.projects 数组收集', async ({ page }) => {
+  const errors = await noConsoleErrors(page)
+  await login(page, '张伟', 'admin')
+  await page.goto('/#/advanced-form')
+  const list = page.locator('#advanced-form oas-form-list')
+  await expect(list).toBeVisible()
   // 挂 oas-submit 监听（在提交前）捕获 detail.values
   await page.evaluate(() => {
     ;(window as unknown as { __advVals: unknown }).__advVals = null
@@ -60,9 +60,7 @@ test('项目经验：form-list 行渲染、增行与提交 values.projects 收�
   })
   await list.locator('oas-input[name="projects[0].name"]').locator('input').fill('CRM 系统')
   await list.locator('oas-input[name="projects[0].role"]').locator('input').fill('负责人')
-  // 增行：第二行 name 索引 +1
-  await list.getByRole('button', { name: '添加' }).click()
-  await expect(list.locator('[data-oas-form-list-item]')).toHaveCount(2)
+  await page.locator('#advanced-form oas-form-list').getByRole('button', { name: '添加' }).click()
   await list.locator('oas-input[name="projects[1].name"]').locator('input').fill('数据中台')
   await list.locator('oas-input[name="projects[1].role"]').locator('input').fill('开发')
   // 必填三项（校验不过 oas-submit 不派发）

@@ -73,6 +73,12 @@ declare global {
         name?: string
         required?: boolean
       }
+      'oas-form-list': OasBase & {
+        name?: string
+        min?: string | number
+        max?: string | number
+        disabled?: OasFlag
+      }
       'oas-card': OasBase & {
         title?: string
       }

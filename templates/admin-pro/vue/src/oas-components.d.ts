@@ -14,6 +14,7 @@ declare module 'vue' {
     'oas-select': OasComponent
     'oas-form': OasComponent
     'oas-form-item': OasComponent
+    'oas-form-list': OasComponent
     'oas-card': OasComponent
     'oas-tag': OasComponent
     'oas-space': OasComponent
