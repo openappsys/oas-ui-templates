@@ -191,6 +191,7 @@
           bind:this={uploadEl}
           id="pf-cover"
           data-testid="pf-cover"
+          crop-aspect="1:1"
           accept="image/*"
           list-type="picture"
         ></oas-upload>

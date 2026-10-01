@@ -193,6 +193,7 @@ export default function ProductEditPage() {
               <oas-upload
                 id="pf-cover"
                 data-testid="pf-cover"
+                crop-aspect="1:1"
                 accept="image/*"
                 list-type="picture"
               />

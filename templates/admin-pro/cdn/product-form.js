@@ -54,7 +54,7 @@ export function productFormBody(formId) {
         </div>
         <div class="form-field">
           <label class="form-label" for="pf-cover">${t('products.form.cover')}</label>
-          <oas-upload id="pf-cover" data-testid="pf-cover" accept="image/*" list-type="picture"></oas-upload>
+          <oas-upload id="pf-cover" crop-aspect="1:1" data-testid="pf-cover" accept="image/*" list-type="picture"></oas-upload>
         </div>
         <div class="form-actions">
           <oas-space justify="end">

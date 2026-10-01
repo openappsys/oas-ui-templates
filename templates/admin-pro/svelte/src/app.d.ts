@@ -348,6 +348,7 @@ declare global {
       'oas-upload': OasBase & {
         accept?: string
         'list-type'?: string
+        'crop-aspect'?: string
         disabled?: boolean
       }
       'oas-checkbox': OasBase & {
