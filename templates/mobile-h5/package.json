@@ -1,0 +1,26 @@
+{
+  "name": "mobile-h5",
+  "private": true,
+  "license": "MIT OR Apache-2.0",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "echo mobile-h5: no-unit-tests-yet",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@oas-ui/i18n": "^2.5.7",
+    "@oas-ui/icons": "^2.5.7",
+    "@oas-ui/theme": "^2.5.7",
+    "@oas-ui/ui": "^2.5.7"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.0",
+    "@types/node": "^24.0.0"
+  }
+}
