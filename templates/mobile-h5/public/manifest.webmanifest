@@ -1,0 +1,19 @@
+{
+  "name": "OAS Mobile",
+  "short_name": "OAS",
+  "description": "oas-ui 移动端 H5 模板：零框架直接消费 web components",
+  "start_url": "./index.html#/home",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#0b6cff",
+  "background_color": "#f5f7fa",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

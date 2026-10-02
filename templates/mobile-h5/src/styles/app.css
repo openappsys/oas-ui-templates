@@ -48,6 +48,25 @@ oas-app-bar {
 }
 
 .feed-card {
+  .filter-chips {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .filter-chips .chip {
+    cursor: pointer;
+    opacity: 0.55;
+    flex: 0 0 auto;
+  }
+
+  .filter-chips .chip.is-on {
+    opacity: 1;
+    outline: 2px solid var(--oas-color-primary, #0b6cff);
+    outline-offset: -1px;
+    border-radius: 999px;
+  }
   border-radius: 12px;
 }
 

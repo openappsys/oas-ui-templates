@@ -20,3 +20,12 @@ import './styles/app.css'
 import { mountApp } from './app'
 
 mountApp(document.querySelector<HTMLDivElement>('#app')!)
+
+// PWA：生产构建注册应用壳 SW（dev 不注册，避免调试干扰与模块缓存混淆）
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {
+      /* 注册失败不阻断应用（离线能力为渐进增强） */
+    })
+  })
+}

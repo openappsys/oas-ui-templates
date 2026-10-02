@@ -1,6 +1,6 @@
 // 移动端 H5 最小骨架：app-bar + bottom-navigation(pill) + bottom-sheet 发布表单
-// 单页三视图（首页/我的）+ float-button 触发发布 sheet；数据为内存 mock，刷新还原
-import './styles/app.css'
+// hash 路由（#/home /#/list /#/mine）：页面可直达、物理返回键可用（移动 H5 分水岭）；
+// 数据为内存 mock，刷新还原
 
 function el<T extends HTMLElement = HTMLElement>(scope: ParentNode, sel: string): T {
   return scope.querySelector<T>(sel)!
@@ -34,9 +34,36 @@ const feedSeed: FeedItem[] = [
   },
 ]
 
-const VIEW_TITLES: Record<string, string> = { home: 'OAS Mobile', mine: '我的' }
+const VIEW_TITLES: Record<string, string> = {
+  home: 'OAS Mobile',
+  list: '全部内容',
+  mine: '我的',
+}
+
+const ROUTES = ['home', 'list', 'mine'] as const
+type Route = (typeof ROUTES)[number]
 
 let feed: FeedItem[] = [...feedSeed]
+let currentRoute: Route = 'home'
+
+function currentHashRoute(): Route {
+  const raw = location.hash.replace(/^#\//, '')
+  return (ROUTES as readonly string[]).includes(raw) ? (raw as Route) : 'home'
+}
+
+function feedCardHTML(item: FeedItem): string {
+  return `
+    <oas-card class="feed-card">
+      <div style="padding: 12px 14px">
+        <p class="feed-title">${item.title}</p>
+        <div>${item.summary}</div>
+        <div class="feed-meta">
+          <oas-tag size="small">${item.tag}</oas-tag>
+          <span>${item.time}</span>
+        </div>
+      </div>
+    </oas-card>`
+}
 
 export function mountApp(root: HTMLElement): void {
   root.innerHTML = `
@@ -46,6 +73,24 @@ export function mountApp(root: HTMLElement): void {
     </oas-app-bar>
     <main class="view" id="view-home">
       <div id="feed-list"></div>
+    </main>
+    <main class="view" id="view-list" hidden>
+      <oas-input
+        data-testid="list-search"
+        placeholder="搜索标题"
+        prefix-icon="search"
+        clearable
+      ></oas-input>
+      <div class="filter-chips" data-testid="list-chips">
+        <oas-tag class="chip is-on" data-tag="全部">全部</oas-tag>
+        <oas-tag class="chip" data-tag="公告">公告</oas-tag>
+        <oas-tag class="chip" data-tag="动态">动态</oas-tag>
+        <oas-tag class="chip" data-tag="新发布">新发布</oas-tag>
+      </div>
+      <div id="list-body"></div>
+      <div id="list-empty" data-testid="list-empty" hidden>
+        <oas-empty description="没有匹配的内容"></oas-empty>
+      </div>
     </main>
     <main class="view" id="view-mine" hidden>
       <div class="settings-group">
@@ -100,59 +145,72 @@ export function mountApp(root: HTMLElement): void {
       pill
       items='[
         { "label": "首页", "value": "home", "icon": "eye" },
+        { "label": "列表", "value": "list", "icon": "filter" },
         { "label": "我的", "value": "mine", "icon": "user" }
       ]'
     ></oas-bottom-navigation>`
 
+  // hash 规范化：初始无 hash（如直接打开 /）时补写 #/home，
+  // 保证 URL 恒有路由段——返回键/深链/断言行为一致（replace 不留多余历史）
+  if (!location.hash) location.replace(`#/${currentHashRoute()}`)
   const appBar = el(root, 'oas-app-bar')
   const nav = el<HTMLElement>(root, '[data-testid="bottom-nav"]')
   const sheet = el(root, '[data-testid="publish-sheet"]')
   const fab = el(root, '[data-testid="publish-fab"]')
   const viewHome = el(root, '#view-home')
+  const viewList = el(root, '#view-list')
   const viewMine = el(root, '#view-mine')
   const feedList = el(root, '#feed-list')
+  const listBody = el(root, '#list-body')
+  const listEmpty = el(root, '#list-empty')
+  const listSearch = el<HTMLInputElement>(root, '[data-testid="list-search"]')
+
+  let listTag = '全部'
+  let listQuery = ''
 
   function renderFeed(): void {
-    feedList.innerHTML = feed
-      .map(
-        (item) => `
-      <oas-card class="feed-card">
-        <div style="padding: 12px 14px">
-          <p class="feed-title">${item.title}</p>
-          <div>${item.summary}</div>
-          <div class="feed-meta">
-            <oas-tag size="small">${item.tag}</oas-tag>
-            <span>${item.time}</span>
-          </div>
-        </div>
-      </oas-card>`,
-      )
-      .join('')
+    feedList.innerHTML = feed.map(feedCardHTML).join('')
   }
 
-  function switchView(value: string): void {
-    const isHome = value !== 'mine'
-    viewHome.hidden = !isHome
-    viewMine.hidden = isHome
-    appBar.setAttribute('heading', VIEW_TITLES[isHome ? 'home' : 'mine'])
+  function renderList(): void {
+    const kw = listQuery.trim().toLowerCase()
+    const rows = feed.filter(
+      (item) =>
+        (listTag === '全部' || item.tag === listTag) &&
+        (!kw || item.title.toLowerCase().includes(kw) || item.summary.toLowerCase().includes(kw)),
+    )
+    listBody.innerHTML = rows.map(feedCardHTML).join('')
+    listEmpty.hidden = rows.length !== 0
   }
 
-  function openSheet(): void {
-    sheet.setAttribute('open', '')
+  function applyRoute(route: Route): void {
+    currentRoute = route
+    viewHome.hidden = route !== 'home'
+    viewList.hidden = route !== 'list'
+    viewMine.hidden = route !== 'mine'
+    appBar.setAttribute('heading', VIEW_TITLES[route])
+    nav.setAttribute('value', route)
+    if (route === 'list') renderList()
   }
 
-  function closeSheet(): void {
-    sheet.removeAttribute('open')
+  function navigate(route: Route): void {
+    if (currentRoute === route) return
+    location.hash = `#/${route}`
   }
+
+  // hash 路由统一驱动：导航点击 / 深链 / 物理返回键全部走 hashchange
+  window.addEventListener('hashchange', () => applyRoute(currentHashRoute()))
 
   nav.addEventListener('oas-change', (e) => {
     const value = (e as CustomEvent<{ value: string }>).detail.value
-    if (value) switchView(value)
+    if (value) navigate(value as Route)
   })
 
-  fab.addEventListener('click', openSheet)
+  fab.addEventListener('click', () => sheet.setAttribute('open', ''))
 
-  el(root, '[data-testid="publish-cancel"]').addEventListener('click', closeSheet)
+  el(root, '[data-testid="publish-cancel"]').addEventListener('click', () =>
+    sheet.removeAttribute('open'),
+  )
 
   // 表单值走 oas-input 事件存 state（oas-input 宿主不反射 value property）
   let draftTitle = ''
@@ -179,11 +237,32 @@ export function mountApp(root: HTMLElement): void {
     for (const sel of ['[data-testid="publish-title"]', '[data-testid="publish-content"]']) {
       el(root, sel).removeAttribute('value')
     }
-    closeSheet()
-    switchView('home')
-    nav.setAttribute('value', 'home')
+    sheet.removeAttribute('open')
     renderFeed()
+    navigate('home')
+  })
+
+  listSearch.addEventListener('oas-input', (e) => {
+    listQuery = (e as CustomEvent<{ value: string }>).detail.value ?? ''
+    renderList()
+  })
+  listSearch.addEventListener('oas-clear', () => {
+    listQuery = ''
+    renderList()
+  })
+  el(root, '[data-testid="list-chips"]').addEventListener('click', (e) => {
+    const chip = (e.target as HTMLElement).closest<HTMLElement>('.chip')
+    if (!chip) return
+    listTag = chip.dataset.tag ?? '全部'
+    el(root, '[data-testid="list-chips"]')
+      .querySelectorAll('.chip')
+      .forEach((c) => {
+        c.classList.toggle('is-on', c === chip)
+      })
+    renderList()
   })
 
   renderFeed()
+  renderList()
+  applyRoute(currentHashRoute())
 }
