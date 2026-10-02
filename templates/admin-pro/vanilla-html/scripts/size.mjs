@@ -2,10 +2,14 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { gzipSync } from 'node:zlib'
 
+// 2026-09-28 重定档（@oas-ui/* 2.5.7 实测）：registry 白名单随能力示范扩至 67 组件，
+// 组件库本体（form-associated/对比度门禁/移动专项等批次）体积持续增长——
+// entry 实测 367.2KB、total 489.9KB gzip，预算按实测 + ~9% 余量重定。
+// vanilla 已是按需注册模式，无进一步回落空间；后续增长应逐批评估。
 const BUDGETS = {
-  entry: 152600,
+  entry: 400000,
   dashboard: 20480,
-  total: 410700,
+  total: 534000,
 }
 
 const ASSETS_DIR = 'dist/assets'

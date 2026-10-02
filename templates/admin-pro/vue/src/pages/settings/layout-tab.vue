@@ -6,7 +6,7 @@
 // modal.confirm 的确认动作走 onOk 选项（库内部直绑），无需也不应手动绑事件。
 import { computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
-import { modal } from '@oas-ui/ui'
+import { modal } from '@oas-ui/ui/feedback/modal'
 import { useT } from '../../composables/use-t'
 import { appMessage } from '../../lib/app-message'
 import { useSettingsStore } from '../../stores/settings'

@@ -4,7 +4,7 @@
   //   多页签栏写 TABS_BAR_KEY 后 applySettings()；路由模式 modal.confirm 二次确认后 applyRouterMode 整页刷新。
   // modal.confirm 的确认按钮在 oas-modal panel 内，其原生 click 被 stopPropagation——
   // 但确认动作走 modal.confirm 的 onOk 选项（库内部直绑），无需也不应手动绑事件。
-  import { modal } from '@oas-ui/ui'
+  import { modal } from '@oas-ui/ui/feedback/modal'
   import { appMessage } from '../../lib/app-message'
   import { useT } from '../../lib/use-t.svelte'
   import {
