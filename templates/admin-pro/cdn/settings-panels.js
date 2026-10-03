@@ -17,7 +17,16 @@ import {
 } from './js/settings.js'
 
 /** 主题预设色板（theme 11 预设的常用子集，色值与 --oas-preset-* 一致） */
-const PRIMARY_SWATCHES = ['#1677ff', '#2f54eb', '#722ed1', '#13c2c2', '#52c41a', '#faad14', '#fa541c', '#f5222d']
+const PRIMARY_SWATCHES = [
+  '#1677ff',
+  '#2f54eb',
+  '#722ed1',
+  '#13c2c2',
+  '#52c41a',
+  '#faad14',
+  '#fa541c',
+  '#f5222d',
+]
 const FONT_SIZE_MAP = {
   xs: 'settings.fontSize.xs',
   sm: 'settings.fontSize.sm',
