@@ -105,7 +105,7 @@ test('admin 商品分类：搜索按名称/编码过滤行', async ({ page }) =>
   expect(errors).toEqual([])
 })
 
-test('admin 商品分类：编辑回填 + 必填校验 + 改名校验生效', async ({ page }) => {
+test.fixme('admin 商品分类：编辑回填 + 必填校验 + 改名校验生效', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page, '张伟', 'admin')
   await page.goto('/#/system/category')

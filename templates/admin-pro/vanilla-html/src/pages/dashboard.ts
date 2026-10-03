@@ -213,6 +213,9 @@ export function render(el: HTMLElement): () => void {
   }
 
   function renderTop5(rows: Array<{ name: string; category: string; sold: number }>): void {
+    // 在途 fetch 回调保护：路由切走 dispose 清 DOM 后，慢回调再执行会查空元素并抛
+    // unhandled rejection（污染引用本页 console 的用例），已卸载则直接跳过
+    if (!el.isConnected) return
     const list = el.querySelector<HTMLElement>('#top5-list')!
     if (rows.length === 0) {
       list.innerHTML = `<oas-empty description="${t('dashboard.noTop5')}"></oas-empty>`
