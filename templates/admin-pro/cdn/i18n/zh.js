@@ -140,6 +140,7 @@ export default {
   'settings.appearance.colorTitle': '主题色',
   'settings.appearance.primaryLabel': '品牌主色',
   'settings.appearance.primaryHint': '即时应用，明暗主题各自独立保存',
+  'settings.appearance.swatchHint': '预设色一键切换，精确色值用上方拾色器',
   'settings.appearance.radiusTitle': '圆角',
   'settings.appearance.radiusLabel': '控件圆角',
   'settings.appearance.radiusHint': '1 ~ 12px',

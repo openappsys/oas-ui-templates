@@ -219,6 +219,15 @@ function draw(el) {
     applyColor(color)
   })
 
+  // 预设色板：一键切换（拾色器保留精确自定义，二者写同一 applyColor/持久化）
+  const swatchGroup = appearance.querySelector('#appearance-swatch')
+  swatchGroup.addEventListener('oas-change', (e) => {
+    const color = e.detail.value
+    if (!color) return
+    applyColor(color)
+    swatchGroup.setAttribute('value', color)
+  })
+
   radiusSlider.addEventListener('oas-change', (e) => {
     const n = Number(e.detail.value)
     if (!Number.isFinite(n)) return
@@ -245,6 +254,8 @@ function draw(el) {
     const theme = currentTheme()
     const cp = appearance.querySelector('#appearance-color')
     cp.setAttribute('value', localStorage.getItem(`${THEME_PREFIX}${theme}`) || DEFAULT_COLOR)
+    const sg = appearance.querySelector('#appearance-swatch')
+    sg?.setAttribute('value', cp.getAttribute('value'))
     const stored = localStorage.getItem(`${THEME_PREFIX}${theme}`)
     if (stored) document.documentElement.style.setProperty('--oas-color-primary', stored)
     else document.documentElement.style.removeProperty('--oas-color-primary')

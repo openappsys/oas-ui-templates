@@ -11,8 +11,8 @@
     "test:e2e": "playwright test"
   },
   "devDependencies": {
-    "@oas-ui/theme": "^2.5.7",
-    "@oas-ui/ui": "^2.5.7",
+    "@oas-ui/theme": "^2.5.8",
+    "@oas-ui/ui": "^2.5.8",
     "@playwright/test": "^1.63.0"
   },
   "engines": {

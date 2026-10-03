@@ -16,6 +16,8 @@ import {
   NOTIF_PREFIX,
 } from './js/settings.js'
 
+/** 主题预设色板（theme 11 预设的常用子集，色值与 --oas-preset-* 一致） */
+const PRIMARY_SWATCHES = ['#1677ff', '#2f54eb', '#722ed1', '#13c2c2', '#52c41a', '#faad14', '#fa541c', '#f5222d']
 const FONT_SIZE_MAP = {
   xs: 'settings.fontSize.xs',
   sm: 'settings.fontSize.sm',
@@ -109,6 +111,15 @@ export function appearanceHtml() {
           <div class="setting-hint">${t('settings.appearance.primaryHint')}</div>
         </div>
         <oas-color-picker data-testid="appearance-color" id="appearance-color" value="${readColor()}"></oas-color-picker>
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">${t('settings.appearance.primaryLabel')}</div>
+          <div class="setting-hint">${t('settings.appearance.swatchHint')}</div>
+        </div>
+        <oas-swatch-group data-testid="appearance-swatch" id="appearance-swatch" value="${readColor()}">
+          ${PRIMARY_SWATCHES.map((c) => `<oas-swatch color="${c}"></oas-swatch>`).join('')}
+        </oas-swatch-group>
       </div>
     </div>
     <div class="setting-group">

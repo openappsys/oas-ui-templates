@@ -173,6 +173,22 @@ function renderSettings() {
         </div>
         <oas-color-picker data-testid="appearance-color" id="appearance-color" value="${readColor()}"></oas-color-picker>
       </div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">${t('settings.appearance.primaryLabel')}</div>
+          <div class="setting-hint">${t('settings.appearance.swatchHint')}</div>
+        </div>
+        <oas-swatch-group data-testid="appearance-swatch" id="appearance-swatch" value="${readColor()}">
+          <oas-swatch color="#1677ff"></oas-swatch>
+          <oas-swatch color="#2f54eb"></oas-swatch>
+          <oas-swatch color="#722ed1"></oas-swatch>
+          <oas-swatch color="#13c2c2"></oas-swatch>
+          <oas-swatch color="#52c41a"></oas-swatch>
+          <oas-swatch color="#faad14"></oas-swatch>
+          <oas-swatch color="#fa541c"></oas-swatch>
+          <oas-swatch color="#f5222d"></oas-swatch>
+        </oas-swatch-group>
+      </div>
     </div>
     <div class="setting-group">
       <div class="setting-row">
@@ -423,6 +439,14 @@ function renderSettings() {
     if (color) applyColor(color)
   })
 
+  // 预设色板：一键切换（拾色器保留精确自定义，二者写同一 applyColor/持久化）
+  const swatchGroup = panels.appearance.querySelector('#appearance-swatch')
+  swatchGroup.addEventListener('oas-change', (e) => {
+    const color = e.detail?.value
+    if (color) applyColor(color)
+    swatchGroup.setAttribute('value', color)
+  })
+
   // 圆角滑杆：即时生效 + 持久化
   radiusSlider.addEventListener('oas-change', (e) => {
     const n = Number(e.detail?.value)
@@ -450,6 +474,7 @@ function renderSettings() {
   // 主题切换（明暗）：同步取色器值与存储色
   document.addEventListener('themechange', () => {
     colorPicker.setAttribute('value', readColor())
+    swatchGroup.setAttribute('value', readColor())
     const stored = localStorage.getItem(`${THEME_PREFIX}${currentTheme()}`)
     if (stored) document.documentElement.style.setProperty('--oas-color-primary', stored)
     else document.documentElement.style.removeProperty('--oas-color-primary')

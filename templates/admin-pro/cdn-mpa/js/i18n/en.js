@@ -493,6 +493,7 @@ export default {
   'settings.appearance.primaryLabel': 'Brand Primary',
   'settings.appearance.primaryHint':
     'Applies instantly; light and dark themes are saved independently',
+  'settings.appearance.swatchHint': 'One-click presets; use the picker above for custom values',
   'settings.appearance.radiusTitle': 'Border Radius',
   'settings.appearance.radiusLabel': 'Control Radius',
   'settings.appearance.radiusHint': '1 ~ 12px',
