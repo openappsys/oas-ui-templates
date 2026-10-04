@@ -205,7 +205,8 @@ export function mountApp(root: HTMLElement): void {
   el(root, '[data-testid="skin-picker"]')
     .querySelectorAll<HTMLElement>('.chip')
     .forEach((c) => {
-      if ((c.dataset.skin ?? '') === (localStorage.getItem(SKIN_KEY) ?? '')) c.classList.add('is-on')
+      if ((c.dataset.skin ?? '') === (localStorage.getItem(SKIN_KEY) ?? ''))
+        c.classList.add('is-on')
     })
 
   function renderFeed(): void {
