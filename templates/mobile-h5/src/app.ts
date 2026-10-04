@@ -94,6 +94,16 @@ export function mountApp(root: HTMLElement): void {
     </main>
     <main class="view" id="view-mine" hidden>
       <div class="settings-group">
+        <div class="setting-item" data-testid="skin-picker">
+          <span>皮肤</span>
+          <div class="skin-chips">
+            <oas-tag class="chip" data-skin="">默认</oas-tag>
+            <oas-tag class="chip" data-skin="violet">堇紫</oas-tag>
+            <oas-tag class="chip" data-skin="emerald">靛绿</oas-tag>
+            <oas-tag class="chip" data-skin="rose">玫红</oas-tag>
+            <oas-tag class="chip" data-skin="teal">青瞳</oas-tag>
+          </div>
+        </div>
         <div class="setting-item">
           <span>深色模式</span>
           <span class="setting-value">跟随系统</span>
@@ -167,6 +177,36 @@ export function mountApp(root: HTMLElement): void {
 
   let listTag = '全部'
   let listQuery = ''
+
+  // 皮肤持久化与切换（data-skin 与 data-theme 正交；切换清 inline 自定义主色）
+  const SKIN_KEY = 'oas-admin.settings.skin'
+  const applySkin = (skin: string): void => {
+    if (skin) document.documentElement.dataset.skin = skin
+    else delete document.documentElement.dataset.skin
+  }
+  applySkin(localStorage.getItem(SKIN_KEY) ?? '')
+  el(root, '[data-testid="skin-picker"]').addEventListener('click', (e) => {
+    const chip = (e.target as HTMLElement).closest<HTMLElement>('.chip')
+    if (!chip) return
+    const skin = chip.dataset.skin ?? ''
+    applySkin(skin)
+    if (skin) localStorage.setItem(SKIN_KEY, skin)
+    else localStorage.removeItem(SKIN_KEY)
+    document.documentElement.style.removeProperty('--oas-color-primary')
+    localStorage.removeItem('oas-admin.settings.theme.light')
+    localStorage.removeItem('oas-admin.settings.theme.dark')
+    el(root, '[data-testid="skin-picker"]')
+      .querySelectorAll<HTMLElement>('.chip')
+      .forEach((c) => {
+        if (c === chip) c.classList.add('is-on')
+        else c.classList.remove('is-on')
+      })
+  })
+  el(root, '[data-testid="skin-picker"]')
+    .querySelectorAll<HTMLElement>('.chip')
+    .forEach((c) => {
+      if ((c.dataset.skin ?? '') === (localStorage.getItem(SKIN_KEY) ?? '')) c.classList.add('is-on')
+    })
 
   function renderFeed(): void {
     feedList.innerHTML = feed.map(feedCardHTML).join('')
@@ -255,7 +295,7 @@ export function mountApp(root: HTMLElement): void {
     if (!chip) return
     listTag = chip.dataset.tag ?? '全部'
     el(root, '[data-testid="list-chips"]')
-      .querySelectorAll('.chip')
+      .querySelectorAll<HTMLElement>('.chip')
       .forEach((c) => {
         c.classList.toggle('is-on', c === chip)
       })

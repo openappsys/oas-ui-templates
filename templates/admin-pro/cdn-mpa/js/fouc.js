@@ -14,7 +14,7 @@
     /* 无 storage / noop */
   }
 
-  // 设置中心（js/settings.js）外观偏好的启动重放：主题色 / 圆角 / 表格密度 / 字号 / 自定义 token
+  // 设置中心（js/settings.js）外观偏好的启动重放：主题色 / 圆角 / 表格密度 / 字号 / 皮肤 / 自定义 token
   // 同步锚定：改键名须同步修改 js/settings.js（前缀 oas-admin-cdn-mpa.settings.*）
   try {
     const root = document.documentElement
@@ -26,6 +26,11 @@
       } catch {
         return null
       }
+    }
+    // 皮肤预设（data-skin）：合法值才写，非法值视为默认皮肤不动
+    const skin = stored('oas-admin-cdn-mpa.settings.skin')
+    if (['violet', 'emerald', 'rose', 'amber', 'graphite', 'teal'].includes(skin)) {
+      root.dataset.skin = skin
     }
     const color = stored(`oas-admin-cdn-mpa.settings.theme.${theme}`)
     if (color) root.style.setProperty('--oas-color-primary', color)

@@ -8,6 +8,9 @@ export const THEME_PREFIX = 'oas-admin.settings.theme.'
 export const NOTIF_PREFIX = 'oas-admin.settings.notif.'
 export const TABS_BAR_KEY = 'oas-admin.settings.tabs-bar'
 export const DEFAULT_COLOR = '#0b6cff'
+export const SKIN_KEY = 'oas-admin.settings.skin'
+export const SKINS = ['', 'violet', 'emerald', 'rose', 'amber', 'graphite', 'teal'] as const
+export type Skin = (typeof SKINS)[number]
 export const DEFAULT_RADIUS = 6
 
 export type FormMode = 'dialog' | 'drawer' | 'page'
@@ -39,6 +42,16 @@ export function readDensity(): Density {
 
 export function readPageSize(): string {
   return localStorage.getItem(PAGE_SIZE_KEY) ?? '5'
+}
+
+export function readSkin(): Skin {
+  const v = localStorage.getItem(SKIN_KEY)
+  return (SKINS as readonly string[]).includes(v ?? '') ? (v as Skin) : ''
+}
+
+export function applySkin(skin: Skin): void {
+  if (skin) document.documentElement.dataset.skin = skin
+  else delete document.documentElement.dataset.skin
 }
 
 export function readTabsBar(): boolean {
@@ -91,6 +104,7 @@ export function applySettings(): void {
   if (color) document.documentElement.style.setProperty('--oas-color-primary', color)
   const radius = localStorage.getItem(RADIUS_KEY)
   if (radius) document.documentElement.style.setProperty('--oas-radius-md', `${radius}px`)
+  applySkin(readSkin())
   applyDensity()
   applyFontSize()
   applyCustomTokens()

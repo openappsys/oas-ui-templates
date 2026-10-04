@@ -1,4 +1,5 @@
 import { currentLocale, onLocaleChange, setLocale, t } from './i18n.js'
+import { applySkin, readSkin } from './js/settings.js'
 import { matchRoute, routes } from './routes.js'
 
 const SESSION_KEY = 'oas-admin-cdn.session'
@@ -168,6 +169,9 @@ function resolve() {
   disposePage?.()
   disposePage = route.render(view)
 }
+
+// 皮肤预设启动恢复（oas-skin）：data-skin 在渲染前写 html（vanilla applySettings 同语义）
+applySkin(readSkin())
 
 window.addEventListener('hashchange', resolve)
 resolve()

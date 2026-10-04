@@ -13,6 +13,8 @@ export const THEME_PREFIX = 'oas-admin-cdn.settings.theme.'
 export const NOTIF_PREFIX = 'oas-admin-cdn.settings.notif.'
 export const TABS_BAR_KEY = 'oas-admin-cdn.settings.tabs-bar'
 export const DEFAULT_COLOR = '#0b6cff'
+export const SKIN_KEY = 'oas-admin-cdn.settings.skin'
+export const SKINS = ['', 'violet', 'emerald', 'rose', 'amber', 'graphite', 'teal']
 export const DEFAULT_RADIUS = 6
 
 /** 菜单形态 × 位置（自 vanilla layout-config.ts；cdn 壳层暂不消费，仅持久化，注释见 settings 页） */
@@ -45,6 +47,16 @@ export function readBool(key, fallback) {
   if (v === 'true') return true
   if (v === 'false') return false
   return fallback
+}
+
+export function readSkin() {
+  const v = localStorage.getItem(SKIN_KEY)
+  return SKINS.includes(v) ? v : ''
+}
+
+export function applySkin(skin) {
+  if (skin) document.documentElement.dataset.skin = skin
+  else delete document.documentElement.dataset.skin
 }
 
 export function readTabsBar() {
@@ -100,6 +112,7 @@ export function applySettings() {
   if (color) document.documentElement.style.setProperty('--oas-color-primary', color)
   const radius = localStorage.getItem(RADIUS_KEY)
   if (radius) document.documentElement.style.setProperty('--oas-radius-md', `${radius}px`)
+  applySkin(readSkin())
   applyDensity()
   applyFontSize()
   applyCustomTokens()

@@ -452,6 +452,9 @@ export default {
   'settings.appearance.primaryHint':
     'Applies instantly; light and dark themes are saved independently',
   'settings.appearance.swatchHint': 'One-click presets; use the picker above for custom values',
+  'settings.appearance.skinLabel': 'Skin',
+  'settings.appearance.skinHint':
+    'Brand color family as a set; custom primary falls back to default skin',
   'settings.skin.default': 'Default',
   'settings.skin.violet': 'Violet',
   'settings.skin.emerald': 'Emerald',

@@ -8,6 +8,7 @@ import {
   NOTIF_PREFIX,
   PAGE_SIZE_KEY,
   RADIUS_KEY,
+  SKIN_KEY,
   TABS_BAR_KEY,
   THEME_PREFIX,
 } from '../settings-init'
@@ -22,6 +23,7 @@ describe('settings store', () => {
     document.documentElement.style.removeProperty('--app-font-scale')
     delete document.documentElement.dataset.theme
     delete document.documentElement.dataset.tabsBar
+    delete document.documentElement.dataset.skin
     setActivePinia(createPinia())
   })
 
@@ -122,5 +124,30 @@ describe('settings store', () => {
     expect(store.radius).toBeNull()
     expect(document.documentElement.style.getPropertyValue('--oas-color-primary')).toBe('')
     expect(document.documentElement.style.getPropertyValue('--oas-radius-md')).toBe('')
+  })
+
+  it('皮肤：setSkin 写 data-skin + SKIN_KEY 持久化 + 启动重放；自定义主色与重置联动清除', () => {
+    localStorage.setItem(SKIN_KEY, 'violet')
+    initSettingsStore()
+    const store = useSettingsStore()
+    // 启动重放：data-skin 落 DOM
+    expect(document.documentElement.dataset.skin).toBe('violet')
+    // 皮肤切换：持久化 + 清当前主题 inline 主色
+    store.setColor('#123456')
+    store.setSkin('teal')
+    expect(localStorage.getItem(SKIN_KEY)).toBe('teal')
+    expect(document.documentElement.dataset.skin).toBe('teal')
+    expect(document.documentElement.style.getPropertyValue('--oas-color-primary')).toBe('')
+    expect(localStorage.getItem(`${THEME_PREFIX}light`)).toBeNull()
+    // 互斥：自定义主色 → data-skin 移除 + SKIN_KEY 清除
+    store.setColor('#7c3aed')
+    expect(document.documentElement.dataset.skin).toBeUndefined()
+    expect(localStorage.getItem(SKIN_KEY)).toBeNull()
+    expect(document.documentElement.style.getPropertyValue('--oas-color-primary')).toBe('#7c3aed')
+    // 重置联动清皮肤
+    store.setSkin('amber')
+    store.resetAppearance()
+    expect(document.documentElement.dataset.skin).toBeUndefined()
+    expect(localStorage.getItem(SKIN_KEY)).toBeNull()
   })
 })

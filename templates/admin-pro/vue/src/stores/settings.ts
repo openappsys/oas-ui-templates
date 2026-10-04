@@ -18,17 +18,20 @@ import {
   NOTIF_ROWS,
   PAGE_SIZE_KEY,
   RADIUS_KEY,
+  SKIN_KEY,
   TABS_BAR_KEY,
   THEME_PREFIX,
   type Density,
   type FontSize,
   type FormMode,
+  type Skin,
   currentTheme,
   readBool,
   readDensity,
   readFontSize,
   readFormMode,
   readPageSize,
+  readSkin,
   readTabsBar,
 } from '../settings-init'
 
@@ -65,6 +68,8 @@ export const useSettingsStore = defineStore('settings', () => {
   const pageSize = ref<string>(readPageSize())
   const tabsBar = ref<boolean>(readTabsBar())
   const notifChecks = ref<Record<string, boolean>>(readNotifChecks())
+  /** 皮肤预设（data-skin）：'' = 默认皮肤（与自定义主色互斥） */
+  const skin = ref<Skin>(readSkin())
   /** 主题编辑器（oas-theme-editor）写入的自定义 token：键 → 值 */
   const customTokens = ref<Record<string, string>>(readCustomTokens())
 
@@ -111,6 +116,12 @@ export const useSettingsStore = defineStore('settings', () => {
     document.documentElement.dataset.tabsBar = tabsBar.value ? 'on' : 'off'
   }
 
+  /** 皮肤：写/删 html data-skin（与 data-theme 正交的皮肤预设层） */
+  function applySkin(): void {
+    if (skin.value) document.documentElement.dataset.skin = skin.value
+    else delete document.documentElement.dataset.skin
+  }
+
   /** 自定义 token 重放（原 settings-init.applyCustomTokens：只增写，不做逐键清理） */
   function applyCustomTokens(): void {
     for (const [k, v] of Object.entries(customTokens.value)) {
@@ -122,6 +133,7 @@ export const useSettingsStore = defineStore('settings', () => {
   function applyAll(): void {
     applyColor()
     applyRadius()
+    applySkin()
     applyDensity()
     applyFontSize()
     applyCustomTokens()
@@ -130,10 +142,22 @@ export const useSettingsStore = defineStore('settings', () => {
 
   // —— 动作：设置页/页面消费方唯一写入口 ——
 
-  /** 主题色：写入当前主题的分键存储位并即时生效 */
+  /** 主题色：写入当前主题的分键存储位并即时生效；自定义主色与皮肤互斥，皮肤让位回默认 */
   function setColor(value: string): void {
     themeColors.value[currentTheme()] = value
+    if (skin.value) {
+      skin.value = ''
+      applySkin()
+    }
     applyColor()
+  }
+
+  /** 皮肤切换：写 data-skin + 持久化；皮肤接管品牌色族，清当前主题的 inline 自定义主色 */
+  function setSkin(v: Skin): void {
+    skin.value = v
+    themeColors.value[currentTheme()] = null
+    applyColor()
+    applySkin()
   }
 
   function setRadius(n: number): void {
@@ -189,13 +213,15 @@ export const useSettingsStore = defineStore('settings', () => {
     return live || DEFAULT_COLOR
   }
 
-  /** 外观重置：清主题色双键 + 圆角 + 自定义 token（不含字号/密度，语义对齐原 onReset） */
+  /** 外观重置：清主题色双键 + 圆角 + 自定义 token + 皮肤（不含字号/密度，语义对齐原 onReset） */
   function resetAppearance(): void {
     themeColors.value = { light: null, dark: null }
     radius.value = null
     customTokens.value = {}
+    skin.value = ''
     applyColor()
     applyRadius()
+    applySkin()
   }
 
   return {
@@ -207,10 +233,12 @@ export const useSettingsStore = defineStore('settings', () => {
     pageSize,
     tabsBar,
     notifChecks,
+    skin,
     customTokens,
     applyAll,
     currentColor,
     setColor,
+    setSkin,
     setRadius,
     setFontSize,
     setDensity,
@@ -235,6 +263,8 @@ function persistSettings(store: SettingsStore): void {
   }
   if (store.radius != null) localStorage.setItem(RADIUS_KEY, String(store.radius))
   else localStorage.removeItem(RADIUS_KEY)
+  if (store.skin) localStorage.setItem(SKIN_KEY, store.skin)
+  else localStorage.removeItem(SKIN_KEY)
   localStorage.setItem(FONT_SIZE_KEY, store.fontSize)
   localStorage.setItem(DENSITY_KEY, store.density)
   localStorage.setItem(FORM_MODE_KEY, store.formMode)

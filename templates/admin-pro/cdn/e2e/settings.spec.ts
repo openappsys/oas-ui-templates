@@ -117,3 +117,28 @@ test('设置中心：主题色按明暗主题独立存储并联动生效', async
   ).toBeNull()
   expect(errors).toEqual([])
 })
+
+// 归并自 vanilla profile.spec.ts 皮肤用例：切皮肤 → data-skin 写入 html + inline 主色清除
+// + 刷新持久化 → 回默认 data-skin 移除（oas-skin 皮肤预设层）
+test('设置中心：皮肤切换写 data-skin、清 inline 主色并持久化（oas-skin）', async ({ page }) => {
+  const errors = await noConsoleErrors(page)
+  await login(page)
+  await openNavItem(page, '系统', '设置中心')
+  await page.getByTestId('settings-tabs').getByText('外观', { exact: true }).click()
+  await page.getByTestId('skin-group').getByText('堇紫').click()
+  // data-skin 写入 html，皮肤接管品牌色族（violet 主色）
+  await expect(page.locator('html')).toHaveAttribute('data-skin', 'violet')
+  await expect
+    .poll(() =>
+      page.evaluate(() => document.documentElement.style.getPropertyValue('--oas-color-primary')),
+    )
+    .toBe('')
+  // 刷新持久化：data-skin 由 app.js 启动恢复
+  await page.reload()
+  await expect(page.locator('html')).toHaveAttribute('data-skin', 'violet')
+  // 切回默认：data-skin 移除
+  await page.getByTestId('settings-tabs').getByText('外观', { exact: true }).click()
+  await page.getByTestId('skin-group').getByText('默认').click()
+  await expect(page.locator('html')).not.toHaveAttribute('data-skin')
+  expect(errors).toEqual([])
+})

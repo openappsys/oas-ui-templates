@@ -2,7 +2,8 @@
   // src/pages/settings/appearance-tab.svelte —— 外观 Tab：主题色/圆角/字体大小/表格密度/主题编辑器/重置
   //   主题色即时写 --oas-color-primary 并按明暗分键（oas-admin.settings.theme.{light|dark}）存储，
   //   监听 document 'themechange' 换色；圆角写 --oas-radius-md；字号/密度调 applyFontSize()/applyDensity()；
-  //   主题编辑器 token 变更持久化到 CUSTOM_TOKENS_KEY；重置清 4 键并 removeProperty。
+  //   主题编辑器 token 变更持久化到 CUSTOM_TOKENS_KEY；皮肤写 data-skin（oas-skin 预设层，
+  //   与自定义主色互斥）；重置清 5 键并 removeProperty。
   import { appMessage } from '../../lib/app-message'
   import { useT } from '../../lib/use-t.svelte'
   import {
@@ -13,16 +14,21 @@
     FONT_SIZE_KEY,
     FONT_SIZE_OPTIONS,
     RADIUS_KEY,
+    SKINS,
+    SKIN_KEY,
     THEME_PREFIX,
+    type Density,
+    type FontSize,
+    type Skin,
     applyDensity,
     applyFontSize,
+    applySkin,
     currentTheme,
     readColor,
     readDensity,
     readFontSize,
     readRadius,
-    type Density,
-    type FontSize,
+    readSkin,
   } from '../../settings-init'
 
   const FONT_SIZE_MAP: Record<FontSize, string> = {
@@ -38,6 +44,16 @@
     { value: 'default', labelKey: 'settings.density.default' },
     { value: 'large', labelKey: 'settings.density.large' },
   ]
+
+  const SKIN_LABEL_KEYS: Record<Skin, string> = {
+    '': 'settings.skin.default',
+    violet: 'settings.skin.violet',
+    emerald: 'settings.skin.emerald',
+    rose: 'settings.skin.rose',
+    amber: 'settings.skin.amber',
+    graphite: 'settings.skin.graphite',
+    teal: 'settings.skin.teal',
+  }
 
   /** 主题预设色板（theme 11 预设的常用子集，色值与 --oas-preset-* 一致） */
   const PRIMARY_SWATCHES = [
@@ -62,20 +78,25 @@
   let radius = $state(readRadius())
   let fontSize = $state<FontSize>(readFontSize())
   let density = $state<Density>(readDensity())
+  let skin = $state<Skin>(readSkin())
   let themeEditorEl = $state<HTMLElement | null>(null)
   let fontSizeGroupEl = $state<HTMLDivElement | null>(null)
   let densityGroupEl = $state<HTMLDivElement | null>(null)
+  let skinGroupEl = $state<HTMLDivElement | null>(null)
 
   // div 组容器委托监听 oas-change：kebab 自定义事件的模板直绑仅声明在 oas-* 组件标签上，
   // 原生元素走 addEventListener
   $effect(() => {
     const fs = fontSizeGroupEl
     const ds = densityGroupEl
+    const sk = skinGroupEl
     fs?.addEventListener('oas-change', onFontSizeChange)
     ds?.addEventListener('oas-change', onDensityChange)
+    sk?.addEventListener('oas-change', onSkinChange)
     return () => {
       fs?.removeEventListener('oas-change', onFontSizeChange)
       ds?.removeEventListener('oas-change', onDensityChange)
+      sk?.removeEventListener('oas-change', onSkinChange)
     }
   })
 
@@ -86,10 +107,13 @@
     return radio.getAttribute('value')
   }
 
-  // 主题色：即时写 --oas-color-primary；按当前明暗主题分键持久化（无 toast）
+  // 自定义主色与皮肤互斥：写 inline 主色即回默认皮肤（皮肤的品牌色族让位）
   function onColorChange(e: Event): void {
     const { value } = (e as CustomEvent<{ value: string }>).detail
     if (!value) return
+    document.documentElement.removeAttribute('data-skin')
+    localStorage.setItem(SKIN_KEY, '')
+    skin = ''
     document.documentElement.style.setProperty('--oas-color-primary', value)
     localStorage.setItem(`${THEME_PREFIX}${currentTheme()}`, value)
     color = value
@@ -122,6 +146,18 @@
     appMessage.success(t('common.saved'))
   }
 
+  // 皮肤切换：写 data-skin + 持久化；皮肤接管品牌色族，需清 inline 自定义主色
+  function onSkinChange(e: Event): void {
+    const v = changedRadioValue(e) as Skin | null
+    if (v == null) return
+    localStorage.setItem(SKIN_KEY, v)
+    document.documentElement.style.removeProperty('--oas-color-primary')
+    localStorage.removeItem(`${THEME_PREFIX}${currentTheme()}`)
+    applySkin(v)
+    skin = v
+    appMessage.success(t('common.saved'))
+  }
+
   // 主题编辑器：每次修改把 token 持久化，重启后由 settings-init.applyCustomTokens 重放
   function onThemeEditorChange(e: Event): void {
     const { token, value } = (e as CustomEvent<{ token: string; value: string }>).detail
@@ -150,12 +186,15 @@
     return () => document.removeEventListener('themechange', onThemeChange)
   })
 
-  // 重置：清主题色双键 + 圆角 + 自定义 token 共 4 键，removeProperty 两个 CSS 变量
+  // 重置：清主题色双键 + 圆角 + 自定义 token + 皮肤共 5 键，removeProperty 两个 CSS 变量
   function onReset(): void {
     localStorage.removeItem(`${THEME_PREFIX}light`)
     localStorage.removeItem(`${THEME_PREFIX}dark`)
     localStorage.removeItem(RADIUS_KEY)
     localStorage.removeItem(CUSTOM_TOKENS_KEY)
+    localStorage.removeItem(SKIN_KEY)
+    applySkin('')
+    skin = ''
     document.documentElement.style.removeProperty('--oas-color-primary')
     document.documentElement.style.removeProperty('--oas-radius-md')
     color = DEFAULT_COLOR
@@ -193,6 +232,20 @@
         <oas-swatch color={c}></oas-swatch>
       {/each}
     </oas-swatch-group>
+  </div>
+  <div class="setting-row">
+    <div>
+      <div class="setting-label">{tt('settings.appearance.skinLabel')}</div>
+      <div class="setting-hint">{tt('settings.appearance.skinHint')}</div>
+    </div>
+    <!-- checked 用存在性语义（true→''、false→null 移除属性）：组件按属性存在判定选中 -->
+    <div id="skin-group" class="radio-group inline" data-testid="skin-group" bind:this={skinGroupEl}>
+      {#each SKINS as s (s)}
+        <oas-radio name="skin" value={s} checked={skin === s ? '' : null}>
+          {tt(SKIN_LABEL_KEYS[s])}
+        </oas-radio>
+      {/each}
+    </div>
   </div>
 </div>
 <div class="setting-group">

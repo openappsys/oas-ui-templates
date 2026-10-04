@@ -2,7 +2,8 @@
 // src/pages/settings/appearance-tab.vue —— 外观 Tab：主题色/圆角/字体大小/表格密度/主题编辑器/重置
 //   读写走 Pinia settings store：动作改状态 → 生效器写 DOM → $subscribe 同步持久化（键名不变）；
 //   主题色按明暗分键（oas-admin.settings.theme.{light|dark}），监听 document 'themechange'
-//   调 store.syncTheme 换色；重置走 store.resetAppearance 清对应存储位。
+//   调 store.syncTheme 换色；皮肤写 data-skin（oas-skin 预设层，与自定义主色互斥）；
+//   重置走 store.resetAppearance 清对应存储位。
 // Vue 化差异：oas-change 模板直绑；radio 组的 oas-change 在组容器上委托、composedPath[0] 取实际
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
@@ -13,8 +14,10 @@ import {
   DEFAULT_COLOR,
   DEFAULT_RADIUS,
   FONT_SIZE_OPTIONS,
+  SKINS,
   type Density,
   type FontSize,
+  type Skin,
 } from '../../settings-init'
 
 const FONT_SIZE_MAP: Record<FontSize, string> = {
@@ -30,6 +33,16 @@ const DENSITY_OPTIONS: Array<{ value: Density; labelKey: string }> = [
   { value: 'default', labelKey: 'settings.density.default' },
   { value: 'large', labelKey: 'settings.density.large' },
 ]
+
+const SKIN_LABEL_KEYS: Record<Skin, string> = {
+  '': 'settings.skin.default',
+  violet: 'settings.skin.violet',
+  emerald: 'settings.skin.emerald',
+  rose: 'settings.skin.rose',
+  amber: 'settings.skin.amber',
+  graphite: 'settings.skin.graphite',
+  teal: 'settings.skin.teal',
+}
 
 /** 主题预设色板（theme 11 预设的常用子集，色值与 --oas-preset-* 一致） */
 const PRIMARY_SWATCHES = [
@@ -51,7 +64,7 @@ function t(key: string, params?: Record<string, string | number>): string {
 }
 
 const store = useSettingsStore()
-const { fontSize, density } = storeToRefs(store)
+const { fontSize, density, skin } = storeToRefs(store)
 
 // 取色器显示值：当前主题的有效主题色（主题切换时手动同步——主题切换非响应式状态）
 const color = ref(store.currentColor())
@@ -91,6 +104,14 @@ function onDensityChange(e: Event): void {
   const v = changedRadioValue(e) as Density | null
   if (!v) return
   store.setDensity(v)
+  appMessage.success(tt('common.saved'))
+}
+
+// 皮肤切换：写 data-skin + 持久化（store.setSkin 同步清 inline 自定义主色）
+function onSkinChange(e: Event): void {
+  const v = changedRadioValue(e) as Skin | null
+  if (v == null) return
+  store.setSkin(v)
   appMessage.success(tt('common.saved'))
 }
 
@@ -147,6 +168,28 @@ function onReset(): void {
       >
         <oas-swatch v-for="c in PRIMARY_SWATCHES" :key="c" :color="c" />
       </oas-swatch-group>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">{{ t('settings.appearance.skinLabel') }}</div>
+        <div class="setting-hint">{{ t('settings.appearance.skinHint') }}</div>
+      </div>
+      <div
+        id="skin-group"
+        class="radio-group inline"
+        data-testid="skin-group"
+        @oas-change="onSkinChange"
+      >
+        <oas-radio
+          v-for="s in SKINS"
+          :key="s"
+          name="skin"
+          :value="s"
+          :checked="skin === s ? '' : null"
+        >
+          {{ t(SKIN_LABEL_KEYS[s]) }}
+        </oas-radio>
+      </div>
     </div>
   </div>
   <div class="setting-group">

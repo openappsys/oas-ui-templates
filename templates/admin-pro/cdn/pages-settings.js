@@ -8,6 +8,7 @@ import {
   applyDensity,
   applyFontSize,
   applySettings,
+  applySkin,
   canPosition,
   currentTheme,
   CUSTOM_TOKENS_KEY,
@@ -22,6 +23,7 @@ import {
   RADIUS_KEY,
   setMenuPosition,
   setMenuStyle,
+  SKIN_KEY,
   TABS_BAR_KEY,
   THEME_PREFIX,
 } from './js/settings.js'
@@ -213,10 +215,17 @@ function draw(el) {
     localStorage.setItem(`${THEME_PREFIX}${currentTheme()}`, color)
   }
 
+  // 自定义主色与皮肤互斥：写 inline 主色即回默认皮肤（皮肤的品牌色族让位）
+  function onCustomColor(color) {
+    document.documentElement.removeAttribute('data-skin')
+    localStorage.setItem(SKIN_KEY, '')
+    applyColor(color)
+  }
+
   colorPicker.addEventListener('oas-change', (e) => {
     const color = e.detail.value
     if (!color) return
-    applyColor(color)
+    onCustomColor(color)
   })
 
   // 预设色板：一键切换（拾色器保留精确自定义，二者写同一 applyColor/持久化）
@@ -224,8 +233,21 @@ function draw(el) {
   swatchGroup.addEventListener('oas-change', (e) => {
     const color = e.detail.value
     if (!color) return
-    applyColor(color)
+    onCustomColor(color)
     swatchGroup.setAttribute('value', color)
+  })
+
+  // 皮肤切换：写 data-skin + 持久化；皮肤接管品牌色族，需清 inline 自定义主色
+  const skinGroup = appearance.querySelector('#skin-group')
+  skinGroup.addEventListener('oas-change', (e) => {
+    const radio = e.composedPath()[0]
+    if (!radio.hasAttribute('checked')) return
+    const v = radio.getAttribute('value') ?? ''
+    localStorage.setItem(SKIN_KEY, v)
+    document.documentElement.style.removeProperty('--oas-color-primary')
+    localStorage.removeItem(`${THEME_PREFIX}${currentTheme()}`)
+    applySkin(v)
+    OASUI.message.success(t('common.saved'))
   })
 
   radiusSlider.addEventListener('oas-change', (e) => {
@@ -241,6 +263,8 @@ function draw(el) {
     localStorage.removeItem(`${THEME_PREFIX}dark`)
     localStorage.removeItem(RADIUS_KEY)
     localStorage.removeItem(CUSTOM_TOKENS_KEY)
+    localStorage.removeItem(SKIN_KEY)
+    applySkin('')
     document.documentElement.style.removeProperty('--oas-color-primary')
     document.documentElement.style.removeProperty('--oas-radius-md')
     colorPicker.setAttribute('value', DEFAULT_COLOR)

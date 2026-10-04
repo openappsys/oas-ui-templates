@@ -85,7 +85,9 @@ test('admin 外观预设色板一键切换主色（oas-swatch-group）', async (
   await expect(page.locator('#appearance-swatch')).toHaveAttribute('value', '#722ed1')
 })
 
-test('admin 皮肤切换：data-skin 写入 html + 品牌色族切换 + 持久化（oas-skin）', async ({ page }) => {
+test('admin 皮肤切换：data-skin 写入 html + 品牌色族切换 + 持久化（oas-skin）', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 1280, height: 800 })
   await page.goto('/')
   await page.getByTestId('login-name').locator('input').fill('张伟')
@@ -95,7 +97,9 @@ test('admin 皮肤切换：data-skin 写入 html + 品牌色族切换 + 持久�
   // data-skin 写入 html，皮肤接管品牌色族（violet 主色）
   await expect(page.locator('html')).toHaveAttribute('data-skin', 'violet')
   await expect
-    .poll(() => page.evaluate(() => document.documentElement.style.getPropertyValue('--oas-color-primary')))
+    .poll(() =>
+      page.evaluate(() => document.documentElement.style.getPropertyValue('--oas-color-primary')),
+    )
     .toBe('')
   // 刷新持久化
   await page.reload()

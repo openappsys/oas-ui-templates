@@ -12,7 +12,9 @@ import {
   readFormMode,
   readPageSize,
   readRadius,
+  readSkin,
   readTabsBar,
+  SKINS,
   NOTIF_PREFIX,
 } from './js/settings.js'
 
@@ -36,6 +38,11 @@ const FONT_SIZE_MAP = {
 }
 
 export const FONT_SIZE_OPTIONS = ['xs', 'sm', 'md', 'lg', 'xl']
+
+/** 皮肤名 i18n：'' → settings.skin.default，其余 → settings.skin.<name> */
+const skinLabel = (s) => t(s === '' ? 'settings.skin.default' : `settings.skin.${s}`)
+
+const SKIN_ITEMS = () => SKINS.map((s) => ({ label: skinLabel(s), value: s }))
 
 const FONT_SIZE_ITEMS = () =>
   FONT_SIZE_OPTIONS.map((o) => ({ label: t(FONT_SIZE_MAP[o]), value: o }))
@@ -129,6 +136,20 @@ export function appearanceHtml() {
         <oas-swatch-group data-testid="appearance-swatch" id="appearance-swatch" value="${readColor()}">
           ${PRIMARY_SWATCHES.map((c) => `<oas-swatch color="${c}"></oas-swatch>`).join('')}
         </oas-swatch-group>
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">${t('settings.appearance.skinLabel')}</div>
+          <div class="setting-hint">${t('settings.appearance.skinHint')}</div>
+        </div>
+        <div class="radio-group inline" data-testid="skin-group" id="skin-group">
+          ${SKIN_ITEMS()
+            .map(
+              (o) =>
+                `<oas-radio name="skin" value="${o.value}"${readSkin() === o.value ? ' checked' : ''}>${o.label}</oas-radio>`,
+            )
+            .join('')}
+        </div>
       </div>
     </div>
     <div class="setting-group">

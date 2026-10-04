@@ -23,11 +23,15 @@ const THEME_PREFIX = 'oas-admin-cdn-mpa.settings.theme.'
 const NOTIF_PREFIX = 'oas-admin-cdn-mpa.settings.notif.'
 const TABS_BAR_KEY = 'oas-admin-cdn-mpa.settings.tabs-bar'
 const TABS_LAYOUT_KEY = 'oas-admin-cdn-mpa.settings.tabs-layout'
+const SKIN_KEY = 'oas-admin-cdn-mpa.settings.skin'
 const MENU_STYLE_KEY = 'oas-admin-cdn-mpa.menu-style'
 const MENU_POSITION_KEY = 'oas-admin-cdn-mpa.menu-position'
 
 const DEFAULT_COLOR = '#0b6cff'
 const DEFAULT_RADIUS = 6
+
+// 皮肤预设（data-skin，与 data-theme 正交）：'' = 默认皮肤
+const SKINS = ['', 'violet', 'emerald', 'rose', 'amber', 'graphite', 'teal']
 
 // 菜单形态 × 位置矩阵：sidebar 不支持横置（top / top-head 禁用），对齐 vanilla layout-config.ts
 const MENU_STYLES = ['sidebar', 'menubar', 'navigation']
@@ -62,6 +66,16 @@ function readRadius() {
   return Number.isFinite(n) && n > 0 ? n : DEFAULT_RADIUS
 }
 
+function readSkin() {
+  const v = localStorage.getItem(SKIN_KEY)
+  return SKINS.includes(v) ? v : ''
+}
+
+function applySkin(skin) {
+  if (skin) document.documentElement.dataset.skin = skin
+  else delete document.documentElement.dataset.skin
+}
+
 function fontSizeOptions() {
   return ['xs', 'sm', 'md', 'lg', 'xl'].map((v) => ({
     label: t(`settings.fontSize.${v}`),
@@ -75,6 +89,14 @@ function densityOptions() {
     { label: t('settings.density.default'), value: 'default' },
     { label: t('settings.density.large'), value: 'large' },
   ]
+}
+
+function skinLabel(v) {
+  return t(v === '' ? 'settings.skin.default' : `settings.skin.${v}`)
+}
+
+function skinOptions() {
+  return SKINS.map((v) => ({ label: skinLabel(v), value: v }))
 }
 
 function formModeOptions() {
@@ -188,6 +210,13 @@ function renderSettings() {
           <oas-swatch color="#fa541c"></oas-swatch>
           <oas-swatch color="#f5222d"></oas-swatch>
         </oas-swatch-group>
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">${t('settings.appearance.skinLabel')}</div>
+          <div class="setting-hint">${t('settings.appearance.skinHint')}</div>
+        </div>
+        <div class="radio-group inline" data-testid="skin-group" id="skin-group"></div>
       </div>
     </div>
     <div class="setting-group">
@@ -339,6 +368,13 @@ function renderSettings() {
     false,
   )
   radioGroup(
+    panels.appearance.querySelector('#skin-group'),
+    'skin',
+    skinOptions(),
+    readSkin(),
+    false,
+  )
+  radioGroup(
     panels.data.querySelector('#form-mode-group'),
     'formMode',
     formModeOptions(),
@@ -388,6 +424,19 @@ function renderSettings() {
     document.documentElement.style.setProperty('--app-font-scale', String(scale))
   })
 
+  // 皮肤切换：写 data-skin + 持久化；皮肤接管品牌色族，需清 inline 自定义主色。
+  // 不走 bindRadioGroup（其对 value='' 早退）——「默认」项 value 为空串但合法
+  panels.appearance.querySelector('#skin-group').addEventListener('oas-change', (e) => {
+    const radio = e.composedPath()[0]
+    if (!radio.hasAttribute('checked')) return
+    const v = radio.getAttribute('value') ?? ''
+    localStorage.setItem(SKIN_KEY, v)
+    document.documentElement.style.removeProperty('--oas-color-primary')
+    localStorage.removeItem(`${THEME_PREFIX}${currentTheme()}`)
+    applySkin(v)
+    OASUI.message.success(t('common.saved'))
+  })
+
   panels.data.querySelector('[data-testid="page-size"]').addEventListener('oas-change', (e) => {
     const v = e.detail?.value
     if (!v) return
@@ -429,21 +478,26 @@ function renderSettings() {
     localStorage.setItem(NOTIF_PREFIX + key, String(Boolean(e.detail?.checked)))
   })
 
-  // 主题色变更：写 CSS 变量 + 按当前主题持久化
+  // 主题色变更：写 CSS 变量 + 按当前主题持久化；自定义主色与皮肤互斥，皮肤让位回默认
   function applyColor(color) {
     document.documentElement.style.setProperty('--oas-color-primary', color)
     localStorage.setItem(`${THEME_PREFIX}${currentTheme()}`, color)
   }
+  function onCustomColor(color) {
+    document.documentElement.removeAttribute('data-skin')
+    localStorage.setItem(SKIN_KEY, '')
+    applyColor(color)
+  }
   colorPicker.addEventListener('oas-change', (e) => {
     const color = e.detail?.value
-    if (color) applyColor(color)
+    if (color) onCustomColor(color)
   })
 
   // 预设色板：一键切换（拾色器保留精确自定义，二者写同一 applyColor/持久化）
   const swatchGroup = panels.appearance.querySelector('#appearance-swatch')
   swatchGroup.addEventListener('oas-change', (e) => {
     const color = e.detail?.value
-    if (color) applyColor(color)
+    if (color) onCustomColor(color)
     swatchGroup.setAttribute('value', color)
   })
 
@@ -462,6 +516,8 @@ function renderSettings() {
     localStorage.removeItem(`${THEME_PREFIX}dark`)
     localStorage.removeItem(RADIUS_KEY)
     localStorage.removeItem(CUSTOM_TOKENS_KEY)
+    localStorage.removeItem(SKIN_KEY)
+    applySkin('')
     document.documentElement.style.removeProperty('--oas-color-primary')
     document.documentElement.style.removeProperty('--oas-radius-md')
     colorPicker.setAttribute('value', DEFAULT_COLOR)
