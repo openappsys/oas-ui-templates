@@ -452,6 +452,13 @@ export default {
   'settings.appearance.primaryHint':
     'Applies instantly; light and dark themes are saved independently',
   'settings.appearance.swatchHint': 'One-click presets; use the picker above for custom values',
+  'settings.skin.default': 'Default',
+  'settings.skin.violet': 'Violet',
+  'settings.skin.emerald': 'Emerald',
+  'settings.skin.rose': 'Rose',
+  'settings.skin.amber': 'Amber',
+  'settings.skin.graphite': 'Graphite',
+  'settings.skin.teal': 'Teal',
   'settings.appearance.radiusTitle': 'Border Radius',
   'settings.appearance.radiusLabel': 'Control Radius',
   'settings.appearance.radiusHint': '1 ~ 12px',

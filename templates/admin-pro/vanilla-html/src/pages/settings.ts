@@ -18,12 +18,15 @@ import {
   NOTIF_PREFIX,
   PAGE_SIZE_KEY,
   RADIUS_KEY,
+  SKINS,
+  SKIN_KEY,
   TABS_BAR_KEY,
   THEME_PREFIX,
   type Density,
   type FontSize,
   type FormMode,
   applyDensity,
+  applySkin,
   applyFontSize,
   applySettings,
   currentTheme,
@@ -34,8 +37,10 @@ import {
   readFormMode,
   readPageSize,
   readRadius,
+  readSkin,
   readTabsBar,
   CUSTOM_TOKENS_KEY,
+  type Skin,
 } from '../settings-init'
 
 const FONT_SIZE_MAP: Record<FontSize, string> = {
@@ -48,6 +53,19 @@ const FONT_SIZE_MAP: Record<FontSize, string> = {
 
 const FONT_SIZE_ITEMS = (): Array<{ label: string; value: FontSize }> =>
   FONT_SIZE_OPTIONS.map((o) => ({ label: t(FONT_SIZE_MAP[o.value]), value: o.value }))
+
+const SKIN_LABEL_KEYS: Record<Skin, string> = {
+  '': 'settings.skin.default',
+  violet: 'settings.skin.violet',
+  emerald: 'settings.skin.emerald',
+  rose: 'settings.skin.rose',
+  amber: 'settings.skin.amber',
+  graphite: 'settings.skin.graphite',
+  teal: 'settings.skin.teal',
+}
+
+const SKIN_ITEMS = (): Array<{ label: string; value: Skin }> =>
+  SKINS.map((s) => ({ label: t(SKIN_LABEL_KEYS[s]), value: s }))
 
 const FORM_MODE_OPTIONS = (): Array<{ label: string; value: FormMode; desc: string }> => [
   {
@@ -227,6 +245,20 @@ function draw(el: HTMLElement): () => void {
         <oas-swatch-group data-testid="appearance-swatch" id="appearance-swatch" value="${readColor()}">
           ${PRIMARY_SWATCHES.map((c) => `<oas-swatch color="${c}"></oas-swatch>`).join('')}
         </oas-swatch-group>
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">${t('settings.appearance.skinLabel')}</div>
+          <div class="setting-hint">${t('settings.appearance.skinHint')}</div>
+        </div>
+        <div class="radio-group inline" data-testid="skin-group" id="skin-group">
+          ${SKIN_ITEMS()
+            .map(
+              (o) =>
+                `<oas-radio name="skin" value="${o.value}"${readSkin() === o.value ? ' checked' : ''}>${o.label}</oas-radio>`,
+            )
+            .join('')}
+        </div>
       </div>
     </div>
     <div class="setting-group">
@@ -479,10 +511,18 @@ function draw(el: HTMLElement): () => void {
     localStorage.setItem(`${THEME_PREFIX}${currentTheme()}`, color)
   }
 
+  // 自定义主色与皮肤互斥：写 inline 主色即回默认皮肤（皮肤的品牌色族让位）
+  function onCustomColor(color: string): void {
+    document.documentElement.removeAttribute('data-skin')
+    localStorage.setItem(SKIN_KEY, '')
+    syncSkinRadios('')
+    applyColor(color)
+  }
+
   colorPicker.addEventListener('oas-change', (e) => {
     const color = (e as CustomEvent<{ value: string }>).detail.value
     if (!color) return
-    applyColor(color)
+    onCustomColor(color)
   })
 
   // 预设色板：一键切换（拾色器保留精确自定义，二者写同一 applyColor/持久化）
@@ -490,10 +530,39 @@ function draw(el: HTMLElement): () => void {
   swatchGroup.addEventListener('oas-change', (e) => {
     const color = (e as CustomEvent<{ value: string }>).detail.value
     if (!color) return
-    applyColor(color)
+    onCustomColor(color)
     swatchGroup.setAttribute('value', color)
   })
 
+  // 皮肤切换：写 data-skin + 持久化；皮肤接管品牌色族，需清 inline 自定义主色
+  const skinGroup = appearance.node.querySelector<HTMLElement>('#skin-group')!
+  skinGroup.addEventListener('oas-change', (e) => {
+    const value = (e as CustomEvent<{ value: string }>).detail.value as Skin
+    if (value === '' || !value) return
+    document.documentElement.style.removeProperty('--oas-color-primary')
+    localStorage.removeItem(`${THEME_PREFIX}${currentTheme()}`)
+    localStorage.setItem(SKIN_KEY, value)
+    applySkin(value)
+  })
+
+  function syncSkinRadios(active: Skin): void {
+    skinGroup.querySelectorAll('oas-radio').forEach((r) => {
+      const v = r.getAttribute('value') ?? ''
+      if (v === active) r.setAttribute('checked', '')
+      else r.removeAttribute('checked')
+    })
+  }
+
+  skinGroup.addEventListener('oas-change', (e) => {
+    const radio = e.composedPath()[0] as HTMLElement
+    if (!radio.hasAttribute('checked')) return
+    const v = (radio.getAttribute('value') ?? '') as Skin
+    localStorage.setItem(SKIN_KEY, v)
+    document.documentElement.style.removeProperty('--oas-color-primary')
+    localStorage.removeItem(`${THEME_PREFIX}${currentTheme()}`)
+    applySkin(v)
+    message.success(t('common.saved'))
+  })
   radiusSlider.addEventListener('oas-change', (e) => {
     const value = (e as CustomEvent<{ value: number }>).detail.value
     const n = Number(value)
@@ -508,6 +577,9 @@ function draw(el: HTMLElement): () => void {
     localStorage.removeItem(`${THEME_PREFIX}dark`)
     localStorage.removeItem(RADIUS_KEY)
     localStorage.removeItem(CUSTOM_TOKENS_KEY)
+    localStorage.removeItem(SKIN_KEY)
+    applySkin('')
+    syncSkinRadios('')
     document.documentElement.style.removeProperty('--oas-color-primary')
     document.documentElement.style.removeProperty('--oas-radius-md')
     colorPicker.setAttribute('value', DEFAULT_COLOR)
