@@ -61,8 +61,6 @@ body {
 .page {
   width: 100%;
   padding: var(--oas-space-4);
-  max-width: 1280px;
-  margin: 0 auto;
 }
 
 .app {
@@ -537,8 +535,6 @@ html[data-tabs-bar="off"] .tabs-bar {
 .page {
   width: 100%;
   padding: var(--oas-space-4);
-  max-width: 1280px;
-  margin: 0 auto;
 }
 
 .notice {

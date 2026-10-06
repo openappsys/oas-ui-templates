@@ -69,8 +69,6 @@ body {
 .page {
   width: 100%;
   padding: var(--oas-space-4);
-  max-width: 1280px;
-  margin: 0 auto;
 }
 
 /* 品牌 logo（header-bar 与 login 双处使用，留全局） */

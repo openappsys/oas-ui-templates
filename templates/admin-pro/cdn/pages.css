@@ -701,3 +701,11 @@ oas-layout[data-menu-style="navigation"]::part(sider) {
   width: auto;
   max-width: 100%;
 }
+
+/* 超宽屏护栏（与四模板同口径）：≥2000px 视口内容收 1600 居中，避免 4K 全铺过散 */
+@media (min-width: 2000px) {
+  .page {
+    max-width: 1600px;
+    margin: 0 auto;
+  }
+}

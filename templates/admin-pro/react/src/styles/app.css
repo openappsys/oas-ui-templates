@@ -70,8 +70,6 @@ body {
 .page {
   width: 100%;
   padding: var(--oas-space-4);
-  max-width: 1280px;
-  margin: 0 auto;
 }
 
 /* .oas-logo 品牌家族：header-bar.tsx 与 login.tsx（LogoLight）共用，留在全局 */
