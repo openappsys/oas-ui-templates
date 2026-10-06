@@ -431,6 +431,3 @@
 [data-skin="teal"] {
   --oas-color-primary: #0d9488;
 }
-[data-theme="dark"][data-skin="teal"],
-[data-theme="high-contrast"][data-skin="teal"] {
-}
