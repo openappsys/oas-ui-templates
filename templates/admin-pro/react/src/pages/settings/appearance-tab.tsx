@@ -17,6 +17,7 @@ import {
   RADIUS_KEY,
   SKINS,
   SKIN_KEY,
+  GLASS_KEY,
   THEME_PREFIX,
   type Density,
   type FontSize,
@@ -26,6 +27,7 @@ import {
   applySkin,
   currentTheme,
   readColor,
+  readGlass,
   readDensity,
   readFontSize,
   readRadius,
@@ -77,6 +79,7 @@ function changedRadioValue(ev: Event): string | null {
 export function AppearanceTab() {
   const { t } = useT()
   const [color, setColor] = useState(readColor)
+  const [glass, setGlass] = useState(readGlass)
   const [radius, setRadius] = useState(readRadius)
   const [fontSize, setFontSize] = useState(readFontSize)
   const [density, setDensity] = useState(readDensity)
@@ -84,6 +87,7 @@ export function AppearanceTab() {
 
   const colorRef = useRef<HTMLElement | null>(null)
   const swatchRef = useRef<HTMLElement | null>(null)
+  const glassRef = useRef<HTMLElement | null>(null)
   const radiusRef = useRef<HTMLElement | null>(null)
   const fontSizeGroupRef = useRef<HTMLDivElement | null>(null)
   const densityGroupRef = useRef<HTMLDivElement | null>(null)
@@ -105,6 +109,13 @@ export function AppearanceTab() {
     applyPrimaryColor(value)
   }
 
+  // 玻璃质感开关：写 data-glass + 持久化（启动由 settings-init.applySettings 恢复）
+  useOasEvent<{ checked: boolean }>(glassRef, 'oas-change', (detail) => {
+    const on = detail?.checked
+    if (typeof on !== 'boolean') return
+    localStorage.setItem(GLASS_KEY, on ? 'on' : 'off')
+    setGlass(on)
+  })
   useOasEvent<{ value: string }>(colorRef, 'oas-change', (detail) => {
     if (!detail.value) return
     applyCustomColor(detail.value)
@@ -170,10 +181,17 @@ export function AppearanceTab() {
     }
   })
 
+  // color-picker 2.5.9 的 value property setter 在 React 19 初始属性时序下崩
+  // （syncControls 判空缺失，已登记 demands）——初始色/切换走 attribute 通道
+  useEffect(() => {
+    colorRef.current?.setAttribute('value', color)
+  }, [color])
+
   useEffect(() => {
     const onThemeChange = (): void => {
       const theme = currentTheme()
       setColor(readColor())
+      colorRef.current?.setAttribute('value', readColor())
       const stored = localStorage.getItem(`${THEME_PREFIX}${theme}`)
       if (stored) document.documentElement.style.setProperty('--oas-color-primary', stored)
       else document.documentElement.style.removeProperty('--oas-color-primary')
@@ -211,8 +229,9 @@ export function AppearanceTab() {
             ref={colorRef}
             data-testid="appearance-color"
             id="appearance-color"
-            value={color}
           />
+          {/* color-picker 2.5.9 的 value property setter 在 React 19 初始属性时序下崩
+              （syncControls 判空缺失，已登记 demands）——初始色/跟随改走 attribute 通道 */}
         </div>
         <div className="setting-row">
           <div>
@@ -224,6 +243,13 @@ export function AppearanceTab() {
               <oas-swatch key={c} color={c} />
             ))}
           </oas-swatch-group>
+        </div>
+        <div className="setting-row">
+          <div>
+            <div className="setting-label">{t('settings.appearance.glassLabel')}</div>
+            <div className="setting-hint">{t('settings.appearance.glassHint')}</div>
+          </div>
+          <oas-switch ref={glassRef} data-testid="appearance-glass" checked={glass} />
         </div>
         <div className="setting-row">
           <div>

@@ -5,6 +5,14 @@ export const PAGE_SIZE_KEY = 'oas-admin.settings.page-size'
 export const RADIUS_KEY = 'oas-admin.settings.radius'
 export const FONT_SIZE_KEY = 'oas-admin.settings.font-size'
 export const THEME_PREFIX = 'oas-admin.settings.theme.'
+export const GLASS_KEY = 'oas-admin.settings.glass'
+export function readGlass(): boolean {
+  return localStorage.getItem(GLASS_KEY) !== 'off'
+}
+export function applyGlass(on: boolean): void {
+  if (on) document.documentElement.setAttribute('data-glass', '')
+  else document.documentElement.removeAttribute('data-glass')
+}
 export const NOTIF_PREFIX = 'oas-admin.settings.notif.'
 export const TABS_BAR_KEY = 'oas-admin.settings.tabs-bar'
 export const DEFAULT_COLOR = '#0b6cff'
@@ -105,6 +113,7 @@ export function applySettings(): void {
   const radius = localStorage.getItem(RADIUS_KEY)
   if (radius) document.documentElement.style.setProperty('--oas-radius-md', `${radius}px`)
   applySkin(readSkin())
+  applyGlass(readGlass())
   applyDensity()
   applyFontSize()
   applyCustomTokens()
