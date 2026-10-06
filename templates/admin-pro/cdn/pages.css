@@ -373,12 +373,6 @@
   flex-direction: column;
   gap: var(--oas-space-3);
 }
-
-/* ===== 皮肤预设副本（来源：@oas-ui/theme skins.css，上游未发布前的临时自持）=====
- * 2.5.9 发布后：删除本块，改为 import '@oas-ui/theme/skins.css'
- * 用法：<html data-skin="violet"> 与 data-theme 正交叠加，只覆盖品牌色族
- */
-
 /* OAS UI 皮肤预设（可选层，规范见 docs/ui-spec.md §1）
  *
  * 用法：在 data-theme 之上叠加 data-skin —— `<html data-theme="dark" data-skin="violet">`。
@@ -439,5 +433,4 @@
 }
 [data-theme="dark"][data-skin="teal"],
 [data-theme="high-contrast"][data-skin="teal"] {
-  --oas-color-primary: #63d9cf;
 }

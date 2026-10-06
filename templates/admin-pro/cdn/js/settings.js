@@ -14,6 +14,7 @@ export const NOTIF_PREFIX = 'oas-admin-cdn.settings.notif.'
 export const TABS_BAR_KEY = 'oas-admin-cdn.settings.tabs-bar'
 export const DEFAULT_COLOR = '#0b6cff'
 export const SKIN_KEY = 'oas-admin-cdn.settings.skin'
+export const GLASS_KEY = 'oas-admin-cdn.settings.glass'
 export const SKINS = ['', 'violet', 'emerald', 'rose', 'amber', 'graphite', 'teal']
 export const DEFAULT_RADIUS = 6
 
@@ -57,6 +58,16 @@ export function readSkin() {
 export function applySkin(skin) {
   if (skin) document.documentElement.dataset.skin = skin
   else delete document.documentElement.dataset.skin
+}
+// 缺省关闭：backdrop-filter 全站渲染代价大（低端环境 settings 页不可用实测），
+// 用户在设置中心主动开启；「预览效果」可在控制台执行 applyGlass(true)
+export function readGlass() {
+  return localStorage.getItem(GLASS_KEY) === 'on'
+}
+
+export function applyGlass(on) {
+  if (on) document.documentElement.setAttribute('data-glass', '')
+  else document.documentElement.removeAttribute('data-glass')
 }
 
 export function readTabsBar() {
@@ -113,6 +124,7 @@ export function applySettings() {
   const radius = localStorage.getItem(RADIUS_KEY)
   if (radius) document.documentElement.style.setProperty('--oas-radius-md', `${radius}px`)
   applySkin(readSkin())
+  applyGlass(readGlass())
   applyDensity()
   applyFontSize()
   applyCustomTokens()

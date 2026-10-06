@@ -20,6 +20,7 @@ const PAGE_SIZE_KEY = 'oas-admin-cdn-mpa.settings.page-size'
 const RADIUS_KEY = 'oas-admin-cdn-mpa.settings.radius'
 const FONT_SIZE_KEY = 'oas-admin-cdn-mpa.settings.font-size'
 const THEME_PREFIX = 'oas-admin-cdn-mpa.settings.theme.'
+const GLASS_KEY = 'oas-admin-cdn-mpa.settings.glass'
 const NOTIF_PREFIX = 'oas-admin-cdn-mpa.settings.notif.'
 const TABS_BAR_KEY = 'oas-admin-cdn-mpa.settings.tabs-bar'
 const TABS_LAYOUT_KEY = 'oas-admin-cdn-mpa.settings.tabs-layout'
@@ -217,6 +218,12 @@ function renderSettings() {
           <div class="setting-hint">${t('settings.appearance.skinHint')}</div>
         </div>
         <div class="radio-group inline" data-testid="skin-group" id="skin-group"></div>
+      </div>      <div class="setting-row">
+        <div>
+          <div class="setting-label">${t('settings.appearance.glassLabel')}</div>
+          <div class="setting-hint">${t('settings.appearance.glassHint')}</div>
+        </div>
+        <oas-switch data-testid="appearance-glass" id="appearance-glass" ${readGlass() ? 'checked' : ''}></oas-switch>
       </div>
     </div>
     <div class="setting-group">
@@ -479,7 +486,13 @@ function renderSettings() {
   })
 
   // 主题色变更：写 CSS 变量 + 按当前主题持久化；自定义主色与皮肤互斥，皮肤让位回默认
-  function applyColor(color) {
+  function readGlass() {
+    return localStorage.getItem(GLASS_KEY) === 'on'
+  }
+  function applyGlass(on) {
+    if (on) document.documentElement.setAttribute('data-glass', '')
+    else document.documentElement.removeAttribute('data-glass')
+  }  function applyColor(color) {
     document.documentElement.style.setProperty('--oas-color-primary', color)
     localStorage.setItem(`${THEME_PREFIX}${currentTheme()}`, color)
   }
@@ -500,6 +513,16 @@ function renderSettings() {
     if (color) onCustomColor(color)
     swatchGroup.setAttribute('value', color)
   })
+
+  // 玻璃质感开关：缺省关（backdrop-filter 全站渲染代价大），写 data-glass + 持久化
+  const glassSwitch = panels.appearance.querySelector('#appearance-glass')
+  glassSwitch.addEventListener('oas-change', (e) => {
+    const on = !!e.detail?.checked
+    localStorage.setItem(GLASS_KEY, on ? 'on' : 'off')
+    if (on) document.documentElement.setAttribute('data-glass', '')
+    else document.documentElement.removeAttribute('data-glass')
+  })
+  applyGlass(readGlass())
 
   // 圆角滑杆：即时生效 + 持久化
   radiusSlider.addEventListener('oas-change', (e) => {

@@ -253,31 +253,18 @@ export function mountApp(root: HTMLElement): void {
     sheet.removeAttribute('open'),
   )
 
-  // 表单值走 oas-input 事件存 state（oas-input 宿主不反射 value property）
-  let draftTitle = ''
-  let draftContent = ''
-  el(root, '[data-testid="publish-title"]').addEventListener('oas-input', (e) => {
-    draftTitle = (e as CustomEvent<{ value: string }>).detail.value ?? ''
-  })
-  el(root, '[data-testid="publish-title"]').addEventListener('oas-clear', () => {
-    draftTitle = ''
-  })
-  el(root, '[data-testid="publish-content"]').addEventListener('oas-input', (e) => {
-    draftContent = (e as CustomEvent<{ value: string }>).detail.value ?? ''
-  })
-
+  // oas-input 2.5.9 起公开 value property——宿主直读直写，无需事件存 state 样板
   el(root, '[data-testid="publish-submit"]').addEventListener('click', () => {
-    const title = draftTitle.trim()
+    const titleInput = el<HTMLInputElement>(root, '[data-testid="publish-title"]')
+    const contentInput = el<HTMLInputElement>(root, '[data-testid="publish-content"]')
+    const title = (titleInput.value ?? '').trim()
     if (!title) return
     feed = [
-      { title, summary: draftContent.trim() || '刚刚由移动端发布。', tag: '新发布', time: '刚刚' },
+      { title, summary: (contentInput.value ?? '').trim() || '刚刚由移动端发布。', tag: '新发布', time: '刚刚' },
       ...feed,
     ]
-    draftTitle = ''
-    draftContent = ''
-    for (const sel of ['[data-testid="publish-title"]', '[data-testid="publish-content"]']) {
-      el(root, sel).removeAttribute('value')
-    }
+    titleInput.value = ''
+    contentInput.value = ''
     sheet.removeAttribute('open')
     renderFeed()
     navigate('home')

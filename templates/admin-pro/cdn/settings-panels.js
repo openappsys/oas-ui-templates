@@ -10,6 +10,7 @@ import {
   readDensity,
   readFontSize,
   readFormMode,
+  readGlass,
   readPageSize,
   readRadius,
   readSkin,
@@ -150,6 +151,13 @@ export function appearanceHtml() {
             )
             .join('')}
         </div>
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">${t('settings.appearance.glassLabel')}</div>
+          <div class="setting-hint">${t('settings.appearance.glassHint')}</div>
+        </div>
+        <oas-switch data-testid="appearance-glass" id="appearance-glass" ${readGlass() ? 'checked' : ''}></oas-switch>
       </div>
     </div>
     <div class="setting-group">

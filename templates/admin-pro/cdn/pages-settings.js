@@ -9,6 +9,7 @@ import {
   applyFontSize,
   applySettings,
   applySkin,
+  applyGlass,
   canPosition,
   currentTheme,
   CUSTOM_TOKENS_KEY,
@@ -250,6 +251,13 @@ function draw(el) {
     OASUI.message.success(t('common.saved'))
   })
 
+  // 玻璃质感开关：写 data-glass + 持久化（启动由 applyGlass 恢复）
+  const glassSwitch = appearance.querySelector('#appearance-glass')
+  glassSwitch.addEventListener('oas-change', (e) => {
+    const on = !!e.detail?.checked
+    localStorage.setItem(GLASS_KEY, on ? 'on' : 'off')
+    applyGlass(on)
+  })
   radiusSlider.addEventListener('oas-change', (e) => {
     const n = Number(e.detail.value)
     if (!Number.isFinite(n)) return

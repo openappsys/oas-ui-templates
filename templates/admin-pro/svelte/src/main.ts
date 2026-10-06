@@ -1,5 +1,6 @@
 // src/main.ts —— 初始化顺序与 react/vue 版对齐：
 // 副作用注册 → i18n → 假后端 → 设置重放 → 挂载
+import '@oas-ui/theme/skins.css'
 import '@oas-ui/theme'
 import '@oas-ui/icons'
 import './components/registry'

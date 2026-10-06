@@ -1,6 +1,7 @@
 // 副作用注册 → i18n → 假后端 → 设置重放 → 挂载
 // 数据获取层：QueryClientProvider 全局接管（页面数据走 useQuery/useMutation，
 // 登录态仍走 session + useSyncExternalStore，两套订阅互不掺和）
+import '@oas-ui/theme/skins.css'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'

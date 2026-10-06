@@ -143,6 +143,8 @@ export default {
   'settings.appearance.swatchHint': '预设色一键切换，精确色值用上方拾色器',
   'settings.appearance.skinLabel': '皮肤',
   'settings.appearance.skinHint': '品牌色族成套切换，与 data-theme 正交；自定义主色将回默认皮肤',
+  'settings.appearance.glassLabel': '玻璃质感',
+  'settings.appearance.glassHint': '浮层磨砂玻璃质感（半透明 + 背景模糊），关闭即恢复实底',
   'settings.skin.default': '默认',
   'settings.skin.violet': '堇紫',
   'settings.skin.emerald': '靛绿',

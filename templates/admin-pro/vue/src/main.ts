@@ -1,5 +1,6 @@
 // src/main.ts —— 初始化顺序与 react 版 main.tsx 对齐：
 // 副作用注册 → i18n → 假后端 → pinia 安装 → 设置重放（stores/settings 生效器）→ 挂载
+import '@oas-ui/theme/skins.css'
 import { createPinia } from 'pinia'
 import { createApp } from 'vue'
 import '@oas-ui/theme'
