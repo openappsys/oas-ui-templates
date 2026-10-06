@@ -7,7 +7,6 @@ function boot() {
   document.title = `${t('nav.logs')} · ${t('app.title')}`
   applyStaticTexts()
   initShell({ active: './logs.html' })
-  window.OASShell.setBreadcrumb([{ label: 'nav.logs' }])
   renderLogs()
 }
 

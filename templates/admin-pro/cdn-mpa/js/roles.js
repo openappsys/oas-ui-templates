@@ -8,7 +8,6 @@ function boot() {
   applyStaticTexts()
   initShell({ active: './roles.html' })
   // 面包屑：单级（当前页）
-  window.OASShell.setBreadcrumb([{ label: 'nav.roles' }])
   renderRoles()
 }
 

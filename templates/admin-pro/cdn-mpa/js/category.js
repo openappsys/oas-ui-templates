@@ -12,7 +12,6 @@ function boot() {
   document.title = `${t('nav.category')} · ${t('app.title')}`
   applyStaticTexts()
   initShell({ active: './category.html' })
-  window.OASShell.setBreadcrumb([{ label: 'nav.category' }])
   renderCategory()
 }
 

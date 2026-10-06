@@ -7,7 +7,6 @@ function boot() {
   document.title = `${t('nav.menus')} · ${t('app.title')}`
   applyStaticTexts()
   initShell({ active: './menus.html' })
-  window.OASShell.setBreadcrumb([{ label: 'nav.menus' }])
   renderMenus()
 }
 

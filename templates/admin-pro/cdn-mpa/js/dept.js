@@ -7,7 +7,6 @@ function boot() {
   document.title = `${t('nav.dept')} · ${t('app.title')}`
   applyStaticTexts()
   initShell({ active: './dept.html' })
-  window.OASShell.setBreadcrumb([{ label: 'nav.dept' }])
   renderDept()
 }
 

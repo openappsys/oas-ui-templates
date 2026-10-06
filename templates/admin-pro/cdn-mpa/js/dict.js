@@ -15,7 +15,6 @@ function boot() {
   document.title = `${t('nav.dict')} · ${t('app.title')}`
   applyStaticTexts()
   initShell({ active: './dict.html' })
-  window.OASShell.setBreadcrumb([{ label: 'nav.dict' }])
   renderDict()
 }
 

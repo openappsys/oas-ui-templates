@@ -7,7 +7,6 @@ function boot() {
   document.title = `${t('nav.settings')} · ${t('app.title')}`
   applyStaticTexts()
   initShell({ active: './settings.html' })
-  window.OASShell.setBreadcrumb([{ label: 'nav.settings' }])
   renderSettings()
 }
 
@@ -211,6 +210,12 @@ function renderSettings() {
           <oas-swatch color="#fa541c"></oas-swatch>
           <oas-swatch color="#f5222d"></oas-swatch>
         </oas-swatch-group>
+      </div>      <div class="setting-row">
+        <div>
+          <div class="setting-label">${t('settings.appearance.glassLabel')}</div>
+          <div class="setting-hint">${t('settings.appearance.glassHint')}</div>
+        </div>
+        <oas-switch data-testid="appearance-glass" id="appearance-glass" ${readGlass() ? 'checked' : ''}></oas-switch>
       </div>
       <div class="setting-row">
         <div>
@@ -218,12 +223,6 @@ function renderSettings() {
           <div class="setting-hint">${t('settings.appearance.skinHint')}</div>
         </div>
         <div class="radio-group inline" data-testid="skin-group" id="skin-group"></div>
-      </div>      <div class="setting-row">
-        <div>
-          <div class="setting-label">${t('settings.appearance.glassLabel')}</div>
-          <div class="setting-hint">${t('settings.appearance.glassHint')}</div>
-        </div>
-        <oas-switch data-testid="appearance-glass" id="appearance-glass" ${readGlass() ? 'checked' : ''}></oas-switch>
       </div>
     </div>
     <div class="setting-group">
@@ -452,8 +451,11 @@ function renderSettings() {
   })
 
   // 多页签栏开关：mpa 无多页签容器，仅持久化配置（对齐 cdn 口径）
+  // 页签栏开关：持久化偏好 + 即时写 data-tabs-bar 门控（shell.js 启动时按同键恢复）
   tabsBarToggle.addEventListener('oas-change', (e) => {
-    localStorage.setItem(TABS_BAR_KEY, String(Boolean(e.detail?.checked)))
+    const on = Boolean(e.detail?.checked)
+    localStorage.setItem(TABS_BAR_KEY, String(on))
+    document.documentElement.dataset.tabsBar = on ? 'on' : 'off'
     OASUI.message.success(t('common.saved'))
   })
 
@@ -475,6 +477,8 @@ function renderSettings() {
     localStorage.setItem(MENU_STYLE_KEY, cell.dataset.style)
     localStorage.setItem(MENU_POSITION_KEY, cell.dataset.position)
     refreshMatrixMark()
+    // 形态/位置由壳层按页应用（applyNavMenu），MPA 惯例：持久化后 reload 生效（同语言切换口径）
+    location.reload()
   })
   refreshMatrixMark()
 
@@ -492,7 +496,8 @@ function renderSettings() {
   function applyGlass(on) {
     if (on) document.documentElement.setAttribute('data-glass', '')
     else document.documentElement.removeAttribute('data-glass')
-  }  function applyColor(color) {
+  }
+  function applyColor(color) {
     document.documentElement.style.setProperty('--oas-color-primary', color)
     localStorage.setItem(`${THEME_PREFIX}${currentTheme()}`, color)
   }

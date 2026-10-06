@@ -1,4 +1,4 @@
-// i18n 字典文件豁免 ≤400 行口径（数据表性质，拆散有害）；见计划 Global Constraints 批注
+// i18n 字典文件豁免 ≥500 行口径（数据表性质，拆散有害）；见计划 Global Constraints 批注
 export default {
   'app.title': 'OAS Admin CDN · MPA',
   'nav.group': '菜单',
@@ -491,6 +491,8 @@ export default {
   'settings.appearance.primaryHint': '即时应用，明暗主题各自独立保存',
   'settings.appearance.swatchHint': '预设色一键切换，精确色值用上方拾色器',
   'settings.appearance.skinLabel': '皮肤',
+  'settings.appearance.glassLabel': '玻璃质感',
+  'settings.appearance.glassHint': '浮层磨砂玻璃质感（半透明 + 背景模糊）；关闭恢复实底',
   'settings.appearance.skinHint': '品牌色族成套切换，与 data-theme 正交；自定义主色将回默认皮肤',
   'settings.skin.default': '默认',
   'settings.skin.violet': '堇紫',

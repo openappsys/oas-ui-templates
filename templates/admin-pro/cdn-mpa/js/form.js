@@ -41,7 +41,10 @@ function boot() {
   applyStaticTexts()
   // 隐藏路由：不进侧栏，无高亮项（vanilla /form 有菜单项但 mpa 侧栏暂不收录）
   initShell({ active: '' })
-  window.OASShell.setBreadcrumb([{ label: 'nav.createOrder' }])
+  window.OASShell.setBreadcrumb([
+    { label: 'nav.orders', href: './orders.html' },
+    { label: 'nav.createOrder' },
+  ])
   renderWizard()
 }
 
