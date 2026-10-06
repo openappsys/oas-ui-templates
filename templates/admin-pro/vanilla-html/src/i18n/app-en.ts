@@ -452,6 +452,9 @@ export default {
   'settings.appearance.primaryHint':
     'Applies instantly; light and dark themes are saved independently',
   'settings.appearance.swatchHint': 'One-click presets; use the picker above for custom values',
+  'settings.appearance.glassLabel': 'Liquid glass',
+  'settings.appearance.glassHint':
+    'Frosted-glass overlays (translucent + backdrop blur); off restores solid surfaces',
   'settings.appearance.skinLabel': 'Skin',
   'settings.appearance.skinHint':
     'Brand color family as a set; custom primary falls back to default skin',

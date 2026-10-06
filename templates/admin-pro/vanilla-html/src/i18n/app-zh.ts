@@ -448,6 +448,8 @@ export default {
   'settings.appearance.primaryLabel': '品牌主色',
   'settings.appearance.primaryHint': '即时应用，明暗主题各自独立保存',
   'settings.appearance.swatchHint': '预设色一键切换，精确色值用上方拾色器',
+  'settings.appearance.glassLabel': '玻璃质感',
+  'settings.appearance.glassHint': '浮层磨砂玻璃质感（半透明 + 背景模糊）；关闭恢复实底',
   'settings.appearance.skinLabel': '皮肤',
   'settings.appearance.skinHint': '品牌色族成套切换，与明暗主题正交；自定义主色将回默认皮肤',
   'settings.skin.default': '默认',

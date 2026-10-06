@@ -10,6 +10,7 @@ export const FONT_SIZE_KEY = 'oas-admin.settings.font-size'
 export const THEME_PREFIX = 'oas-admin.settings.theme.'
 export const NOTIF_PREFIX = 'oas-admin.settings.notif.'
 export const TABS_BAR_KEY = 'oas-admin.settings.tabs-bar'
+export const GLASS_KEY = 'oas-admin.settings.glass'
 export const DEFAULT_COLOR = '#0b6cff'
 export const SKIN_KEY = 'oas-admin.settings.skin'
 export const SKINS = ['', 'violet', 'emerald', 'rose', 'amber', 'graphite', 'teal'] as const
@@ -65,6 +66,10 @@ export function readSkin(): Skin {
 
 export function readTabsBar(): boolean {
   return readBool(TABS_BAR_KEY, true)
+}
+
+export function readGlass(): boolean {
+  return localStorage.getItem(GLASS_KEY) === 'on'
 }
 
 export function readBool(key: string, fallback: boolean): boolean {

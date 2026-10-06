@@ -15,6 +15,7 @@ import {
   FONT_SIZE_KEY,
   FONT_SIZE_OPTIONS,
   FORM_MODE_KEY,
+  GLASS_KEY,
   NOTIF_PREFIX,
   PAGE_SIZE_KEY,
   RADIUS_KEY,
@@ -26,6 +27,7 @@ import {
   type FontSize,
   type FormMode,
   applyDensity,
+  applyGlass,
   applySkin,
   applyFontSize,
   applySettings,
@@ -35,6 +37,7 @@ import {
   readDensity,
   readFontSize,
   readFormMode,
+  readGlass,
   readPageSize,
   readRadius,
   readSkin,
@@ -248,6 +251,13 @@ function draw(el: HTMLElement): () => void {
       </div>
       <div class="setting-row">
         <div>
+          <div class="setting-label">${t('settings.appearance.glassLabel')}</div>
+          <div class="setting-hint">${t('settings.appearance.glassHint')}</div>
+        </div>
+        <oas-switch data-testid="appearance-glass" id="appearance-glass"${readGlass() ? ' checked' : ''}></oas-switch>
+      </div>
+      <div class="setting-row">
+        <div>
           <div class="setting-label">${t('settings.appearance.skinLabel')}</div>
           <div class="setting-hint">${t('settings.appearance.skinHint')}</div>
         </div>
@@ -453,6 +463,15 @@ function draw(el: HTMLElement): () => void {
     applySettings()
     message.success(t('common.saved'))
   })
+
+  appearance.node
+    .querySelector<HTMLElement>('#appearance-glass')!
+    .addEventListener('oas-change', (e) => {
+      const checked = (e as CustomEvent<{ checked: boolean }>).detail.checked
+      localStorage.setItem(GLASS_KEY, checked ? 'on' : 'off')
+      applyGlass(checked)
+      message.success(t('common.saved'))
+    })
 
   layout.node
     .querySelector<HTMLElement>('[data-testid="router-mode"]')!

@@ -13,6 +13,7 @@ import {
   FONT_SIZE_KEY,
   FONT_SIZE_OPTIONS,
   FORM_MODE_KEY,
+  GLASS_KEY,
   NOTIF_CHANNELS,
   NOTIF_PREFIX,
   NOTIF_ROWS,
@@ -30,6 +31,7 @@ import {
   readDensity,
   readFontSize,
   readFormMode,
+  readGlass,
   readPageSize,
   readSkin,
   readTabsBar,
@@ -70,6 +72,8 @@ export const useSettingsStore = defineStore('settings', () => {
   const notifChecks = ref<Record<string, boolean>>(readNotifChecks())
   /** 皮肤预设（data-skin）：'' = 默认皮肤（与自定义主色互斥） */
   const skin = ref<Skin>(readSkin())
+  /** 玻璃质感（data-glass）：浮层磨砂，默认关 */
+  const glass = ref<boolean>(readGlass())
   /** 主题编辑器（oas-theme-editor）写入的自定义 token：键 → 值 */
   const customTokens = ref<Record<string, string>>(readCustomTokens())
 
@@ -122,6 +126,12 @@ export const useSettingsStore = defineStore('settings', () => {
     else delete document.documentElement.dataset.skin
   }
 
+  /** 玻璃：写/删 html data-glass（浮层磨砂质感层） */
+  function applyGlass(): void {
+    if (glass.value) document.documentElement.setAttribute('data-glass', '')
+    else document.documentElement.removeAttribute('data-glass')
+  }
+
   /** 自定义 token 重放（原 settings-init.applyCustomTokens：只增写，不做逐键清理） */
   function applyCustomTokens(): void {
     for (const [k, v] of Object.entries(customTokens.value)) {
@@ -134,6 +144,7 @@ export const useSettingsStore = defineStore('settings', () => {
     applyColor()
     applyRadius()
     applySkin()
+    applyGlass()
     applyDensity()
     applyFontSize()
     applyCustomTokens()
@@ -158,6 +169,11 @@ export const useSettingsStore = defineStore('settings', () => {
     themeColors.value[currentTheme()] = null
     applyColor()
     applySkin()
+  }
+
+  function setGlass(v: boolean): void {
+    glass.value = v
+    applyGlass()
   }
 
   function setRadius(n: number): void {
@@ -234,11 +250,13 @@ export const useSettingsStore = defineStore('settings', () => {
     tabsBar,
     notifChecks,
     skin,
+    glass,
     customTokens,
     applyAll,
     currentColor,
     setColor,
     setSkin,
+    setGlass,
     setRadius,
     setFontSize,
     setDensity,
@@ -265,6 +283,7 @@ function persistSettings(store: SettingsStore): void {
   else localStorage.removeItem(RADIUS_KEY)
   if (store.skin) localStorage.setItem(SKIN_KEY, store.skin)
   else localStorage.removeItem(SKIN_KEY)
+  localStorage.setItem(GLASS_KEY, store.glass ? 'on' : 'off')
   localStorage.setItem(FONT_SIZE_KEY, store.fontSize)
   localStorage.setItem(DENSITY_KEY, store.density)
   localStorage.setItem(FORM_MODE_KEY, store.formMode)

@@ -7,7 +7,7 @@ export const FONT_SIZE_KEY = 'oas-admin.settings.font-size'
 export const THEME_PREFIX = 'oas-admin.settings.theme.'
 export const GLASS_KEY = 'oas-admin.settings.glass'
 export function readGlass(): boolean {
-  return localStorage.getItem(GLASS_KEY) !== 'off'
+  return localStorage.getItem(GLASS_KEY) === 'on'
 }
 export function applyGlass(on: boolean): void {
   if (on) document.documentElement.setAttribute('data-glass', '')

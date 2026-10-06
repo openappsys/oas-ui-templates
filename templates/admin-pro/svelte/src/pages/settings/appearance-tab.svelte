@@ -13,6 +13,7 @@
     DENSITY_KEY,
     FONT_SIZE_KEY,
     FONT_SIZE_OPTIONS,
+    GLASS_KEY,
     RADIUS_KEY,
     SKINS,
     SKIN_KEY,
@@ -22,11 +23,13 @@
     type Skin,
     applyDensity,
     applyFontSize,
+    applyGlass,
     applySkin,
     currentTheme,
     readColor,
     readDensity,
     readFontSize,
+    readGlass,
     readRadius,
     readSkin,
   } from '../../settings-init'
@@ -75,10 +78,17 @@
   })
 
   let color = $state(readColor())
+  let colorPickerEl = $state<HTMLElement | null>(null)
+  // color-picker 2.5.9 的 value property setter 在自定义元素 upgrade 时序下内部控件为 null
+  // （syncControls 判空缺失，已登记 demands）——初始色/跟随改走 attribute 通道（react d0ecf79 同款）
+  $effect(() => {
+    colorPickerEl?.setAttribute('value', color)
+  })
   let radius = $state(readRadius())
   let fontSize = $state<FontSize>(readFontSize())
   let density = $state<Density>(readDensity())
   let skin = $state<Skin>(readSkin())
+  let glass = $state<boolean>(readGlass())
   let themeEditorEl = $state<HTMLElement | null>(null)
   let fontSizeGroupEl = $state<HTMLDivElement | null>(null)
   let densityGroupEl = $state<HTMLDivElement | null>(null)
@@ -158,6 +168,15 @@
     appMessage.success(t('common.saved'))
   }
 
+  // 玻璃质感：写 data-glass + 持久化（浮层磨砂层，默认关）
+  function onGlassChange(e: Event): void {
+    const checked = Boolean((e as CustomEvent<{ checked: boolean }>).detail?.checked)
+    localStorage.setItem(GLASS_KEY, checked ? 'on' : 'off')
+    applyGlass(checked)
+    glass = checked
+    appMessage.success(t('common.saved'))
+  }
+
   // 主题编辑器：每次修改把 token 持久化，重启后由 settings-init.applyCustomTokens 重放
   function onThemeEditorChange(e: Event): void {
     const { token, value } = (e as CustomEvent<{ token: string; value: string }>).detail
@@ -213,7 +232,7 @@
     <oas-color-picker
       id="appearance-color"
       data-testid="appearance-color"
-      value={color}
+      bind:this={colorPickerEl}
       onoas-change={onColorChange}
     ></oas-color-picker>
   </div>
@@ -232,6 +251,18 @@
         <oas-swatch color={c}></oas-swatch>
       {/each}
     </oas-swatch-group>
+  </div>
+  <div class="setting-row">
+    <div>
+      <div class="setting-label">{tt('settings.appearance.glassLabel')}</div>
+      <div class="setting-hint">{tt('settings.appearance.glassHint')}</div>
+    </div>
+    <oas-switch
+      id="appearance-glass"
+      data-testid="appearance-glass"
+      checked={glass ? '' : null}
+      onoas-change={onGlassChange}
+    ></oas-switch>
   </div>
   <div class="setting-row">
     <div>

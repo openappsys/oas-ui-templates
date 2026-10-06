@@ -64,7 +64,7 @@ function t(key: string, params?: Record<string, string | number>): string {
 }
 
 const store = useSettingsStore()
-const { fontSize, density, skin } = storeToRefs(store)
+const { fontSize, density, skin, glass } = storeToRefs(store)
 
 // 取色器显示值：当前主题的有效主题色（主题切换时手动同步——主题切换非响应式状态）
 const color = ref(store.currentColor())
@@ -112,6 +112,13 @@ function onSkinChange(e: Event): void {
   const v = changedRadioValue(e) as Skin | null
   if (v == null) return
   store.setSkin(v)
+  appMessage.success(tt('common.saved'))
+}
+
+// 玻璃质感：写 data-glass + 持久化（store.setGlass）
+function onGlassChange(e: Event): void {
+  const checked = Boolean((e as CustomEvent<{ checked: boolean }>).detail?.checked)
+  store.setGlass(checked)
   appMessage.success(tt('common.saved'))
 }
 
@@ -168,6 +175,18 @@ function onReset(): void {
       >
         <oas-swatch v-for="c in PRIMARY_SWATCHES" :key="c" :color="c" />
       </oas-swatch-group>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">{{ t('settings.appearance.glassLabel') }}</div>
+        <div class="setting-hint">{{ t('settings.appearance.glassHint') }}</div>
+      </div>
+      <oas-switch
+        id="appearance-glass"
+        data-testid="appearance-glass"
+        :checked="glass ? '' : null"
+        @oas-change="onGlassChange"
+      />
     </div>
     <div class="setting-row">
       <div>
