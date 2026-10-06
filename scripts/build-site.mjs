@@ -47,6 +47,23 @@ if (existsSync(assetsDir)) cpSync(assetsDir, join(outDir, 'assets'), { recursive
 const deployed = []
 for (const family of families) {
   const familyDir = join(templatesRoot, family)
+  // 扁平单模板（如 mobile-h5：package.json 直接位于家族目录）按单模板部署
+  if (existsSync(join(familyDir, 'package.json'))) {
+    const distDir = join(familyDir, 'dist')
+    process.stdout.write(`build ${family}\n`)
+    execSync(`pnpm --filter ${pkgName(familyDir)} build`, { stdio: 'inherit', cwd: root })
+    if (!existsSync(distDir)) {
+      console.warn(`skip (no dist): ${family}`)
+      continue
+    }
+    const target = join(outDir, family)
+    safeRm(target)
+    mkdirSync(target, { recursive: true })
+    cpSync(distDir, target, { recursive: true })
+    deployed.push(family)
+    process.stdout.write(`  -> /${family}/\n`)
+    continue
+  }
   for (const tpl of readdirSync(familyDir, { withFileTypes: true }).filter((d) =>
     d.isDirectory(),
   )) {

@@ -54,9 +54,17 @@ function freePort(port) {
 const templates = []
 for (const family of readdirSync(templatesRoot, { withFileTypes: true })) {
   if (!family.isDirectory()) continue
-  for (const tpl of readdirSync(join(templatesRoot, family.name), { withFileTypes: true })) {
+  const familyDir = join(templatesRoot, family.name)
+  // 扁平单模板（如 mobile-h5：package.json 直接位于家族目录）按单模板接入
+  const familyPkgFile = join(familyDir, 'package.json')
+  if (existsSync(familyPkgFile)) {
+    const pkg = JSON.parse(readFileSync(familyPkgFile, 'utf8'))
+    if (pkg.scripts?.dev) templates.push({ name: pkg.name, subpath: `/${family.name}` })
+    continue
+  }
+  for (const tpl of readdirSync(familyDir, { withFileTypes: true })) {
     if (!tpl.isDirectory()) continue
-    const pkgFile = join(templatesRoot, family.name, tpl.name, 'package.json')
+    const pkgFile = join(familyDir, tpl.name, 'package.json')
     if (!existsSync(pkgFile)) continue
     const pkg = JSON.parse(readFileSync(pkgFile, 'utf8'))
     if (pkg.scripts?.dev) {
