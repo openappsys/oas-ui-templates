@@ -1,21 +1,17 @@
-/**
- * e2e 共享工具：unpkg 运行时拦截 / 登录 / 控制台错误收集
- * 各 spec 文件引用，smoke.spec.ts 保持自包含不动
- */
+// cdn e2e helpers（完整版）：unpkg mock 改 path 回填（2.5.9 大产物）+ 登录 + 控制台错误 + 开关
 import { expect, test, type Page } from '@playwright/test'
-import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-const CDN_JS = readFileSync(join(import.meta.dirname, '../node_modules/@oas-ui/ui/dist/cdn.js'))
-const THEME_CSS = readFileSync(join(import.meta.dirname, '../node_modules/@oas-ui/theme/index.css'))
-
-/** unpkg 运行时引用 → 本地 node_modules 副本（离线稳定，与 smoke.spec.ts 同款） */
+/** unpkg 拦截回填 → 本地 node_modules 产物（离线稳定，与 smoke.spec.ts 同约定）。
+ *  2.5.9 起用 path 形式回填（body 形式对 2.3MB 大产物存在截断/头缺失风险） */
 export async function mockCdnRuntime(page: Page): Promise<void> {
   await page.route('**unpkg.com/@oas-ui/**', (route) => {
     const url = route.request().url()
-    if (url.endsWith('.css'))
-      return route.fulfill({ body: THEME_CSS, contentType: 'text/css; charset=utf-8' })
-    return route.fulfill({ body: CDN_JS, contentType: 'application/javascript; charset=utf-8' })
+    const rel = decodeURIComponent(url.split('@oas-ui/')[1].split('?')[0]).replace(
+      /^(theme|ui)@[\d.]+\//,
+      '$1/',
+    )
+    route.fulfill({ path: join(import.meta.dirname, '../node_modules/@oas-ui', rel) })
   })
 }
 
@@ -29,11 +25,7 @@ export async function noConsoleErrors(page: Page): Promise<string[]> {
   return errors
 }
 
-/**
- * 登录进壳层（默认管理员视角「张伟」）。
- * cdn 会话无角色系统（登录仅存用户名，无 role 字段）——react 版 viewer 分支
- * 用例（403 / 操作权限 / 数据权限）不移植，见各 spec 文件头注释。
- */
+/** 登录进壳层（默认管理员视角「张伟」） */
 export async function login(page: Page, name = '张伟'): Promise<void> {
   await page.goto('/')
   await page.getByTestId('login-name').locator('input').fill(name)
@@ -49,17 +41,13 @@ export async function setLocal(page: Page, key: string, value: string): Promise<
   ] as const)
 }
 
-/** 既有 smoke 用例之外的新增用例统一挂 unpkg 拦截 */
 export function beforeEachMock(): void {
   test.beforeEach(async ({ page }) => {
     await mockCdnRuntime(page)
   })
 }
 
-/**
- * 侧栏树形导航点击：目标页面项所在分组被 accordion 收起时，先展开分组再点击。
- * 目标项可见（所在组已展开）时直接点击。
- */
+/** 侧栏树形导航点击：目标页面项所在分组被 accordion 收起时，先展开分组再点击 */
 export async function openNavItem(page: Page, group: string, item: string): Promise<void> {
   const nav = page.locator('#nav')
   const target = nav.getByText(item, { exact: true })

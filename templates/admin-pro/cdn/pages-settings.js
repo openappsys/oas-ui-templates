@@ -180,7 +180,7 @@ function draw(el) {
   // cdn 偏差：路由模式控件不渲染（哈希单模式），对应监听一并省略
 
   const matrix = layout.querySelector('[data-testid="menu-matrix"]')
-  // cdn 壳层暂不消费形态/位置，仅持久化并刷新标记（vanilla 语义保留）
+  // 形态/位置持久化 + 刷新标记；壳层监听 nav-config-change 事件实时重渲导航（vanilla live 切换同语义）
   const refreshMatrixMark = () => {
     const { style, position } = navConfig()
     matrix.querySelectorAll('.menu-matrix-cell').forEach((cell) => {
@@ -200,6 +200,7 @@ function draw(el) {
     setMenuStyle(style)
     setMenuPosition(position)
     refreshMatrixMark()
+    document.dispatchEvent(new CustomEvent('nav-config-change'))
   })
 
   refreshMatrixMark()
