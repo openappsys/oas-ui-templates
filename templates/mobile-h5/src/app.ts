@@ -1,49 +1,78 @@
-// 移动端 H5 最小骨架：app-bar + bottom-navigation(pill) + bottom-sheet 发布表单
+// 移动端 H5：app-bar + bottom-navigation(pill) + bottom-sheet 发布表单 + 左侧抽屉菜单
 // hash 路由（#/home /#/list /#/mine）：页面可直达、物理返回键可用（移动 H5 分水岭）；
-// 数据为内存 mock，刷新还原
+// 数据为内存 mock，刷新还原；i18n 复用 @oas-ui/i18n（切换 = 持久化 + reload）
+
+import { currentLocale, setLocale, t } from './i18n'
+import type { Locale } from './i18n'
 
 function el<T extends HTMLElement = HTMLElement>(scope: ParentNode, sel: string): T {
   return scope.querySelector<T>(sel)!
 }
 
+type FeedKind = '公告' | '动态' | '待办' | '新发布'
+
 interface FeedItem {
   title: string
   summary: string
-  tag: string
+  tag: FeedKind
   time: string
 }
 
-const feedSeed: FeedItem[] = [
-  {
-    title: 'oas-ui 2.5.7 发布',
-    summary: 'swatch 色板、upload 裁剪、form 大批次增强——移动端 flyout 子菜单同步落地。',
-    tag: '公告',
-    time: '今天 10:20',
-  },
-  {
-    title: '移动端专项回顾',
-    summary: 'bottom-sheet / app-bar / bottom-navigation 三件套 + 触摸目标 44px 全局抬升。',
-    tag: '动态',
-    time: '昨天 18:03',
-  },
-  {
-    title: '模板仓新成员',
-    summary: 'mobile-h5 最小骨架上线：零框架直接消费 web components 的移动端起点。',
-    tag: '动态',
-    time: '昨天 09:41',
-  },
-]
+const KIND_ICON: Record<FeedKind, string> = {
+  公告: 'star-filled',
+  动态: 'eye',
+  待办: 'clock',
+  新发布: 'plus',
+}
 
-const VIEW_TITLES: Record<string, string> = {
-  home: 'OAS Mobile',
-  list: '全部内容',
-  mine: '我的',
+const KINDS: FeedKind[] = ['公告', '动态', '待办', '新发布']
+
+/** seed 按当前 locale 取文案（kind 内部键保持中文，展示经 t() 换文） */
+function buildSeed(): FeedItem[] {
+  return [
+    {
+      title: t('feed.257.title'),
+      summary: t('feed.257.summary'),
+      tag: '公告',
+      time: `${t('time.today')} 10:20`,
+    },
+    {
+      title: t('feed.mobile.title'),
+      summary: t('feed.mobile.summary'),
+      tag: '动态',
+      time: `${t('time.yesterday')} 18:03`,
+    },
+    {
+      title: t('feed.okr.title'),
+      summary: t('feed.okr.summary'),
+      tag: '待办',
+      time: `${t('time.yesterday')} 14:05`,
+    },
+    {
+      title: t('feed.repo.title'),
+      summary: t('feed.repo.summary'),
+      tag: '动态',
+      time: `${t('time.yesterday')} 09:41`,
+    },
+    {
+      title: t('feed.security.title'),
+      summary: t('feed.security.summary'),
+      tag: '公告',
+      time: `${t('time.monday')} 16:32`,
+    },
+    {
+      title: t('feed.upgrade.title'),
+      summary: t('feed.upgrade.summary'),
+      tag: '待办',
+      time: `${t('time.monday')} 11:18`,
+    },
+  ]
 }
 
 const ROUTES = ['home', 'list', 'mine'] as const
 type Route = (typeof ROUTES)[number]
 
-let feed: FeedItem[] = [...feedSeed]
+let feed: FeedItem[] = buildSeed()
 let currentRoute: Route = 'home'
 
 function currentHashRoute(): Route {
@@ -51,101 +80,196 @@ function currentHashRoute(): Route {
   return (ROUTES as readonly string[]).includes(raw) ? (raw as Route) : 'home'
 }
 
+function greeting(): string {
+  const h = new Date().getHours()
+  if (h < 6) return t('hero.greeting.night')
+  if (h < 12) return t('hero.greeting.morning')
+  if (h < 18) return t('hero.greeting.afternoon')
+  return t('hero.greeting.evening')
+}
+
 function feedCardHTML(item: FeedItem): string {
   return `
     <oas-card class="feed-card">
-      <div style="padding: 12px 14px">
-        <p class="feed-title">${item.title}</p>
-        <div>${item.summary}</div>
-        <div class="feed-meta">
-          <oas-tag size="small">${item.tag}</oas-tag>
-          <span>${item.time}</span>
+      <div class="feed-row">
+        <span class="feed-ico ki" data-kind="${item.tag}"><oas-icon name="${KIND_ICON[item.tag]}" size="18"></oas-icon></span>
+        <div class="feed-main">
+          <p class="feed-title">${item.title}</p>
+          <p class="feed-summary">${item.summary}</p>
+          <div class="feed-meta">
+            <oas-tag size="small">${t(`kind.${item.tag}`)}</oas-tag>
+            <span>${item.time}</span>
+          </div>
         </div>
       </div>
     </oas-card>`
 }
 
+const QUICK_ENTRIES: Array<{ tag: FeedKind | 'all'; label: string; icon: string }> = [
+  { tag: '公告', label: 'kind.公告', icon: 'star-filled' },
+  { tag: '动态', label: 'kind.动态', icon: 'eye' },
+  { tag: '待办', label: 'kind.待办', icon: 'clock' },
+  { tag: 'all', label: 'kind.all', icon: 'filter' },
+]
+
 export function mountApp(root: HTMLElement): void {
+  document.title = t('app.title')
   root.innerHTML = `
-    <oas-app-bar heading="${VIEW_TITLES.home}" elevated hide-on-scroll>
-      <oas-icon slot="leading" name="menu" />
+    <oas-app-bar heading="${t('app.title')}" elevated hide-on-scroll>
+      <button slot="leading" class="menu-btn" type="button" data-testid="menu-btn" aria-label="menu">
+        <oas-icon name="menu" />
+      </button>
       <oas-tag slot="actions" size="small">H5</oas-tag>
+      <a class="portal-link" slot="actions" href="/" title="${t('menu.portal')}">${t('menu.portal')}</a>
     </oas-app-bar>
     <main class="view" id="view-home">
+      <section class="hero">
+        <div class="hero-text">
+          <p class="hero-hi">${greeting()}，张伟</p>
+          <p class="hero-sub">${t('hero.sub')}</p>
+        </div>
+        <span class="hero-glyph"><oas-icon name="star-filled" size="26"></oas-icon></span>
+      </section>
+      <section class="quick-grid" data-testid="quick-grid">
+        ${QUICK_ENTRIES.map(
+          (q) => `
+        <button class="quick-item" type="button" data-tag="${q.tag}">
+          <span class="quick-ico" data-kind="${q.tag === 'all' ? '动态' : q.tag}"><oas-icon name="${q.icon}" size="20"></oas-icon></span>
+          <span class="quick-label">${t(q.label)}</span>
+        </button>`,
+        ).join('')}
+      </section>
+      <div class="section-head">
+        <span class="section-title">${t('section.latest')}</span>
+      </div>
       <div id="feed-list"></div>
     </main>
     <main class="view" id="view-list" hidden>
       <oas-input
         data-testid="list-search"
-        placeholder="搜索标题"
+        placeholder="${t('list.search.ph')}"
         prefix-icon="search"
         clearable
       ></oas-input>
       <div class="filter-chips" data-testid="list-chips">
-        <oas-tag class="chip is-on" data-tag="全部">全部</oas-tag>
-        <oas-tag class="chip" data-tag="公告">公告</oas-tag>
-        <oas-tag class="chip" data-tag="动态">动态</oas-tag>
-        <oas-tag class="chip" data-tag="新发布">新发布</oas-tag>
+        <oas-tag class="chip is-on" data-tag="全部">${t('kind.all')}</oas-tag>
+        ${KINDS.map((k) => `<oas-tag class="chip" data-tag="${k}">${t(`kind.${k}`)}</oas-tag>`).join('')}
       </div>
       <div id="list-body"></div>
       <div id="list-empty" data-testid="list-empty" hidden>
-        <oas-empty description="没有匹配的内容"></oas-empty>
+        <oas-empty description="${t('list.empty')}"></oas-empty>
       </div>
     </main>
     <main class="view" id="view-mine" hidden>
+      <section class="me-hero">
+        <span class="me-avatar">张</span>
+        <div class="me-info">
+          <p class="me-name">张伟</p>
+          <p class="me-team">${t('me.team')}</p>
+        </div>
+        <oas-tag size="small" type="primary">Pro</oas-tag>
+      </section>
+      <section class="me-stats">
+        <div class="stat"><b>12</b><span>${t('me.posts')}</span></div>
+        <div class="stat"><b>48</b><span>${t('me.read')}</span></div>
+        <div class="stat"><b>3</b><span>${t('me.todos')}</span></div>
+      </section>
+      <p class="group-title">${t('group.preferences')}</p>
       <div class="settings-group">
         <div class="setting-item" data-testid="skin-picker">
-          <span>皮肤</span>
+          <span class="setting-label"><oas-icon name="star-filled" size="16"></oas-icon>${t('setting.skin')}</span>
           <div class="skin-chips">
-            <oas-tag class="chip" data-skin="">默认</oas-tag>
-            <oas-tag class="chip" data-skin="violet">堇紫</oas-tag>
-            <oas-tag class="chip" data-skin="emerald">靛绿</oas-tag>
-            <oas-tag class="chip" data-skin="rose">玫红</oas-tag>
-            <oas-tag class="chip" data-skin="teal">青瞳</oas-tag>
+            <oas-tag class="chip is-on" data-skin="">${t('skin.default')}</oas-tag>
+            <oas-tag class="chip" data-skin="violet">${t('skin.violet')}</oas-tag>
+            <oas-tag class="chip" data-skin="emerald">${t('skin.emerald')}</oas-tag>
+            <oas-tag class="chip" data-skin="rose">${t('skin.rose')}</oas-tag>
+            <oas-tag class="chip" data-skin="teal">${t('skin.teal')}</oas-tag>
+          </div>
+        </div>
+        <div class="setting-item" data-testid="glass-toggle">
+          <span class="setting-label"><oas-icon name="eye" size="16"></oas-icon>${t('setting.glass')}</span>
+          <oas-switch id="glass-switch"></oas-switch>
+        </div>
+        <div class="setting-item" data-testid="locale-picker">
+          <span class="setting-label"><oas-icon name="edit" size="16"></oas-icon>${t('setting.locale')}</span>
+          <div class="skin-chips" id="locale-chips">
+            <oas-tag class="chip${currentLocale() === 'zh-CN' ? ' is-on' : ''}" data-locale="zh-CN">中文</oas-tag>
+            <oas-tag class="chip${currentLocale() === 'en' ? ' is-on' : ''}" data-locale="en">English</oas-tag>
           </div>
         </div>
         <div class="setting-item">
-          <span>深色模式</span>
-          <span class="setting-value">跟随系统</span>
+          <span class="setting-label"><oas-icon name="star" size="16"></oas-icon>${t('setting.dark')}</span>
+          <span class="setting-value">${t('setting.followSystem')}</span>
         </div>
+      </div>
+      <p class="group-title">${t('group.general')}</p>
+      <div class="settings-group">
         <div class="setting-item">
-          <span>消息通知</span>
+          <span class="setting-label"><oas-icon name="star" size="16"></oas-icon>${t('setting.notif')}</span>
           <oas-switch checked></oas-switch>
         </div>
         <div class="setting-item">
-          <span>字号</span>
-          <span class="setting-value">标准</span>
+          <span class="setting-label"><oas-icon name="edit" size="16"></oas-icon>${t('setting.fontSize')}</span>
+          <span class="setting-value">${t('setting.standard')}</span>
         </div>
         <div class="setting-item">
-          <span>清除缓存</span>
+          <span class="setting-label"><oas-icon name="clock" size="16"></oas-icon>${t('setting.clearCache')}</span>
           <span class="setting-value">2.1 MB</span>
         </div>
       </div>
+      <p class="group-title">${t('group.about')}</p>
       <div class="settings-group">
         <div class="setting-item">
-          <span>关于</span>
+          <span class="setting-label"><oas-icon name="star-filled" size="16"></oas-icon>${t('about.title')}</span>
           <span class="setting-value">OAS Mobile 0.1.0</span>
         </div>
       </div>
     </main>
-    <oas-float-button icon="plus" aria-label="发布" data-testid="publish-fab"></oas-float-button>
+    <oas-float-button icon="plus" aria-label="${t('common.publish')}" data-testid="publish-fab"></oas-float-button>
+    <oas-drawer id="menu-drawer" data-testid="menu-drawer" placement="left" size="small" no-footer>
+      <nav class="menu-nav">
+        <p class="menu-nav-title">${t('app.title')}</p>
+        <button class="menu-link" type="button" data-route="home">
+          <oas-icon name="eye" size="16"></oas-icon>${t('nav.home')}
+        </button>
+        <button class="menu-link" type="button" data-route="list">
+          <oas-icon name="filter" size="16"></oas-icon>${t('nav.list')}
+        </button>
+        <button class="menu-link" type="button" data-route="mine">
+          <oas-icon name="user" size="16"></oas-icon>${t('nav.mine')}
+        </button>
+        <a class="menu-link" href="/">
+          <oas-icon name="star" size="16"></oas-icon>${t('menu.portal')}
+        </a>
+        <div class="menu-foot">oas-ui · v0.1.0</div>
+      </nav>
+    </oas-drawer>
     <oas-bottom-sheet id="publish-sheet" data-testid="publish-sheet" max-height="80vh">
       <div class="sheet-form">
         <oas-input
           data-testid="publish-title"
-          label="标题"
-          placeholder="一句话说明你要发布的内容"
+          label="${t('publish.title')}"
+          placeholder="${t('publish.titlePh')}"
           clearable
         ></oas-input>
         <oas-textarea
           data-testid="publish-content"
-          label="内容"
+          label="${t('publish.content')}"
           rows="3"
-          placeholder="补充细节（可选）"
+          placeholder="${t('publish.contentPh')}"
         ></oas-textarea>
+        <div class="sheet-tags">
+          <span class="sheet-tags-label">${t('publish.category')}</span>
+          <div class="filter-chips" id="publish-tags">
+            <oas-tag class="chip is-on" data-tag="新发布">${t('kind.新发布')}</oas-tag>
+            ${KINDS.filter((k) => k !== '新发布')
+              .map((k) => `<oas-tag class="chip" data-tag="${k}">${t(`kind.${k}`)}</oas-tag>`)
+              .join('')}
+          </div>
+        </div>
         <div class="sheet-actions">
-          <oas-button data-testid="publish-cancel">取消</oas-button>
-          <oas-button data-testid="publish-submit" type="primary">发布</oas-button>
+          <oas-button data-testid="publish-cancel">${t('common.cancel')}</oas-button>
+          <oas-button data-testid="publish-submit" type="primary">${t('common.publish')}</oas-button>
         </div>
       </div>
     </oas-bottom-sheet>
@@ -154,9 +278,9 @@ export function mountApp(root: HTMLElement): void {
       value="home"
       pill
       items='[
-        { "label": "首页", "value": "home", "icon": "eye" },
-        { "label": "列表", "value": "list", "icon": "filter" },
-        { "label": "我的", "value": "mine", "icon": "user" }
+        { "label": "${t('nav.tab.home')}", "value": "home", "icon": "eye" },
+        { "label": "${t('nav.tab.list')}", "value": "list", "icon": "filter" },
+        { "label": "${t('nav.tab.mine')}", "value": "mine", "icon": "user" }
       ]'
     ></oas-bottom-navigation>`
 
@@ -177,6 +301,7 @@ export function mountApp(root: HTMLElement): void {
 
   let listTag = '全部'
   let listQuery = ''
+  let publishTag: FeedKind = '新发布'
 
   // 皮肤持久化与切换（data-skin 与 data-theme 正交；切换清 inline 自定义主色）
   const SKIN_KEY = 'oas-admin.settings.skin'
@@ -185,6 +310,22 @@ export function mountApp(root: HTMLElement): void {
     else delete document.documentElement.dataset.skin
   }
   applySkin(localStorage.getItem(SKIN_KEY) ?? '')
+
+  // 玻璃质感持久化与切换（data-glass 浮层磨砂层，默认关；键名对齐 admin-pro 家族）
+  const GLASS_KEY = 'oas-admin.settings.glass'
+  const applyGlass = (on: boolean): void => {
+    if (on) document.documentElement.setAttribute('data-glass', '')
+    else document.documentElement.removeAttribute('data-glass')
+  }
+  const glassOn = localStorage.getItem(GLASS_KEY) === 'on'
+  applyGlass(glassOn)
+  const glassSwitch = el(root, '#glass-switch')
+  if (glassOn) glassSwitch.setAttribute('checked', '')
+  glassSwitch.addEventListener('oas-change', () => {
+    const on = glassSwitch.hasAttribute('checked')
+    applyGlass(on)
+    localStorage.setItem(GLASS_KEY, on ? 'on' : 'off')
+  })
   el(root, '[data-testid="skin-picker"]').addEventListener('click', (e) => {
     const chip = (e.target as HTMLElement).closest<HTMLElement>('.chip')
     if (!chip) return
@@ -209,6 +350,35 @@ export function mountApp(root: HTMLElement): void {
         c.classList.add('is-on')
     })
 
+  // 语言切换：持久化 + reload（i18n.ts setLocale 统一口径）
+  el(root, '[data-testid="locale-picker"]').addEventListener('click', (e) => {
+    const chip = (e.target as HTMLElement).closest<HTMLElement>('.chip')
+    if (!chip) return
+    const next = chip.dataset.locale as Locale
+    if (!next || next === currentLocale()) return
+    setLocale(next)
+  })
+
+  // 首页宫格：带筛选跳列表
+  el(root, '[data-testid="quick-grid"]').addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest<HTMLElement>('.quick-item')
+    if (!btn) return
+    listTag = btn.dataset.tag === 'all' ? '全部' : (btn.dataset.tag ?? '全部')
+    navigate('list')
+  })
+
+  // 发布分类 chips
+  el(root, '#publish-tags').addEventListener('click', (e) => {
+    const chip = (e.target as HTMLElement).closest<HTMLElement>('.chip')
+    if (!chip) return
+    publishTag = (chip.dataset.tag as FeedKind) ?? '新发布'
+    el(root, '#publish-tags')
+      .querySelectorAll<HTMLElement>('.chip')
+      .forEach((c) => {
+        c.classList.toggle('is-on', c === chip)
+      })
+  })
+
   function renderFeed(): void {
     feedList.innerHTML = feed.map(feedCardHTML).join('')
   }
@@ -229,13 +399,32 @@ export function mountApp(root: HTMLElement): void {
     viewHome.hidden = route !== 'home'
     viewList.hidden = route !== 'list'
     viewMine.hidden = route !== 'mine'
-    appBar.setAttribute('heading', VIEW_TITLES[route])
+    appBar.setAttribute('heading', VIEW_TITLE())
     nav.setAttribute('value', route)
-    if (route === 'list') renderList()
+    if (route === 'list') {
+      // 宫格带筛选进入时同步 chips 选中态
+      el(root, '[data-testid="list-chips"]')
+        .querySelectorAll<HTMLElement>('.chip')
+        .forEach((c) => {
+          c.classList.toggle('is-on', (c.dataset.tag ?? '全部') === listTag)
+        })
+      renderList()
+    }
+  }
+
+  function VIEW_TITLE(): string {
+    return currentRoute === 'list'
+      ? t('nav.list')
+      : currentRoute === 'mine'
+        ? t('nav.mine')
+        : t('app.title')
   }
 
   function navigate(route: Route): void {
-    if (currentRoute === route) return
+    if (currentRoute === route) {
+      applyRoute(route)
+      return
+    }
     location.hash = `#/${route}`
   }
 
@@ -249,6 +438,19 @@ export function mountApp(root: HTMLElement): void {
 
   fab.addEventListener('click', () => sheet.setAttribute('open', ''))
 
+  // 汉堡 → 左侧抽屉菜单（oas-drawer 开关属性是 visible）；点菜单项导航并收起
+  const menuDrawer = el(root, '[data-testid="menu-drawer"]')
+  el(root, '[data-testid="menu-btn"]').addEventListener('click', () => {
+    menuDrawer.setAttribute('visible', '')
+  })
+  menuDrawer.addEventListener('click', (e) => {
+    const link = (e.target as HTMLElement).closest<HTMLElement>('.menu-link')
+    // 真实链接（如返回模板门户）走浏览器默认导航，不走站内路由
+    if (!link || link.tagName === 'A') return
+    menuDrawer.removeAttribute('visible')
+    navigate((link.dataset.route as Route) ?? 'home')
+  })
+
   el(root, '[data-testid="publish-cancel"]').addEventListener('click', () =>
     sheet.removeAttribute('open'),
   )
@@ -260,7 +462,12 @@ export function mountApp(root: HTMLElement): void {
     const title = (titleInput.value ?? '').trim()
     if (!title) return
     feed = [
-      { title, summary: (contentInput.value ?? '').trim() || '刚刚由移动端发布。', tag: '新发布', time: '刚刚' },
+      {
+        title,
+        summary: (contentInput.value ?? '').trim() || '刚刚由移动端发布。',
+        tag: publishTag,
+        time: '刚刚',
+      },
       ...feed,
     ]
     titleInput.value = ''

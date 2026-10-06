@@ -27,16 +27,19 @@ test('列表页：深链直达 + 搜索过滤 + chips 筛选', async ({ page }) 
   await expect(page.locator('#view-list')).toBeVisible()
   await expect(page.locator('#list-body oas-card').first()).toBeVisible()
 
-  // 搜索：命中 2.5.7 发布卡片
+  // 全量：seed 6 条
+  await expect(page.locator('#list-body oas-card')).toHaveCount(6)
+
+  // 搜索：命中标题含 2.5.7 的 2 条（发布公告 + 升级清单）
   await page.getByTestId('list-search').locator('input').fill('2.5.7')
-  await expect(page.locator('#list-body oas-card')).toHaveCount(1)
+  await expect(page.locator('#list-body oas-card')).toHaveCount(2)
   await page.getByTestId('list-search').locator('input').fill('')
 
   // chips：只看「公告」
   await page.locator('[data-testid="list-chips"]').getByText('公告').click()
-  await expect(page.locator('#list-body oas-card')).toHaveCount(1)
+  await expect(page.locator('#list-body oas-card')).toHaveCount(2)
   await page.locator('[data-testid="list-chips"]').getByText('全部').click()
-  await expect(page.locator('#list-body oas-card')).toHaveCount(3)
+  await expect(page.locator('#list-body oas-card')).toHaveCount(6)
 })
 
 test('发布流：float-button 打开 bottom-sheet → 提交 → 首页顶部新增卡片', async ({ page }) => {

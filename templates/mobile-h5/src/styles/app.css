@@ -1,4 +1,4 @@
-/* 移动端 H5 骨架样式：手机视口全宽，桌面预览时 480px 居中模拟手机宽度 */
+/* 移动端 H5 样式：手机视口全宽，桌面预览 480px 居中模拟手机宽度；全部消费 --oas-* token */
 * {
   box-sizing: border-box;
 }
@@ -47,33 +47,167 @@ oas-app-bar {
   gap: 10px;
 }
 
-.feed-card {
-  .filter-chips {
-    display: flex;
-    gap: 8px;
-    overflow-x: auto;
-    padding-bottom: 2px;
-  }
+/* ── 首页 hero ── */
+.hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 16px;
+  border-radius: 14px;
+  color: #fff;
+  background: radial-gradient(
+    120% 140% at 85% 10%,
+    color-mix(in srgb, var(--oas-color-primary, #0b6cff) 55%, #38bdf8) 0%,
+    var(--oas-color-primary, #0b6cff) 58%
+  );
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--oas-color-primary, #0b6cff) 28%, transparent);
+}
 
-  .filter-chips .chip {
-    cursor: pointer;
-    opacity: 0.55;
-    flex: 0 0 auto;
-  }
+.hero-hi {
+  margin: 0 0 4px;
+  font-size: 17px;
+  font-weight: 700;
+}
 
-  .filter-chips .chip.is-on {
-    opacity: 1;
-    outline: 2px solid var(--oas-color-primary, #0b6cff);
-    outline-offset: -1px;
-    border-radius: 999px;
-  }
+.hero-sub {
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.86;
+}
+
+.hero-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
   border-radius: 12px;
+  background: rgba(255, 255, 255, 0.16);
+  flex: 0 0 auto;
+}
+
+/* ── 快捷宫格 ── */
+.quick-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  background: var(--oas-color-surface, #fff);
+  border-radius: 14px;
+  padding: 12px 6px;
+}
+
+.quick-item {
+  appearance: none;
+  border: none;
+  background: none;
+  padding: 2px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.quick-ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  transition: transform 140ms ease;
+}
+
+.quick-item:active .quick-ico {
+  transform: scale(0.92);
+}
+
+.quick-label {
+  font-size: 12px;
+  color: var(--oas-color-text-secondary, #6b7280);
+}
+
+/* 分类图标底色：kind → 色系（color-mix 派生，跟随主题主色族） */
+.quick-ico[data-kind="公告"],
+.feed-ico[data-kind="公告"] {
+  background: color-mix(in srgb, #f59e0b 16%, transparent);
+  color: #d97706;
+}
+
+.quick-ico[data-kind="动态"],
+.feed-ico[data-kind="动态"] {
+  background: color-mix(in srgb, var(--oas-color-primary, #0b6cff) 14%, transparent);
+  color: var(--oas-color-primary, #0b6cff);
+}
+
+.quick-ico[data-kind="待办"],
+.feed-ico[data-kind="待办"] {
+  background: color-mix(in srgb, #10b981 16%, transparent);
+  color: #059669;
+}
+
+.quick-ico[data-kind="新发布"],
+.feed-ico[data-kind="新发布"] {
+  background: color-mix(in srgb, #8b5cf6 16%, transparent);
+  color: #7c3aed;
+}
+
+/* ── 区块标题 ── */
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 2px 0;
+}
+
+.section-title {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* ── 信息流卡片 ── */
+.feed-card {
+  border-radius: 12px;
+}
+
+.feed-row {
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px;
+}
+
+.feed-ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  flex: 0 0 auto;
+}
+
+.feed-main {
+  min-width: 0;
+  flex: 1;
 }
 
 .feed-title {
   font-weight: 600;
-  margin: 0 0 4px;
+  margin: 0 0 3px;
   font-size: 15px;
+}
+
+.feed-summary {
+  margin: 0;
+  font-size: 13px;
+  color: var(--oas-color-text-secondary, #6b7280);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .feed-meta {
@@ -85,9 +219,105 @@ oas-app-bar {
   margin-top: 8px;
 }
 
-/* 我的视图：设置分组列表 */
+/* ── 筛选 chips ── */
+.filter-chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.filter-chips .chip {
+  cursor: pointer;
+  opacity: 0.55;
+  flex: 0 0 auto;
+}
+
+.filter-chips .chip.is-on {
+  opacity: 1;
+  outline: 2px solid var(--oas-color-primary, #0b6cff);
+  outline-offset: -1px;
+  border-radius: 999px;
+}
+
+/* ── 我的：头卡 + 统计 + 分组 ── */
+.me-hero {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 14px;
+  background: radial-gradient(
+    120% 140% at 85% 10%,
+    color-mix(in srgb, var(--oas-color-primary, #0b6cff) 55%, #38bdf8) 0%,
+    var(--oas-color-primary, #0b6cff) 58%
+  );
+  color: #fff;
+}
+
+.me-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  font-size: 20px;
+  font-weight: 700;
+  flex: 0 0 auto;
+}
+
+.me-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.me-name {
+  margin: 0 0 2px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.me-team {
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.86;
+}
+
+.me-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  background: var(--oas-color-surface, #fff);
+  border-radius: 14px;
+  padding: 12px 0;
+}
+
+.me-stats .stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.me-stats b {
+  font-size: 17px;
+}
+
+.me-stats span {
+  font-size: 12px;
+  color: var(--oas-color-text-secondary, #6b7280);
+}
+
+.group-title {
+  margin: 6px 2px 0;
+  font-size: 12px;
+  color: var(--oas-color-text-secondary, #6b7280);
+}
+
+/* 设置分组列表 */
 .settings-group {
-  background: #fff;
+  background: var(--oas-color-surface, #fff);
   border-radius: 12px;
   overflow: hidden;
 }
@@ -96,13 +326,25 @@ oas-app-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px;
+  gap: 10px;
+  padding: 13px 16px;
   font-size: 14px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid color-mix(in srgb, var(--oas-color-border, #e2e8f0) 55%, transparent);
 }
 
 .setting-item:last-child {
   border-bottom: 0;
+}
+
+.setting-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--oas-color-text-primary, #1f2329);
+}
+
+.setting-label oas-icon {
+  color: var(--oas-color-text-secondary, #6b7280);
 }
 
 .setting-item .setting-value {
@@ -110,7 +352,26 @@ oas-app-bar {
   font-size: 13px;
 }
 
-/* 发布 sheet 表单 */
+.skin-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.skin-chips .chip {
+  cursor: pointer;
+  opacity: 0.55;
+}
+
+.skin-chips .chip.is-on {
+  opacity: 1;
+  outline: 2px solid var(--oas-color-primary, #0b6cff);
+  outline-offset: -1px;
+  border-radius: 999px;
+}
+
+/* ── 发布 sheet ── */
 .sheet-form {
   display: flex;
   flex-direction: column;
@@ -123,10 +384,32 @@ oas-app-bar {
   width: 100%;
 }
 
+.sheet-tags {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sheet-tags-label {
+  font-size: 13px;
+  color: var(--oas-color-text-secondary, #6b7280);
+}
+
 .sheet-actions {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+}
+
+/* 底部导航固定在视口底部（随 480px 预览框居中收窄），不再跟随内容流 */
+oas-bottom-navigation {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  z-index: 30;
 }
 
 /* float-button 抬升到底部导航之上，避免遮挡导航右端项 */
@@ -135,4 +418,76 @@ oas-float-button {
   bottom: calc(76px + env(safe-area-inset-bottom));
   right: 16px;
   z-index: 20;
+}
+
+/* ── 汉堡侧滑抽屉菜单 ── */
+/* 门户返回链接（app-bar actions 槽）：站点根 = 模板集合首页 */
+.portal-link {
+  color: inherit;
+  text-decoration: none;
+  font-size: 12px;
+  opacity: 0.85;
+  padding: 4px 6px;
+}
+
+.portal-link:hover {
+  opacity: 1;
+}
+
+.menu-btn {
+  appearance: none;
+  border: none;
+  background: none;
+  padding: 6px;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+
+.menu-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  min-height: 100%;
+}
+
+.menu-nav-title {
+  margin: 4px 8px 10px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.menu-link {
+  appearance: none;
+  border: none;
+  background: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 12px;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--oas-color-text-primary, #1f2329);
+  cursor: pointer;
+  text-align: left;
+}
+
+.menu-link:hover {
+  background: var(--oas-color-bg-hover, #f1f5f9);
+}
+
+.menu-link oas-icon {
+  color: var(--oas-color-text-secondary, #6b7280);
+}
+
+.menu-foot {
+  margin-top: auto;
+  padding: 12px;
+  font-size: 12px;
+  color: var(--oas-color-text-secondary, #6b7280);
 }
