@@ -18,6 +18,7 @@ import {
   DENSITY_KEY,
   FONT_SIZE_KEY,
   FORM_MODE_KEY,
+  GLASS_KEY,
   navConfig,
   NOTIF_PREFIX,
   PAGE_SIZE_KEY,

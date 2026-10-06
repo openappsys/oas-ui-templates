@@ -1,4 +1,5 @@
 import '@oas-ui/theme/skins.css'
+import '@oas-ui/theme/glass.css'
 import './analytics'
 import './components/registry'
 import './styles/app.css'
