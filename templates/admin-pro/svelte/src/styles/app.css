@@ -1,3 +1,8 @@
+/* 玻璃浅色态边框可用性过渡（上游 main ceb939aa 已修待发版，demands 在案）——发版升级后摘除 */
+:root[data-glass]:not([data-theme="dark"]):not([data-theme="high-contrast"]) {
+  --oas-color-border: rgba(0, 0, 0, 0.08);
+  --oas-color-border-strong: rgba(0, 0, 0, 0.14);
+}
 /* src/styles/app.css —— 全局样式（由 main.tsx 引入，先于所有组件/页级 CSS 加载）。
    本文件只保留「真全局」规则：应用变量、reset、页骨架（.page/.page-head/.page-title）、
    多组件共享的工具类与被页级 CSS 覆盖的基础规则。

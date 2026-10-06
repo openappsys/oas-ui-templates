@@ -1,3 +1,8 @@
+/* 玻璃浅色态边框可用性过渡（上游 main ceb939aa 已修待发版，demands 在案）——发版升级后摘除 */
+:root[data-glass]:not([data-theme="dark"]):not([data-theme="high-contrast"]) {
+  --oas-color-border: rgba(0, 0, 0, 0.08);
+  --oas-color-border-strong: rgba(0, 0, 0, 0.14);
+}
 /* app.css —— 全局样式基线。
  * 组件/页面专属规则已拆分至各 SFC 的 <style scoped>（或就近非 scoped 块），本文件只保留：
  * 1) 变量与 reset / html body 级规则；2) 多页面共享的页骨架与工具类；3) 指向 shadow 内部或

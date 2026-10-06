@@ -1,3 +1,8 @@
+/* 玻璃浅色态边框可用性过渡（上游 main ceb939aa 已修待发版，demands 在案）——发版升级后摘除 */
+:root[data-glass]:not([data-theme="dark"]):not([data-theme="high-contrast"]) {
+  --oas-color-border: rgba(0, 0, 0, 0.08);
+  --oas-color-border-strong: rgba(0, 0, 0, 0.14);
+}
 /* 移动端 H5 样式：手机视口全宽，桌面预览 480px 居中模拟手机宽度；全部消费 --oas-* token */
 * {
   box-sizing: border-box;
