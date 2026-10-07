@@ -494,8 +494,10 @@ body {
 .st-main {
   flex: 1;
   min-height: 0;
+  overflow-x: auto;
+  /* minmax 下限防中间列被固定列挤塌（图表轴叠加根因）；极窄时横向滚动而非叠字 */
   display: grid;
-  grid-template-columns: 190px 1fr 220px;
+  grid-template-columns: 190px minmax(300px, 1fr) 220px;
   gap: 10px;
 }
 
@@ -563,6 +565,7 @@ body {
 
 .st-chart-card oas-chart {
   height: 150px;
+  min-width: 280px;
 }
 
 .st-wave {

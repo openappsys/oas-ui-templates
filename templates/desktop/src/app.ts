@@ -215,6 +215,25 @@ function bindStudio(root: HTMLElement): void {
     }
   }
   const play = root.querySelector<HTMLButtonElement>('.st-play')
+  // 素材库选中态（可见反馈）
+  const lib = root.querySelector<HTMLElement>('.st-library')
+  lib?.addEventListener('click', (e) => {
+    const item = (e.target as HTMLElement).closest<HTMLElement>('.st-lib-item')
+    if (!item) return
+    lib.querySelectorAll<HTMLElement>('.st-lib-item').forEach((n) => {
+      n.classList.toggle('is-active', n === item)
+    })
+  })
+  // 分享/导出按钮反馈（1.2s 后还原）
+  for (const btn of root.querySelectorAll<HTMLButtonElement>('.st-toolbar oas-button')) {
+    btn.addEventListener('click', () => {
+      const original = btn.textContent
+      btn.textContent = btn.textContent === '分享' ? '链接已复制' : '已导出 ✓'
+      window.setTimeout(() => {
+        btn.textContent = original
+      }, 1200)
+    })
+  }
   const timeEl = root.querySelector<HTMLElement>('.st-time')
   const progress = root.querySelector<HTMLElement>('.st-progress')
   play?.addEventListener('click', () => {
