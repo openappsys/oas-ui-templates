@@ -48,34 +48,46 @@ test('设置：皮肤切换写 data-skin', async ({ page }) => {
   await expect(page.locator('html')).toHaveAttribute('data-skin', 'violet')
 })
 
-test('创作台：暗色工作站三栏 + 多轨时间轴 + 传输条播放', async ({ page }) => {
+test('创作台：媒体库/预览/属性/多轨时间轴渲染', async ({ page }) => {
   await page.goto('/')
   await page.locator('.act-btn[data-section="studio"]').click()
   const studio = page.locator('[data-testid="studio"]')
   await expect(studio).toBeVisible()
-  // 轨道库 = 4 音轨 + 4 素材
-  await expect(studio.locator('.st-lib-item')).toHaveCount(8)
-  // 时间轴：4 条 lane + 播放头
+  await expect(studio.locator('.st-lib-item')).toHaveCount(7)
   await expect(studio.locator('.st-lane')).toHaveCount(4)
-  await expect(studio.locator('.st-playhead')).toBeVisible()
-  await studio.locator('.st-play').click()
-  await page.waitForTimeout(1400)
-  const time = await page.locator('[data-testid="st-time"]').textContent()
-  expect(time).not.toBe('00:00')
+  await expect(page.getByTestId('st-preview')).toBeVisible()
+  await expect(studio.locator('.st-clip')).toHaveCount(5)
 })
 
-test('创作台联动：侧栏切音轨 → lane/徽章/传输条同步 + clip 选中回填', async ({ page }) => {
+test('创作台：素材点击添加到对应轨道 + clip 选中回填属性', async ({ page }) => {
   await page.goto('/')
   await page.locator('.act-btn[data-section="studio"]').click()
   const studio = page.locator('[data-testid="studio"]')
   await expect(studio).toBeVisible()
-  await expect(page.locator('[data-testid="st-trackname"]')).toContainText('人声主轨')
-  await page.locator('.side-item[data-track="鼓组"]').click()
-  await expect(page.locator('[data-testid="st-trackname"]')).toContainText('鼓组')
-  await expect(studio.locator('.st-lane[data-track="鼓组"]')).toHaveClass(/is-active/)
-  await expect(page.locator('[data-testid="st-props-title"]')).toContainText('鼓组')
-  // 时间轴 clip 点击 → 属性面板回填名称与起止
-  await studio.locator('.st-clip[data-clip="过门填充"]').click()
-  await expect(page.locator('[data-testid="st-clip-name"]')).toContainText('过门填充')
-  await expect(page.locator('[data-testid="st-clip-range"]')).toContainText('1:50 → 3:38')
+  // 音频轨原 1 条，添加「旁白配音」后 2 条
+  const audioLane = studio.locator('.st-lane[data-track="音频轨"]')
+  await expect(audioLane.locator('.st-clip')).toHaveCount(1)
+  await studio.locator('.st-lib-item', { hasText: '旁白配音' }).click()
+  await expect(audioLane.locator('.st-clip')).toHaveCount(2)
+  await expect(page.getByTestId('st-clip-name')).toContainText('旁白配音')
+  await expect(page.getByTestId('st-clip-track')).toContainText('音频轨')
+  // 时间轴点选已有 clip → 属性回填
+  await studio.locator('.st-clip', { hasText: '城市航拍 4K' }).click()
+  await expect(page.getByTestId('st-clip-name')).toContainText('城市航拍 4K')
+  await expect(page.getByTestId('st-clip-range')).toContainText('0:00 →')
+})
+
+test('创作台：播放走带联动预览与播放头 + 侧栏分类过滤媒体库', async ({ page }) => {
+  await page.goto('/')
+  await page.locator('.act-btn[data-section="studio"]').click()
+  const studio = page.locator('[data-testid="studio"]')
+  await expect(studio).toBeVisible()
+  // 播放：时间码推进 + 预览命中片段名
+  await studio.locator('#st-play').click()
+  await page.waitForTimeout(1300)
+  await expect(page.getByTestId('st-time')).not.toContainText('0:00')
+  await expect(page.locator('#st-screen-name')).toContainText('城市航拍')
+  // 侧栏分类过滤：音频 → 媒体库只剩 2 项
+  await page.locator('.side-item', { hasText: '音频' }).click()
+  await expect(studio.locator('.st-lib-item')).toHaveCount(2)
 })
