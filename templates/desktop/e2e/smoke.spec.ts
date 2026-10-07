@@ -1,61 +1,49 @@
 import { expect, test } from '@playwright/test'
 
-test('桌面渲染：壁纸 + 图标 + 任务栏时钟', async ({ page }) => {
+test('应用壳渲染：标题栏/菜单栏/活动栏/状态栏', async ({ page }) => {
   await page.goto('/')
-  await expect(page.getByTestId('desktop-icons')).toBeVisible()
-  await expect(page.locator('.desktop-icon')).toHaveCount(4)
-  const clock = await page.locator('#task-clock').textContent()
-  expect(clock?.trim()).toMatch(/^\d{2}:\d{2}$/)
+  await expect(page.getByTestId('titlebar')).toBeVisible()
+  await expect(page.getByTestId('menubar')).toBeVisible()
+  await expect(page.getByTestId('activity-bar')).toBeVisible()
+  await expect(page.getByTestId('statusbar')).toContainText('就绪')
+  await expect(page.locator('.act-btn')).toHaveCount(4)
 })
 
-test('开窗：桌面图标打开窗口 → 焦点层级 → 关闭', async ({ page }) => {
+test('活动栏切换：侧栏与内容区随 section 更新', async ({ page }) => {
   await page.goto('/')
-  await page.locator('.desktop-icon[data-app="dashboard"]').click()
-  await expect(page.locator('[data-testid="window-dashboard"]')).toBeVisible()
-  // 再开一个，前置其上；关闭后从任务栏消失
-  await page.locator('.desktop-icon[data-app="orders"]').click()
-  await expect(page.locator('[data-testid="window-orders"]')).toBeVisible()
-  await expect(page.locator('.task-item')).toHaveCount(2)
-  await page.locator('[data-testid="window-orders"] [data-act="close"]').click()
-  await expect(page.locator('[data-testid="window-orders"]')).toHaveCount(0)
-  await expect(page.locator('.task-item')).toHaveCount(1)
+  await page.locator('.act-btn[data-section="orders"]').click()
+  await expect(page.locator('.side-title')).toContainText('订单管理')
+  await expect(page.getByTestId('content')).toContainText('SO-10001')
+  await page.locator('.act-btn[data-section="users"]').click()
+  await expect(page.locator('.side-title')).toContainText('用户管理')
+  await expect(page.getByTestId('content')).toContainText('张伟')
 })
 
-test('窗口管理：最小化进任务栏 → 任务栏还原 → 最大化铺满', async ({ page }) => {
+test('菜单栏：视图 → 切换玻璃质感写 data-glass', async ({ page }) => {
   await page.goto('/')
-  await page.locator('.desktop-icon[data-app="orders"]').click()
-  const win = page.locator('[data-testid="window-orders"]')
-  await expect(win).toBeVisible()
-  await win.locator('[data-act="min"]').click()
-  await expect(win).toBeHidden()
-  await page.locator('.task-item[data-app="orders"]').click()
-  await expect(win).toBeVisible()
-  await win.locator('[data-act="max"]').click()
-  await expect(win).toHaveClass(/is-maximized/)
-})
-
-test('拖动：标题栏拖拽后窗口位置改变', async ({ page }) => {
-  await page.goto('/')
-  await page.locator('.desktop-icon[data-app="users"]').click()
-  const win = page.locator('[data-testid="window-users"]')
-  await expect(win).toBeVisible()
-  const before = await win.boundingBox()
-  await page.locator('[data-testid="window-users"] .titlebar').hover()
-  await page.mouse.down()
-  await page.mouse.move((before?.x ?? 100) + 560, (before?.y ?? 100) + 120, { steps: 8 })
-  await page.mouse.up()
-  const after = await win.boundingBox()
-  expect(Math.abs((after?.x ?? 0) - (before?.x ?? 0))).toBeGreaterThan(100)
-  expect(Math.abs((after?.y ?? 0) - (before?.y ?? 0))).toBeGreaterThan(60)
-})
-
-test('设置窗口：皮肤切换写 data-skin + 玻璃开关写 data-glass', async ({ page }) => {
-  await page.goto('/')
-  await page.locator('.desktop-icon[data-app="settings"]').click()
-  const win = page.locator('[data-testid="window-settings"]')
-  await expect(win).toBeVisible()
-  await win.locator('#dt-skin .chip[data-skin="violet"]').click()
-  await expect(page.locator('html')).toHaveAttribute('data-skin', 'violet')
-  await win.locator('#dt-glass').click()
+  await page.getByTestId('menubar').getByText('视图').click()
+  await page.locator('.menu-pop-item').first().click()
   await expect(page.locator('html')).toHaveAttribute('data-glass', '')
+  const stored = await page.evaluate(() => localStorage.getItem('oas-admin.settings.glass'))
+  expect(stored).toBe('on')
+})
+
+test('标题栏：关闭弹出退出确认 → 取消留在应用；全屏按钮可点', async ({ page }) => {
+  await page.goto('/')
+  await page.getByTestId('win-close').click()
+  await expect(page.locator('#quit-modal')).toHaveAttribute('visible', '')
+  await page.getByTestId('quit-cancel').click()
+  await expect(page.locator('#quit-modal')).not.toHaveAttribute('visible', '')
+  await page.getByTestId('win-max').click()
+  await page.waitForTimeout(400)
+  const fs = await page.evaluate(() => document.fullscreenElement != null)
+  expect(fs).toBe(true)
+  await page.getByTestId('win-max').click()
+})
+
+test('设置：皮肤切换写 data-skin', async ({ page }) => {
+  await page.goto('/')
+  await page.locator('.act-btn[data-section="settings"]').click()
+  await page.locator('#dt-skin .chip[data-skin="violet"]').click()
+  await expect(page.locator('html')).toHaveAttribute('data-skin', 'violet')
 })

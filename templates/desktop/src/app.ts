@@ -1,28 +1,64 @@
-// 桌面体验模板：壁纸 + 桌面图标 + 窗口管理器（拖动/最小化/最大化/焦点）+ 任务栏
-// 应用 = 后台能力的窗口化（仪表盘/订单/用户/设置）；oas-* 组件消费 + 自研窗口壳
+// 桌面软件体验模板：单窗口原生应用式布局
+// 自绘标题栏（窗口按钮）+ 菜单栏 + 活动栏（图标导航）+ 侧栏面板 + 内容区 + 状态栏
+// 控件消费 oas-* 组件；标题栏/菜单栏为桌面应用观感壳（浏览器内模拟）
 
 function el<T extends HTMLElement = HTMLElement>(scope: ParentNode, sel: string): T {
   return scope.querySelector<T>(sel)!
 }
 
-type AppId = 'dashboard' | 'orders' | 'users' | 'settings'
+type SectionId = 'dashboard' | 'orders' | 'users' | 'settings'
 
-interface AppDef {
-  id: AppId
+interface SectionDef {
+  id: SectionId
   title: string
   icon: string
-  width: number
-  height: number
+  side: Array<{ label: string; hint?: string }>
 }
 
-const APPS: AppDef[] = [
-  { id: 'dashboard', title: '仪表盘', icon: 'eye', width: 720, height: 480 },
-  { id: 'orders', title: '订单管理', icon: 'calendar', width: 780, height: 500 },
-  { id: 'users', title: '用户管理', icon: 'user', width: 700, height: 460 },
-  { id: 'settings', title: '设置', icon: 'gear', width: 560, height: 420 },
+const SECTIONS: SectionDef[] = [
+  {
+    id: 'dashboard',
+    title: '仪表盘',
+    icon: 'eye',
+    side: [
+      { label: '经营总览', hint: '今日核心指标' },
+      { label: '访问趋势', hint: '近 30 日' },
+      { label: '转化漏斗', hint: '注册 → 付费' },
+    ],
+  },
+  {
+    id: 'orders',
+    title: '订单管理',
+    icon: 'calendar',
+    side: [
+      { label: '全部订单', hint: '12' },
+      { label: '待支付', hint: '1' },
+      { label: '配送中', hint: '2' },
+      { label: '已完成', hint: '9' },
+    ],
+  },
+  {
+    id: 'users',
+    title: '用户管理',
+    icon: 'user',
+    side: [
+      { label: '全部用户', hint: '4' },
+      { label: '平台组', hint: '2' },
+      { label: '业务组', hint: '2' },
+      { label: '已停用', hint: '2' },
+    ],
+  },
+  {
+    id: 'settings',
+    title: '设置',
+    icon: 'gear',
+    side: [
+      { label: '外观', hint: '主题 / 皮肤' },
+      { label: '通知', hint: '渠道矩阵' },
+      { label: '关于', hint: '版本信息' },
+    ],
+  },
 ]
-
-const APP_MAP = new Map(APPS.map((a) => [a.id, a]))
 
 const ORDERS = [
   { no: 'SO-10001', customer: '华信科技', amount: '¥ 12,800', status: '已完成', ok: true },
@@ -37,13 +73,9 @@ const USERS = [
   { name: '李娜', role: '运营', dept: '业务组', on: true },
   { name: '王强', role: '访客', dept: '外部', on: false },
   { name: '赵敏', role: '运营', dept: '业务组', on: true },
-  { name: '刘洋', role: '管理员', dept: '平台组', on: false },
 ]
 
-let zTop = 100
-const openWindows = new Map<AppId, { el: HTMLElement; minimized: boolean; maximized: boolean }>()
-
-function appBodyHTML(id: AppId): string {
+function contentHTML(id: SectionId): string {
   if (id === 'dashboard') {
     return `
       <div class="stat-grid">
@@ -52,63 +84,66 @@ function appBodyHTML(id: AppId): string {
         <div class="stat-card"><span class="stat-label">订单量</span><b>1,926</b><span class="stat-delta up">+3.1%</span></div>
         <div class="stat-card"><span class="stat-label">转化率</span><b>4.6%</b><span class="stat-delta down">-0.4%</span></div>
       </div>
-      <oas-card class="panel-card">
-        <div class="panel-pad">
-          <p class="panel-title">最近订单</p>
-          ${ORDERS.slice(0, 3)
-            .map(
-              (o) =>
-                `<div class="row"><span>${o.no}</span><span>${o.customer}</span><span>${o.amount}</span><oas-tag size="small" type="${o.ok ? 'success' : 'warning'}">${o.status}</oas-tag></div>`,
-            )
-            .join('')}
-        </div>
-      </oas-card>`
+      <div class="panel">
+        <p class="panel-title">最近订单</p>
+        ${ORDERS.slice(0, 4)
+          .map(
+            (o) =>
+              `<div class="trow"><span>${o.no}</span><span>${o.customer}</span><span>${o.amount}</span><oas-tag size="small" type="${o.ok ? 'success' : 'warning'}">${o.status}</oas-tag></div>`,
+          )
+          .join('')}
+      </div>`
   }
   if (id === 'orders') {
     return `
       <div class="toolbar"><oas-input placeholder="搜索订单号 / 客户" prefix-icon="search" clearable></oas-input><oas-button type="primary" size="small">导出</oas-button></div>
-      <div class="thead"><span>订单号</span><span>客户</span><span>金额</span><span>状态</span></div>
-      ${ORDERS.map(
-        (o) =>
-          `<div class="trow"><span>${o.no}</span><span>${o.customer}</span><span>${o.amount}</span><oas-tag size="small" type="${o.ok ? 'success' : 'warning'}">${o.status}</oas-tag></div>`,
-      ).join('')}`
+      <div class="panel">
+        <div class="thead"><span>订单号</span><span>客户</span><span>金额</span><span>状态</span></div>
+        ${ORDERS.map(
+          (o) =>
+            `<div class="trow"><span>${o.no}</span><span>${o.customer}</span><span>${o.amount}</span><oas-tag size="small" type="${o.ok ? 'success' : 'warning'}">${o.status}</oas-tag></div>`,
+        ).join('')}
+      </div>`
   }
   if (id === 'users') {
     return `
-      <div class="thead"><span>用户</span><span>角色</span><span>部门</span><span>启用</span></div>
-      ${USERS.map(
-        (u) =>
-          `<div class="trow"><span>${u.name}</span><oas-tag size="small">${u.role}</oas-tag><span>${u.dept}</span><oas-switch ${u.on ? 'checked' : ''}></oas-switch></div>`,
-      ).join('')}`
+      <div class="toolbar"><oas-input placeholder="搜索用户" prefix-icon="search" clearable></oas-input><oas-button type="primary" size="small">新建用户</oas-button></div>
+      <div class="panel">
+        <div class="thead"><span>用户</span><span>角色</span><span>部门</span><span>启用</span></div>
+        ${USERS.map(
+          (u) =>
+            `<div class="trow"><span>${u.name}</span><oas-tag size="small">${u.role}</oas-tag><span>${u.dept}</span><oas-switch ${u.on ? 'checked' : ''}></oas-switch></div>`,
+        ).join('')}
+      </div>`
   }
-  // settings
   const skin = localStorage.getItem('oas-admin.settings.skin') ?? ''
   const glassOn = localStorage.getItem('oas-admin.settings.glass') === 'on'
   return `
-    <p class="group-title">外观</p>
-    <div class="setting-item"><span>皮肤</span>
-      <div class="skin-chips" id="dt-skin">
-        <oas-tag class="chip${skin === '' ? ' is-on' : ''}" data-skin="">默认</oas-tag>
-        <oas-tag class="chip${skin === 'violet' ? ' is-on' : ''}" data-skin="violet">堇紫</oas-tag>
-        <oas-tag class="chip${skin === 'emerald' ? ' is-on' : ''}" data-skin="emerald">靛绿</oas-tag>
-        <oas-tag class="chip${skin === 'rose' ? ' is-on' : ''}" data-skin="rose">玫红</oas-tag>
-        <oas-tag class="chip${skin === 'teal' ? ' is-on' : ''}" data-skin="teal">青瞳</oas-tag>
+    <div class="panel settings-panel">
+      <p class="panel-title">外观</p>
+      <div class="setting-item"><span>主题色</span><span class="setting-value">跟随皮肤</span></div>
+      <div class="setting-item"><span>皮肤</span>
+        <div class="skin-chips" id="dt-skin">
+          <oas-tag class="chip${skin === '' ? ' is-on' : ''}" data-skin="">默认</oas-tag>
+          <oas-tag class="chip${skin === 'violet' ? ' is-on' : ''}" data-skin="violet">堇紫</oas-tag>
+          <oas-tag class="chip${skin === 'emerald' ? ' is-on' : ''}" data-skin="emerald">靛绿</oas-tag>
+          <oas-tag class="chip${skin === 'rose' ? ' is-on' : ''}" data-skin="rose">玫红</oas-tag>
+          <oas-tag class="chip${skin === 'teal' ? ' is-on' : ''}" data-skin="teal">青瞳</oas-tag>
+        </div>
       </div>
-    </div>
-    <div class="setting-item"><span>玻璃质感</span><oas-switch id="dt-glass"${glassOn ? ' checked' : ''}></oas-switch></div>
-    <div class="setting-item"><span>深色模式</span><span class="setting-value">跟随系统</span></div>
-    <p class="group-title">关于</p>
-    <div class="setting-item"><span>OAS Desktop</span><span class="setting-value">v0.1.0</span></div>`
+      <div class="setting-item"><span>玻璃质感</span><oas-switch id="dt-glass"${glassOn ? ' checked' : ''}></oas-switch></div>
+      <div class="setting-item"><span>深色模式</span><span class="setting-value">跟随系统</span></div>
+    </div>`
 }
 
-function bindAppBody(win: HTMLElement, id: AppId): void {
+function bindSection(root: HTMLElement, id: SectionId): void {
   if (id !== 'settings') return
   const applySkin = (skin: string): void => {
     if (skin) document.documentElement.dataset.skin = skin
     else delete document.documentElement.dataset.skin
   }
   applySkin(localStorage.getItem('oas-admin.settings.skin') ?? '')
-  const glassSwitch = el<HTMLElement>(win, '#dt-glass')
+  const glassSwitch = el<HTMLElement>(root, '#dt-glass')
   if (localStorage.getItem('oas-admin.settings.glass') === 'on')
     glassSwitch.setAttribute('checked', '')
   glassSwitch.addEventListener('oas-change', () => {
@@ -117,14 +152,14 @@ function bindAppBody(win: HTMLElement, id: AppId): void {
     else document.documentElement.removeAttribute('data-glass')
     localStorage.setItem('oas-admin.settings.glass', on ? 'on' : 'off')
   })
-  el(win, '#dt-skin').addEventListener('click', (e) => {
+  el(root, '#dt-skin').addEventListener('click', (e) => {
     const chip = (e.target as HTMLElement).closest<HTMLElement>('.chip')
     if (!chip) return
     const skin = chip.dataset.skin ?? ''
     applySkin(skin)
     if (skin) localStorage.setItem('oas-admin.settings.skin', skin)
     else localStorage.removeItem('oas-admin.settings.skin')
-    el(win, '#dt-skin')
+    el(root, '#dt-skin')
       .querySelectorAll<HTMLElement>('.chip')
       .forEach((c) => {
         c.classList.toggle('is-on', c === chip)
@@ -135,185 +170,204 @@ function bindAppBody(win: HTMLElement, id: AppId): void {
 export function mountApp(root: HTMLElement): void {
   document.title = 'OAS Desktop'
   root.innerHTML = `
-    <div class="desktop">
-      <div class="desktop-icons" data-testid="desktop-icons">
-        ${APPS.map(
-          (a) => `
-        <button class="desktop-icon" type="button" data-app="${a.id}">
-          <span class="di-glyph"><oas-icon name="${a.icon}" size="24"></oas-icon></span>
-          <span class="di-label">${a.title}</span>
-        </button>`,
-        ).join('')}
-      </div>
-      <div class="windows-layer" id="windows-layer"></div>
-    </div>
-    <div class="start-menu" id="start-menu" hidden>
-      ${APPS.map(
-        (a) => `
-      <button class="start-item" type="button" data-app="${a.id}">
-        <oas-icon name="${a.icon}" size="16"></oas-icon>${a.title}
-      </button>`,
-      ).join('')}
-    </div>
-    <div class="taskbar">
-      <button class="start-btn" type="button" data-testid="start-btn" aria-label="开始">
-        <span class="start-logo">OAS</span>
-      </button>
-      <div class="task-items" id="task-items"></div>
-      <span class="task-clock" id="task-clock"></span>
-    </div>`
-
-  const layer = el(root, '#windows-layer')
-  const taskItems = el(root, '#task-items')
-  const startMenu = el(root, '#start-menu')
-
-  // ── 时钟 ──
-  const clock = el(root, '#task-clock')
-  const tickClock = (): void => {
-    clock.textContent = new Date().toLocaleTimeString('zh-CN', {
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  }
-  tickClock()
-  window.setInterval(tickClock, 10_000)
-
-  // ── 窗口管理 ──
-  function focusWindow(app: AppId): void {
-    const w = openWindows.get(app)
-    if (!w) return
-    w.el.style.zIndex = String(++zTop)
-  }
-
-  function renderTaskbar(): void {
-    taskItems.innerHTML = [...openWindows.entries()]
-      .map(
-        ([id, w]) => `
-      <button class="task-item${w.minimized ? '' : ' is-active'}" type="button" data-app="${id}" title="${APP_MAP.get(id)!.title}">
-        <oas-icon name="${APP_MAP.get(id)!.icon}" size="14"></oas-icon><span>${APP_MAP.get(id)!.title}</span>
-      </button>`,
-      )
-      .join('')
-  }
-
-  function toggleMinimize(app: AppId): void {
-    const w = openWindows.get(app)
-    if (!w) return
-    w.minimized = !w.minimized
-    w.el.classList.toggle('is-minimized', w.minimized)
-    if (!w.minimized) focusWindow(app)
-    renderTaskbar()
-  }
-
-  function toggleMaximize(app: AppId): void {
-    const w = openWindows.get(app)
-    if (!w) return
-    w.maximized = !w.maximized
-    w.el.classList.toggle('is-maximized', w.maximized)
-    w.el.style.left = ''
-    w.el.style.top = ''
-  }
-
-  function closeWindow(app: AppId): void {
-    const w = openWindows.get(app)
-    if (!w) return
-    w.el.remove()
-    openWindows.delete(app)
-    renderTaskbar()
-  }
-
-  function openWindow(app: AppId): void {
-    startMenu.hidden = true
-    const existing = openWindows.get(app)
-    if (existing) {
-      if (existing.minimized) toggleMinimize(app)
-      focusWindow(app)
-      return
-    }
-    const def = APP_MAP.get(app)!
-    const win = document.createElement('section')
-    win.className = 'window'
-    win.dataset.app = app
-    win.dataset.testid = `window-${app}`
-    const cascade = (openWindows.size % 6) * 26
-    win.style.width = `${def.width}px`
-    win.style.height = `${def.height}px`
-    win.style.left = `${90 + cascade}px`
-    win.style.top = `${54 + cascade}px`
-    win.style.zIndex = String(++zTop)
-    win.innerHTML = `
-      <header class="titlebar">
-        <span class="tb-ico"><oas-icon name="${def.icon}" size="14"></oas-icon></span>
-        <span class="tb-title">${def.title}</span>
+    <div class="app-frame">
+      <header class="titlebar" data-testid="titlebar">
+        <span class="tb-logo">OAS</span>
+        <span class="tb-name">OAS Desktop</span>
+        <span class="tb-spacer"></span>
         <span class="tb-btns">
-          <button class="tb-btn" type="button" data-act="min" aria-label="最小化">─</button>
-          <button class="tb-btn" type="button" data-act="max" aria-label="最大化">□</button>
-          <button class="tb-btn tb-close" type="button" data-act="close" aria-label="关闭">✕</button>
+          <button class="tb-btn" type="button" data-testid="win-min" aria-label="最小化">─</button>
+          <button class="tb-btn" type="button" data-testid="win-max" aria-label="全屏">□</button>
+          <button class="tb-btn tb-close" type="button" data-testid="win-close" aria-label="关闭">✕</button>
         </span>
       </header>
-      <div class="window-body">${appBodyHTML(app)}</div>`
-    layer.appendChild(win)
-    openWindows.set(app, { el: win, minimized: false, maximized: false })
-    bindAppBody(win, app)
-    renderTaskbar()
+      <nav class="menubar" data-testid="menubar">
+        ${[
+          { label: '文件', id: 'file' },
+          { label: '编辑', id: 'edit' },
+          { label: '视图', id: 'view' },
+          { label: '帮助', id: 'help' },
+        ]
+          .map(
+            (m) =>
+              `<button class="menu-item" type="button" data-menu="${m.id}">${m.label}</button>`,
+          )
+          .join('')}
+        <span class="tb-spacer"></span>
+        <button class="menu-portal" type="button" data-testid="portal-link" title="返回模板门户">返回门户</button>
+      </nav>
+      <div class="main">
+        <aside class="activity-bar" data-testid="activity-bar">
+          ${SECTIONS.map(
+            (s, i) => `
+          <button class="act-btn${i === 0 ? ' is-active' : ''}" type="button" data-section="${s.id}" title="${s.title}" aria-label="${s.title}">
+            <oas-icon name="${s.icon}" size="20"></oas-icon>
+          </button>`,
+          ).join('')}
+        </aside>
+        <aside class="side-panel" data-testid="side-panel"></aside>
+        <main class="content" data-testid="content"></main>
+      </div>
+      <footer class="statusbar" data-testid="statusbar">
+        <span>● 就绪</span>
+        <span class="sb-spacer"></span>
+        <span>OAS Desktop v0.1.0</span>
+        <span>·</span>
+        <span>在线</span>
+      </footer>
+    </div>
+    <oas-modal id="quit-modal" title="退出应用" no-footer>
+      <div class="quit-body">
+        <p>确定退出 OAS Desktop 并返回模板门户吗？</p>
+        <div class="quit-actions">
+          <oas-button data-testid="quit-cancel">取消</oas-button>
+          <a href="/"><oas-button type="primary" data-testid="quit-ok">退出</oas-button></a>
+        </div>
+      </div>
+    </oas-modal>`
 
-    // 拖动（标题栏；最大化态禁用）
-    const titlebar = el<HTMLElement>(win, '.titlebar')
-    titlebar.addEventListener('pointerdown', (e) => {
-      if ((e.target as HTMLElement).closest('.tb-btn')) return
-      if (openWindows.get(app)?.maximized) return
-      const rect = win.getBoundingClientRect()
-      const dx = e.clientX - rect.left
-      const dy = e.clientY - rect.top
-      const move = (ev: PointerEvent): void => {
-        win.style.left = `${Math.max(0, ev.clientX - dx)}px`
-        win.style.top = `${Math.max(0, ev.clientY - dy)}px`
-      }
-      const up = (): void => {
-        window.removeEventListener('pointermove', move)
-        window.removeEventListener('pointerup', up)
-      }
-      window.addEventListener('pointermove', move)
-      window.addEventListener('pointerup', up)
-    })
-    win.addEventListener('pointerdown', () => focusWindow(app))
+  let current: SectionId = 'dashboard'
 
-    for (const b of win.querySelectorAll<HTMLButtonElement>('.tb-btn')) {
-      b.addEventListener('click', () => {
-        const act = b.dataset.act
-        if (act === 'min') toggleMinimize(app)
-        else if (act === 'max') toggleMaximize(app)
-        else closeWindow(app)
-      })
-    }
+  function renderSide(id: SectionId): void {
+    const def = SECTIONS.find((s) => s.id === id)!
+    el(root, '[data-testid="side-panel"]').innerHTML = `
+      <p class="side-title">${def.title}</p>
+      ${def.side
+        .map(
+          (item, i) => `
+      <button class="side-item${i === 0 ? ' is-active' : ''}" type="button">
+        <span>${item.label}</span>${item.hint ? `<span class="side-hint">${item.hint}</span>` : ''}
+      </button>`,
+        )
+        .join('')}`
   }
 
-  // ── 桌面图标：单击打开 ──
-  el(root, '[data-testid="desktop-icons"]').addEventListener('click', (e) => {
-    const icon = (e.target as HTMLElement).closest<HTMLElement>('.desktop-icon')
-    if (!icon) return
-    openWindow(icon.dataset.app as AppId)
+  function renderContent(id: SectionId): void {
+    const def = SECTIONS.find((s) => s.id === id)!
+    el(root, '[data-testid="content"]').innerHTML = `
+      <div class="content-head">
+        <h1 class="content-title">${def.title}</h1>
+      </div>
+      <div class="content-body">${contentHTML(id)}</div>`
+    bindSection(root, id)
+  }
+
+  function switchSection(id: SectionId): void {
+    current = id
+    el(root, '[data-testid="activity-bar"]')
+      .querySelectorAll<HTMLElement>('.act-btn')
+      .forEach((b) => {
+        b.classList.toggle('is-active', b.dataset.section === id)
+      })
+    renderSide(id)
+    renderContent(id)
+  }
+
+  el(root, '[data-testid="activity-bar"]').addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest<HTMLElement>('.act-btn')
+    if (!btn || btn.dataset.section === current) return
+    switchSection(btn.dataset.section as SectionId)
   })
 
-  // ── 任务栏按钮：点击还原/最小化 ──
-  taskItems.addEventListener('click', (e) => {
-    const btn = (e.target as HTMLElement).closest<HTMLElement>('.task-item')
+  // ── 菜单栏 ──
+  const MENUS: Record<string, Array<{ label: string; act?: string }>> = {
+    file: [
+      { label: '导出数据', act: 'noop' },
+      { label: '退出', act: 'quit' },
+    ],
+    edit: [{ label: '刷新页面', act: 'reload' }],
+    view: [
+      { label: '切换玻璃质感', act: 'glass' },
+      { label: '全屏', act: 'fullscreen' },
+    ],
+    help: [{ label: '关于 OAS Desktop', act: 'about' }],
+  }
+  let openMenu: HTMLElement | null = null
+
+  function closeMenus(): void {
+    document.querySelectorAll('.menu-pop').forEach((m) => {
+      m.remove()
+    })
+    openMenu = null
+  }
+
+  el(root, '[data-testid="menubar"]').addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest<HTMLElement>('.menu-item')
     if (!btn) return
-    toggleMinimize(btn.dataset.app as AppId)
-  })
-
-  // ── 开始菜单 ──
-  el(root, '[data-testid="start-btn"]').addEventListener('click', () => {
-    startMenu.hidden = !startMenu.hidden
-  })
-  startMenu.addEventListener('click', (e) => {
-    const item = (e.target as HTMLElement).closest<HTMLElement>('.start-item')
-    if (!item) return
-    openWindow(item.dataset.app as AppId)
+    const id = btn.dataset.menu ?? 'file'
+    if (openMenu === btn) {
+      closeMenus()
+      return
+    }
+    closeMenus()
+    openMenu = btn
+    const pop = document.createElement('div')
+    pop.className = 'menu-pop'
+    pop.innerHTML = (MENUS[id] ?? [])
+      .map(
+        (item) =>
+          `<button class="menu-pop-item" type="button" data-act="${item.act}">${item.label}</button>`,
+      )
+      .join('')
+    const rect = btn.getBoundingClientRect()
+    pop.style.left = `${rect.left}px`
+    pop.style.top = `${rect.bottom + 2}px`
+    document.body.appendChild(pop)
   })
   document.addEventListener('pointerdown', (e) => {
     const t = e.target as HTMLElement
-    if (!startMenu.hidden && !t.closest('#start-menu') && !t.closest('.start-btn'))
-      startMenu.hidden = true
+    if (!t.closest('.menu-pop') && !t.closest('.menu-item')) closeMenus()
   })
+  document.addEventListener('click', (e) => {
+    const item = (e.target as HTMLElement).closest<HTMLElement>('.menu-pop-item')
+    if (!item) return
+    const act = item.dataset.act
+    closeMenus()
+    if (act === 'quit') el(root, '#quit-modal').setAttribute('visible', '')
+    else if (act === 'reload') location.reload()
+    else if (act === 'glass') {
+      const on = document.documentElement.hasAttribute('data-glass')
+      if (on) document.documentElement.removeAttribute('data-glass')
+      else document.documentElement.setAttribute('data-glass', '')
+      localStorage.setItem('oas-admin.settings.glass', on ? 'off' : 'on')
+    } else if (act === 'fullscreen') {
+      if (document.fullscreenElement) void document.exitFullscreen()
+      else void document.documentElement.requestFullscreen().catch(() => {})
+    } else if (act === 'about') {
+      window.alert('OAS Desktop v0.1.0\noas-ui 移动/桌面体验模板家族')
+    }
+  })
+
+  // ── 窗口按钮（浏览器内模拟原生行为）──
+  el(root, '[data-testid="win-min"]').addEventListener('click', () => {
+    const frame = el(root, '.app-frame')
+    frame.classList.add('is-minimized')
+    const restore = document.createElement('button')
+    restore.className = 'restore-pill'
+    restore.type = 'button'
+    restore.textContent = 'OAS Desktop — 已最小化，点击恢复'
+    restore.addEventListener('click', () => {
+      frame.classList.remove('is-minimized')
+      restore.remove()
+    })
+    document.body.appendChild(restore)
+  })
+  el(root, '[data-testid="win-max"]').addEventListener('click', () => {
+    if (document.fullscreenElement) void document.exitFullscreen()
+    else void document.documentElement.requestFullscreen().catch(() => {})
+  })
+  el(root, '[data-testid="win-close"]').addEventListener('click', () => {
+    el(root, '#quit-modal').setAttribute('visible', '')
+  })
+  el(root, '#quit-modal').addEventListener('click', (e) => {
+    if (e.target === el(root, '#quit-modal')) el(root, '#quit-modal').removeAttribute('visible')
+  })
+  el(root, '[data-testid="quit-cancel"]').addEventListener('click', () => {
+    el(root, '#quit-modal').removeAttribute('visible')
+  })
+  el(root, '[data-testid="portal-link"]').addEventListener('click', () => {
+    // href=/ 由浏览器默认导航；此处仅占位保持语义
+  })
+
+  switchSection('dashboard')
 }
