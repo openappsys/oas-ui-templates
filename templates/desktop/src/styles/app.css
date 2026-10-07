@@ -65,13 +65,6 @@ body {
   user-select: none;
 }
 
-.tb-logo {
-  font-weight: 800;
-  font-size: 12px;
-  color: var(--oas-color-primary, #0b6cff);
-  letter-spacing: 0.5px;
-}
-
 .tb-name {
   font-size: 13px;
   font-weight: 600;

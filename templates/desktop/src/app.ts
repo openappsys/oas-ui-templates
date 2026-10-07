@@ -385,7 +385,6 @@ export function mountApp(root: HTMLElement): void {
   root.innerHTML = `
     <div class="app-frame">
       <header class="titlebar" data-testid="titlebar">
-        <span class="tb-logo">OAS</span>
         <span class="tb-name">OAS Desktop</span>
         <span class="tb-spacer"></span>
         <span class="tb-btns">
