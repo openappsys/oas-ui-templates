@@ -454,3 +454,187 @@ body {
   justify-content: flex-end;
   gap: 8px;
 }
+
+/* ── 创作台：暗色工作站（素材库 | 图表/轨道 | 属性）+ 传输条 ──
+   局部 token 覆盖为深色专业面板配色，oas-card/chart/slider 在其上自动换装 */
+.studio {
+  --oas-color-bg: #141721;
+  --oas-color-surface: #1b2030;
+  --oas-color-border: #2a3145;
+  --oas-color-text-primary: #e6e9f2;
+  --oas-color-text-secondary: #9aa3b8;
+  --oas-color-bg-hover: #232a3d;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  /* 满幅铺满内容区（抵消 .content 的 padding，工作站不要四周留白） */
+  margin: -14px -16px;
+  padding: 12px 16px;
+  min-height: calc(100% + 28px);
+  background: radial-gradient(90% 90% at 100% 0%, #1c2233 0%, #141721 60%);
+  color: #e6e9f2;
+  border-radius: 4px;
+}
+
+.st-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.st-project {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.st-toolbar oas-button[size="small"] {
+  margin-left: 4px;
+}
+
+.st-main {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 190px 1fr 220px;
+  gap: 10px;
+}
+
+.st-panel-title {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  color: #9aa3b8;
+  text-transform: uppercase;
+}
+
+.st-library,
+.st-props,
+.st-chart-card {
+  background: #1b2030;
+  border: 1px solid #2a3145;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.st-library {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.st-lib-item {
+  appearance: none;
+  border: none;
+  background: none;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  color: #c9cfe0;
+  text-align: left;
+}
+
+.st-lib-item:hover {
+  background: #232a3d;
+}
+
+.st-lib-item.is-active {
+  background: color-mix(in srgb, #7c8cff 18%, transparent);
+  color: #cdd3ff;
+}
+
+.st-lib-item oas-icon {
+  color: #7c8cff;
+}
+
+.st-center {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.st-chart-card oas-chart {
+  height: 150px;
+}
+
+.st-wave {
+  background: #1b2030;
+  border: 1px solid #2a3145;
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 62px;
+}
+
+.st-wave span {
+  flex: 1;
+  min-width: 2px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #7c8cff 0%, #38bdf8 100%);
+  opacity: 0.85;
+}
+
+.st-props {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.st-prop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 0;
+  font-size: 12px;
+  color: #c9cfe0;
+}
+
+.st-prop oas-slider {
+  width: 120px;
+}
+
+.st-transport {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #1b2030;
+  border: 1px solid #2a3145;
+  border-radius: 10px;
+  padding: 8px 14px;
+}
+
+.st-play {
+  appearance: none;
+  border: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 11px;
+  color: #fff;
+  background: linear-gradient(135deg, #7c8cff, #38bdf8);
+}
+
+.st-time {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  color: #e6e9f2;
+}
+
+.st-time.st-dim {
+  color: #9aa3b8;
+}
+
+.st-progress {
+  flex: 1;
+}

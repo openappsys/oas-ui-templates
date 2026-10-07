@@ -6,7 +6,7 @@ test('应用壳渲染：标题栏/菜单栏/活动栏/状态栏', async ({ page 
   await expect(page.getByTestId('menubar')).toBeVisible()
   await expect(page.getByTestId('activity-bar')).toBeVisible()
   await expect(page.getByTestId('statusbar')).toContainText('就绪')
-  await expect(page.locator('.act-btn')).toHaveCount(4)
+  await expect(page.locator('.act-btn')).toHaveCount(5)
 })
 
 test('活动栏切换：侧栏与内容区随 section 更新', async ({ page }) => {
@@ -46,4 +46,17 @@ test('设置：皮肤切换写 data-skin', async ({ page }) => {
   await page.locator('.act-btn[data-section="settings"]').click()
   await page.locator('#dt-skin .chip[data-skin="violet"]').click()
   await expect(page.locator('html')).toHaveAttribute('data-skin', 'violet')
+})
+
+test('创作台：暗色工作站三栏 + 图表 + 传输条播放', async ({ page }) => {
+  await page.goto('/')
+  await page.locator('.act-btn[data-section="studio"]').click()
+  const studio = page.locator('[data-testid="studio"]')
+  await expect(studio).toBeVisible()
+  await expect(studio.locator('.st-lib-item')).toHaveCount(6)
+  await expect(studio.locator('#st-chart-line')).toBeVisible()
+  await studio.locator('.st-play').click()
+  await page.waitForTimeout(1300)
+  const time = await studio.locator('.st-time').first().textContent()
+  expect(time).not.toBe('00:00')
 })

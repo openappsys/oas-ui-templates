@@ -6,7 +6,7 @@ function el<T extends HTMLElement = HTMLElement>(scope: ParentNode, sel: string)
   return scope.querySelector<T>(sel)!
 }
 
-type SectionId = 'dashboard' | 'orders' | 'users' | 'settings'
+type SectionId = 'dashboard' | 'orders' | 'users' | 'settings' | 'studio'
 
 interface SectionDef {
   id: SectionId
@@ -56,6 +56,17 @@ const SECTIONS: SectionDef[] = [
       { label: '外观', hint: '主题 / 皮肤' },
       { label: '通知', hint: '渠道矩阵' },
       { label: '关于', hint: '版本信息' },
+    ],
+  },
+  {
+    id: 'studio',
+    title: '创作台',
+    icon: 'star-filled',
+    side: [
+      { label: '人声主轨', hint: '03:42' },
+      { label: '和声层', hint: '03:42' },
+      { label: '鼓组', hint: '03:38' },
+      { label: '采样素材', hint: '12 个' },
     ],
   },
 ]
@@ -134,6 +145,94 @@ function contentHTML(id: SectionId): string {
       <div class="setting-item"><span>玻璃质感</span><oas-switch id="dt-glass"${glassOn ? ' checked' : ''}></oas-switch></div>
       <div class="setting-item"><span>深色模式</span><span class="setting-value">跟随系统</span></div>
     </div>`
+}
+
+function studioHTML(): string {
+  return `
+    <div class="studio" data-testid="studio">
+      <div class="st-toolbar">
+        <span class="st-project">未命名项目 · v1</span>
+        <span class="tb-spacer"></span>
+        <oas-button size="small">分享</oas-button>
+        <oas-button size="small" type="primary">导出</oas-button>
+      </div>
+      <div class="st-main">
+        <div class="st-library">
+          <p class="st-panel-title">素材库</p>
+          ${['人声主轨', '和声层', '鼓组', '贝斯', '采样包 A', '采样包 B']
+            .map(
+              (s, i) =>
+                `<div class="st-lib-item${i === 0 ? ' is-active' : ''}"><oas-icon name="star" size="13"></oas-icon><span>${s}</span></div>`,
+            )
+            .join('')}
+        </div>
+        <div class="st-center">
+          <div class="st-chart-card">
+            <p class="st-panel-title">响度曲线</p>
+            <oas-chart id="st-chart-line" type="area" options='{"smooth":true,"gradient":true,"colors":["#7c8cff","#38bdf8"]}'></oas-chart>
+          </div>
+          <div class="st-chart-card">
+            <p class="st-panel-title">频段能量</p>
+            <oas-chart id="st-chart-bar" type="bar" options='{"colors":["#38bdf8","#a78bfa","#f472b6"]}'></oas-chart>
+          </div>
+          <div class="st-wave">
+            ${Array.from({ length: 48 }, (_, i) => `<span style="height:${18 + Math.round(28 * Math.abs(Math.sin(i * 0.7)))}px"></span>`).join('')}
+          </div>
+        </div>
+        <div class="st-props">
+          <p class="st-panel-title">属性</p>
+          <div class="st-prop"><span>音量</span><oas-slider value="72" min="0" max="100"></oas-slider></div>
+          <div class="st-prop"><span>混响</span><oas-slider value="24" min="0" max="100"></oas-slider></div>
+          <div class="st-prop"><span>降噪</span><oas-switch checked></oas-switch></div>
+          <div class="st-prop"><span>立体声</span><oas-switch checked></oas-switch></div>
+        </div>
+      </div>
+      <div class="st-transport">
+        <button class="st-play" type="button" aria-label="播放">▶</button>
+        <span class="st-time">00:00</span>
+        <oas-slider class="st-progress" value="18" min="0" max="100"></oas-slider>
+        <span class="st-time st-dim">03:42</span>
+      </div>
+    </div>`
+}
+
+function bindStudio(root: HTMLElement): void {
+  const line = root.querySelector<HTMLElement>('#st-chart-line')
+  if (line) {
+    ;(line as unknown as { data: unknown }).data = {
+      labels: ['00:30', '01:00', '01:30', '02:00', '02:30', '03:00', '03:30'],
+      series: [
+        { name: '响度', data: [42, 58, 51, 74, 66, 82, 71] },
+        { name: '峰值', data: [61, 66, 72, 80, 75, 90, 84] },
+      ],
+    }
+  }
+  const bar = root.querySelector<HTMLElement>('#st-chart-bar')
+  if (bar) {
+    ;(bar as unknown as { data: unknown }).data = {
+      labels: ['低频', '中频', '高频'],
+      series: [{ name: '能量', data: [72, 58, 44] }],
+    }
+  }
+  const play = root.querySelector<HTMLButtonElement>('.st-play')
+  const timeEl = root.querySelector<HTMLElement>('.st-time')
+  const progress = root.querySelector<HTMLElement>('.st-progress')
+  play?.addEventListener('click', () => {
+    const playing = play.classList.toggle('is-playing')
+    play.textContent = playing ? '❚❚' : '▶'
+    if (!playing) return
+    let sec = 18
+    const timer = window.setInterval(() => {
+      if (!play.classList.contains('is-playing')) {
+        window.clearInterval(timer)
+        return
+      }
+      sec = (sec + 1) % 222
+      if (timeEl)
+        timeEl.textContent = `0${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`
+      progress?.setAttribute('value', String(Math.round((sec / 222) * 100)))
+    }, 1000)
+  })
 }
 
 function bindSection(root: HTMLElement, id: SectionId): void {
@@ -244,6 +343,12 @@ export function mountApp(root: HTMLElement): void {
 
   function renderContent(id: SectionId): void {
     const def = SECTIONS.find((s) => s.id === id)!
+    // 创作台为工作站式独立布局（无页头，深色满幅）
+    if (id === 'studio') {
+      el(root, '[data-testid="content"]').innerHTML = studioHTML()
+      bindStudio(root)
+      return
+    }
     el(root, '[data-testid="content"]').innerHTML = `
       <div class="content-head">
         <h1 class="content-title">${def.title}</h1>
