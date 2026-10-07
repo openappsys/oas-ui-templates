@@ -199,8 +199,6 @@ function trackEnd(track: string): number {
 }
 
 function videoEditorHTML(): string {
-  const fmt = (s: number): string => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`
-  const marks = [0, 10, 20, 30, 40, 50]
   return `
     <div class="studio" data-testid="studio">
       <div class="st-toolbar">
@@ -237,17 +235,40 @@ function videoEditorHTML(): string {
           <div class="st-prop"><span>不透明度</span><oas-slider value="100" min="0" max="100"></oas-slider></div>
         </div>
       </div>
-      <div class="st-timeline" data-testid="st-timeline">
-        <div class="st-ruler">
-          ${marks.map((s) => `<span class="st-mark" style="left:${(s / STUDIO_TOTAL) * 100}%">${fmt(s)}</span>`).join('')}
+      <div class="st-timeline-wrap" data-testid="st-timeline">
+        <div class="st-tl-toolbar">
+          <span class="st-zoom-label">显示比例</span>
+          <button class="st-tbtn" id="st-zoom-out" type="button" aria-label="缩小">−</button>
+          <button class="st-tbtn" id="st-zoom-fit" type="button">适应</button>
+          <button class="st-tbtn" id="st-zoom-in" type="button" aria-label="放大">＋</button>
+          <span class="tb-spacer"></span>
+          <button class="st-tbtn" id="st-split" type="button">✂ 分割</button>
         </div>
-        ${STUDIO_TRACKS.map((track) => `
-        <div class="st-lane" data-track="${track}"></div>`).join('')}
-        <div class="st-playhead" id="st-playhead" style="left:0%"></div>
-      </div>
-    </div>`
+        <div class="st-timeline">
+          <div class="st-inner" id="st-inner">
+            <div class="st-corner"></div>
+            <div class="st-ruler" id="st-ruler"></div>
+            <div class="st-lane-row" data-testid="st-lane" data-track="视频主轨">
+              <div class="st-trackhead">视频主轨</div>
+              <div class="st-lane"></div>
+            </div>
+            <div class="st-lane-row" data-track="贴纸轨">
+              <div class="st-trackhead">贴纸轨</div>
+              <div class="st-lane"></div>
+            </div>
+            <div class="st-lane-row" data-track="文字轨">
+              <div class="st-trackhead">文字轨</div>
+              <div class="st-lane"></div>
+            </div>
+            <div class="st-lane-row" data-track="音频轨">
+              <div class="st-trackhead">音频轨<button class="st-mute" type="button" data-track="音频轨" aria-label="静音">M</button></div>
+              <div class="st-lane"></div>
+            </div>
+            <div class="st-playhead" id="st-playhead" style="left:90px"></div>
+          </div>
+        </div>
+      </div>    </div>`
 }
-
 
 function bindSection(root: HTMLElement, id: SectionId): void {
   if (id !== 'settings') return
@@ -281,12 +302,16 @@ function bindSection(root: HTMLElement, id: SectionId): void {
 }
 
 function bindVideoEditor(root: HTMLElement): void {
-  const fmt = (s: number): string => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`
+  const fmt = (s: number): string =>
+    `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`
+  const HEADER = 90
+  let pxPerSec = 24
   let libFilter = '全部'
   let selectedId: number | null = null
   let time = 0
   let playing = false
   let timer: number | undefined
+  const muted: Record<string, boolean> = {}
 
   const libList = el(root, '#st-lib-list')
   const screen = el(root, '#st-screen')
@@ -295,6 +320,9 @@ function bindVideoEditor(root: HTMLElement): void {
   const progress = el(root, '#st-progress')
   const playhead = el(root, '#st-playhead')
   const play = el<HTMLButtonElement>(root, '#st-play')
+  const timelineEl = el<HTMLElement>(root, '[data-testid="st-timeline"]')
+
+  const px = (sec: number): number => Math.round(sec * pxPerSec)
 
   function renderLibrary(): void {
     const rows = MEDIA_LIBRARY.filter((m) => libFilter === '全部' || m.kind === libFilter)
@@ -310,24 +338,62 @@ function bindVideoEditor(root: HTMLElement): void {
       .join('')
   }
 
+  function clipAt(track: string, sec: number, exceptId?: number): StudioClip | null {
+    return (
+      studioClips.find(
+        (c) => c.track === track && c.id !== exceptId && sec >= c.start && sec < c.start + c.dur,
+      ) ?? null
+    )
+  }
+
+  function neighbors(track: string, id: number): { prevEnd: number; nextStart: number } {
+    const me = studioClips.find((c) => c.id === id)!
+    const same = studioClips
+      .filter((c) => c.track === track && c.id !== id)
+      .sort((a, b) => a.start - b.start)
+    let prevEnd = 0
+    let nextStart = STUDIO_TOTAL
+    for (const c of same) {
+      if (c.start + c.dur <= me.start) prevEnd = Math.max(prevEnd, c.start + c.dur)
+      if (c.start >= me.start) nextStart = Math.min(nextStart, c.start)
+    }
+    return { prevEnd, nextStart }
+  }
+
   function renderTimeline(): void {
+    const width = px(STUDIO_TOTAL)
+    const ruler = el(root, '#st-ruler')
+    const marks = [0, 10, 20, 30, 40, 50]
+    ruler.style.width = `${width}px`
+    ruler.innerHTML = marks
+      .map((s) => `<span class="st-mark" style="left:${px(s)}px">${fmt(s)}</span>`)
+      .join('')
     for (const track of STUDIO_TRACKS) {
-      const lane = el<HTMLElement>(root, `.st-lane[data-track="${track}"]`)
+      const lane = el<HTMLElement>(root, `.st-lane-row[data-track="${track}"] .st-lane`)
+      lane.style.width = `${width}px`
       lane.querySelectorAll('.st-clip').forEach((n) => n.remove())
       for (const c of studioClips.filter((x) => x.track === track)) {
         const clip = document.createElement('div')
         clip.className = 'st-clip'
         clip.dataset.clipId = String(c.id)
         clip.dataset.clip = c.name
+        clip.dataset.track = track
         clip.dataset.start = String(c.start)
         clip.dataset.dur = String(c.dur)
-        clip.style.left = `${(c.start / STUDIO_TOTAL) * 100}%`
-        clip.style.width = `${(c.dur / STUDIO_TOTAL) * 100}%`
+        clip.style.left = `${px(c.start)}px`
+        clip.style.width = `${Math.max(8, px(c.dur) - 2)}px`
         clip.style.background = KIND_ACCENT[track]
         clip.textContent = c.name
         lane.appendChild(clip)
       }
     }
+    playhead.style.left = `${HEADER + px(time)}px`
+  }
+
+  function zoom(factor: number | 'fit'): void {
+    const fitPx = (timelineEl.clientWidth - HEADER - 8) / STUDIO_TOTAL
+    pxPerSec = factor === 'fit' ? fitPx : Math.min(120, Math.max(6, Math.round(pxPerSec * factor)))
+    renderTimeline()
   }
 
   function selectClip(id: number | null): void {
@@ -354,9 +420,11 @@ function bindVideoEditor(root: HTMLElement): void {
   }
 
   function renderPreview(): void {
-    const hit = studioClips.find(
-      (x) => x.track === '视频主轨' && time >= x.start && time < x.start + x.dur,
-    )
+    const hit =
+      studioClips.find(
+        (x) =>
+          x.track === '视频主轨' && !muted['视频主轨'] && time >= x.start && time < x.start + x.dur,
+      ) ?? null
     const hues: Record<string, string> = {
       '城市航拍 4K': 'linear-gradient(135deg,#0ea5e9,#6366f1)',
       日落延时: 'linear-gradient(135deg,#f59e0b,#ef4444)',
@@ -374,7 +442,7 @@ function bindVideoEditor(root: HTMLElement): void {
   function renderTransport(): void {
     timeEl.textContent = fmt(time)
     progress.setAttribute('value', String(Math.round((time / STUDIO_TOTAL) * 100)))
-    playhead.style.left = `${(time / STUDIO_TOTAL) * 100}%`
+    playhead.style.left = `${HEADER + px(time)}px`
     renderPreview()
   }
 
@@ -384,12 +452,7 @@ function bindVideoEditor(root: HTMLElement): void {
     renderTransport()
   }
 
-  // 媒体分类联动（活动栏侧栏 → 媒体库过滤）
-  document.addEventListener('st-cat', (e) => {
-    libFilter = (e as CustomEvent<string>).detail ?? '全部'
-    renderLibrary()
-  })
-  // 素材点击 → 追加到对应轨道末尾（剪映「添加到轨道」）
+  // ── 素材点击 → 添加到对应轨道末尾 ──
   libList.addEventListener('click', (e) => {
     const item = (e.target as HTMLElement).closest<HTMLElement>('.st-lib-item')
     if (!item) return
@@ -397,19 +460,112 @@ function bindVideoEditor(root: HTMLElement): void {
     const kind = item.dataset.kind as MediaItem['kind']
     const dur = Number(item.dataset.dur)
     const track =
-      kind === '视频' ? '视频主轨' : kind === '音频' ? '音频轨' : kind === '文字' ? '文字轨' : '贴纸轨'
+      kind === '视频'
+        ? '视频主轨'
+        : kind === '音频'
+          ? '音频轨'
+          : kind === '文字'
+            ? '文字轨'
+            : '贴纸轨'
     studioClips.push({ id: studioSeq++, name, track, start: trackEnd(track), dur })
     renderTimeline()
     selectClip(studioSeq - 1)
   })
 
-  // 时间轴 clip 点击 → 选中回填属性
-  el(root, '[data-testid="st-timeline"]').addEventListener('click', (e) => {
+  // ── 时间轴交互（委托）：clip 拖动/边缘裁剪 + 点击选中 ──
+  let drag: {
+    id: number
+    mode: 'move' | 'trim-left' | 'trim-right'
+    originX: number
+    origStart: number
+    origDur: number
+  } | null = null
+
+  timelineEl.addEventListener('pointerdown', (e) => {
     const clipEl = (e.target as HTMLElement).closest<HTMLElement>('.st-clip')
-    if (clipEl) selectClip(Number(clipEl.dataset.clipId))
+    if (!clipEl) return
+    const id = Number(clipEl.dataset.clipId)
+    const clip = studioClips.find((c) => c.id === id)
+    if (!clip) return
+    selectClip(id)
+    const rect = clipEl.getBoundingClientRect()
+    const offsetX = e.clientX - rect.left
+    const mode = offsetX <= 6 ? 'trim-left' : offsetX >= rect.width - 6 ? 'trim-right' : 'move'
+    drag = { id, mode, originX: e.clientX, origStart: clip.start, origDur: clip.dur }
+    const { prevEnd, nextStart } = neighbors(clip.track, id)
+    const move = (ev: PointerEvent): void => {
+      const dt = (ev.clientX - drag!.originX) / pxPerSec
+      const c = studioClips.find((x) => x.id === drag!.id)
+      if (!c) return
+      if (drag!.mode === 'move') {
+        c.start = Math.min(Math.max(drag!.origStart + dt, prevEnd), nextStart - c.dur)
+      } else if (drag!.mode === 'trim-left') {
+        const ns = Math.min(
+          Math.max(drag!.origStart + dt, prevEnd),
+          drag!.origStart + drag!.origDur - 1,
+        )
+        c.dur = drag!.origDur + (drag!.origStart - ns)
+        c.start = ns
+      } else {
+        const ne = Math.min(
+          Math.max(drag!.origStart + drag!.origDur + dt, drag!.origStart + 1),
+          nextStart,
+        )
+        c.dur = ne - drag!.origStart
+      }
+      renderTimeline()
+      selectClip(c.id)
+    }
+    const up = (): void => {
+      drag = null
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', up)
+    }
+    window.addEventListener('pointermove', move)
+    window.addEventListener('pointerup', up)
   })
 
-  // 传输控制
+  timelineEl.addEventListener('click', (e) => {
+    const clipEl = (e.target as HTMLElement).closest<HTMLElement>('.st-clip')
+    if (clipEl) selectClip(Number(clipEl.dataset.clipId))
+    else selectClip(null)
+  })
+
+  // ── 键盘：空格播放 / Delete 删除选中 ──
+  document.addEventListener('keydown', (e) => {
+    const t = e.target as HTMLElement
+    if (t?.closest('input, textarea, [contenteditable="true"]')) return
+    if (e.code === 'Space') {
+      e.preventDefault()
+      play.click()
+    } else if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId !== null) {
+      e.preventDefault()
+      studioClips = studioClips.filter((c) => c.id !== selectedId)
+      renderTimeline()
+      selectClip(null)
+      renderPreview()
+    }
+  })
+
+  // ── 分割：选中 clip 在播放头处切开 ──
+  el(root, '#st-split').addEventListener('click', () => {
+    const clip = studioClips.find((c) => c.id === selectedId)
+    if (!clip || time <= clip.start || time >= clip.start + clip.dur) return
+    const leftDur = time - clip.start
+    const right: StudioClip = {
+      id: studioSeq++,
+      name: clip.name,
+      track: clip.track,
+      start: time,
+      dur: clip.dur - leftDur,
+    }
+    clip.dur = leftDur
+    studioClips.push(right)
+    renderTimeline()
+    selectClip(right.id)
+  })
+
+  // ── 播放/暂停（空格同款）──
   play.addEventListener('click', () => {
     playing = !playing
     play.textContent = playing ? '❚❚' : '▶'
@@ -419,6 +575,25 @@ function bindVideoEditor(root: HTMLElement): void {
       timer = undefined
     }
   })
+
+  // ── 缩放 ──
+  el(root, '#st-zoom-in').addEventListener('click', () => zoom(1.3))
+  el(root, '#st-zoom-out').addEventListener('click', () => zoom(1 / 1.3))
+  el(root, '#st-zoom-fit').addEventListener('click', () => zoom('fit'))
+
+  // ── 静音 ──
+  timelineEl.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest<HTMLElement>('.st-mute')
+    if (!btn) return
+    const track = btn.dataset.track!
+    muted[track] = !muted[track]
+    btn.classList.toggle('is-on', muted[track])
+    const lane = el<HTMLElement>(root, `.st-lane-row[data-track="${track}"] .st-lane`)
+    lane.classList.toggle('is-muted', muted[track])
+    renderPreview()
+  })
+
+  // ── 回开头 ──
   el(root, '#st-home').addEventListener('click', () => {
     time = 0
     renderTransport()
@@ -431,8 +606,14 @@ function bindVideoEditor(root: HTMLElement): void {
     }
   })
 
+  // ── 媒体分类联动 ──
+  document.addEventListener('st-cat', (e) => {
+    libFilter = (e as CustomEvent<string>).detail ?? '全部'
+    renderLibrary()
+  })
+
+  zoom('fit')
   renderLibrary()
-  renderTimeline()
   renderTransport()
 }
 export function mountApp(root: HTMLElement): void {

@@ -65,7 +65,7 @@ test('创作台：素材点击添加到对应轨道 + clip 选中回填属性', 
   const studio = page.locator('[data-testid="studio"]')
   await expect(studio).toBeVisible()
   // 音频轨原 1 条，添加「旁白配音」后 2 条
-  const audioLane = studio.locator('.st-lane[data-track="音频轨"]')
+  const audioLane = studio.locator('.st-lane-row[data-track="音频轨"]')
   await expect(audioLane.locator('.st-clip')).toHaveCount(1)
   await studio.locator('.st-lib-item', { hasText: '旁白配音' }).click()
   await expect(audioLane.locator('.st-clip')).toHaveCount(2)
