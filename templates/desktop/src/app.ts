@@ -152,6 +152,7 @@ function studioHTML(): string {
     <div class="studio" data-testid="studio">
       <div class="st-toolbar">
         <span class="st-project">未命名项目 · v1</span>
+        <span class="st-trackname" data-testid="st-trackname">人声主轨</span>
         <span class="tb-spacer"></span>
         <oas-button size="small">分享</oas-button>
         <oas-button size="small" type="primary">导出</oas-button>
@@ -196,34 +197,125 @@ function studioHTML(): string {
     </div>`
 }
 
+/** 音轨数据：侧栏/素材库/图表/传输条四方联动的数据源 */
+const STUDIO_TRACKS: Array<{
+  name: string
+  libItem: string
+  labels: string[]
+  line: Array<{ name: string; data: number[] }>
+  bar: number[]
+  duration: string
+}> = [
+  {
+    name: '人声主轨',
+    libItem: '人声主轨',
+    labels: ['00:30', '01:00', '01:30', '02:00', '02:30', '03:00', '03:30'],
+    line: [
+      { name: '响度', data: [42, 58, 51, 74, 66, 82, 71] },
+      { name: '峰值', data: [61, 66, 72, 80, 75, 90, 84] },
+    ],
+    bar: [72, 58, 44],
+    duration: '03:42',
+  },
+  {
+    name: '和声层',
+    libItem: '和声层',
+    labels: ['00:30', '01:00', '01:30', '02:00', '02:30', '03:00', '03:30'],
+    line: [
+      { name: '响度', data: [30, 44, 39, 52, 48, 61, 55] },
+      { name: '峰值', data: [45, 52, 58, 60, 55, 66, 62] },
+    ],
+    bar: [40, 52, 66],
+    duration: '03:42',
+  },
+  {
+    name: '鼓组',
+    libItem: '鼓组',
+    labels: ['00:30', '01:00', '01:30', '02:00', '02:30', '03:00', '03:30'],
+    line: [
+      { name: '响度', data: [66, 80, 72, 88, 76, 92, 84] },
+      { name: '峰值', data: [82, 90, 86, 96, 88, 98, 94] },
+    ],
+    bar: [88, 66, 38],
+    duration: '03:38',
+  },
+  {
+    name: '采样素材',
+    libItem: '采样包 A',
+    labels: ['00:30', '01:00', '01:30', '02:00', '02:30', '03:00', '03:30'],
+    line: [
+      { name: '响度', data: [20, 26, 24, 32, 28, 36, 30] },
+      { name: '峰值', data: [34, 38, 42, 40, 36, 44, 38] },
+    ],
+    bar: [22, 34, 48],
+    duration: '12 个素材',
+  },
+]
+
+function setChartData(el: HTMLElement | null, data: unknown): void {
+  if (el) (el as unknown as { data: unknown }).data = data
+}
+
 function bindStudio(root: HTMLElement): void {
+  const applyTrack = (name: string): void => {
+    const track = STUDIO_TRACKS.find((x) => x.name === name)
+    if (!track) return
+    setChartData(root.querySelector<HTMLElement>('#st-chart-line'), {
+      labels: track.labels,
+      series: track.line,
+    })
+    setChartData(root.querySelector<HTMLElement>('#st-chart-bar'), {
+      labels: ['低频', '中频', '高频'],
+      series: [{ name: '能量', data: track.bar }],
+    })
+    const trackName = root.querySelector('.st-trackname')
+    if (trackName) trackName.textContent = track.name
+    const times = root.querySelectorAll<HTMLElement>('.st-time')
+    if (times[1]) times[1].textContent = track.duration
+    // 侧栏与素材库选中态联动
+    root.querySelectorAll<HTMLElement>('.side-item[data-track]').forEach((n) => {
+      n.classList.toggle('is-active', n.dataset.track === track.name)
+    })
+    root.querySelectorAll<HTMLElement>('.st-lib-item').forEach((n) => {
+      n.classList.toggle('is-active', (n.textContent ?? '').includes(track.libItem))
+    })
+  }
   const line = root.querySelector<HTMLElement>('#st-chart-line')
   if (line) {
-    ;(line as unknown as { data: unknown }).data = {
-      labels: ['00:30', '01:00', '01:30', '02:00', '02:30', '03:00', '03:30'],
-      series: [
-        { name: '响度', data: [42, 58, 51, 74, 66, 82, 71] },
-        { name: '峰值', data: [61, 66, 72, 80, 75, 90, 84] },
-      ],
-    }
+    const vocal = STUDIO_TRACKS[0]
+    setChartData(line, { labels: vocal.labels, series: vocal.line })
   }
   const bar = root.querySelector<HTMLElement>('#st-chart-bar')
   if (bar) {
-    ;(bar as unknown as { data: unknown }).data = {
+    const vocal = STUDIO_TRACKS[0]
+    setChartData(bar, {
       labels: ['低频', '中频', '高频'],
-      series: [{ name: '能量', data: [72, 58, 44] }],
-    }
+      series: [{ name: '能量', data: vocal.bar }],
+    })
   }
-  const play = root.querySelector<HTMLButtonElement>('.st-play')
-  // 素材库选中态（可见反馈）
+  // 侧栏轨道点击 → 切换音轨（图表/素材库/传输条四方联动）
+  el(root, '[data-testid="side-panel"]').addEventListener('click', (e) => {
+    const item = (e.target as HTMLElement).closest<HTMLElement>('.side-item')
+    if (item?.dataset.track) applyTrack(item.dataset.track)
+  })
+  // 素材库点击 → 选中 + 加载对应音轨视图
   const lib = root.querySelector<HTMLElement>('.st-library')
   lib?.addEventListener('click', (e) => {
     const item = (e.target as HTMLElement).closest<HTMLElement>('.st-lib-item')
     if (!item) return
-    lib.querySelectorAll<HTMLElement>('.st-lib-item').forEach((n) => {
-      n.classList.toggle('is-active', n === item)
-    })
+    const name = (item.textContent ?? '').trim()
+    const track = STUDIO_TRACKS.find((x) => x.libItem === name)
+    if (track) {
+      applyTrack(track.name)
+    } else {
+      lib.querySelectorAll<HTMLElement>('.st-lib-item').forEach((n) => {
+        n.classList.toggle('is-active', n === item)
+      })
+      const title = root.querySelector('.st-props .st-panel-title')
+      if (title) title.textContent = `属性 — 已加载「${name}」`
+    }
   })
+  const play = root.querySelector<HTMLButtonElement>('.st-play')
   // 分享/导出按钮反馈（1.2s 后还原）
   for (const btn of root.querySelectorAll<HTMLButtonElement>('.st-toolbar oas-button')) {
     btn.addEventListener('click', () => {
@@ -353,7 +445,7 @@ export function mountApp(root: HTMLElement): void {
       ${def.side
         .map(
           (item, i) => `
-      <button class="side-item${i === 0 ? ' is-active' : ''}" type="button">
+      <button class="side-item${i === 0 ? ' is-active' : ''}" type="button"${id === 'studio' ? ` data-track="${item.label}"` : ''}>
         <span>${item.label}</span>${item.hint ? `<span class="side-hint">${item.hint}</span>` : ''}
       </button>`,
         )

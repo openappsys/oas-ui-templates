@@ -60,3 +60,18 @@ test('创作台：暗色工作站三栏 + 图表 + 传输条播放', async ({ pa
   const time = await studio.locator('.st-time').first().textContent()
   expect(time).not.toBe('00:00')
 })
+
+test('创作台联动：侧栏切音轨 → 图表/传输条/素材库同步', async ({ page }) => {
+  await page.goto('/')
+  await page.locator('.act-btn[data-section="studio"]').click()
+  const studio = page.locator('[data-testid="studio"]')
+  await expect(studio).toBeVisible()
+  await expect(page.locator('[data-testid="st-trackname"]')).toContainText('人声主轨')
+  await page.locator('.side-item[data-track="鼓组"]').click()
+  await expect(page.locator('[data-testid="st-trackname"]')).toContainText('鼓组')
+  await expect(studio.locator('.st-time').nth(1)).toContainText('03:38')
+  await expect(studio.locator('.st-lib-item.is-active')).toContainText('鼓组')
+  // 素材库点「贝斯」（无对应音轨）→ 仅选中态 + 属性面板反馈
+  await studio.locator('.st-lib-item', { hasText: '贝斯' }).click()
+  await expect(studio.locator('.st-props .st-panel-title')).toContainText('已加载「贝斯」')
+})

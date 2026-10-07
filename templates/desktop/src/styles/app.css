@@ -487,6 +487,14 @@ body {
   font-weight: 600;
 }
 
+.st-trackname {
+  font-size: 12px;
+  color: #7c8cff;
+  background: color-mix(in srgb, #7c8cff 14%, transparent);
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
 .st-toolbar oas-button[size="small"] {
   margin-left: 4px;
 }
