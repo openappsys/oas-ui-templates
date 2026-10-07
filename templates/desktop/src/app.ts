@@ -343,13 +343,16 @@ export function mountApp(root: HTMLElement): void {
 
   function renderContent(id: SectionId): void {
     const def = SECTIONS.find((s) => s.id === id)!
-    // 创作台为工作站式独立布局（无页头，深色满幅）
+    const contentEl = el(root, '[data-testid="content"]')
+    // 创作台为工作站式独立布局：content 去内边距满幅铺满，滚动由内部面板接管
     if (id === 'studio') {
-      el(root, '[data-testid="content"]').innerHTML = studioHTML()
+      contentEl.classList.add('content--flush')
+      contentEl.innerHTML = studioHTML()
       bindStudio(root)
       return
     }
-    el(root, '[data-testid="content"]').innerHTML = `
+    contentEl.classList.remove('content--flush')
+    contentEl.innerHTML = `
       <div class="content-head">
         <h1 class="content-title">${def.title}</h1>
       </div>

@@ -465,15 +465,15 @@ body {
   --oas-color-text-secondary: #9aa3b8;
   --oas-color-bg-hover: #232a3d;
   display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
   flex-direction: column;
   gap: 10px;
-  /* 满幅铺满内容区（抵消 .content 的 padding，工作站不要四周留白） */
-  margin: -14px -16px;
+  /* 满幅态由 .content--flush 去内边距（见文件尾部），本规则零负 margin */
   padding: 12px 16px;
-  min-height: calc(100% + 28px);
   background: radial-gradient(90% 90% at 100% 0%, #1c2233 0%, #141721 60%);
   color: #e6e9f2;
-  border-radius: 4px;
 }
 
 .st-toolbar {
@@ -555,6 +555,7 @@ body {
 
 .st-center {
   min-width: 0;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -637,4 +638,14 @@ body {
 
 .st-progress {
   flex: 1;
+}
+
+/* 创作台满幅态：content 去内边距（工作站自管布局与滚动） */
+.content--flush {
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+}
+.content--flush .studio {
+  border-radius: 0;
 }
