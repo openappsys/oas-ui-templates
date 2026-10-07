@@ -78,12 +78,6 @@
   })
 
   let color = $state(readColor())
-  let colorPickerEl = $state<HTMLElement | null>(null)
-  // color-picker 2.5.9 的 value property setter 在自定义元素 upgrade 时序下内部控件为 null
-  // （syncControls 判空缺失，已登记 demands）——初始色/跟随改走 attribute 通道（react d0ecf79 同款）
-  $effect(() => {
-    colorPickerEl?.setAttribute('value', color)
-  })
   let radius = $state(readRadius())
   let fontSize = $state<FontSize>(readFontSize())
   let density = $state<Density>(readDensity())
@@ -232,7 +226,7 @@
     <oas-color-picker
       id="appearance-color"
       data-testid="appearance-color"
-      bind:this={colorPickerEl}
+      value={color}
       onoas-change={onColorChange}
     ></oas-color-picker>
   </div>

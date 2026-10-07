@@ -181,17 +181,10 @@ export function AppearanceTab() {
     }
   })
 
-  // color-picker 2.5.9 的 value property setter 在 React 19 初始属性时序下崩
-  // （syncControls 判空缺失，已登记 demands）——初始色/切换走 attribute 通道
-  useEffect(() => {
-    colorRef.current?.setAttribute('value', color)
-  }, [color])
-
   useEffect(() => {
     const onThemeChange = (): void => {
       const theme = currentTheme()
       setColor(readColor())
-      colorRef.current?.setAttribute('value', readColor())
       const stored = localStorage.getItem(`${THEME_PREFIX}${theme}`)
       if (stored) document.documentElement.style.setProperty('--oas-color-primary', stored)
       else document.documentElement.style.removeProperty('--oas-color-primary')
@@ -225,9 +218,12 @@ export function AppearanceTab() {
             <div className="setting-label">{t('settings.appearance.primaryLabel')}</div>
             <div className="setting-hint">{t('settings.appearance.primaryHint')}</div>
           </div>
-          <oas-color-picker ref={colorRef} data-testid="appearance-color" id="appearance-color" />
-          {/* color-picker 2.5.9 的 value property setter 在 React 19 初始属性时序下崩
-              （syncControls 判空缺失，已登记 demands）——初始色/跟随改走 attribute 通道 */}
+          <oas-color-picker
+            ref={colorRef}
+            value={color}
+            data-testid="appearance-color"
+            id="appearance-color"
+          />
         </div>
         <div className="setting-row">
           <div>

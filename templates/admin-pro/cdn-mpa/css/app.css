@@ -1,8 +1,3 @@
-/* 玻璃浅色态边框可用性过渡（上游 main ceb939aa 已修待发版，demands 在案）——发版升级后摘除 */
-:root[data-glass]:not([data-theme="dark"]):not([data-theme="high-contrast"]) {
-  --oas-color-border: rgba(0, 0, 0, 0.08);
-  --oas-color-border-strong: rgba(0, 0, 0, 0.14);
-}
 * {
   box-sizing: border-box;
 }
