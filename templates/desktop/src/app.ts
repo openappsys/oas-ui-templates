@@ -338,14 +338,6 @@ function bindVideoEditor(root: HTMLElement): void {
       .join('')
   }
 
-  function clipAt(track: string, sec: number, exceptId?: number): StudioClip | null {
-    return (
-      studioClips.find(
-        (c) => c.track === track && c.id !== exceptId && sec >= c.start && sec < c.start + c.dur,
-      ) ?? null
-    )
-  }
-
   function neighbors(track: string, id: number): { prevEnd: number; nextStart: number } {
     const me = studioClips.find((c) => c.id === id)!
     const same = studioClips
@@ -371,7 +363,9 @@ function bindVideoEditor(root: HTMLElement): void {
     for (const track of STUDIO_TRACKS) {
       const lane = el<HTMLElement>(root, `.st-lane-row[data-track="${track}"] .st-lane`)
       lane.style.width = `${width}px`
-      lane.querySelectorAll('.st-clip').forEach((n) => n.remove())
+      lane.querySelectorAll('.st-clip').forEach((n) => {
+        n.remove()
+      })
       for (const c of studioClips.filter((x) => x.track === track)) {
         const clip = document.createElement('div')
         clip.className = 'st-clip'
@@ -420,10 +414,11 @@ function bindVideoEditor(root: HTMLElement): void {
   }
 
   function renderPreview(): void {
+    const mainTrack = STUDIO_TRACKS[0]
+    const mainMuted = muted[mainTrack] === true
     const hit =
       studioClips.find(
-        (x) =>
-          x.track === '视频主轨' && !muted['视频主轨'] && time >= x.start && time < x.start + x.dur,
+        (x) => x.track === mainTrack && !mainMuted && time >= x.start && time < x.start + x.dur,
       ) ?? null
     const hues: Record<string, string> = {
       '城市航拍 4K': 'linear-gradient(135deg,#0ea5e9,#6366f1)',
@@ -732,7 +727,9 @@ export function mountApp(root: HTMLElement): void {
     if (!item || current !== 'studio' || !item.dataset.cat) return
     el(root, '[data-testid="side-panel"]')
       .querySelectorAll<HTMLElement>('.side-item')
-      .forEach((n) => n.classList.toggle('is-active', n === item))
+      .forEach((n) => {
+        n.classList.toggle('is-active', n === item)
+      })
     document.dispatchEvent(new CustomEvent('st-cat', { detail: item.dataset.cat }))
   })
 
