@@ -48,20 +48,23 @@ test('设置：皮肤切换写 data-skin', async ({ page }) => {
   await expect(page.locator('html')).toHaveAttribute('data-skin', 'violet')
 })
 
-test('创作台：暗色工作站三栏 + 图表 + 传输条播放', async ({ page }) => {
+test('创作台：暗色工作站三栏 + 多轨时间轴 + 传输条播放', async ({ page }) => {
   await page.goto('/')
   await page.locator('.act-btn[data-section="studio"]').click()
   const studio = page.locator('[data-testid="studio"]')
   await expect(studio).toBeVisible()
-  await expect(studio.locator('.st-lib-item')).toHaveCount(6)
-  await expect(studio.locator('#st-chart-line')).toBeVisible()
+  // 轨道库 = 4 音轨 + 4 素材
+  await expect(studio.locator('.st-lib-item')).toHaveCount(8)
+  // 时间轴：4 条 lane + 播放头
+  await expect(studio.locator('.st-lane')).toHaveCount(4)
+  await expect(studio.locator('.st-playhead')).toBeVisible()
   await studio.locator('.st-play').click()
-  await page.waitForTimeout(1300)
-  const time = await studio.locator('.st-time').first().textContent()
+  await page.waitForTimeout(1400)
+  const time = await page.locator('[data-testid="st-time"]').textContent()
   expect(time).not.toBe('00:00')
 })
 
-test('创作台联动：侧栏切音轨 → 图表/传输条/素材库同步', async ({ page }) => {
+test('创作台联动：侧栏切音轨 → lane/徽章/传输条同步 + clip 选中回填', async ({ page }) => {
   await page.goto('/')
   await page.locator('.act-btn[data-section="studio"]').click()
   const studio = page.locator('[data-testid="studio"]')
@@ -69,9 +72,10 @@ test('创作台联动：侧栏切音轨 → 图表/传输条/素材库同步', a
   await expect(page.locator('[data-testid="st-trackname"]')).toContainText('人声主轨')
   await page.locator('.side-item[data-track="鼓组"]').click()
   await expect(page.locator('[data-testid="st-trackname"]')).toContainText('鼓组')
-  await expect(studio.locator('.st-time').nth(1)).toContainText('03:38')
-  await expect(studio.locator('.st-lib-item.is-active')).toContainText('鼓组')
-  // 素材库点「贝斯」（无对应音轨）→ 仅选中态 + 属性面板反馈
-  await studio.locator('.st-lib-item', { hasText: '贝斯' }).click()
-  await expect(studio.locator('.st-props .st-panel-title')).toContainText('已加载「贝斯」')
+  await expect(studio.locator('.st-lane[data-track="鼓组"]')).toHaveClass(/is-active/)
+  await expect(page.locator('[data-testid="st-props-title"]')).toContainText('鼓组')
+  // 时间轴 clip 点击 → 属性面板回填名称与起止
+  await studio.locator('.st-clip[data-clip="过门填充"]').click()
+  await expect(page.locator('[data-testid="st-clip-name"]')).toContainText('过门填充')
+  await expect(page.locator('[data-testid="st-clip-range"]')).toContainText('1:50 → 3:38')
 })

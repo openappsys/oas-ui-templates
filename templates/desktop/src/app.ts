@@ -148,6 +148,9 @@ function contentHTML(id: SectionId): string {
 }
 
 function studioHTML(): string {
+  const total = 222
+  const rulerMarks = [0, 30, 60, 90, 120, 150, 180, 210]
+  const fmt = (s: number): string => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
   return `
     <div class="studio" data-testid="studio">
       <div class="st-toolbar">
@@ -159,161 +162,160 @@ function studioHTML(): string {
       </div>
       <div class="st-main">
         <div class="st-library">
-          <p class="st-panel-title">素材库</p>
-          ${['人声主轨', '和声层', '鼓组', '贝斯', '采样包 A', '采样包 B']
+          <p class="st-panel-title">轨道</p>
+          ${STUDIO_TRACKS.map(
+            (tr, i) => `
+          <div class="st-lib-item${i === 0 ? ' is-active' : ''}" data-track="${tr.name}"><oas-icon name="star" size="13"></oas-icon><span>${tr.name}</span></div>`,
+          ).join('')}
+          <p class="st-panel-title" style="margin-top:12px">素材库</p>
+          ${['贝斯', '采样包 A', '采样包 B', '环境铺底']
             .map(
-              (s, i) =>
-                `<div class="st-lib-item${i === 0 ? ' is-active' : ''}"><oas-icon name="star" size="13"></oas-icon><span>${s}</span></div>`,
+              (s) =>
+                `<div class="st-lib-item" data-asset="${s}"><oas-icon name="star" size="13"></oas-icon><span>${s}</span></div>`,
             )
             .join('')}
         </div>
         <div class="st-center">
-          <div class="st-chart-card">
-            <p class="st-panel-title">响度曲线</p>
-            <oas-chart id="st-chart-line" type="area" options='{"smooth":true,"gradient":true,"colors":["#7c8cff","#38bdf8"]}'></oas-chart>
-          </div>
-          <div class="st-chart-card">
-            <p class="st-panel-title">频段能量</p>
-            <oas-chart id="st-chart-bar" type="bar" options='{"colors":["#38bdf8","#a78bfa","#f472b6"]}'></oas-chart>
-          </div>
-          <div class="st-wave">
-            ${Array.from({ length: 48 }, (_, i) => `<span style="height:${18 + Math.round(28 * Math.abs(Math.sin(i * 0.7)))}px"></span>`).join('')}
+          <div class="st-timeline" data-testid="st-timeline">
+            <div class="st-ruler">
+              ${rulerMarks.map((s) => `<span class="st-mark" style="left:${(s / total) * 100}%">${fmt(s)}</span>`).join('')}
+            </div>
+            ${STUDIO_TRACKS.map(
+              (tr) => `
+            <div class="st-lane" data-track="${tr.name}">
+              ${tr.clips
+                .map(
+                  (c) =>
+                    `<div class="st-clip" style="left:${(c.start / tr.duration) * 100}%;width:${(c.dur / tr.duration) * 100}%" data-clip="${c.name}" data-start="${c.start}" data-dur="${c.dur}">${c.name}</div>`,
+                )
+                .join('')}
+            </div>`,
+            ).join('')}
+            <div class="st-playhead" style="left:8%"></div>
           </div>
         </div>
         <div class="st-props">
-          <p class="st-panel-title">属性</p>
+          <p class="st-panel-title" data-testid="st-props-title">属性 — 人声主轨</p>
           <div class="st-prop"><span>音量</span><oas-slider value="72" min="0" max="100"></oas-slider></div>
           <div class="st-prop"><span>混响</span><oas-slider value="24" min="0" max="100"></oas-slider></div>
           <div class="st-prop"><span>降噪</span><oas-switch checked></oas-switch></div>
           <div class="st-prop"><span>立体声</span><oas-switch checked></oas-switch></div>
+          <p class="st-panel-title" style="margin-top:12px">选中片段</p>
+          <div class="st-prop"><span data-testid="st-clip-name">主歌</span></div>
+          <div class="st-prop"><span class="setting-value" data-testid="st-clip-range">0:00 → 1:02</span></div>
         </div>
       </div>
       <div class="st-transport">
         <button class="st-play" type="button" aria-label="播放">▶</button>
-        <span class="st-time">00:00</span>
-        <oas-slider class="st-progress" value="18" min="0" max="100"></oas-slider>
-        <span class="st-time st-dim">03:42</span>
+        <span class="st-time" data-testid="st-time">00:00</span>
+        <oas-slider class="st-progress" value="8" min="0" max="100"></oas-slider>
+        <span class="st-time st-dim">${fmt(total)}</span>
       </div>
     </div>`
 }
 
-/** 音轨数据：侧栏/素材库/图表/传输条四方联动的数据源 */
+/** 音轨数据：侧栏/素材库/时间轴/传输条四方联动的数据源 */
 const STUDIO_TRACKS: Array<{
   name: string
   libItem: string
-  labels: string[]
-  line: Array<{ name: string; data: number[] }>
-  bar: number[]
-  duration: string
+  duration: number
+  clips: Array<{ name: string; start: number; dur: number }>
 }> = [
   {
     name: '人声主轨',
     libItem: '人声主轨',
-    labels: ['00:30', '01:00', '01:30', '02:00', '02:30', '03:00', '03:30'],
-    line: [
-      { name: '响度', data: [42, 58, 51, 74, 66, 82, 71] },
-      { name: '峰值', data: [61, 66, 72, 80, 75, 90, 84] },
+    duration: 222,
+    clips: [
+      { name: '主歌', start: 0, dur: 62 },
+      { name: '副歌', start: 62, dur: 92 },
+      { name: '尾奏', start: 154, dur: 68 },
     ],
-    bar: [72, 58, 44],
-    duration: '03:42',
   },
   {
     name: '和声层',
     libItem: '和声层',
-    labels: ['00:30', '01:00', '01:30', '02:00', '02:30', '03:00', '03:30'],
-    line: [
-      { name: '响度', data: [30, 44, 39, 52, 48, 61, 55] },
-      { name: '峰值', data: [45, 52, 58, 60, 55, 66, 62] },
+    duration: 222,
+    clips: [
+      { name: '和声 A', start: 18, dur: 82 },
+      { name: '和声 B', start: 118, dur: 84 },
     ],
-    bar: [40, 52, 66],
-    duration: '03:42',
   },
   {
     name: '鼓组',
     libItem: '鼓组',
-    labels: ['00:30', '01:00', '01:30', '02:00', '02:30', '03:00', '03:30'],
-    line: [
-      { name: '响度', data: [66, 80, 72, 88, 76, 92, 84] },
-      { name: '峰值', data: [82, 90, 86, 96, 88, 98, 94] },
+    duration: 218,
+    clips: [
+      { name: '节拍主循环', start: 0, dur: 110 },
+      { name: '过门填充', start: 110, dur: 108 },
     ],
-    bar: [88, 66, 38],
-    duration: '03:38',
   },
   {
     name: '采样素材',
     libItem: '采样包 A',
-    labels: ['00:30', '01:00', '01:30', '02:00', '02:30', '03:00', '03:30'],
-    line: [
-      { name: '响度', data: [20, 26, 24, 32, 28, 36, 30] },
-      { name: '峰值', data: [34, 38, 42, 40, 36, 44, 38] },
+    duration: 222,
+    clips: [
+      { name: '采样包 A', start: 0, dur: 44 },
+      { name: '采样包 B', start: 58, dur: 52 },
+      { name: '环境铺底', start: 126, dur: 96 },
     ],
-    bar: [22, 34, 48],
-    duration: '12 个素材',
   },
 ]
 
-function setChartData(el: HTMLElement | null, data: unknown): void {
-  if (el) (el as unknown as { data: unknown }).data = data
-}
-
 function bindStudio(root: HTMLElement): void {
+  const fmt = (s: number): string => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+  const TOTAL = 222
   const applyTrack = (name: string): void => {
     const track = STUDIO_TRACKS.find((x) => x.name === name)
     if (!track) return
-    setChartData(root.querySelector<HTMLElement>('#st-chart-line'), {
-      labels: track.labels,
-      series: track.line,
-    })
-    setChartData(root.querySelector<HTMLElement>('#st-chart-bar'), {
-      labels: ['低频', '中频', '高频'],
-      series: [{ name: '能量', data: track.bar }],
-    })
     const trackName = root.querySelector('.st-trackname')
     if (trackName) trackName.textContent = track.name
-    const times = root.querySelectorAll<HTMLElement>('.st-time')
-    if (times[1]) times[1].textContent = track.duration
-    // 侧栏与素材库选中态联动
+    const propsTitle = root.querySelector('[data-testid="st-props-title"]')
+    if (propsTitle) propsTitle.textContent = `属性 — ${track.name}`
+    // 侧栏与轨道 lane 选中态联动
     root.querySelectorAll<HTMLElement>('.side-item[data-track]').forEach((n) => {
+      n.classList.toggle('is-active', n.dataset.track === track.name)
+    })
+    root.querySelectorAll<HTMLElement>('.st-lane').forEach((n) => {
       n.classList.toggle('is-active', n.dataset.track === track.name)
     })
     root.querySelectorAll<HTMLElement>('.st-lib-item').forEach((n) => {
       n.classList.toggle('is-active', (n.textContent ?? '').includes(track.libItem))
     })
   }
-  const line = root.querySelector<HTMLElement>('#st-chart-line')
-  if (line) {
-    const vocal = STUDIO_TRACKS[0]
-    setChartData(line, { labels: vocal.labels, series: vocal.line })
-  }
-  const bar = root.querySelector<HTMLElement>('#st-chart-bar')
-  if (bar) {
-    const vocal = STUDIO_TRACKS[0]
-    setChartData(bar, {
-      labels: ['低频', '中频', '高频'],
-      series: [{ name: '能量', data: vocal.bar }],
-    })
-  }
-  // 侧栏轨道点击 → 切换音轨（图表/素材库/传输条四方联动）
+  // 侧栏轨道点击 → 切换音轨（徽章/lane/素材库联动）
   el(root, '[data-testid="side-panel"]').addEventListener('click', (e) => {
     const item = (e.target as HTMLElement).closest<HTMLElement>('.side-item')
     if (item?.dataset.track) applyTrack(item.dataset.track)
   })
-  // 素材库点击 → 选中 + 加载对应音轨视图
+  // 轨道库点击：音轨项 → applyTrack；素材项 → 选中态
   const lib = root.querySelector<HTMLElement>('.st-library')
   lib?.addEventListener('click', (e) => {
     const item = (e.target as HTMLElement).closest<HTMLElement>('.st-lib-item')
     if (!item) return
-    const name = (item.textContent ?? '').trim()
-    const track = STUDIO_TRACKS.find((x) => x.libItem === name)
+    const track = STUDIO_TRACKS.find((x) => x.name === item.dataset.track)
     if (track) {
       applyTrack(track.name)
     } else {
       lib.querySelectorAll<HTMLElement>('.st-lib-item').forEach((n) => {
         n.classList.toggle('is-active', n === item)
       })
-      const title = root.querySelector('.st-props .st-panel-title')
-      if (title) title.textContent = `属性 — 已加载「${name}」`
+      const clipName = root.querySelector('[data-testid="st-clip-name"]')
+      if (clipName) clipName.textContent = `素材「${(item.textContent ?? '').trim()}」`
     }
+  })
+  // 时间轴 clip 点击 → 选中 + 属性面板回填起止
+  const timeline = root.querySelector<HTMLElement>('.st-timeline')
+  timeline?.addEventListener('click', (e) => {
+    const clip = (e.target as HTMLElement).closest<HTMLElement>('.st-clip')
+    if (!clip) return
+    root.querySelectorAll<HTMLElement>('.st-clip').forEach((n) => {
+      n.classList.toggle('is-selected', n === clip)
+    })
+    const clipName = root.querySelector('[data-testid="st-clip-name"]')
+    if (clipName) clipName.textContent = clip.dataset.clip ?? ''
+    const clipRange = root.querySelector('[data-testid="st-clip-range"]')
+    if (clipRange)
+      clipRange.textContent = `${fmt(Number(clip.dataset.start))} → ${fmt(Number(clip.dataset.start) + Number(clip.dataset.dur))}`
   })
   const play = root.querySelector<HTMLButtonElement>('.st-play')
   // 分享/导出按钮反馈（1.2s 后还原）
@@ -326,22 +328,23 @@ function bindStudio(root: HTMLElement): void {
       }, 1200)
     })
   }
-  const timeEl = root.querySelector<HTMLElement>('.st-time')
+  const timeEl = root.querySelector('[data-testid="st-time"]')
   const progress = root.querySelector<HTMLElement>('.st-progress')
+  const playhead = root.querySelector<HTMLElement>('.st-playhead')
   play?.addEventListener('click', () => {
     const playing = play.classList.toggle('is-playing')
     play.textContent = playing ? '❚❚' : '▶'
     if (!playing) return
-    let sec = 18
+    let sec = 17
     const timer = window.setInterval(() => {
       if (!play.classList.contains('is-playing')) {
         window.clearInterval(timer)
         return
       }
-      sec = (sec + 1) % 222
-      if (timeEl)
-        timeEl.textContent = `0${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`
-      progress?.setAttribute('value', String(Math.round((sec / 222) * 100)))
+      sec = (sec + 1) % TOTAL
+      if (timeEl) timeEl.textContent = fmt(sec)
+      if (playhead) playhead.style.left = `${(sec / TOTAL) * 100}%`
+      progress?.setAttribute('value', String(Math.round((sec / TOTAL) * 100)))
     }, 1000)
   })
 }

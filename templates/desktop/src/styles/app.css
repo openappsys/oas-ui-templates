@@ -519,8 +519,7 @@ body {
 }
 
 .st-library,
-.st-props,
-.st-chart-card {
+.st-props {
   background: #1b2030;
   border: 1px solid #2a3145;
   border-radius: 10px;
@@ -565,34 +564,100 @@ body {
 
 .st-center {
   min-width: 0;
-  overflow-y: auto;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.st-chart-card oas-chart {
-  height: 150px;
-  min-width: 280px;
-}
-
-.st-wave {
-  background: #1b2030;
+/* 时间轴：时间标尺 + 轨道 lane + clip 色块 + 播放头（剪映范式，纯 CSS/TS） */
+.st-timeline {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  background: #141721;
   border: 1px solid #2a3145;
   border-radius: 10px;
-  padding: 10px 12px;
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  height: 62px;
+  padding: 8px 0 4px;
+  overflow: auto;
 }
 
-.st-wave span {
-  flex: 1;
-  min-width: 2px;
-  border-radius: 2px;
-  background: linear-gradient(180deg, #7c8cff 0%, #38bdf8 100%);
-  opacity: 0.85;
+.st-ruler {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  height: 20px;
+  margin-bottom: 4px;
+  background: #1b2030;
+  border-bottom: 1px solid #2a3145;
+}
+
+.st-mark {
+  position: absolute;
+  top: 3px;
+  font-size: 10px;
+  color: #9aa3b8;
+  transform: translateX(-50%);
+  font-variant-numeric: tabular-nums;
+}
+
+.st-lane {
+  position: relative;
+  height: 44px;
+  margin: 0 0 6px;
+  background: #1b2030;
+  border-radius: 6px;
+  border: 1px solid transparent;
+}
+
+.st-lane.is-active {
+  border-color: #7c8cff;
+  background: color-mix(in srgb, #7c8cff 8%, #1b2030);
+}
+
+.st-clip {
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #4f6bff 0%, #38bdf8 100%);
+  color: #fff;
+  font-size: 11px;
+  line-height: 32px;
+  padding: 0 8px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.st-clip:hover {
+  filter: brightness(1.15);
+}
+
+.st-clip.is-selected {
+  outline: 2px solid #fff;
+  outline-offset: -1px;
+}
+
+.st-playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #ff5470;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.st-playhead::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -4px;
+  border: 5px solid transparent;
+  border-top-color: #ff5470;
 }
 
 .st-props {
