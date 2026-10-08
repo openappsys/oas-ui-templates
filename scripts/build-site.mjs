@@ -51,7 +51,7 @@ for (const staticFile of ['og.png']) {
 
 // SEO：robots/sitemap 按部署域名生成（域名无关原则——HTML 内全部相对引用，
 // 唯一需要绝对域名的 sitemap loc 由 SITE_URL 环境变量在构建期注入）
-const SITE_URL = (process.env.SITE_URL ?? '').replace(/\/+$/, '')
+const SITE_URL = (process.env.SITE_URL ?? 'https://oas-ui-templates.com').replace(/\/+$/, '')
 const TPL_PATHS = [
   'admin-pro/vanilla-html',
   'admin-pro/cdn',
@@ -131,5 +131,4 @@ for (const family of families) {
   }
 }
 
-console.log(`\nsite built in ${relative(root, outDir)}`)
-console.log(`deployed: ${deployed.length} template(s)`)
+
