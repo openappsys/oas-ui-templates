@@ -914,11 +914,9 @@ export function mountApp(root: HTMLElement): void {
   aboutModal.addEventListener('click', (e) => {
     if (e.target === aboutModal) aboutModal.removeAttribute('visible')
   })
-  aboutModal
-    .querySelector('[data-testid="about-close"]')
-    ?.addEventListener('click', () => {
-      aboutModal.removeAttribute('visible')
-    })
+  aboutModal.querySelector('[data-testid="about-close"]')?.addEventListener('click', () => {
+    aboutModal.removeAttribute('visible')
+  })
   el(root, '#quit-modal').addEventListener('click', (e) => {
     if (e.target === el(root, '#quit-modal')) el(root, '#quit-modal').removeAttribute('visible')
   })

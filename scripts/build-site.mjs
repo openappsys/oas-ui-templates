@@ -130,5 +130,3 @@ for (const family of families) {
     process.stdout.write(`  -> /${relPath}/\n`)
   }
 }
-
-
