@@ -86,8 +86,33 @@ const USERS = [
   { name: '赵敏', role: '运营', dept: '业务组', on: true },
 ]
 
-function contentHTML(id: SectionId): string {
+/** 各板块当前选中的侧栏二级项（驱动侧栏高亮与内容区子视图） */
+const SUB_STATE: Record<string, string> = {
+  dashboard: '经营总览',
+  orders: '全部订单',
+  users: '全部用户',
+  settings: '外观',
+  studio: '视频',
+}
+
+function contentHTML(id: SectionId, sub: string): string {
   if (id === 'dashboard') {
+    if (sub === '访问趋势') {
+      return `
+        <div class="panel">
+          <p class="panel-title">近 30 日访问趋势</p>
+          <oas-chart id="sub-chart" type="area" options='{"smooth":true,"gradient":true}'></oas-chart>
+        </div>`
+    }
+    if (sub === '转化漏斗') {
+      return `
+        <div class="panel">
+          <p class="panel-title">转化漏斗（近 30 日）</p>
+          <div class="funnel-row"><span class="funnel-label">访问</span><div class="funnel-bar" style="width:100%">12,480</div></div>
+          <div class="funnel-row"><span class="funnel-label">注册</span><div class="funnel-bar" style="width:32%">861</div></div>
+          <div class="funnel-row"><span class="funnel-label">付费</span><div class="funnel-bar" style="width:12%">88</div></div>
+        </div>`
+    }
     return `
       <div class="stat-grid">
         <div class="stat-card"><span class="stat-label">今日访问</span><b>12,480</b><span class="stat-delta up">+12.4%</span></div>
@@ -106,29 +131,56 @@ function contentHTML(id: SectionId): string {
       </div>`
   }
   if (id === 'orders') {
+    const rows = sub === '全部订单' ? ORDERS : ORDERS.filter((o) => o.status === sub)
     return `
       <div class="toolbar"><oas-input placeholder="搜索订单号 / 客户" prefix-icon="search" clearable></oas-input><oas-button type="primary" size="small">导出</oas-button></div>
       <div class="panel">
         <div class="thead"><span>订单号</span><span>客户</span><span>金额</span><span>状态</span></div>
-        ${ORDERS.map(
-          (o) =>
-            `<div class="trow"><span>${o.no}</span><span>${o.customer}</span><span>${o.amount}</span><oas-tag size="small" type="${o.ok ? 'success' : 'warning'}">${o.status}</oas-tag></div>`,
-        ).join('')}
+        ${rows
+          .map(
+            (o) =>
+              `<div class="trow"><span>${o.no}</span><span>${o.customer}</span><span>${o.amount}</span><oas-tag size="small" type="${o.ok ? 'success' : 'warning'}">${o.status}</oas-tag></div>`,
+          )
+          .join('')}
+        ${rows.length === 0 ? '<oas-empty description="该状态下暂无订单"></oas-empty>' : ''}
       </div>`
   }
   if (id === 'users') {
+    const rows = USERS.filter((u) =>
+      sub === '全部用户' ? true : sub === '已停用' ? !u.on : u.dept === sub,
+    )
     return `
       <div class="toolbar"><oas-input placeholder="搜索用户" prefix-icon="search" clearable></oas-input><oas-button type="primary" size="small">新建用户</oas-button></div>
       <div class="panel">
         <div class="thead"><span>用户</span><span>角色</span><span>部门</span><span>启用</span></div>
-        ${USERS.map(
-          (u) =>
-            `<div class="trow"><span>${u.name}</span><oas-tag size="small">${u.role}</oas-tag><span>${u.dept}</span><oas-switch ${u.on ? 'checked' : ''}></oas-switch></div>`,
-        ).join('')}
+        ${rows
+          .map(
+            (u) =>
+              `<div class="trow"><span>${u.name}</span><oas-tag size="small">${u.role}</oas-tag><span>${u.dept}</span><oas-switch ${u.on ? 'checked' : ''}></oas-switch></div>`,
+          )
+          .join('')}
+        ${rows.length === 0 ? '<oas-empty description="该分组暂无用户"></oas-empty>' : ''}
       </div>`
   }
   const skin = localStorage.getItem('oas-admin.settings.skin') ?? ''
   const glassOn = localStorage.getItem('oas-admin.settings.glass') === 'on'
+  if (sub === '通知') {
+    return `
+      <div class="panel settings-panel">
+        <p class="panel-title">通知与展示</p>
+        <div class="setting-item"><span>消息通知</span><oas-switch checked></oas-switch></div>
+        <div class="setting-item"><span>字号</span><span class="setting-value">标准</span></div>
+        <div class="setting-item"><span>清除缓存</span><span class="setting-value">2.1 MB</span></div>
+      </div>`
+  }
+  if (sub === '关于') {
+    return `
+      <div class="panel settings-panel">
+        <p class="panel-title">关于</p>
+        <div class="setting-item"><span>应用</span><span class="setting-value">OAS Desktop v0.1.0</span></div>
+        <div class="setting-item"><span>组件库</span><span class="setting-value">oas-ui 2.6.0</span></div>
+      </div>`
+  }
   return `
     <div class="panel settings-panel">
       <p class="panel-title">外观</p>
@@ -277,7 +329,9 @@ function bindSection(root: HTMLElement, id: SectionId): void {
     else delete document.documentElement.dataset.skin
   }
   applySkin(localStorage.getItem('oas-admin.settings.skin') ?? '')
-  const glassSwitch = el<HTMLElement>(root, '#dt-glass')
+  // 通知/关于子面板无外观控件（按 sub 渲染的 panel 可能不含 #dt-glass）
+  const glassSwitch = root.querySelector<HTMLElement>('#dt-glass')
+  if (!glassSwitch) return
   if (localStorage.getItem('oas-admin.settings.glass') === 'on')
     glassSwitch.setAttribute('checked', '')
   glassSwitch.addEventListener('oas-change', () => {
@@ -673,12 +727,13 @@ export function mountApp(root: HTMLElement): void {
 
   function renderSide(id: SectionId): void {
     const def = SECTIONS.find((s) => s.id === id)!
+    const active = SUB_STATE[id] ?? def.side[0].label
     el(root, '[data-testid="side-panel"]').innerHTML = `
       <p class="side-title">${def.title}</p>
       ${def.side
         .map(
-          (item, i) => `
-      <button class="side-item${i === 0 ? ' is-active' : ''}" type="button"${id === 'studio' ? ` data-cat="${item.label}"` : ''}>
+          (item) => `
+      <button class="side-item${item.label === active ? ' is-active' : ''}" type="button"${id === 'studio' ? ` data-cat="${item.label}"` : ` data-sub="${item.label}"`}>
         <span>${item.label}</span>${item.hint ? `<span class="side-hint">${item.hint}</span>` : ''}
       </button>`,
         )
@@ -696,12 +751,24 @@ export function mountApp(root: HTMLElement): void {
       return
     }
     contentEl.classList.remove('content--flush')
+    const sub = SUB_STATE[id] ?? def.side[0].label
     contentEl.innerHTML = `
       <div class="content-head">
-        <h1 class="content-title">${def.title}</h1>
+        <h1 class="content-title">${def.title}<oas-tag size="small" style="margin-left:10px">${sub}</oas-tag></h1>
       </div>
-      <div class="content-body">${contentHTML(id)}</div>`
+      <div class="content-body">${contentHTML(id, sub)}</div>`
     bindSection(root, id)
+    if (id === 'dashboard' && sub === '访问趋势') {
+      const chart = contentEl.querySelector('#sub-chart')
+      if (chart)
+        (chart as unknown as { data: unknown }).data = {
+          labels: ['10-08', '10-09', '10-10', '10-11', '10-12', '10-13', '10-14'],
+          series: [
+            { name: '访问量', data: [820, 932, 901, 1090, 1290, 1130, 1248] },
+            { name: '独立访客', data: [620, 710, 690, 810, 952, 880, 964] },
+          ],
+        }
+    }
   }
 
   function switchSection(id: SectionId): void {
@@ -724,13 +791,22 @@ export function mountApp(root: HTMLElement): void {
   // 创作台：侧栏媒体分类 → 媒体库过滤（经自定义事件跨到编辑器作用域）
   el(root, '[data-testid="side-panel"]').addEventListener('click', (e) => {
     const item = (e.target as HTMLElement).closest<HTMLElement>('.side-item')
-    if (!item || current !== 'studio' || !item.dataset.cat) return
-    el(root, '[data-testid="side-panel"]')
-      .querySelectorAll<HTMLElement>('.side-item')
-      .forEach((n) => {
-        n.classList.toggle('is-active', n === item)
-      })
-    document.dispatchEvent(new CustomEvent('st-cat', { detail: item.dataset.cat }))
+    if (!item) return
+    if (current === 'studio') {
+      if (!item.dataset.cat) return
+      el(root, '[data-testid="side-panel"]')
+        .querySelectorAll<HTMLElement>('.side-item')
+        .forEach((n) => {
+          n.classList.toggle('is-active', n === item)
+        })
+      document.dispatchEvent(new CustomEvent('st-cat', { detail: item.dataset.cat }))
+      return
+    }
+    // 其余板块：二级菜单切换内容子视图
+    if (!item.dataset.sub || SUB_STATE[current] === item.dataset.sub) return
+    SUB_STATE[current] = item.dataset.sub
+    renderSide(current)
+    renderContent(current)
   })
 
   // ── 菜单栏 ──
