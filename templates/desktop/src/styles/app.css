@@ -843,3 +843,42 @@ body {
   padding: 0 10px;
   box-shadow: 0 2px 8px color-mix(in srgb, var(--oas-color-primary, #0b6cff) 24%, transparent);
 }
+
+/* 关于对话框 */
+.about-body {
+  padding: 6px 2px;
+  text-align: center;
+}
+
+.about-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--oas-color-primary, #0b6cff), #38bdf8);
+  color: #fff;
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: 0.5px;
+}
+
+.about-name {
+  margin: 10px 0 2px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.about-ver {
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: var(--oas-color-text-secondary, #6b7280);
+}
+
+.about-desc {
+  margin: 0 0 14px;
+  font-size: 12px;
+  color: var(--oas-color-text-secondary, #6b7280);
+  line-height: 1.6;
+}

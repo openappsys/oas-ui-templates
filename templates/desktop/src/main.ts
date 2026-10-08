@@ -13,6 +13,7 @@ import '@oas-ui/ui/basic/icon'
 import '@oas-ui/ui/form/input'
 import '@oas-ui/ui/form/switch'
 import '@oas-ui/ui/feedback/empty'
+import '@oas-ui/ui/feedback/modal'
 import './styles/app.css'
 
 import { mountApp } from './app'

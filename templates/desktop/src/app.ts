@@ -713,6 +713,17 @@ export function mountApp(root: HTMLElement): void {
         <span>在线</span>
       </footer>
     </div>
+    <oas-modal id="about-modal" title="关于" no-footer>
+      <div class="about-body">
+        <span class="about-logo">OAS</span>
+        <p class="about-name">OAS Desktop</p>
+        <p class="about-ver">v0.1.0 · oas-ui 2.6.0</p>
+        <p class="about-desc">oas-ui 桌面软件体验模板——自绘标题栏、菜单栏、活动栏、多轨时间轴创作台。</p>
+        <div class="quit-actions">
+          <oas-button type="primary" data-testid="about-close">知道了</oas-button>
+        </div>
+      </div>
+    </oas-modal>
     <oas-modal id="quit-modal" title="退出应用" no-footer>
       <div class="quit-body">
         <p>确定退出 OAS Desktop 并返回模板门户吗？</p>
@@ -874,7 +885,7 @@ export function mountApp(root: HTMLElement): void {
       if (document.fullscreenElement) void document.exitFullscreen()
       else void document.documentElement.requestFullscreen().catch(() => {})
     } else if (act === 'about') {
-      window.alert('OAS Desktop v0.1.0\noas-ui 移动/桌面体验模板家族')
+      el(root, '#about-modal').setAttribute('visible', '')
     }
   })
 
@@ -899,6 +910,15 @@ export function mountApp(root: HTMLElement): void {
   el(root, '[data-testid="win-close"]').addEventListener('click', () => {
     el(root, '#quit-modal').setAttribute('visible', '')
   })
+  const aboutModal = el<HTMLElement>(root, '#about-modal')
+  aboutModal.addEventListener('click', (e) => {
+    if (e.target === aboutModal) aboutModal.removeAttribute('visible')
+  })
+  aboutModal
+    .querySelector('[data-testid="about-close"]')
+    ?.addEventListener('click', () => {
+      aboutModal.removeAttribute('visible')
+    })
   el(root, '#quit-modal').addEventListener('click', (e) => {
     if (e.target === el(root, '#quit-modal')) el(root, '#quit-modal').removeAttribute('visible')
   })
