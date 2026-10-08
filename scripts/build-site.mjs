@@ -1,4 +1,12 @@
-import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync } from 'node:fs'
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
 import { join, relative } from 'node:path'
 import { execSync } from 'node:child_process'
 
@@ -35,11 +43,47 @@ function safeRm(p) {
 mkdirSync(outDir, { recursive: true })
 
 cpSync(join(siteDir, 'index.html'), join(outDir, 'index.html'))
-// 门户静态资源（OG 社交预览图等）随 index.html 一起发布到 dist 顶层
+// 门户静态资源（OG 社交预览图）随 index.html 一起发布到 dist 顶层
 for (const staticFile of ['og.png']) {
   const src = join(siteDir, staticFile)
   if (existsSync(src)) cpSync(src, join(outDir, staticFile))
 }
+
+// SEO：robots/sitemap 按部署域名生成（域名无关原则——HTML 内全部相对引用，
+// 唯一需要绝对域名的 sitemap loc 由 SITE_URL 环境变量在构建期注入）
+const SITE_URL = (process.env.SITE_URL ?? '').replace(/\/+$/, '')
+const TPL_PATHS = [
+  'admin-pro/vanilla-html',
+  'admin-pro/cdn',
+  'admin-pro/cdn-mpa',
+  'admin-pro/react',
+  'admin-pro/vue',
+  'admin-pro/svelte',
+  'mobile-h5',
+  'desktop',
+]
+if (SITE_URL) {
+  const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>${SITE_URL}/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
+${TPL_PATHS.map(
+  (p) =>
+    `  <url><loc>${SITE_URL}/${p}/</loc><changefreq>weekly</changefreq><priority>${p.startsWith('admin-pro') ? 0.8 : 0.7}</priority></url>`,
+).join('\n')}
+</urlset>
+`
+  writeFileSync(join(outDir, 'sitemap.xml'), sitemap)
+  writeFileSync(
+    join(outDir, 'robots.txt'),
+    `User-agent: *\nAllow: /\n\nSitemap: ${SITE_URL}/sitemap.xml\n`,
+  )
+  process.stdout.write(`seo: robots.txt + sitemap.xml (${SITE_URL})\n`)
+} else {
+  writeFileSync(join(outDir, 'robots.txt'), 'User-agent: *\nAllow: /\n')
+  rmSync(join(outDir, 'sitemap.xml'), { force: true })
+  process.stdout.write('seo: robots.txt（无 SITE_URL，跳过 sitemap）\n')
+}
+
 // assets 目录（自托管的 theme css 等）
 const assetsDir = join(siteDir, 'assets')
 if (existsSync(assetsDir)) cpSync(assetsDir, join(outDir, 'assets'), { recursive: true })
