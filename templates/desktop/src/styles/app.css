@@ -273,7 +273,22 @@ body {
   flex: 1;
   min-width: 0;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.content-page {
+  flex: 1;
+  min-height: 0;
   padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 创作台满幅态：page 去内边距（工作站自管布局与滚动） */
+.content--flush .content-page {
+  padding: 0;
+  overflow: hidden;
 }
 
 .content-title {
@@ -809,6 +824,10 @@ body {
   padding: 0;
   overflow: hidden;
   display: flex;
+}
+.content--flush .content-page {
+  padding: 0;
+  overflow: hidden;
 }
 .content--flush .studio {
   border-radius: 0;
