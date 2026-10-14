@@ -882,3 +882,70 @@ body {
   color: var(--oas-color-text-secondary, #6b7280);
   line-height: 1.6;
 }
+
+/* ── 内容区多标签 ── */
+.content {
+  display: flex;
+  flex-direction: column;
+}
+
+.content-tabs {
+  flex-shrink: 0;
+  display: flex;
+  gap: 2px;
+  padding: 4px 8px 0;
+  background: var(--oas-color-surface, #fff);
+  border-bottom: 1px solid var(--oas-color-border, #e2e8f0);
+  overflow-x: auto;
+}
+
+.ctab {
+  appearance: none;
+  border: none;
+  background: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px 6px 0 0;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  color: var(--oas-color-text-secondary, #6b7280);
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+}
+
+.ctab:hover {
+  background: var(--oas-color-bg-hover, #f1f5f9);
+  color: var(--oas-color-text-primary, #1f2329);
+}
+
+.ctab.is-active {
+  color: var(--oas-color-primary, #0b6cff);
+  border-bottom-color: var(--oas-color-primary, #0b6cff);
+  font-weight: 600;
+}
+
+.ctab-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  font-size: 9px;
+  line-height: 1;
+  color: var(--oas-color-text-secondary, #6b7280);
+}
+
+.ctab-close:hover {
+  background: var(--oas-color-bg-hover, #f1f5f9);
+  color: var(--oas-color-text-primary, #1f2329);
+}
+
+.content-page {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}

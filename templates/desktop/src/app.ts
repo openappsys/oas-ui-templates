@@ -580,19 +580,35 @@ function bindVideoEditor(root: HTMLElement): void {
     else selectClip(null)
   })
 
-  // ── 键盘：空格播放 / Delete 删除选中 ──
+  // ── 键盘快捷键 ──
   document.addEventListener('keydown', (e) => {
     const t = e.target as HTMLElement
     if (t?.closest('input, textarea, [contenteditable="true"]')) return
-    if (e.code === 'Space') {
+    // Ctrl+1~5 切换板块
+    if ((e.ctrlKey || e.metaKey) && /^[1-5]$/.test(e.key)) {
       e.preventDefault()
-      play.click()
-    } else if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId !== null) {
+      const idx = Number(e.key) - 1
+      if (idx < SECTIONS.length) switchSection(SECTIONS[idx].id)
+      return
+    }
+    // Ctrl+W 关闭当前 tab
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'w') {
       e.preventDefault()
-      studioClips = studioClips.filter((c) => c.id !== selectedId)
-      renderTimeline()
-      selectClip(null)
-      renderPreview()
+      closeTab(current)
+      return
+    }
+    // 创作台：空格播放 / Delete 删除选中 clip
+    if (current === 'studio') {
+      if (e.code === 'Space') {
+        e.preventDefault()
+        play.click()
+      } else if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId !== null) {
+        e.preventDefault()
+        studioClips = studioClips.filter((c) => c.id !== selectedId)
+        renderTimeline()
+        selectClip(null)
+        renderPreview()
+      }
     }
   })
 
@@ -703,7 +719,10 @@ export function mountApp(root: HTMLElement): void {
           ).join('')}
         </aside>
         <aside class="side-panel" data-testid="side-panel"></aside>
-        <main class="content" data-testid="content"></main>
+        <main class="content" data-testid="content">
+          <div class="content-tabs" data-testid="content-tabs"></div>
+          <div class="content-page" data-testid="content-page"></div>
+        </main>
       </div>
       <footer class="statusbar" data-testid="statusbar">
         <span>● 就绪</span>
@@ -751,26 +770,74 @@ export function mountApp(root: HTMLElement): void {
         .join('')}`
   }
 
+  // ── 多标签内容区 ──
+  const openTabs: SectionId[] = ['dashboard']
+
+  function renderTabs(): void {
+    const strip = el(root, '[data-testid="content-tabs"]')
+    strip.innerHTML = openTabs
+      .map((id) => {
+        const def = SECTIONS.find((s) => s.id === id)!
+        const isActive = SUB_STATE[id] !== undefined && id === current
+        const closable = id !== 'dashboard'
+        return `
+        <button class="ctab${isActive ? ' is-active' : ''}" type="button" data-tab="${id}">
+          <span>${def.title}</span>${closable ? `<span class="ctab-close" data-close="${id}">✕</span>` : ''}
+        </button>`
+      })
+      .join('')
+  }
+
+  function openTab(id: SectionId): void {
+    if (!openTabs.includes(id)) openTabs.push(id)
+    renderTabs()
+  }
+
+  function closeTab(id: SectionId): void {
+    const idx = openTabs.indexOf(id)
+    if (idx < 0 || id === 'dashboard') return
+    openTabs.splice(idx, 1)
+    if (activeTab === id) {
+      const next = openTabs[Math.min(idx, openTabs.length - 1)] ?? 'dashboard'
+      switchSection(next)
+    }
+    renderTabs()
+  }
+
+  el(root, '[data-testid="content-tabs"]').addEventListener('click', (e) => {
+    const closeBtn = (e.target as HTMLElement).closest<HTMLElement>('.ctab-close')
+    if (closeBtn) {
+      e.stopPropagation()
+      closeTab(closeBtn.dataset.close as SectionId)
+      return
+    }
+    const tab = (e.target as HTMLElement).closest<HTMLElement>('.ctab')
+    if (tab?.dataset.tab && tab.dataset.tab !== current) switchSection(tab.dataset.tab as SectionId)
+  })
+
   function renderContent(id: SectionId): void {
     const def = SECTIONS.find((s) => s.id === id)!
+    openTab(id)
+    renderTabs()
     const contentEl = el(root, '[data-testid="content"]')
+    const pageEl = el(root, '[data-testid="content-page"]')
     // 创作台为工作站式独立布局：content 去内边距满幅铺满，滚动由内部面板接管
     if (id === 'studio') {
       contentEl.classList.add('content--flush')
-      contentEl.innerHTML = videoEditorHTML()
+      pageEl.innerHTML = videoEditorHTML()
       bindVideoEditor(root)
       return
     }
     contentEl.classList.remove('content--flush')
     const sub = SUB_STATE[id] ?? def.side[0].label
-    contentEl.innerHTML = `
+    pageEl.innerHTML = `
       <div class="content-head">
         <h1 class="content-title">${def.title}<oas-tag size="small" style="margin-left:10px">${sub}</oas-tag></h1>
       </div>
       <div class="content-body">${contentHTML(id, sub)}</div>`
     bindSection(root, id)
     if (id === 'dashboard' && sub === '访问趋势') {
-      const chart = contentEl.querySelector('#sub-chart')
+      const chart = pageEl.querySelector('#sub-chart')
       if (chart)
         (chart as unknown as { data: unknown }).data = {
           labels: ['10-08', '10-09', '10-10', '10-11', '10-12', '10-13', '10-14'],
