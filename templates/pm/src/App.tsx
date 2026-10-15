@@ -19,7 +19,10 @@ const STATUS_COLOR: Record<IssueStatus, string> = {
   cancelled: '#dc2626',
 }
 
+type View = 'issues' | 'board'
+
 export function App() {
+  const [view, setView] = useState<View>('issues')
   const [statusFilter, setStatusFilter] = useState<IssueStatus | null>(null)
 
   const issues = useLiveQuery(
@@ -49,9 +52,22 @@ export function App() {
       </nav>
       <div className="main">
         <aside className="activity-bar">
-          <span className="act-btn is-active" title="Issues">
+          <button
+            className={`act-btn${view === 'issues' ? ' is-active' : ''}`}
+            type="button"
+            title="Issues"
+            onClick={() => setView('issues')}
+          >
             <oas-icon name="list" size="20" />
-          </span>
+          </button>
+          <button
+            className={`act-btn${view === 'board' ? ' is-active' : ''}`}
+            type="button"
+            title="看板"
+            onClick={() => setView('board')}
+          >
+            <oas-icon name="layout" size="20" />
+          </button>
         </aside>
         <aside className="side-panel">
           <p className="side-title">状态</p>
@@ -74,7 +90,10 @@ export function App() {
             </button>
           ))}
         </aside>
-        <main className="content">{issues && <IssueList issues={issues} />}</main>
+        <main className="content">
+          {view === 'issues' && issues && <IssueList issues={issues} />}
+          {view === 'board' && <KanbanBoard issues={issues ?? []} />}
+        </main>
       </div>
       <footer className="statusbar">
         <span>● 就绪</span>
@@ -85,6 +104,7 @@ export function App() {
   )
 }
 
+/* ── Issue 列表 ── */
 function IssueList({ issues }: { issues: Issue[] }) {
   const [selected, setSelected] = useState<Issue | null>(null)
 
@@ -93,9 +113,6 @@ function IssueList({ issues }: { issues: Issue[] }) {
       <div className="issue-header">
         <h1>Issues</h1>
         <span className="issue-total">{issues.length} 条</span>
-        <oas-button type="primary" size="small" data-testid="new-issue">
-          + 新建
-        </oas-button>
       </div>
       <div className="issue-thead">
         <span>Key</span>
@@ -188,6 +205,67 @@ function IssueDetailPanel({ issue, onClose }: { issue: Issue; onClose: () => voi
         </div>
         {issue.description && <p className="detail-desc">{issue.description}</p>}
       </div>
+    </div>
+  )
+}
+
+/* ── 看板 ── */
+function KanbanBoard({ issues }: { issues: Issue[] }) {
+  const [dragId, setDragId] = useState<string | null>(null)
+  const [dragOver, setDragOver] = useState<IssueStatus | null>(null)
+
+  const byStatus = useMemo(() => {
+    const map: Partial<Record<IssueStatus, Issue[]>> = {}
+    for (const s of STATUSES) map[s] = []
+    for (const i of issues) {
+      const k = i.status as IssueStatus
+      if (map[k]) map[k]!.push(i)
+    }
+    return map
+  }, [issues])
+
+  async function moveIssue(issueId: string, toStatus: IssueStatus) {
+    await db.issues.update(issueId, { status: toStatus, updatedAt: Date.now() })
+  }
+
+  return (
+    <div className="board" data-testid="board">
+      {STATUSES.map((s) => (
+        <div
+          key={s}
+          className={`board-col${dragOver === s ? ' drag-over' : ''}`}
+          data-status={s}
+          onDragOver={(e) => {
+            e.preventDefault()
+            setDragOver(s)
+          }}
+          onDragLeave={() => setDragOver(null)}
+          onDrop={(e) => {
+            e.preventDefault()
+            setDragOver(null)
+            const id = e.dataTransfer.getData('text/plain')
+            if (id) moveIssue(id, s)
+          }}
+        >
+          <p className="board-col-title" style={{ color: STATUS_COLOR[s] }}>
+            {s} <span className="board-col-count">{byStatus[s]?.length ?? 0}</span>
+          </p>
+          <div className="board-col-body">
+            {(byStatus[s] ?? []).map((issue) => (
+              <div
+                key={issue.id}
+                className="board-card"
+                draggable
+                onDragStart={(e) => e.dataTransfer.setData('text/plain', issue.id)}
+              >
+                <span className="board-card-key">{issue.key}</span>
+                <p className="board-card-title">{issue.title}</p>
+                <span className={`issue-priority pri-${issue.priority}`}>{issue.priority}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   )
 }
