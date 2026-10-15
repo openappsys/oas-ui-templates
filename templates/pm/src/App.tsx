@@ -19,7 +19,7 @@ const STATUS_COLOR: Record<IssueStatus, string> = {
   cancelled: '#dc2626',
 }
 
-type View = 'issues' | 'board'
+type View = 'issues' | 'board' | 'timeline'
 
 export function App() {
   const [view, setView] = useState<View>('issues')
@@ -68,6 +68,14 @@ export function App() {
           >
             <oas-icon name="layout" size="20" />
           </button>
+          <button
+            className={`act-btn${view === 'timeline' ? ' is-active' : ''}`}
+            type="button"
+            title="时间线"
+            onClick={() => setView('timeline')}
+          >
+            <oas-icon name="clock" size="20" />
+          </button>
         </aside>
         <aside className="side-panel">
           <p className="side-title">状态</p>
@@ -93,6 +101,7 @@ export function App() {
         <main className="content">
           {view === 'issues' && issues && <IssueList issues={issues} />}
           {view === 'board' && <KanbanBoard issues={issues ?? []} />}
+          {view === 'timeline' && <TimelineView issues={issues ?? []} />}
         </main>
       </div>
       <footer className="statusbar">
@@ -266,6 +275,40 @@ function KanbanBoard({ issues }: { issues: Issue[] }) {
           </div>
         </div>
       ))}
+    </div>
+  )
+}
+
+/* ── 时间线（oas-gantt） ── */
+function TimelineView({ issues }: { issues: Issue[] }) {
+  const tasks = useMemo(() => {
+    return issues
+      .filter((i) => i.dueAt !== null)
+      .slice(0, 50)
+      .map((i) => {
+        const start = new Date(i.createdAt).toISOString().slice(0, 10)
+        const end = new Date(i.dueAt ?? i.createdAt + 86400000 * 3).toISOString().slice(0, 10)
+        return {
+          name: `${i.key} ${i.title}`,
+          start,
+          end,
+          type: 'task' as const,
+        }
+      })
+  }, [issues])
+
+  if (tasks.length === 0) {
+    return <div className="timeline-empty">暂无带截止日期的 Issue</div>
+  }
+
+  return (
+    <div className="timeline-page">
+      <oas-gantt
+        data-testid="gantt"
+        scale="day"
+        tasks={JSON.stringify(tasks)}
+        style={{ width: '100%', height: '500px' }}
+      />
     </div>
   )
 }

@@ -17,6 +17,7 @@ import '@oas-ui/ui/form/slider'
 import '@oas-ui/ui/feedback/empty'
 import '@oas-ui/ui/feedback/modal'
 import '@oas-ui/ui/navigation/tabs'
+import '@oas-ui/ui/layout/gantt'
 import './styles/app.css'
 
 import { App } from './App'
