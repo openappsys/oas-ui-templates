@@ -233,3 +233,101 @@ body {
 .sb-spacer {
   flex: 1;
 }
+
+/* ── Issue 详情面板 ── */
+.issue-thead {
+  display: grid;
+  grid-template-columns: 90px 1fr 80px 100px;
+  gap: 12px;
+  padding: 6px 8px;
+  font-size: 11px;
+  color: var(--oas-color-text-secondary, #6b7280);
+  border-bottom: 1px solid var(--oas-color-border, #e2e8f0);
+}
+
+.issue-status {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--oas-color-bg-hover, #f1f5f9);
+}
+
+.st-done {
+  color: #059669;
+}
+.st-in_progress {
+  color: #d97706;
+}
+.st-todo {
+  color: #0b6cff;
+}
+
+.pri-urgent {
+  color: #dc2626;
+  font-weight: 600;
+}
+.pri-high {
+  color: #ea580c;
+}
+
+.detail-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.detail-panel {
+  width: 420px;
+  background: var(--oas-color-surface, #fff);
+  border-left: 1px solid var(--oas-color-border, #e2e8f0);
+  padding: 20px;
+  overflow-y: auto;
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.1);
+}
+
+.detail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.detail-close {
+  appearance: none;
+  border: none;
+  background: none;
+  font-size: 14px;
+  cursor: pointer;
+  color: var(--oas-color-text-secondary, #6b7280);
+  padding: 4px;
+}
+
+.detail-title {
+  margin: 0 0 16px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.detail-meta > div {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--oas-color-border, #e2e8f0);
+  font-size: 13px;
+}
+
+.detail-meta span:first-child {
+  color: var(--oas-color-text-secondary, #6b7280);
+}
+
+.detail-desc {
+  margin-top: 14px;
+  padding: 12px;
+  background: var(--oas-color-bg, #f8fafc);
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.6;
+}
