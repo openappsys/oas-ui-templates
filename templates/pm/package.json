@@ -1,0 +1,34 @@
+{
+  "name": "pm",
+  "private": true,
+  "license": "MIT OR Apache-2.0",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "echo pm: no-unit-tests-yet",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@oas-ui/icons": "^2.6.1",
+    "@oas-ui/theme": "^2.6.1",
+    "@oas-ui/ui": "^2.6.1",
+    "dexie": "^4.4.6",
+    "dexie-react-hooks": "^4.4.0",
+    "nanoid": "^6.0.2",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "zustand": "^5.0.15"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^24.19.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4"
+  }
+}
