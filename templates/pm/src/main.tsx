@@ -18,6 +18,7 @@ import '@oas-ui/ui/feedback/empty'
 import '@oas-ui/ui/feedback/modal'
 import '@oas-ui/ui/navigation/tabs'
 import '@oas-ui/ui/data/gantt'
+import '@oas-ui/ui/data/kanban'
 import './styles/app.css'
 
 import { App } from './App'

@@ -286,74 +286,6 @@ body {
 }
 
 /* ── 看板 ── */
-.board {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  gap: 10px;
-  padding: 14px 16px;
-  overflow-x: auto;
-}
-
-.board-col {
-  width: 260px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  background: var(--oas-color-bg, #f8fafc);
-  border: 1px solid var(--oas-color-border, #e2e8f0);
-  border-radius: 10px;
-  overflow-y: auto;
-}
-
-.board-col.drag-over {
-  border-color: var(--oas-color-primary, #0b6cff);
-  background: color-mix(
-    in srgb,
-    var(--oas-color-primary, #0b6cff) 5%,
-    var(--oas-color-bg, #f8fafc)
-  );
-}
-
-.board-col-title {
-  margin: 0;
-  padding: 10px 12px 6px;
-  font-size: 12px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.board-col-count {
-  font-size: 11px;
-  color: var(--oas-color-text-secondary, #6b7280);
-}
-
-.board-col-body {
-  flex: 1;
-  padding: 0 8px 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-height: 60px;
-}
-
-.board-card {
-  background: var(--oas-color-surface, #fff);
-  border: 1px solid var(--oas-color-border, #e2e8f0);
-  border-radius: 8px;
-  padding: 8px 10px;
-  cursor: grab;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.board-card:active {
-  cursor: grabbing;
-}
-
 .board-card-key {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 11px;
@@ -473,13 +405,6 @@ body {
   padding: 40px;
   text-align: center;
   color: var(--oas-color-text-secondary, #6b7280);
-}
-
-.board-col-more {
-  padding: 8px 10px;
-  font-size: 11px;
-  color: var(--oas-color-text-tertiary, #9aa3b8);
-  text-align: center;
 }
 
 /* ── 关于弹窗 ── */
@@ -1047,4 +972,41 @@ body {
   font: inherit;
   font-size: 13px;
   cursor: pointer;
+}
+
+/* ── 看板容器（oas-kanban） ── */
+.board {
+  flex: 1;
+  min-height: 0;
+  padding: 12px 14px;
+}
+
+.board oas-kanban {
+  display: block;
+  height: 100%;
+}
+
+.kb-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.kb-card .board-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.kb-card .board-card-title {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }

@@ -1091,158 +1091,117 @@ function IssueDetailDrawer({
   )
 }
 
-/* ── 看板（列内 order 升序；拖拽预览重排） ── */
+/* ── 看板（oas-kanban：拖拽/多选/键盘/触屏全部组件库内建） ── */
+interface KanbanElement extends HTMLElement {
+  columns?: unknown
+  cards?: Array<Record<string, unknown>>
+  renderCard?: ((card: Record<string, unknown>) => Node | string) | null
+}
+
 function KanbanBoard({ issues, memberMap }: { issues: Issue[]; memberMap: Map<string, Member> }) {
-  const [dragOver, setDragOver] = useState<IssueStatus | null>(null)
-  const [dropTarget, setDropTarget] = useState<{ col: IssueStatus; index: number } | null>(null)
-  const [draggingId, setDraggingId] = useState<string | null>(null)
-  // drop 路径由 handleDrop 完成后清预览；dragEnd 仅负责取消/无效释放
-  const droppedRef = useRef(false)
+  const boardRef = useRef<KanbanElement>(null)
 
-  const byStatus = useMemo(() => {
-    const map: Partial<Record<IssueStatus, Issue[]>> = {}
-    for (const s of STATUSES) map[s] = []
-    for (const i of issues) {
-      const k = i.status as IssueStatus
-      if (map[k]) map[k].push(i)
+  const columns = useMemo(
+    () => STATUSES.map((s) => ({ key: s, title: STATUS_LABEL[s] })),
+    [],
+  )
+
+  // 列内显示顺序 = cards 数组序：按 order 升序铺入
+  const cards = useMemo(
+    () =>
+      [...issues]
+        .sort((a, b) => a.order - b.order)
+        .map((i) => ({
+          id: i.id,
+          column: i.status,
+          title: i.title,
+          order: i.order,
+          key: i.key,
+          priority: i.priority,
+          assigneeId: i.assigneeId ?? '',
+        })),
+    [issues],
+  )
+
+  // renderCard/数据走 property 通道；拖放后组件内存持有，宿主经 oas-change 落库
+  useEffect(() => {
+    const el = boardRef.current
+    if (!el) return
+    el.columns = columns
+    el.cards = cards
+    el.renderCard = (card) => {
+      const wrap = document.createElement('div')
+      wrap.className = 'kb-card'
+      const top = document.createElement('div')
+      top.className = 'board-card-top'
+      const k = document.createElement('span')
+      k.className = 'board-card-key'
+      k.textContent = String(card.key ?? '')
+      top.appendChild(k)
+      const m = memberMap.get(String(card.assigneeId ?? ''))
+      const av = document.createElement('span')
+      if (m) {
+        av.className = 'avatar'
+        av.style.background = m.avatarColor
+        av.textContent = m.name[0]
+      } else {
+        av.className = 'avatar avatar-empty'
+        av.textContent = '?'
+      }
+      top.appendChild(av)
+      const t = document.createElement('p')
+      t.className = 'board-card-title'
+      t.textContent = String(card.title ?? '')
+      const pr = document.createElement('span')
+      pr.className = `issue-priority pri-${String(card.priority ?? '')}`
+      pr.textContent = String(card.priority ?? '')
+      wrap.append(top, t, pr)
+      return wrap
     }
-    for (const s of STATUSES) map[s]!.sort((a, b) => a.order - b.order)
-    return map
-  }, [issues])
+  }, [columns, cards, memberMap])
 
-  async function moveIssue(issueId: string, toStatus: IssueStatus, order: number) {
-    await db.issues.update(issueId, { status: toStatus, order, updatedAt: Date.now() })
-  }
-
-  /** dragover 落点计算（排除被拖卡自身）；lastIndex 附近加 10px 迟滞带防边界来回跳 */
-  function calcDropIndex(body: HTMLElement, clientY: number, lastIndex: number): number {
-    const cards = Array.from(body.querySelectorAll<HTMLElement>('.board-card:not(.is-dragging)'))
-    for (let i = 0; i < cards.length; i++) {
-      const r = cards[i].getBoundingClientRect()
-      const mid = r.top + r.height / 2
-      const bias = lastIndex >= 0 && (i === lastIndex || i === lastIndex - 1) ? 10 : 0
-      if (clientY < mid - bias) return i
+  // oas-change（from/to/index/ids）→ 落点前后卡 order 取中值落库（status 变更/列内排序统一）
+  useEffect(() => {
+    const el = boardRef.current
+    if (!el) return
+    const onChange = (e: Event) => {
+      const d = (e as CustomEvent<{
+        id: string
+        from: string
+        to: string
+        index: number
+        ids?: string[]
+      }>).detail
+      if (!d?.id || !d.to) return
+      const to = d.to as IssueStatus
+      const ids = d.ids ?? [d.id]
+      const colCards = (el.cards ?? []).filter((c) => c.column === to)
+      const moving = colCards.filter((c) => ids.includes(String(c.id)))
+      const rest = colCards.filter((c) => !ids.includes(String(c.id)))
+      const finalArr = [...rest]
+      finalArr.splice(Math.min(d.index, finalArr.length), 0, ...moving)
+      void db.transaction('rw', db.issues, async () => {
+        const now = Date.now()
+        for (const iid of ids) {
+          const pos = finalArr.findIndex((c) => String(c.id) === iid)
+          const prevOrder = pos > 0 ? (finalArr[pos - 1].order as number) : undefined
+          const nextOrder =
+            pos < finalArr.length - 1 ? (finalArr[pos + 1].order as number) : undefined
+          await db.issues.update(iid, {
+            status: to,
+            order: betweenOrder(prevOrder, nextOrder),
+            updatedAt: now,
+          })
+        }
+      })
     }
-    return cards.length
-  }
-
-  async function handleDrop(s: IssueStatus, body: HTMLElement | null, e: React.DragEvent) {
-    const id = e.dataTransfer.getData('text/plain')
-    if (!id || !body) return
-    const col = byStatus[s] ?? []
-    const index = calcDropIndex(body, e.clientY, dropTarget?.col === s ? dropTarget.index : -1)
-    const rest = col.filter((c) => c.id !== id)
-    const prevOrder = index > 0 ? rest[index - 1]?.order : undefined
-    const nextOrder = rest[index]?.order
-    const order =
-      prevOrder != null && nextOrder != null && prevOrder === nextOrder
-        ? prevOrder + 1
-        : betweenOrder(prevOrder, nextOrder)
-    // 等写库完成再清预览：liveQuery 已推送新序，避免「闪回原位再跳新位」
-    await moveIssue(id, s, order)
-  }
-
-  function previewCol(s: IssueStatus, col: Issue[]): Issue[] {
-    if (!draggingId) return col
-    const dragging = issues.find((i) => i.id === draggingId)
-    const rest = col.filter((c) => c.id !== draggingId)
-    if (dropTarget?.col !== s) return rest
-    if (!dragging) return col
-    const arr = [...rest]
-    arr.splice(Math.min(dropTarget.index, arr.length), 0, dragging)
-    return arr
-  }
-
-  function clearDrag() {
-    setDragOver(null)
-    setDropTarget(null)
-    setDraggingId(null)
-  }
+    el.addEventListener('oas-change', onChange)
+    return () => el.removeEventListener('oas-change', onChange)
+  }, [])
 
   return (
-    <div className="board" data-testid="board">
-      {STATUSES.map((s) => {
-        const col = previewCol(s, byStatus[s] ?? [])
-        const shown = col.slice(0, BOARD_COL_WINDOW)
-        // 源列在拖动中隐藏了拖卡：hidden = 总数 - 1(拖卡) - 显示数
-        const hidden =
-          dropTarget?.col === s
-            ? 0
-            : Math.max(0, (byStatus[s]?.length ?? 0) - (draggingId ? 1 : 0) - shown.length)
-        return (
-          <div
-            key={s}
-            className={`board-col${dragOver === s ? ' drag-over' : ''}`}
-            data-status={s}
-            onDragOver={(e) => {
-              e.preventDefault()
-              const body = (e.currentTarget as HTMLElement).querySelector<HTMLElement>(
-                '.board-col-body',
-              )
-              if (!body) return
-              const lastIndex = dropTarget?.col === s ? dropTarget.index : -1
-              const index = calcDropIndex(body, e.clientY, lastIndex)
-              setDragOver((prev) => (prev === s ? prev : s))
-              setDropTarget((prev) =>
-                prev?.col === s && prev.index === index ? prev : { col: s, index },
-              )
-            }}
-            onDragLeave={(e) => {
-              if (!(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) {
-                setDragOver(null)
-                setDropTarget(null)
-              }
-            }}
-            onDrop={(e) => {
-              e.preventDefault()
-              droppedRef.current = true
-              const body = (e.currentTarget as HTMLElement).querySelector<HTMLElement>(
-                '.board-col-body',
-              )
-              void handleDrop(s, body, e).then(() => {
-                // 写库完成（liveQuery 即将/已推送新序）后再清预览，位置无缝衔接
-                clearDrag()
-              })
-            }}
-          >
-            <p className="board-col-title" style={{ color: STATUS_COLOR[s] }}>
-              {STATUS_LABEL[s]}{' '}
-              <span className="board-col-count" data-testid={`col-count-${s}`}>
-                {col.length}
-              </span>
-            </p>
-            <div className="board-col-body" data-testid={`col-body-${s}`}>
-              {shown.map((issue) => (
-                <div
-                  key={issue.id}
-                  className={`board-card${draggingId === issue.id ? ' is-dragging' : ''}`}
-                  draggable
-                  data-card-key={issue.key}
-                  onDragStart={(e) => {
-                    e.dataTransfer.setData('text/plain', issue.id)
-                    droppedRef.current = false
-                    setDraggingId(issue.id)
-                  }}
-                  onDragEnd={() => {
-                    // 取消/无效释放路径；drop 路径由 handleDrop 完成后清理
-                    if (!droppedRef.current) clearDrag()
-                  }}
-                >
-                  <div className="board-card-top">
-                    <span className="board-card-key">{issue.key}</span>
-                    <Avatar member={memberMap.get(issue.assigneeId ?? '')} size={16} />
-                  </div>
-                  <p className="board-card-title">{issue.title}</p>
-                  <span className={`issue-priority pri-${issue.priority}`}>{issue.priority}</span>
-                </div>
-              ))}
-              {hidden > 0 && (
-                <p className="board-col-more">还有 {hidden.toLocaleString()} 条未显示</p>
-              )}
-            </div>
-          </div>
-        )
-      })}
+    <div className="board">
+      <oas-kanban ref={boardRef} data-testid="board" />
     </div>
   )
 }
