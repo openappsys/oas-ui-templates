@@ -246,6 +246,7 @@ export function render(el: HTMLElement): () => void {
     })
     prev.style.display = state.step === 0 ? 'none' : ''
     next.style.display = state.step === 2 ? 'none' : ''
+    submit.hidden = state.step !== 2
     submit.style.display = state.step === 2 ? '' : 'none'
     footSummary.hidden = state.step !== 2
     stepsEl.setAttribute('current', String(state.step))
