@@ -486,13 +486,12 @@ export function App() {
             </div>
             <div className="create-field">
               <label htmlFor="create-priority">优先级</label>
-              <select data-testid="create-priority" defaultValue="medium">
-                {ISSUE_PRIORITIES.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
+              <OSelect
+                testid="create-priority"
+                value={createPriority}
+                options={ISSUE_PRIORITIES.map((p) => ({ label: p, value: p }))}
+                onChange={(v) => setCreatePriority(v as IssuePriority)}
+              />
             </div>
             <div className="create-field">
               <label htmlFor="create-assignee">负责人</label>
