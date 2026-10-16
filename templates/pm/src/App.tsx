@@ -443,7 +443,7 @@ export function App() {
           type="button"
           data-testid="tb-user"
           title="切换身份"
-          onClick={() => setUserPickerOpen(true)}
+          onClick={() => userPickRef.current?.setAttribute('visible', '')}
         >
           <Avatar member={memberMap.get(currentUser)} size={22} />
           <span>{memberMap.get(currentUser)?.name ?? ''}</span>
@@ -1085,6 +1085,67 @@ const STATUS_TEXT: Record<IssueStatus, string> = {
   cancelled: '#dc2626',
 }
 
+/** 行样式注入所在 shadow root（每次渲染幂等）：light CSS 不穿透，inline grid 在该容器不稳 */
+function ensureRowStyles(root: ShadowRoot | null): void {
+  if (!root || root.querySelector('style[data-issue-row]')) return
+  const st = document.createElement('style')
+  st.setAttribute('data-issue-row', '')
+  st.textContent = `
+    .issue-row {
+      display: grid;
+      grid-template-columns: 22px 96px minmax(0, 1fr) 22px 64px 84px;
+      align-items: center;
+      gap: 10px;
+      height: 44px;
+      padding: 0 16px;
+      border-bottom: 1px solid #eef2f7;
+      cursor: pointer;
+      font-size: 12px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .issue-row:hover {
+      background: #f8fafc;
+    }
+    .issue-row .issue-key {
+      color: #0b6cff;
+      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .issue-row .issue-title {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .issue-row .avatar {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: #fff;
+    }
+    .issue-row .row-check {
+      width: 14px;
+      height: 14px;
+      accent-color: #0b6cff;
+      cursor: pointer;
+    }
+    .issue-row .issue-priority,
+    .issue-row .issue-status {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  `
+  root.appendChild(st)
+}
+
 function renderIssueRow(
   element: HTMLElement,
   issue: Issue,
@@ -1095,59 +1156,31 @@ function renderIssueRow(
 ) {
   element.textContent = ''
   element.style.display = 'block'
+  element.style.width = '100%'
+  ensureRowStyles(element.getRootNode() as ShadowRoot)
   const row = document.createElement('div')
   row.className = 'issue-row'
   row.setAttribute('role', 'button')
   row.setAttribute('tabindex', '0')
-  Object.assign(row.style, {
-    display: 'grid',
-    gridTemplateColumns: '18px 110px 1fr 24px 70px 90px',
-    alignItems: 'center',
-    gap: '12px',
-    height: '44px',
-    padding: '0 16px',
-    borderBottom: '1px solid var(--oas-color-border, #eef2f7)',
-    cursor: 'pointer',
-    font: 'inherit',
-    fontSize: '13px',
-    width: '100%',
-    boxSizing: 'border-box',
-  } as CSSStyleDeclaration)
   const add = (
     cls: string,
     text: string,
-    opts: { color?: string; weight?: string; mono?: boolean; ellipsis?: boolean } = {},
+    opts: { color?: string; weight?: string; mono?: boolean } = {},
   ) => {
     const s = document.createElement('span')
     s.className = cls
     s.textContent = text
-    s.style.color = opts.color ?? 'inherit'
-    if (opts.weight) s.style.fontWeight = opts.weight
+    if (opts.color) s.style.color = opts.color
     if (opts.mono) s.style.fontFamily = 'ui-monospace, SFMono-Regular, Consolas, monospace'
-    if (opts.ellipsis) {
-      s.style.overflow = 'hidden'
-      s.style.textOverflow = 'ellipsis'
-      s.style.whiteSpace = 'nowrap'
-    }
     row.appendChild(s)
     return s
   }
-  add('issue-key', issue.key, { color: '#0b6cff', mono: true })
-  add('issue-title', issue.title, { ellipsis: true })
+  add('issue-key', issue.key)
+  add('issue-title', issue.title)
   const m = memberMap.get(issue.assigneeId ?? '')
   const av = document.createElement('span')
-  Object.assign(av.style, {
-    width: '20px',
-    height: '20px',
-    borderRadius: '50%',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '11px',
-    fontWeight: '600',
-    color: '#fff',
-    background: m?.avatarColor ?? '#cbd5e1',
-  } as CSSStyleDeclaration)
+  av.className = 'avatar'
+  av.style.background = m?.avatarColor ?? '#cbd5e1'
   av.textContent = m ? m.name[0] : '?'
   if (m) av.title = m.name
   row.appendChild(av)
@@ -1161,6 +1194,16 @@ function renderIssueRow(
   row.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') onSelect(issue.id)
   })
+  // 行首多选框：点击不触发行打开
+  const check = document.createElement('input')
+  check.type = 'checkbox'
+  check.className = 'row-check'
+  check.checked = selectedIds.has(issue.id)
+  check.addEventListener('click', (e) => {
+    e.stopPropagation()
+    toggleSelect(issue.id)
+  })
+  row.insertBefore(check, row.firstChild)
   element.appendChild(row)
 }
 
