@@ -267,3 +267,88 @@ test('M6 看板拖拽：预览重排（拖动卡落点半透明显示）', async
   })
   await expect(page.locator('.board-card.is-dragging')).toHaveCount(0, { timeout: 10_000 })
 })
+
+test('M7 项目切换：project-2 的 key 前缀为 APP-', async ({ page }) => {
+  await waitForSeed(page)
+  await page.getByTestId('project-project-2').click()
+  await expect(page.locator('.issue-row').first()).toContainText('APP-', { timeout: 10_000 })
+  const keys = await page.locator('.issue-row .issue-key').allTextContents()
+  expect(keys.length).toBeGreaterThan(0)
+  for (const k of keys) expect(k.startsWith('APP-')).toBe(true)
+  // 状态计数随项目变化（project-2 ≈30%，远小于全量）；文案含「窗口」后缀取首段数字
+  await expect
+    .poll(async () => {
+      const t = await page.getByTestId('issue-total').textContent()
+      return Number((t?.match(/^[\d,]+/)?.[0] ?? '0').replace(/,/g, ''))
+    })
+    .toBeLessThan(40000)
+})
+
+test('M8 搜索：标题命中过滤 + 清除筛选', async ({ page }) => {
+  await waitForSeed(page)
+  await page.getByTestId('toolbar-search').fill('修复登录页面白屏')
+  await expect(page.locator('.issue-row').first()).toContainText('修复登录页面白屏', {
+    timeout: 10_000,
+  })
+  const titles = await page.locator('.issue-row .issue-title').allTextContents()
+  expect(titles.length).toBeGreaterThan(0)
+  for (const t of titles) expect(t).toContain('修复登录页面白屏')
+  await page.getByTestId('filter-clear').click()
+  await expect(page.getByTestId('toolbar-search')).toHaveValue('')
+})
+
+test('M9 详情抽屉：优先级即时保存 + 描述保存 + 删除两连确认', async ({ page }) => {
+  await waitForSeed(page)
+  await page.locator('.issue-row').first().click()
+  const drawer = page.locator('.detail-panel')
+  await expect(drawer).toBeVisible()
+  const key = await drawer.locator('.issue-key').textContent()
+  await drawer.locator('[data-testid=detail-priority]').selectOption('urgent')
+  // liveQuery 推送：select 值即时生效 + 列表行徽章变 urgent
+  await expect(drawer.locator('[data-testid=detail-priority]')).toHaveValue('urgent', {
+    timeout: 10_000,
+  })
+  await expect(page.locator('.issue-row .pri-urgent').first()).toBeVisible({ timeout: 10_000 })
+  // 描述保存
+  await drawer.locator('[data-testid=detail-desc]').fill('E2E 描述内容')
+  await drawer.locator('[data-testid=detail-desc-save]').click()
+  await expect(drawer.locator('[data-testid=detail-desc]')).toHaveValue('E2E 描述内容')
+  // 删除两连确认
+  await drawer.locator('[data-testid=detail-delete]').click()
+  await expect(drawer.locator('[data-testid=detail-delete]')).toHaveText('再点一次确认删除')
+  await drawer.locator('[data-testid=detail-delete]').click()
+  await expect(page.locator('.detail-panel')).toHaveCount(0, { timeout: 10_000 })
+  // 列表中该 key 消失
+  await page.waitForTimeout(1500)
+  const left = await page.locator('.issue-row .issue-key').allTextContents()
+  expect(left).not.toContain(key)
+})
+
+test('M10 仪表盘：统计卡 + 图表数据', async ({ page }) => {
+  await waitForSeed(page)
+  await page.getByTestId('nav-dashboard').click()
+  await expect(page.getByTestId('dashboard')).toBeVisible()
+  // 统计卡数字就位（seed 大事务批间让出后 liveQuery 逐步逼近，最终一致）
+  await expect
+    .poll(
+      async () => {
+        const t = await page.getByTestId('stat-total').textContent()
+        return Number(t?.match(/[\d,]+/)?.[0]?.replace(/,/g, '') ?? 0)
+      },
+      { timeout: 30_000 },
+    )
+    .toBeGreaterThan(60000)
+  await expect(page.getByTestId('stat-in_progress')).toBeVisible()
+  // 图表 data attribute 非空且含数值
+  await expect
+    .poll(
+      async () =>
+        page.evaluate(() => {
+          const el = document.querySelector('[data-testid=chart-status]')
+          const d = el?.getAttribute('data') ?? ''
+          return /"value":\d/.test(d) ? 1 : 0
+        }),
+      { timeout: 10_000 },
+    )
+    .toBe(1)
+})

@@ -37,6 +37,9 @@ declare module 'react' {
         placeholder?: string
         disabled?: boolean | string
       }
+      'oas-chart': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        type?: string
+      }
     }
   }
 }

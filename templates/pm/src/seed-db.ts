@@ -127,6 +127,8 @@ export async function seedDatabase(): Promise<void> {
       })
     }
     await db.issues.bulkPut(batch)
+    // 批间让出事件循环：连续大事务会让 liveQuery 读事务长时间饥饿（仪表盘统计白屏）
+    await new Promise((r) => setTimeout(r, 0))
   }
   console.timeEnd('seed:100k')
   localStorage.setItem(SEED_VER, '1')
