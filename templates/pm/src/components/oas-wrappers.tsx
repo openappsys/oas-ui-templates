@@ -40,7 +40,9 @@ export function OSelect({
   return <oas-select ref={ref} data-testid={testid} aria-label={ariaLabel} />
 }
 
-/** oas-segmented 包装 */
+/** oas-segmented 包装。
+ *  注意：segmented 的渲染签名只看 options attribute（property setter 仅存内存不触发重建），
+ *  必须走 attribute JSON 通道。 */
 export function OSegmented({
   testid,
   value,
@@ -53,13 +55,14 @@ export function OSegmented({
   onChange: (v: string) => void
 }) {
   const ref = useRef<HTMLElement>(null)
+  const optionsJson = JSON.stringify(options)
   const onChangeRef = useRef(onChange)
   onChangeRef.current = onChange
   useEffect(() => {
     const el = ref.current
     if (!el) return
-    ;(el as unknown as { options: unknown }).options = options
-  }, [options])
+    el.setAttribute('options', optionsJson)
+  }, [optionsJson])
   useEffect(() => {
     const el = ref.current
     if (!el) return
@@ -75,7 +78,7 @@ export function OSegmented({
     el.addEventListener('oas-change', h)
     return () => el.removeEventListener('oas-change', h)
   }, [])
-  return <oas-segmented ref={ref} data-testid={testid} />
+  return <oas-segmented ref={ref} block data-testid={testid} />
 }
 
 /** oas-tag closable 包装：oas-close 事件 → onRemove */
