@@ -4,7 +4,7 @@ import { expect, test, type Page } from '@playwright/test'
 async function setView(page: Page, v: string) {
   await page.evaluate((view) => {
     const el = document.querySelector('[data-testid=view-seg]')
-    ;(el as { value: string }).value = view
+    ;(el as unknown as { value: string }).value = view
     el?.dispatchEvent(new CustomEvent('oas-change', { bubbles: true, detail: { value: view } }))
   }, v)
 }
@@ -14,7 +14,7 @@ async function setOSelect(page: Page, testid: string, v: string) {
   await page.evaluate(
     ([tid, val]) => {
       const el = document.querySelector('[data-testid="' + tid + '"]')
-      ;(el as { value: string }).value = val as string
+      ;(el as unknown as { value: string }).value = val as string
       el?.dispatchEvent(new CustomEvent('oas-change', { bubbles: true, detail: { value: val } }))
     },
     [testid, v],
@@ -64,13 +64,13 @@ test('M1 架构：100K seed + 虚拟列表渲染 + 真实计数', async ({ page 
 test('M2 状态筛选：compound index 直取 + 计数联动', async ({ page }) => {
   await waitForSeed(page)
   await page.getByTestId('filter-in_progress').click()
-  // 窗口行全部是 in_progress
-  await expect(page.locator('.issue-row .issue-status').first()).toHaveText('in_progress', {
+  // 窗口行全部是 In Progress（行内显示状态标签）
+  await expect(page.locator('.issue-row .issue-status').first()).toHaveText('In Progress', {
     timeout: 10_000,
   })
   const statuses = await page.locator('.issue-row .issue-status').allTextContents()
   expect(statuses.length).toBeGreaterThan(0)
-  for (const s of statuses) expect(s).toBe('in_progress')
+  for (const s of statuses) expect(s).toBe('In Progress')
   // 筛选计数 < 全量计数
   const filtered = await page.getByTestId('issue-total').textContent()
   expect(filtered).not.toBeNull()
@@ -336,11 +336,14 @@ test('M9 详情抽屉：优先级即时保存 + 描述保存 + 删除两连确�
   await expect(page.locator('.issue-row .pri-urgent').first()).toBeVisible({ timeout: 10_000 })
   // 描述保存
   await page.evaluate(() => {
-    const el = document.querySelector('[data-testid=detail-desc]') as { value: string }
+    const el = document.querySelector('[data-testid=detail-desc]') as unknown as {
+      value: string
+      dispatchEvent: (e: Event) => void
+    }
     el.value = 'E2E 描述内容'
     el.dispatchEvent(new CustomEvent('oas-input', { bubbles: true }))
   })
-  await drawer.locator('[data-testid=detail-desc-save]').click()
+  await page.getByTestId('detail-desc-save').click()
   await expect
     .poll(
       async () =>

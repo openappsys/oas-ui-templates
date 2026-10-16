@@ -192,6 +192,13 @@ export function App() {
   const projects = useProjects()
   const memberCounts = useWindowAssigneeCounts(issues)
   const memberMap = useMemo(() => new Map((members ?? []).map((m) => [m.id, m])), [members])
+  const memberOptions = useMemo(
+    () => [
+      { label: '未分配', value: '__none__' },
+      ...[...(members ?? [])].map((m) => ({ label: m.name, value: m.id })),
+    ],
+    [members],
+  )
 
   const setF = useCallback(<K extends keyof Filters>(k: K, v: Filters[K]) => {
     setFilters((prev) => ({ ...prev, [k]: v }))
@@ -222,6 +229,9 @@ export function App() {
     URL.revokeObjectURL(url)
   }, [issues, memberMap])
 
+  const [createStatus, setCreateStatus] = useState<IssueStatus>('todo')
+  const [createPriority, setCreatePriority] = useState<IssuePriority>('medium')
+  const [createAssignee, setCreateAssignee] = useState('__none__')
   const createIssue = useCallback(async () => {
     const modal = createRef.current
     if (!modal) return
@@ -233,12 +243,9 @@ export function App() {
       return
     }
     if (errEl) errEl.hidden = true
-    const status = (modal.querySelector('[data-testid="create-status"]') as HTMLSelectElement)
-      .value as IssueStatus
-    const priority = (modal.querySelector('[data-testid="create-priority"]') as HTMLSelectElement)
-      .value as IssuePriority
-    const assigneeId = (modal.querySelector('[data-testid="create-assignee"]') as HTMLSelectElement)
-      .value
+    const status = createStatus
+    const priority = createPriority
+    const assigneeId = createAssignee === '__none__' ? '' : createAssignee
     const projectId = filters.projectId
     // key 严格递增：事务内读改写项目计数器
     const keyNum = await db.transaction('rw', db.projects, async () => {
@@ -470,13 +477,12 @@ export function App() {
           <div className="create-row">
             <div className="create-field">
               <label htmlFor="create-status">状态</label>
-              <select data-testid="create-status" defaultValue="todo">
-                {STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {STATUS_LABEL[s]}
-                  </option>
-                ))}
-              </select>
+              <OSelect
+                testid="create-status"
+                value={createStatus}
+                options={STATUSES.map((s) => ({ label: STATUS_LABEL[s], value: s }))}
+                onChange={(v) => setCreateStatus(v as IssueStatus)}
+              />
             </div>
             <div className="create-field">
               <label htmlFor="create-priority">优先级</label>
@@ -490,14 +496,13 @@ export function App() {
             </div>
             <div className="create-field">
               <label htmlFor="create-assignee">负责人</label>
-              <select data-testid="create-assignee" defaultValue="">
-                <option value="">未分配</option>
-                {(members ?? []).map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name}
-                  </option>
-                ))}
-              </select>
+              <OSelect
+                testid="create-assignee"
+                value={createAssignee}
+                options={memberOptions}
+                onChange={setCreateAssignee}
+              />
+              {/* 状态/优先级同样受控 */}
             </div>
           </div>
           <div className="quit-actions">
@@ -573,7 +578,7 @@ function DashboardView({
     const members = await db.members.toArray()
     const rows = await Promise.all(
       members.map(async (m) => ({
-        name: m.name,
+        label: m.name,
         value: await db.issues.where('[projectId+assigneeId]').equals([projectId, m.id]).count(),
       })),
     )
@@ -712,13 +717,16 @@ function IssueListView({
         <span className="issue-toolbar-label">优先级</span>
         <OSelect
           testid="filter-priority"
-          value={filters.priorityFilter ?? ''}
+          value={filters.priorityFilter ?? 'all'}
           options={[
-            { label: '全部', value: '' },
+            { label: '全部', value: 'all' },
             ...ISSUE_PRIORITIES.map((p) => ({ label: p, value: p })),
           ]}
           onChange={(v) =>
-            setFilters((prev) => ({ ...prev, priorityFilter: (v || null) as IssuePriority | null }))
+            setFilters((prev) => ({
+              ...prev,
+              priorityFilter: (v === 'all' ? null : v) as IssuePriority | null,
+            }))
           }
         />
         {(filters.search || filters.assigneeFilter || filters.priorityFilter || filters.myOnly) && (
@@ -771,7 +779,22 @@ function IssueListView({
   )
 }
 
-/** 列表行 → oas-virtual-list 的 oas-item 渲染通道 */
+/** 列表行 → oas-virtual-list 的 oas-item 渲染通道。
+ *  行在组件 shadow 内，light DOM 样式表不生效——布局/配色全部 inline。 */
+const PRIORITY_TEXT: Record<IssuePriority, string> = {
+  urgent: '#dc2626',
+  high: '#d97706',
+  medium: '#0b6cff',
+  low: '#64748b',
+}
+const STATUS_TEXT: Record<IssueStatus, string> = {
+  backlog: '#9aa3b8',
+  todo: '#0b6cff',
+  in_progress: '#d97706',
+  done: '#059669',
+  cancelled: '#dc2626',
+}
+
 function renderIssueRow(
   element: HTMLElement,
   issue: Issue,
@@ -779,30 +802,69 @@ function renderIssueRow(
   onSelect: (id: string) => void,
 ) {
   element.textContent = ''
+  element.style.display = 'block'
   const row = document.createElement('div')
   row.className = 'issue-row'
   row.setAttribute('role', 'button')
   row.setAttribute('tabindex', '0')
-  const add = (cls: string, text: string) => {
+  Object.assign(row.style, {
+    display: 'grid',
+    gridTemplateColumns: '110px 1fr 24px 70px 90px',
+    alignItems: 'center',
+    gap: '12px',
+    height: '44px',
+    padding: '0 16px',
+    borderBottom: '1px solid var(--oas-color-border, #eef2f7)',
+    cursor: 'pointer',
+    font: 'inherit',
+    fontSize: '13px',
+    width: '100%',
+    boxSizing: 'border-box',
+  } as CSSStyleDeclaration)
+  const add = (
+    cls: string,
+    text: string,
+    opts: { color?: string; weight?: string; mono?: boolean; ellipsis?: boolean } = {},
+  ) => {
     const s = document.createElement('span')
     s.className = cls
     s.textContent = text
+    s.style.color = opts.color ?? 'inherit'
+    if (opts.weight) s.style.fontWeight = opts.weight
+    if (opts.mono) s.style.fontFamily = 'ui-monospace, SFMono-Regular, Consolas, monospace'
+    if (opts.ellipsis) {
+      s.style.overflow = 'hidden'
+      s.style.textOverflow = 'ellipsis'
+      s.style.whiteSpace = 'nowrap'
+    }
     row.appendChild(s)
+    return s
   }
-  add('issue-key', issue.key)
-  add('issue-title', issue.title)
+  add('issue-key', issue.key, { color: '#0b6cff', mono: true })
+  add('issue-title', issue.title, { ellipsis: true })
   const m = memberMap.get(issue.assigneeId ?? '')
   const av = document.createElement('span')
-  av.className = m ? 'avatar' : 'avatar avatar-empty'
-  if (m) {
-    av.style.background = m.avatarColor
-    av.textContent = m.name[0]
-  } else {
-    av.textContent = '?'
-  }
+  Object.assign(av.style, {
+    width: '20px',
+    height: '20px',
+    borderRadius: '50%',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '11px',
+    fontWeight: '600',
+    color: '#fff',
+    background: m?.avatarColor ?? '#cbd5e1',
+  } as CSSStyleDeclaration)
+  av.textContent = m ? m.name[0] : '?'
+  if (m) av.title = m.name
   row.appendChild(av)
-  add(`issue-priority pri-${issue.priority}`, issue.priority)
-  add(`issue-status st-${issue.status}`, issue.status)
+  add(`issue-priority pri-${issue.priority}`, issue.priority, {
+    color: PRIORITY_TEXT[issue.priority],
+  })
+  add(`issue-status st-${issue.status}`, STATUS_LABEL[issue.status], {
+    color: STATUS_TEXT[issue.status],
+  })
   row.addEventListener('click', () => onSelect(issue.id))
   row.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') onSelect(issue.id)
@@ -820,16 +882,13 @@ function VirtualIssueList({
   memberMap: Map<string, Member>
 }) {
   const listRef = useRef<HTMLElement>(null)
+  const lastTopRef = useRef(0)
   // 稳定的渲染回调：避免 items 变化以外的原因重挂监听
   const renderRef = useRef({ onSelect, memberMap })
   renderRef.current = { onSelect, memberMap }
 
-  useEffect(() => {
-    const el = listRef.current
-    if (!el) return
-    ;(el as unknown as { items: unknown[] }).items = issues
-  }, [issues])
-
+  // oas-item 渲染通道必须先于 items 挂上（effect 按声明序执行）：
+  // 切回视图时数据即刻就位，items setter 同步渲染，通道缺席则列表永远空白
   useEffect(() => {
     const el = listRef.current
     if (!el) return
@@ -840,8 +899,30 @@ function VirtualIssueList({
       renderIssueRow(d.element, issue, renderRef.current.memberMap, renderRef.current.onSelect)
     }
     el.addEventListener('oas-item', onItem)
-    return () => el.removeEventListener('oas-item', onItem)
+    // 记录滚动位置：items 更新后 scrollToIndex 恢复视口用
+    const onScroll = (e: Event) => {
+      lastTopRef.current = (e as CustomEvent<{ scrollTop: number }>).detail?.scrollTop ?? 0
+    }
+    el.addEventListener('oas-scroll', onScroll)
+    return () => {
+      el.removeEventListener('oas-item', onItem)
+      el.removeEventListener('oas-scroll', onScroll)
+    }
   }, [])
+
+  // 组件对「同长度 items 引用更新」不自动重派 oas-item（筛选/切换项目场景列表空白）：
+  // items 落库后 scrollToIndex 重算窗口强制重渲染，oas-scroll 记录的视口位置得以保持
+  useEffect(() => {
+    const el = listRef.current as
+      | (HTMLElement & {
+          items?: unknown[]
+          scrollToIndex?: (i: number, o?: { align?: string }) => void
+        })
+      | null
+    if (!el) return
+    el.items = issues
+    el.scrollToIndex?.(Math.round(lastTopRef.current / 44), { align: 'start' })
+  }, [issues])
 
   return (
     <oas-virtual-list
@@ -979,12 +1060,12 @@ function IssueDetailDrawer({
 
   const save = (changes: Partial<Issue>) => void db.issues.update(issue.id, changes)
   const memberOptions = [
-    { label: '未分配', value: '' },
+    { label: '未分配', value: '__none__' },
     ...[...memberMap.values()].map((m) => ({ label: m.name, value: m.id })),
   ]
 
   return (
-    <oas-drawer ref={drawerRef} data-testid="detail-drawer">
+    <oas-drawer ref={drawerRef} no-footer data-testid="detail-drawer">
       <div className="detail-body">
         <h2 className="detail-title">{issue.title}</h2>
         <div className="detail-meta">
@@ -1010,9 +1091,9 @@ function IssueDetailDrawer({
             <span>负责人</span>
             <OSelect
               testid="detail-assignee"
-              value={issue.assigneeId ?? ''}
+              value={issue.assigneeId ?? '__none__'}
               options={memberOptions}
-              onChange={(v) => save({ assigneeId: v || null })}
+              onChange={(v) => save({ assigneeId: v === '__none__' ? null : v })}
             />
           </div>
         </div>
@@ -1051,9 +1132,9 @@ function IssueDetailDrawer({
             ))}
             <OSelect
               testid="label-add"
-              value=""
+              value="__none__"
               options={[
-                { label: '＋ 标签…', value: '' },
+                { label: '＋ 标签…', value: '__none__' },
                 ...LABELS.filter((l) => !issue.labels.includes(l)).map((l) => ({
                   label: l,
                   value: l,
@@ -1244,7 +1325,11 @@ function TimelineView({ issues }: { issues: Issue[] }) {
 
   return (
     <div className="timeline-page">
-      <oas-gantt ref={ganttRef} data-testid="gantt" style={{ width: '100%', height: '500px' }} />
+      <oas-gantt
+        ref={ganttRef}
+        data-testid="gantt"
+        style={{ width: '100%', flex: 1, minHeight: 420 }}
+      />
     </div>
   )
 }
