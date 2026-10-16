@@ -120,7 +120,7 @@ export function App() {
     await db.issues.add({
       id: nanoid(),
       projectId: 'project-1',
-      key: `OAS-${Date.now().toString().slice(-6)}`,
+      key: `OAS-${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 10)}`,
       title,
       description: '',
       status,
@@ -158,7 +158,7 @@ export function App() {
           data-testid="toolbar-export"
           onClick={exportCsv}
         >
-          导出 CSV
+          导出 CSV（当前窗口）
         </button>
         <span className="tb-spacer" />
         <button
@@ -272,7 +272,15 @@ export function App() {
           <div className="quit-actions">
             <oas-button
               data-testid="create-cancel"
-              onClick={() => createRef.current?.removeAttribute('visible')}
+              onClick={() => {
+                const modal = createRef.current
+                if (!modal) return
+                const input = modal.querySelector('oas-input') as HTMLElement & { value?: string }
+                if (input) input.value = ''
+                const errEl = modal.querySelector<HTMLElement>('[data-testid="create-error"]')
+                if (errEl) errEl.hidden = true
+                modal.removeAttribute('visible')
+              }}
             >
               取消
             </oas-button>
@@ -473,29 +481,42 @@ function KanbanBoard({ issues }: { issues: Issue[] }) {
     await db.issues.update(issueId, { status: toStatus, order, updatedAt: Date.now() })
   }
 
-  /** dragover 时按鼠标 Y 与卡片中点比较，计算插入下标 */
-  function calcDropIndex(body: HTMLElement, clientY: number, colLen: number): number {
-    const cards = Array.from(body.querySelectorAll<HTMLElement>('.board-card'))
+  /** dragover 时按鼠标 Y 与卡片中点比较，计算插入下标（排除被拖卡自身） */
+  function calcDropIndex(body: HTMLElement, clientY: number): number {
+    const cards = Array.from(body.querySelectorAll<HTMLElement>('.board-card:not(.is-dragging)'))
     for (let i = 0; i < cards.length; i++) {
       const r = cards[i].getBoundingClientRect()
       if (clientY < r.top + r.height / 2) return i
     }
-    return colLen
+    return cards.length
   }
 
   function handleDrop(s: IssueStatus, body: HTMLElement | null, e: React.DragEvent) {
     const id = e.dataTransfer.getData('text/plain')
     if (!id || !body) return
     const col = byStatus[s] ?? []
-    const index = calcDropIndex(body, e.clientY, col.length)
-    const shown = col.slice(0, BOARD_COL_WINDOW)
-    const prevOrder = index > 0 ? shown[index - 1]?.order : undefined
-    const nextOrder = shown[index]?.order
+    const index = calcDropIndex(body, e.clientY)
+    // 落点两侧 order 取中值（排除被拖卡后相邻的卡）
+    const rest = col.filter((c) => c.id !== id)
+    const prevOrder = index > 0 ? rest[index - 1]?.order : undefined
+    const nextOrder = rest[index]?.order
     const order =
       prevOrder != null && nextOrder != null && prevOrder === nextOrder
         ? prevOrder + 1
         : betweenOrder(prevOrder, nextOrder)
     void moveIssue(id, s, order)
+  }
+
+  /** 拖拽预览：源列移除被拖卡，目标列把被拖卡插到落点位（预览重排，零净增元素） */
+  function previewCol(s: IssueStatus, col: Issue[]): Issue[] {
+    if (!draggingId) return col
+    const dragging = issues.find((i) => i.id === draggingId)
+    const rest = col.filter((c) => c.id !== draggingId)
+    if (dropTarget?.col !== s) return rest
+    if (!dragging) return col
+    const arr = [...rest]
+    arr.splice(Math.min(dropTarget.index, arr.length), 0, dragging)
+    return arr
   }
 
   function clearDrag() {
@@ -507,10 +528,9 @@ function KanbanBoard({ issues }: { issues: Issue[] }) {
   return (
     <div className="board" data-testid="board">
       {STATUSES.map((s) => {
-        const col = byStatus[s] ?? []
+        const col = previewCol(s, byStatus[s] ?? [])
         const shown = col.slice(0, BOARD_COL_WINDOW)
-        const hidden = col.length - shown.length
-        const dropIndex = dropTarget?.col === s ? dropTarget.index : null
+        const hidden = (byStatus[s]?.length ?? 0) - (dropTarget?.col === s ? 0 : shown.length)
         return (
           <div
             key={s}
@@ -518,11 +538,16 @@ function KanbanBoard({ issues }: { issues: Issue[] }) {
             data-status={s}
             onDragOver={(e) => {
               e.preventDefault()
-              setDragOver(s)
               const body = (e.currentTarget as HTMLElement).querySelector<HTMLElement>(
                 '.board-col-body',
               )
-              if (body) setDropTarget({ col: s, index: calcDropIndex(body, e.clientY, col.length) })
+              if (!body) return
+              const index = calcDropIndex(body, e.clientY)
+              // dragover 高频触发：落点未变时不 setState，避免整板重渲染
+              setDragOver((prev) => (prev === s ? prev : s))
+              setDropTarget((prev) =>
+                prev?.col === s && prev.index === index ? prev : { col: s, index },
+              )
             }}
             onDragLeave={(e) => {
               if (!(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) {
@@ -546,28 +571,23 @@ function KanbanBoard({ issues }: { issues: Issue[] }) {
               </span>
             </p>
             <div className="board-col-body" data-testid={`col-body-${s}`}>
-              {shown.map((issue, i) => (
-                <div key={issue.id} style={{ display: 'contents' }}>
-                  {dropIndex === i && <div className="board-card-ghost" data-testid="drop-ghost" />}
-                  <div
-                    className={`board-card${draggingId === issue.id ? ' is-dragging' : ''}`}
-                    draggable
-                    data-card-key={issue.key}
-                    onDragStart={(e) => {
-                      e.dataTransfer.setData('text/plain', issue.id)
-                      setDraggingId(issue.id)
-                    }}
-                    onDragEnd={clearDrag}
-                  >
-                    <span className="board-card-key">{issue.key}</span>
-                    <p className="board-card-title">{issue.title}</p>
-                    <span className={`issue-priority pri-${issue.priority}`}>{issue.priority}</span>
-                  </div>
+              {shown.map((issue) => (
+                <div
+                  key={issue.id}
+                  className={`board-card${draggingId === issue.id ? ' is-dragging' : ''}`}
+                  draggable
+                  data-card-key={issue.key}
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData('text/plain', issue.id)
+                    setDraggingId(issue.id)
+                  }}
+                  onDragEnd={clearDrag}
+                >
+                  <span className="board-card-key">{issue.key}</span>
+                  <p className="board-card-title">{issue.title}</p>
+                  <span className={`issue-priority pri-${issue.priority}`}>{issue.priority}</span>
                 </div>
               ))}
-              {dropIndex !== null && dropIndex >= shown.length && (
-                <div className="board-card-ghost" data-testid="drop-ghost" />
-              )}
               {hidden > 0 && (
                 <p className="board-col-more">还有 {hidden.toLocaleString()} 条未显示</p>
               )}

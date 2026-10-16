@@ -602,15 +602,6 @@ body {
   background: var(--oas-color-bg-hover, #f1f5f9);
 }
 
-/* ── 看板拖拽虚线占位框 ── */
-.board-card-ghost {
-  height: 64px;
-  margin: 4px 0;
-  border: 2px dashed var(--oas-color-primary, #0b6cff);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--oas-color-primary, #0b6cff) 6%, transparent);
-}
-
 .board-card.is-dragging {
   opacity: 0.35;
 }

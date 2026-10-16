@@ -199,7 +199,7 @@ test('M5 工具栏：新建 Issue 全流程 + CSV 导出 + 关于弹窗', async 
   await expect(about).not.toHaveAttribute('visible', /.*/, { timeout: 5000 })
 })
 
-test('M6 看板拖拽：悬停出现虚线占位框 + 原卡半透明', async ({ page }) => {
+test('M6 看板拖拽：预览重排（拖动卡落点半透明显示）', async ({ page }) => {
   await waitForSeed(page)
   await page.getByTestId('nav-board').click()
   await expect(page.getByTestId('board')).toBeVisible()
@@ -208,7 +208,13 @@ test('M6 看板拖拽：悬停出现虚线占位框 + 原卡半透明', async ({
     timeout: 10_000,
   })
 
-  // dragover 重放到 done 列中部：ghost 占位框出现
+  // 记录 todo 首卡 key，dragover 重放到 done 列首位（卡中点上方）
+  const todoKey = await page
+    .getByTestId('col-body-todo')
+    .locator('.board-card')
+    .first()
+    .getAttribute('data-card-key')
+  expect(todoKey).toBeTruthy()
   await page.evaluate(() => {
     const src = document.querySelector('[data-status="todo"] .board-card') as HTMLElement
     const dst = document.querySelector('[data-status="done"]') as HTMLElement
@@ -224,13 +230,26 @@ test('M6 看板拖拽：悬停出现虚线占位框 + 原卡半透明', async ({
         bubbles: true,
         cancelable: true,
         dataTransfer: dt,
-        clientY: Math.round(r.top + r.height / 2),
+        clientY: Math.round(r.top - 4),
       }),
     )
   })
-  await expect(page.getByTestId('drop-ghost')).toBeVisible()
+  // 预览重排：done 列首位出现拖动卡（半透明预览），todo 列该卡移出
+  await expect(page.locator('[data-status="done"] .board-card.is-dragging')).toHaveCount(1)
+  const previewKey = await page
+    .getByTestId('col-body-done')
+    .locator('.board-card')
+    .first()
+    .getAttribute('data-card-key')
+  expect(previewKey).toBe(todoKey)
+  const todoHasCard = await page
+    .getByTestId('col-body-todo')
+    .locator(`[data-card-key="${todoKey}"]`)
+    .count()
+  expect(todoHasCard).toBe(0)
   await expect(page.locator('.board-card.is-dragging')).toHaveCount(1)
-  // drop 后 ghost 消失
+
+  // drop 后落库：预览消失（is-dragging 清除）
   await page.evaluate(() => {
     const dst = document.querySelector('[data-status="done"]') as HTMLElement
     const dt = new DataTransfer()
@@ -242,9 +261,9 @@ test('M6 看板拖拽：悬停出现虚线占位框 + 原卡半透明', async ({
         bubbles: true,
         cancelable: true,
         dataTransfer: dt,
-        clientY: Math.round(r.top + r.height / 2),
+        clientY: Math.round(r.top - 4),
       }),
     )
   })
-  await expect(page.getByTestId('drop-ghost')).toHaveCount(0)
+  await expect(page.locator('.board-card.is-dragging')).toHaveCount(0, { timeout: 10_000 })
 })
