@@ -287,10 +287,10 @@ importers:
         version: 21.0.1
       svelte-check:
         specifier: ^4.7.6
-        version: 4.7.6(picomatch@4.0.7)(svelte@5.57.2)(typescript@7.0.2)
+        version: 4.7.6(picomatch@4.0.7)(svelte@5.57.2)(typescript@6.0.3)
       typescript:
-        specifier: ^7.0.2
-        version: 7.0.2
+        specifier: ^6.0.0
+        version: 6.0.3
       vite:
         specifier: ^8.3.4
         version: 8.3.4(@types/node@26.6.5)
@@ -477,8 +477,8 @@ importers:
         specifier: ^6.1.2
         version: 6.1.2(vite@8.3.4(@types/node@24.19.2))
       typescript:
-        specifier: ^7.0.2
-        version: 7.0.2
+        specifier: npm:@typescript/typescript6@^6.0.2
+        version: '@typescript/typescript6@6.0.2'
       vite:
         specifier: ^8.3.4
         version: 8.3.4(@types/node@24.19.2)
@@ -2579,7 +2579,7 @@ snapshots:
 
   std-env@4.3.0: {}
 
-  svelte-check@4.7.6(picomatch@4.0.7)(svelte@5.57.2)(typescript@7.0.2):
+  svelte-check@4.7.6(picomatch@4.0.7)(svelte@5.57.2)(typescript@6.0.3):
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       '@sveltejs/load-config': 0.2.3
@@ -2588,7 +2588,7 @@ snapshots:
       picocolors: 1.1.1
       sade: 1.8.1
       svelte: 5.57.2
-      typescript: 7.0.2
+      typescript: 6.0.3
     transitivePeerDependencies:
       - picomatch
 
