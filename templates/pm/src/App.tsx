@@ -657,7 +657,9 @@ export function App() {
               currentUser={currentUser}
             />
           )}
-          {view === 'board' && <KanbanBoard issues={issues ?? []} memberMap={memberMap} />}
+          {view === 'board' && (
+            <KanbanBoard issues={issues ?? []} memberMap={memberMap} onOpenIssue={setSelectedId} />
+          )}
           {view === 'timeline' && <TimelineView issues={issues ?? []} />}
         </main>
       </div>
@@ -1576,6 +1578,24 @@ function IssueDetailDrawer({
     await logActivity(newId, currentUser, 'create')
   }, [issue, currentUser])
 
+  // 标签编辑（oas-dynamic-tags）：modelValue 双向同步 issue.labels
+  const labelsTagsRef = useRef<HTMLElement & { modelValue?: string[]; value?: string[] }>(null)
+  useEffect(() => {
+    const el = labelsTagsRef.current
+    if (!el) return
+    el.modelValue = issue?.labels ?? []
+  }, [issue?.labels, issueId])
+  useEffect(() => {
+    const el = labelsTagsRef.current
+    if (!el) return
+    const h = (e: Event) => {
+      const v = (e as CustomEvent<{ value?: string[] }>).detail?.value
+      if (Array.isArray(v)) save({ labels: v })
+    }
+    el.addEventListener('oas-change', h)
+    return () => el.removeEventListener('oas-change', h)
+  }, [issueId])
+
   // 描述编辑态在切换 issue 时重置；textarea value 跟随 issue.description
   const descRefValue = useRef<HTMLElement & { value?: string }>(null)
   useEffect(() => {
@@ -1607,7 +1627,12 @@ function IssueDetailDrawer({
   // 关联选择 state：必须在早退之前（hooks 顺序恒定）
   const [relType, setRelType] = useState('__none__')
   const relCandidates = useLiveQuery(
-    () => db.issues.where('projectId').equals(issueId).limit(100).toArray(),
+    () =>
+      db.issues
+        .where('projectId')
+        .equals(issue?.projectId ?? '')
+        .limit(100)
+        .toArray(),
     [issueId],
   )
 
@@ -1860,8 +1885,18 @@ interface KanbanElement extends HTMLElement {
   renderCard?: ((card: Record<string, unknown>) => Node | string) | null
 }
 
-function KanbanBoard({ issues, memberMap }: { issues: Issue[]; memberMap: Map<string, Member> }) {
+function KanbanBoard({
+  issues,
+  memberMap,
+  onOpenIssue,
+}: {
+  issues: Issue[]
+  memberMap: Map<string, Member>
+  onOpenIssue: (id: string) => void
+}) {
   const boardRef = useRef<KanbanElement>(null)
+  const onOpenIssueRef = useRef(onOpenIssue)
+  onOpenIssueRef.current = onOpenIssue
 
   const columns = useMemo(() => STATUSES.map((s) => ({ key: s, title: STATUS_LABEL[s] })), [])
 
@@ -1891,6 +1926,11 @@ function KanbanBoard({ issues, memberMap }: { issues: Issue[]; memberMap: Map<st
     el.renderCard = (card) => {
       const wrap = document.createElement('div')
       wrap.className = 'kb-card'
+      wrap.style.cursor = 'pointer'
+      wrap.addEventListener('click', (e) => {
+        e.stopPropagation()
+        onOpenIssueRef.current(String(card.id ?? ''))
+      })
       const top = document.createElement('div')
       top.className = 'board-card-top'
       const k = document.createElement('span')

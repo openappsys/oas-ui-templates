@@ -75,6 +75,12 @@ declare module 'react' {
         size?: string
         offset?: string
       }
+      'oas-dynamic-tags': React.DetailedHTMLProps<
+        React.HTMLAttributes<HTMLElement>,
+        HTMLElement
+      > & {
+        placeholder?: string
+      }
       'oas-select': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
         value?: string
         placeholder?: string

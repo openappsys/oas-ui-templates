@@ -741,3 +741,42 @@ test('M18 通知：他人变更我负责的 Issue → 切回后动态出现', as
     )
     .toBe(true)
 })
+
+test('M20 看板：卡片点击打开详情抽屉', async ({ page }) => {
+  test.setTimeout(120_000)
+  await page.goto('/')
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-seed-v4')), { timeout: 30_000 })
+    .toBe('1')
+  await expect(page.locator('.issue-row').first()).toBeVisible({ timeout: 45_000 })
+  // 「我的」视图首张卡（张伟负责），记 key
+  await page.getByTestId('view-my').click()
+  const myKey = await page.locator('.issue-row .issue-key').first().textContent()
+  expect(myKey).toBeTruthy()
+  await page.keyboard.press('Escape')
+
+  // 看板：该卡必在 todo 列尾（order 最大），等文本出现后点击
+  await page.evaluate((view) => {
+    const el = document.querySelector('[data-testid=view-seg]') as HTMLElement & { value: string }
+    el.value = view
+    el.dispatchEvent(new CustomEvent('oas-change', { bubbles: true, detail: { value: view } }))
+  }, 'board')
+  const cardLoc = page.locator('oas-kanban').locator(`text=${myKey}`)
+  await expect(cardLoc.first()).toBeVisible({ timeout: 20_000 })
+  await cardLoc.first().click()
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          () =>
+            (document.querySelector('[data-testid=detail-drawer]') as { opened?: boolean })
+              ?.opened ?? false,
+        ),
+      { timeout: 10_000 },
+    )
+    .toBe(true)
+  // 抽屉内标题含该卡序号（key 在 detail-head，h2 标题为 title 文本）
+  const seq = (myKey ?? '').split('-')[1] ?? ''
+  await expect(page.locator('.detail-title')).toContainText(`#${seq}`, { timeout: 10_000 })
+  await page.keyboard.press('Escape')
+})

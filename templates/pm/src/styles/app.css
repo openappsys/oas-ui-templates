@@ -1298,3 +1298,68 @@ body {
     width: 92vw !important;
   }
 }
+
+/* ── 抽屉内子任务/表单布局统一 ── */
+.sub-add-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sub-add-row oas-input {
+  flex: 1;
+}
+
+.sub-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: var(--oas-color-bg, #f8fafc);
+  font-size: 13px;
+}
+
+.sub-item .sub-done {
+  text-decoration: line-through;
+  color: var(--oas-color-text-tertiary, #94a3b8);
+}
+
+.detail-body oas-input,
+.detail-body oas-textarea {
+  display: block;
+  width: 100%;
+}
+
+.detail-body oas-select {
+  display: block;
+  width: 100%;
+}
+
+.comment-ops {
+  display: inline-flex;
+  gap: 8px;
+  margin-left: 8px;
+}
+
+.comment-op {
+  appearance: none;
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: 11px;
+  color: var(--oas-color-primary, #0b6cff);
+  cursor: pointer;
+}
+
+.comment-op-del {
+  color: #dc2626;
+}
+
+.comment-edit-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
