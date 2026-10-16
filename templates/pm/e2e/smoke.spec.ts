@@ -1,5 +1,41 @@
 import { expect, test, type Page } from '@playwright/test'
 
+/** 视图切换（oas-segmented property + 契约事件） */
+async function setView(page: Page, v: string) {
+  await page.evaluate((view) => {
+    const el = document.querySelector('[data-testid=view-seg]')
+    ;(el as { value: string }).value = view
+    el?.dispatchEvent(new CustomEvent('oas-change', { bubbles: true, detail: { value: view } }))
+  }, v)
+}
+
+/** oas-select 设值（property + 契约事件，宿主 OSelect 监听同元素） */
+async function setOSelect(page: Page, testid: string, v: string) {
+  await page.evaluate(
+    ([tid, val]) => {
+      const el = document.querySelector('[data-testid="' + tid + '"]')
+      ;(el as { value: string }).value = val as string
+      el?.dispatchEvent(new CustomEvent('oas-change', { bubbles: true, detail: { value: val } }))
+    },
+    [testid, v],
+  )
+}
+
+/** oas-input 填值：穿透 shadow 写内部 input 并派发 oas-input */
+async function fillOInput(page: Page, testid: string, text: string) {
+  await page.evaluate(
+    ([tid, val]) => {
+      const host = document.querySelector('[data-testid="' + tid + '"]')
+      const inner =
+        (host?.shadowRoot?.querySelector('input, textarea') as HTMLInputElement) ??
+        (host as HTMLInputElement)
+      inner.value = val as string
+      host?.dispatchEvent(new CustomEvent('oas-input', { bubbles: true, detail: { value: val } }))
+    },
+    [testid, text],
+  )
+}
+
 /** 等待 100K seed 完成并以列表行出现（seed 走后台 bulkPut，首次约 5~15s） */
 async function waitForSeed(page: Page) {
   await page.goto('/')
@@ -45,7 +81,7 @@ test('M2 状态筛选：compound index 直取 + 计数联动', async ({ page }) 
 
 test('M3 看板：oas-change 跨列移动 → status/order 落库', async ({ page }) => {
   await waitForSeed(page)
-  await page.getByTestId('nav-board').click()
+  await setView(page, 'board')
   await expect(page.getByTestId('board')).toBeAttached({ timeout: 10_000 })
   // 组件数据就绪（renderCard 通道，cards 由宿主 property 注入）
   await expect
@@ -121,7 +157,7 @@ test('M3 看板：oas-change 跨列移动 → status/order 落库', async ({ pag
 
 test('M3b 看板：列内排序 oas-change → order 落库', async ({ page }) => {
   await waitForSeed(page)
-  await page.getByTestId('nav-board').click()
+  await setView(page, 'board')
   await expect(page.getByTestId('board')).toBeAttached({ timeout: 10_000 })
   // done 列内：首卡移到第 2 位（index=1）
   const moved = await page.evaluate(() => {
@@ -160,7 +196,7 @@ test('M3b 看板：列内排序 oas-change → order 落库', async ({ page }) =
 
 test('M4 时间线：oas-gantt 接收 tasks 并渲染', async ({ page }) => {
   await waitForSeed(page)
-  await page.getByTestId('nav-timeline').click()
+  await setView(page, 'timeline')
   const gantt = page.getByTestId('gantt')
   await expect(gantt).toBeAttached({ timeout: 10_000 })
   // 属性通道（JSON 字符串）→ 组件 property 解析成功：tasks 读回非空
@@ -185,9 +221,9 @@ test('M5 工具栏：新建 Issue 全流程 + CSV 导出 + 关于弹窗', async 
   await expect(modal).toHaveAttribute('visible', /.*/, { timeout: 5000 })
   await page.getByTestId('create-submit').click()
   await expect(page.getByTestId('create-error')).toBeVisible()
-  await page.getByTestId('create-title').locator('input').fill('E2E 新建测试 Issue')
-  await page.getByTestId('create-status').selectOption('todo')
-  await page.getByTestId('create-priority').selectOption('high')
+  await fillOInput(page, 'create-title', 'E2E 新建测试 Issue')
+  await setOSelect(page, 'create-status', 'todo')
+  await setOSelect(page, 'create-priority', 'high')
   await page.getByTestId('create-submit').click()
   await expect(modal).not.toHaveAttribute('visible', /.*/, { timeout: 5000 })
   // 新建 updatedAt 最新 → 列表窗口第一行
@@ -195,7 +231,7 @@ test('M5 工具栏：新建 Issue 全流程 + CSV 导出 + 关于弹窗', async 
     timeout: 10_000,
   })
   // 新建 order = Date.now() 列内最大 → 看板 todo 列尾出现（updatedAt 最新必在窗口内）
-  await page.getByTestId('nav-board').click()
+  await setView(page, 'board')
   await expect
     .poll(
       async () =>
@@ -243,7 +279,7 @@ test('M7 项目切换：project-2 的 key 前缀为 APP-', async ({ page }) => {
 
 test('M8 搜索：标题命中过滤 + 清除筛选', async ({ page }) => {
   await waitForSeed(page)
-  await page.getByTestId('toolbar-search').fill('修复登录页面白屏')
+  await fillOInput(page, 'toolbar-search', '修复登录页面白屏')
   await expect(page.locator('.issue-row').first()).toContainText('修复登录页面白屏', {
     timeout: 10_000,
   })
@@ -251,30 +287,82 @@ test('M8 搜索：标题命中过滤 + 清除筛选', async ({ page }) => {
   expect(titles.length).toBeGreaterThan(0)
   for (const t of titles) expect(t).toContain('修复登录页面白屏')
   await page.getByTestId('filter-clear').click()
-  await expect(page.getByTestId('toolbar-search')).toHaveValue('')
+  await expect
+    .poll(
+      async () =>
+        page.evaluate(
+          () =>
+            (document.querySelector('[data-testid=toolbar-search]') as { value?: string })?.value ??
+            '',
+        ),
+      { timeout: 10_000 },
+    )
+    .toBe('')
 })
 
 test('M9 详情抽屉：优先级即时保存 + 描述保存 + 删除两连确认', async ({ page }) => {
   await waitForSeed(page)
-  await page.locator('.issue-row').first().click()
-  const drawer = page.locator('.detail-panel')
-  await expect(drawer).toBeVisible()
-  const key = await drawer.locator('.issue-key').textContent()
-  await drawer.locator('[data-testid=detail-priority]').selectOption('urgent')
+  await page
+    .locator('.issue-row')
+    .first()
+    .evaluate((el) => {
+      el.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          () =>
+            (document.querySelector('[data-testid=detail-drawer]') as { opened?: boolean })
+              ?.opened ?? false,
+        ),
+      { timeout: 10_000 },
+    )
+    .toBe(true)
+  const key = await page.getByTestId('detail-drawer').getAttribute('title')
+  await setOSelect(page, 'detail-priority', 'urgent')
   // liveQuery 推送：select 值即时生效 + 列表行徽章变 urgent
-  await expect(drawer.locator('[data-testid=detail-priority]')).toHaveValue('urgent', {
-    timeout: 10_000,
-  })
+  await expect
+    .poll(
+      async () =>
+        page.evaluate(
+          () =>
+            (document.querySelector('[data-testid=detail-priority]') as { value?: string })
+              ?.value ?? '',
+        ),
+      { timeout: 10_000 },
+    )
+    .toBe('urgent')
   await expect(page.locator('.issue-row .pri-urgent').first()).toBeVisible({ timeout: 10_000 })
   // 描述保存
-  await drawer.locator('[data-testid=detail-desc]').fill('E2E 描述内容')
+  await page.evaluate(() => {
+    const el = document.querySelector('[data-testid=detail-desc]') as { value: string }
+    el.value = 'E2E 描述内容'
+    el.dispatchEvent(new CustomEvent('oas-input', { bubbles: true }))
+  })
   await drawer.locator('[data-testid=detail-desc-save]').click()
-  await expect(drawer.locator('[data-testid=detail-desc]')).toHaveValue('E2E 描述内容')
-  // 删除两连确认
-  await drawer.locator('[data-testid=detail-delete]').click()
-  await expect(drawer.locator('[data-testid=detail-delete]')).toHaveText('再点一次确认删除')
-  await drawer.locator('[data-testid=detail-delete]').click()
-  await expect(page.locator('.detail-panel')).toHaveCount(0, { timeout: 10_000 })
+  await expect
+    .poll(
+      async () =>
+        page.evaluate(
+          () =>
+            (document.querySelector('[data-testid=detail-desc]') as { value?: string })?.value ??
+            '',
+        ),
+      { timeout: 10_000 },
+    )
+    .toBe('E2E 描述内容')
+  // 删除：popconfirm 确认（契约事件 reason='ok'）→ 抽屉关
+  await expect(page.getByTestId('detail-delete')).toBeAttached({ timeout: 10_000 })
+  await page.evaluate(() => {
+    document.querySelector('[data-testid=detail-delete]')?.dispatchEvent(
+      new CustomEvent('oas-open-change', {
+        bubbles: true,
+        detail: { reason: 'ok' },
+      }),
+    )
+  })
+  await expect(page.getByTestId('detail-drawer')).toHaveCount(0, { timeout: 10_000 })
   // 列表中该 key 消失
   await page.waitForTimeout(1500)
   const left = await page.locator('.issue-row .issue-key').allTextContents()
@@ -283,7 +371,7 @@ test('M9 详情抽屉：优先级即时保存 + 描述保存 + 删除两连确�
 
 test('M10 仪表盘：统计卡 + 图表数据', async ({ page }) => {
   await waitForSeed(page)
-  await page.getByTestId('nav-dashboard').click()
+  await setView(page, 'dashboard')
   await expect(page.getByTestId('dashboard')).toBeVisible()
   // 统计卡数字就位（seed 大事务批间让出后 liveQuery 逐步逼近，最终一致）
   await expect
@@ -318,31 +406,88 @@ test('M11 快捷键：C 打开新建 + / 聚焦搜索 + Esc 关抽屉', async ({
   })
   await page.getByTestId('create-cancel').click()
   await page.keyboard.press('/')
-  await expect(page.getByTestId('toolbar-search')).toBeFocused()
+  await expect
+    .poll(async () =>
+      page.evaluate(() => {
+        const host = document.querySelector('[data-testid=toolbar-search]')
+        const ae = document.activeElement
+        if (ae === host) return true
+        return !!ae && !!host?.shadowRoot && ae.getRootNode() === host.shadowRoot
+      }),
+    )
+    .toBe(true)
   // Esc 关抽屉
-  await page.locator('.issue-row').first().click()
-  await expect(page.locator('.detail-panel')).toBeVisible()
+  await page
+    .locator('.issue-row')
+    .first()
+    .evaluate((el) => {
+      el.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          () =>
+            (document.querySelector('[data-testid=detail-drawer]') as { opened?: boolean })
+              ?.opened ?? false,
+        ),
+      { timeout: 10_000 },
+    )
+    .toBe(true)
   await page.keyboard.press('Escape')
-  await expect(page.locator('.detail-panel')).toHaveCount(0, { timeout: 5000 })
+  await expect(page.getByTestId('detail-drawer')).toHaveCount(0, { timeout: 5000 })
 })
 
 test('M12 标签与评论：添加标签 chip + 发送评论', async ({ page }) => {
   await waitForSeed(page)
-  await page.locator('.issue-row').first().click()
-  const drawer = page.locator('.detail-panel')
-  await expect(drawer).toBeVisible()
+  await page
+    .locator('.issue-row')
+    .first()
+    .evaluate((el) => {
+      el.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          () =>
+            (document.querySelector('[data-testid=detail-drawer]') as { opened?: boolean })
+              ?.opened ?? false,
+        ),
+      { timeout: 10_000 },
+    )
+    .toBe(true)
   // 加标签
-  await drawer.locator('[data-testid=label-add]').selectOption('frontend')
-  await expect(drawer.locator('.label-chip').first()).toContainText('frontend', { timeout: 10_000 })
+  await setOSelect(page, 'label-add', 'frontend')
+  await expect(page.getByTestId('detail-drawer').locator('oas-tag').first()).toContainText(
+    'frontend',
+    { timeout: 10_000 },
+  )
   // 发评论（回车）
-  await drawer.locator('[data-testid=comment-input]').fill('E2E 评论内容')
-  await drawer.locator('[data-testid=comment-input]').press('Enter')
+  await fillOInput(page, 'comment-input', 'E2E 评论内容')
+  await page.getByTestId('comment-send').click()
   await expect(page.getByTestId('comment-item').first()).toContainText('E2E 评论内容', {
     timeout: 10_000,
   })
   // 关开抽屉持久（IndexedDB）
   await page.keyboard.press('Escape')
-  await page.locator('.issue-row').first().click()
+  await page
+    .locator('.issue-row')
+    .first()
+    .evaluate((el) => {
+      el.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          () =>
+            (document.querySelector('[data-testid=detail-drawer]') as { opened?: boolean })
+              ?.opened ?? false,
+        ),
+      { timeout: 10_000 },
+    )
+    .toBe(true)
   await expect(page.getByTestId('comment-item').first()).toContainText('E2E 评论内容', {
     timeout: 10_000,
   })
@@ -375,7 +520,7 @@ test('M13 新建 Issue key 严格递增（项目计数器）', async ({ page }) 
 
 test('M14 甘特写回：task-change 改期落库', async ({ page }) => {
   await waitForSeed(page)
-  await page.getByTestId('nav-timeline').click()
+  await setView(page, 'timeline')
   await expect(page.getByTestId('gantt')).toBeAttached({ timeout: 10_000 })
   // 组件 tasks property 读回取第一条的 issue id
   const target = await page.evaluate(() => {

@@ -5,6 +5,7 @@ import { nanoid } from 'nanoid'
 import { db } from './db/schema'
 import type { Issue, IssuePriority, IssueStatus, Member, Project } from './types'
 import { ISSUE_PRIORITIES, STATUS_LABEL } from './types'
+import { OSelect, OSegmented, TagChip } from './components/oas-wrappers'
 
 const STATUSES: IssueStatus[] = ['backlog', 'todo', 'in_progress', 'done', 'cancelled']
 const STATUS_COLOR: Record<IssueStatus, string> = {
@@ -18,7 +19,6 @@ const PRIORITY_WEIGHT: Record<IssuePriority, number> = { urgent: 0, high: 1, med
 const CURRENT_USER = 'member-1'
 const LIST_WINDOW = 500
 const GROUP_PREVIEW = 30
-const BOARD_COL_WINDOW = 200
 
 type View = 'dashboard' | 'issues' | 'board' | 'timeline'
 type SortBy = 'updatedAt' | 'priority' | 'createdAt'
@@ -175,7 +175,7 @@ function Chart({
     if (options) el.setAttribute('options', JSON.stringify(options))
     el.setAttribute('class', 'pm-chart')
   }, [type, data, options])
-  return <oas-chart ref={ref} data-testid={testid} aria-label={label} data-class="pm-chart" />
+  return <oas-chart ref={ref} data-testid={testid} aria-label={label} data-className="pm-chart" />
 }
 
 export function App() {
@@ -277,7 +277,23 @@ export function App() {
   }, [projects])
 
   // 快捷键：C 新建（输入框聚焦时跳过）/ 聚焦搜索 / Esc 关抽屉
-  const searchRef = useRef<HTMLInputElement>(null)
+  const searchRef = useRef<HTMLElement & { value?: string }>(null)
+  useEffect(() => {
+    const el = searchRef.current
+    if (!el) return
+    if (filters.search === (el.value ?? '')) return
+    el.value = filters.search
+  }, [filters.search])
+  useEffect(() => {
+    const el = searchRef.current
+    if (!el) return
+    const h = (e: Event) => {
+      const v = (e as CustomEvent<{ value: string }>).detail?.value ?? ''
+      setF('search', v)
+    }
+    el.addEventListener('oas-input', h)
+    return () => el.removeEventListener('oas-input', h)
+  }, [setF])
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       // Esc 无论焦点在哪都关抽屉（含评论输入框内）
@@ -320,14 +336,11 @@ export function App() {
         >
           导出 CSV（当前窗口）
         </button>
-        <input
+        <oas-input
           ref={searchRef}
           className="toolbar-search"
-          type="search"
-          placeholder="搜索 Key 或标题…（/）"
           data-testid="toolbar-search"
-          value={filters.search}
-          onChange={(e) => setF('search', e.target.value)}
+          placeholder="搜索 Key 或标题…（/）"
         />
         <span className="tb-spacer" />
         <button
@@ -341,43 +354,18 @@ export function App() {
       </header>
       <div className="main">
         <aside className="side-panel" data-testid="side-panel">
-          <div className="view-seg" data-testid="view-seg">
-            <button
-              className={`view-seg-btn${view === 'dashboard' ? ' is-active' : ''}`}
-              type="button"
-              title="仪表盘"
-              data-testid="nav-dashboard"
-              onClick={() => setView('dashboard')}
-            >
-              仪表盘
-            </button>
-            <button
-              className={`view-seg-btn${view === 'issues' ? ' is-active' : ''}`}
-              type="button"
-              title="Issues"
-              data-testid="nav-issues"
-              onClick={() => setView('issues')}
-            >
-              列表
-            </button>
-            <button
-              className={`view-seg-btn${view === 'board' ? ' is-active' : ''}`}
-              type="button"
-              title="看板"
-              data-testid="nav-board"
-              onClick={() => setView('board')}
-            >
-              看板
-            </button>
-            <button
-              className={`view-seg-btn${view === 'timeline' ? ' is-active' : ''}`}
-              type="button"
-              title="时间线"
-              data-testid="nav-timeline"
-              onClick={() => setView('timeline')}
-            >
-              时间线
-            </button>
+          <div className="side-view-seg">
+            <OSegmented
+              testid="view-seg"
+              value={view}
+              options={[
+                { label: '仪表盘', value: 'dashboard' },
+                { label: '列表', value: 'issues' },
+                { label: '看板', value: 'board' },
+                { label: '时间线', value: 'timeline' },
+              ]}
+              onChange={(v) => setView(v as View)}
+            />
           </div>
           <p className="side-title">项目</p>
           {(projects ?? []).map((p) => (
@@ -601,17 +589,20 @@ function DashboardView({
     <div className="dash-page" data-testid="dashboard">
       <h1 className="page-h1">仪表盘</h1>
       <div className="dash-cards">
-        <div className="dash-card" data-testid="stat-total">
-          <p className="dash-card-num">{counts?.total.toLocaleString() ?? '…'}</p>
-          <p className="dash-card-label">全部 Issue</p>
-        </div>
+        <oas-statistic className="dash-card" data-testid="stat-total" title="全部 Issue">
+          <span slot="value">{counts?.total.toLocaleString() ?? '…'}</span>
+        </oas-statistic>
         {(['todo', 'in_progress', 'done'] as IssueStatus[]).map((s) => (
-          <div key={s} className="dash-card" data-testid={`stat-${s}`}>
-            <p className="dash-card-num" style={{ color: STATUS_COLOR[s] }}>
+          <oas-statistic
+            key={s}
+            className="dash-card"
+            data-testid={`stat-${s}`}
+            title={STATUS_LABEL[s]}
+          >
+            <span slot="value" style={{ color: STATUS_COLOR[s] }}>
               {(counts?.byStatus[s] ?? 0).toLocaleString()}
-            </p>
-            <p className="dash-card-label">{STATUS_LABEL[s]}</p>
-          </div>
+            </span>
+          </oas-statistic>
         ))}
       </div>
       <div className="dash-charts">
@@ -697,43 +688,39 @@ function IssueListView({
       </div>
       <div className="issue-toolbar" data-testid="issue-toolbar">
         <span className="issue-toolbar-label">排序</span>
-        <select
-          data-testid="sort-by"
+        <OSelect
+          testid="sort-by"
           value={filters.sortBy}
-          onChange={(e) => setFilters((prev) => ({ ...prev, sortBy: e.target.value as SortBy }))}
-        >
-          <option value="updatedAt">最近更新</option>
-          <option value="priority">优先级</option>
-          <option value="createdAt">创建时间</option>
-        </select>
+          options={[
+            { label: '最近更新', value: 'updatedAt' },
+            { label: '优先级', value: 'priority' },
+            { label: '创建时间', value: 'createdAt' },
+          ]}
+          onChange={(v) => setFilters((prev) => ({ ...prev, sortBy: v as SortBy }))}
+        />
         <span className="issue-toolbar-label">分组</span>
-        <select
-          data-testid="group-by"
+        <OSelect
+          testid="group-by"
           value={grouping}
-          onChange={(e) => setGrouping(e.target.value as Grouping)}
-        >
-          <option value="none">不分组</option>
-          <option value="priority">按优先级</option>
-          <option value="assignee">按负责人</option>
-        </select>
+          options={[
+            { label: '不分组', value: 'none' },
+            { label: '按优先级', value: 'priority' },
+            { label: '按负责人', value: 'assignee' },
+          ]}
+          onChange={(v) => setGrouping(v as Grouping)}
+        />
         <span className="issue-toolbar-label">优先级</span>
-        <select
-          data-testid="filter-priority"
+        <OSelect
+          testid="filter-priority"
           value={filters.priorityFilter ?? ''}
-          onChange={(e) =>
-            setFilters((prev) => ({
-              ...prev,
-              priorityFilter: (e.target.value || null) as IssuePriority | null,
-            }))
+          options={[
+            { label: '全部', value: '' },
+            ...ISSUE_PRIORITIES.map((p) => ({ label: p, value: p })),
+          ]}
+          onChange={(v) =>
+            setFilters((prev) => ({ ...prev, priorityFilter: (v || null) as IssuePriority | null }))
           }
-        >
-          <option value="">全部</option>
-          {ISSUE_PRIORITIES.map((p) => (
-            <option key={p} value={p}>
-              {p}
-            </option>
-          ))}
-        </select>
+        />
         {(filters.search || filters.assigneeFilter || filters.priorityFilter || filters.myOnly) && (
           <button
             className="issue-toolbar-clear"
@@ -765,7 +752,7 @@ function IssueListView({
           {groups.map(([k, arr]) => (
             <div key={k} className="issue-group">
               <p className="issue-group-title">
-                {k} <span className="side-count">{arr.length}</span>
+                {k} <oas-badge>{String(arr.length)}</oas-badge>
               </p>
               {arr.slice(0, GROUP_PREVIEW).map(rowEl)}
               {arr.length > GROUP_PREVIEW && (
@@ -773,13 +760,54 @@ function IssueListView({
               )}
             </div>
           ))}
-          {groups.length === 0 && <p className="timeline-empty">无匹配 Issue</p>}
+          {groups.length === 0 && (
+            <oas-empty description="无匹配 Issue" data-testid="issues-empty" />
+          )}
         </div>
       ) : (
         <VirtualIssueList issues={issues} onSelect={onSelect} memberMap={memberMap} />
       )}
     </div>
   )
+}
+
+/** 列表行 → oas-virtual-list 的 oas-item 渲染通道 */
+function renderIssueRow(
+  element: HTMLElement,
+  issue: Issue,
+  memberMap: Map<string, Member>,
+  onSelect: (id: string) => void,
+) {
+  element.textContent = ''
+  const row = document.createElement('div')
+  row.className = 'issue-row'
+  row.setAttribute('role', 'button')
+  row.setAttribute('tabindex', '0')
+  const add = (cls: string, text: string) => {
+    const s = document.createElement('span')
+    s.className = cls
+    s.textContent = text
+    row.appendChild(s)
+  }
+  add('issue-key', issue.key)
+  add('issue-title', issue.title)
+  const m = memberMap.get(issue.assigneeId ?? '')
+  const av = document.createElement('span')
+  av.className = m ? 'avatar' : 'avatar avatar-empty'
+  if (m) {
+    av.style.background = m.avatarColor
+    av.textContent = m.name[0]
+  } else {
+    av.textContent = '?'
+  }
+  row.appendChild(av)
+  add(`issue-priority pri-${issue.priority}`, issue.priority)
+  add(`issue-status st-${issue.status}`, issue.status)
+  row.addEventListener('click', () => onSelect(issue.id))
+  row.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') onSelect(issue.id)
+  })
+  element.appendChild(row)
 }
 
 function VirtualIssueList({
@@ -791,75 +819,48 @@ function VirtualIssueList({
   onSelect: (id: string) => void
   memberMap: Map<string, Member>
 }) {
-  const scrollRef = useRef<HTMLDivElement>(null)
-  const [scrollTop, setScrollTop] = useState(0)
-  const [viewH, setViewH] = useState(720)
+  const listRef = useRef<HTMLElement>(null)
+  // 稳定的渲染回调：避免 items 变化以外的原因重挂监听
+  const renderRef = useRef({ onSelect, memberMap })
+  renderRef.current = { onSelect, memberMap }
 
   useEffect(() => {
-    const el = scrollRef.current
+    const el = listRef.current
     if (!el) return
-    const measure = () => setViewH(el.clientHeight || 720)
-    measure()
-    const ro = new ResizeObserver(measure)
-    ro.observe(el)
-    return () => ro.disconnect()
+    ;(el as unknown as { items: unknown[] }).items = issues
+  }, [issues])
+
+  useEffect(() => {
+    const el = listRef.current
+    if (!el) return
+    ;(el as unknown as { 'item-height'?: number })['item-height'] = 44
+    const onItem = (e: Event) => {
+      const d = (e as CustomEvent<{ index: number; item: unknown; element: HTMLElement }>).detail
+      const issue = d.item as Issue
+      renderIssueRow(d.element, issue, renderRef.current.memberMap, renderRef.current.onSelect)
+    }
+    el.addEventListener('oas-item', onItem)
+    return () => el.removeEventListener('oas-item', onItem)
   }, [])
-
-  const onScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    setScrollTop(e.currentTarget.scrollTop)
-  }, [])
-
-  const ROW_H = 44
-  const OVERSCAN = 8
-  const start = Math.max(0, Math.floor(scrollTop / ROW_H) - OVERSCAN)
-  const visible = Math.ceil(viewH / ROW_H) + OVERSCAN * 2
-  const end = Math.min(issues.length, start + visible)
-
-  const rows: React.ReactNode[] = []
-  for (let i = start; i < end; i++) {
-    const issue = issues[i]
-    rows.push(
-      <div
-        key={issue.id}
-        className="issue-row"
-        role="button"
-        tabIndex={0}
-        style={{
-          position: 'absolute',
-          top: i * ROW_H,
-          left: 0,
-          right: 0,
-          height: ROW_H,
-          cursor: 'pointer',
-        }}
-        onClick={() => onSelect(issue.id)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') onSelect(issue.id)
-        }}
-      >
-        <span className="issue-key">{issue.key}</span>
-        <span className="issue-title">{issue.title}</span>
-        <Avatar member={memberMap.get(issue.assigneeId ?? '')} size={18} />
-        <span className={`issue-priority pri-${issue.priority}`}>{issue.priority}</span>
-        <span className={`issue-status st-${issue.status}`}>{issue.status}</span>
-      </div>,
-    )
-  }
 
   return (
-    <div
-      ref={scrollRef}
+    <oas-virtual-list
+      ref={listRef}
       className="issue-scroll"
-      style={{ flex: 1, overflowY: 'auto', position: 'relative' }}
-      onScroll={onScroll}
-    >
-      <div style={{ height: issues.length * ROW_H, position: 'relative' }}>{rows}</div>
-    </div>
+      data-testid="issue-vlist"
+      style={{ flex: 1, minHeight: 0 }}
+    />
   )
 }
 
-/* ── 评论区（详情抽屉） ── */
-function CommentsBlock({ issueId }: { issueId: string }) {
+/* ── 评论区（详情抽屉，oas-comment + oas-input） ── */
+function CommentsBlock({
+  issueId,
+  memberMap,
+}: {
+  issueId: string
+  memberMap: Map<string, Member>
+}) {
   const comments = useLiveQuery(
     () =>
       db.comments
@@ -868,10 +869,10 @@ function CommentsBlock({ issueId }: { issueId: string }) {
         .toArray(),
     [issueId],
   )
-  const [draft, setDraft] = useState('')
+  const inputRef = useRef<HTMLElement & { value?: string }>(null)
 
   const submit = async () => {
-    const body = draft.trim()
+    const body = (inputRef.current?.value ?? '').trim()
     if (!body) return
     await db.comments.add({
       id: nanoid(),
@@ -880,7 +881,7 @@ function CommentsBlock({ issueId }: { issueId: string }) {
       body,
       createdAt: Date.now(),
     })
-    setDraft('')
+    if (inputRef.current) inputRef.current.value = ''
   }
 
   return (
@@ -888,22 +889,22 @@ function CommentsBlock({ issueId }: { issueId: string }) {
       <span>评论（{comments?.length ?? 0}）</span>
       <div className="comments-list">
         {(comments ?? []).map((c) => (
-          <div key={c.id} className="comment-item" data-testid="comment-item">
-            <p className="comment-body">{c.body}</p>
-            <p className="comment-meta">{new Date(c.createdAt).toLocaleString()}</p>
-          </div>
+          <oas-comment
+            key={c.id}
+            data-testid="comment-item"
+            author={memberMap.get(c.authorId)?.name ?? '匿名'}
+            datetime={new Date(c.createdAt).toLocaleString()}
+          >
+            <span slot="content">{c.body}</span>
+          </oas-comment>
         ))}
       </div>
       <div className="comment-input-row">
-        <input
+        <oas-input
           className="comment-input"
           data-testid="comment-input"
           placeholder="写下评论…"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') void submit()
-          }}
+          ref={inputRef}
         />
         <button
           className="comment-send"
@@ -918,7 +919,7 @@ function CommentsBlock({ issueId }: { issueId: string }) {
   )
 }
 
-/* ── Issue 详情抽屉（即时保存） ── */
+/* ── Issue 详情抽屉（oas-drawer + OSelect + oas-textarea + oas-tag + popconfirm，即时保存） ── */
 const LABELS = ['frontend', 'backend', 'design', 'bug', 'feature', 'tech-debt', 'docs', 'infra']
 
 function IssueDetailDrawer({
@@ -931,98 +932,106 @@ function IssueDetailDrawer({
   onClose: () => void
 }) {
   const issue = useLiveQuery(() => db.issues.get(issueId), [issueId])
-  const [desc, setDesc] = useState<string | null>(null)
-  const [confirmDelete, setConfirmDelete] = useState(false)
+  const drawerRef = useRef<HTMLElement>(null)
+  const popRef = useRef<HTMLElement>(null)
+  const [descDirty, setDescDirty] = useState(false)
 
-  if (!issue) {
-    return (
-      <div className="detail-overlay" onClick={onClose}>
-        <div className="detail-panel" onClick={(e) => e.stopPropagation()} />
-      </div>
-    )
-  }
+  useEffect(() => {
+    const el = drawerRef.current
+    if (!el) return
+    // 挂载即开（visible 属性；title 是 HTMLElement 全局 property，React 分派落不到 attribute）
+    el.setAttribute('visible', '')
+    el.setAttribute('title', issue ? issue.key : '')
+  }, [issue?.id])
+  useEffect(() => {
+    drawerRef.current?.setAttribute('title', issue ? issue.key : '')
+  }, [issue?.key])
+
+  // 描述编辑态在切换 issue 时重置；textarea value 跟随 issue.description
+  const descRefValue = useRef<HTMLElement & { value?: string }>(null)
+  useEffect(() => {
+    setDescDirty(false)
+    if (descRefValue.current) descRefValue.current.value = issue?.description ?? ''
+  }, [issueId, issue?.description])
+  useEffect(() => {
+    const el = descRefValue.current
+    if (!el) return
+    // 组件输入事件名不透明：轮询值对比驱动 dirty（500ms，编辑场景足够）
+    const t = setInterval(() => {
+      const cur = descRefValue.current?.value ?? ''
+      setDescDirty(cur !== (issue?.description ?? ''))
+    }, 500)
+    return () => clearInterval(t)
+  }, [issueId, issue?.description])
+  // popconfirm 确认（reason='ok'）→ 删除并关抽屉
+  useEffect(() => {
+    const el = popRef.current
+    if (!el) return
+    const h = (e: Event) => {
+      const reason = (e as CustomEvent<{ reason?: string }>).detail?.reason
+      if (reason === 'ok') void db.issues.delete(issueId).then(onClose)
+    }
+    el.addEventListener('oas-open-change', h)
+    return () => el.removeEventListener('oas-open-change', h)
+  }, [issueId, onClose])
+
+  if (!issue) return <oas-drawer ref={drawerRef} />
 
   const save = (changes: Partial<Issue>) => void db.issues.update(issue.id, changes)
+  const memberOptions = [
+    { label: '未分配', value: '' },
+    ...[...memberMap.values()].map((m) => ({ label: m.name, value: m.id })),
+  ]
 
   return (
-    <div
-      className="detail-overlay"
-      role="button"
-      tabIndex={0}
-      onClick={onClose}
-      onKeyDown={(e) => {
-        if (e.key === 'Escape') onClose()
-      }}
-    >
-      <div className="detail-panel" role="dialog" onClick={(e) => e.stopPropagation()}>
-        <div className="detail-head">
-          <span className="issue-key">{issue.key}</span>
-          <button className="detail-close" type="button" onClick={onClose}>
-            ✕
-          </button>
-        </div>
+    <oas-drawer ref={drawerRef} data-testid="detail-drawer">
+      <div className="detail-body">
         <h2 className="detail-title">{issue.title}</h2>
         <div className="detail-meta">
-          <div>
+          <div className="detail-field">
             <span>状态</span>
-            <select
-              data-testid="detail-status"
+            <OSelect
+              testid="detail-status"
               value={issue.status}
-              onChange={(e) => save({ status: e.target.value as IssueStatus })}
-            >
-              {STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {STATUS_LABEL[s]}
-                </option>
-              ))}
-            </select>
+              options={STATUSES.map((s) => ({ label: STATUS_LABEL[s], value: s }))}
+              onChange={(v) => save({ status: v as IssueStatus })}
+            />
           </div>
-          <div>
+          <div className="detail-field">
             <span>优先级</span>
-            <select
-              data-testid="detail-priority"
+            <OSelect
+              testid="detail-priority"
               value={issue.priority}
-              onChange={(e) => save({ priority: e.target.value as IssuePriority })}
-            >
-              {ISSUE_PRIORITIES.map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </select>
+              options={ISSUE_PRIORITIES.map((p) => ({ label: p, value: p }))}
+              onChange={(v) => save({ priority: v as IssuePriority })}
+            />
           </div>
-          <div>
+          <div className="detail-field">
             <span>负责人</span>
-            <select
-              data-testid="detail-assignee"
+            <OSelect
+              testid="detail-assignee"
               value={issue.assigneeId ?? ''}
-              onChange={(e) => save({ assigneeId: e.target.value || null })}
-            >
-              <option value="">未分配</option>
-              {[...memberMap.values()].map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name}
-                </option>
-              ))}
-            </select>
+              options={memberOptions}
+              onChange={(v) => save({ assigneeId: v || null })}
+            />
           </div>
         </div>
         <div className="detail-desc-block">
           <span>描述</span>
-          <textarea
+          <oas-textarea
+            ref={descRefValue}
             data-testid="detail-desc"
             placeholder="补充描述…"
-            value={desc ?? issue.description}
-            onChange={(e) => setDesc(e.target.value)}
+            className="detail-textarea"
           />
-          {desc !== null && desc !== issue.description && (
+          {descDirty && (
             <button
               className="detail-save-desc"
               type="button"
               data-testid="detail-desc-save"
               onClick={() => {
-                save({ description: desc })
-                setDesc(null)
+                save({ description: descRefValue.current?.value ?? '' })
+                setDescDirty(false)
               }}
             >
               保存描述
@@ -1033,61 +1042,43 @@ function IssueDetailDrawer({
           <span>标签</span>
           <div className="detail-labels">
             {issue.labels.map((l) => (
-              <span key={l} className="label-chip">
-                {l}
-                <button
-                  type="button"
-                  className="label-chip-x"
-                  aria-label={`移除标签 ${l}`}
-                  data-testid={`label-remove-${l}`}
-                  onClick={() => save({ labels: issue.labels.filter((x) => x !== l) })}
-                >
-                  ×
-                </button>
-              </span>
+              <TagChip
+                key={l}
+                label={l}
+                testid={`label-chip-${l}`}
+                onRemove={() => save({ labels: issue.labels.filter((x) => x !== l) })}
+              />
             ))}
-            <select
-              className="label-add"
-              data-testid="label-add"
+            <OSelect
+              testid="label-add"
               value=""
-              onChange={(e) => {
-                const l = e.target.value
+              options={[
+                { label: '＋ 标签…', value: '' },
+                ...LABELS.filter((l) => !issue.labels.includes(l)).map((l) => ({
+                  label: l,
+                  value: l,
+                })),
+              ]}
+              onChange={(l) => {
                 if (l && !issue.labels.includes(l)) save({ labels: [...issue.labels, l] })
               }}
-            >
-              <option value="">＋ 标签…</option>
-              {LABELS.filter((l) => !issue.labels.includes(l)).map((l) => (
-                <option key={l} value={l}>
-                  {l}
-                </option>
-              ))}
-            </select>
+            />
           </div>
         </div>
-        <CommentsBlock issueId={issue.id} />
+        <CommentsBlock issueId={issue.id} memberMap={memberMap} />
         <div className="detail-foot">
           <span className="detail-dates">
             创建 {new Date(issue.createdAt).toLocaleDateString()} · 更新{' '}
             {new Date(issue.updatedAt).toLocaleString()}
           </span>
-          <button
-            className={`detail-delete${confirmDelete ? ' is-confirm' : ''}`}
-            type="button"
-            data-testid="detail-delete"
-            onClick={() => {
-              if (!confirmDelete) {
-                setConfirmDelete(true)
-                return
-              }
-              void db.issues.delete(issue.id).then(onClose)
-            }}
-            onBlur={() => setConfirmDelete(false)}
-          >
-            {confirmDelete ? '再点一次确认删除' : '删除'}
-          </button>
+          <oas-popconfirm ref={popRef} title="删除后不可恢复，确认？" data-testid="detail-delete">
+            <oas-button slot="trigger" type="danger" data-testid="detail-delete-btn">
+              删除
+            </oas-button>
+          </oas-popconfirm>
         </div>
       </div>
-    </div>
+    </oas-drawer>
   )
 }
 
@@ -1101,10 +1092,7 @@ interface KanbanElement extends HTMLElement {
 function KanbanBoard({ issues, memberMap }: { issues: Issue[]; memberMap: Map<string, Member> }) {
   const boardRef = useRef<KanbanElement>(null)
 
-  const columns = useMemo(
-    () => STATUSES.map((s) => ({ key: s, title: STATUS_LABEL[s] })),
-    [],
-  )
+  const columns = useMemo(() => STATUSES.map((s) => ({ key: s, title: STATUS_LABEL[s] })), [])
 
   // 列内显示顺序 = cards 数组序：按 order 升序铺入
   const cards = useMemo(
@@ -1165,13 +1153,15 @@ function KanbanBoard({ issues, memberMap }: { issues: Issue[]; memberMap: Map<st
     const el = boardRef.current
     if (!el) return
     const onChange = (e: Event) => {
-      const d = (e as CustomEvent<{
-        id: string
-        from: string
-        to: string
-        index: number
-        ids?: string[]
-      }>).detail
+      const d = (
+        e as CustomEvent<{
+          id: string
+          from: string
+          to: string
+          index: number
+          ids?: string[]
+        }>
+      ).detail
       if (!d?.id || !d.to) return
       const to = d.to as IssueStatus
       const ids = d.ids ?? [d.id]

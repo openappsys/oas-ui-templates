@@ -5,13 +5,13 @@ declare module 'react' {
   namespace JSX {
     interface IntrinsicElements {
       'oas-icon': HTMLAttributes<HTMLElement> & { name: string; size?: number | string }
-      'oas-tag': HTMLAttributes<HTMLElement> & {
+      'oas-tag': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
         size?: 'small' | 'medium' | 'large'
         type?: string
+        closable?: boolean | string
       }
       'oas-button': HTMLAttributes<HTMLElement> & { type?: string; size?: string }
       'oas-card': HTMLAttributes<HTMLElement> & { title?: string }
-      'oas-badge': HTMLAttributes<HTMLElement> & { value?: string; size?: string; offset?: string }
       'oas-switch': HTMLAttributes<HTMLElement> & { checked?: boolean | string }
       'oas-slider': HTMLAttributes<HTMLElement> & {
         value?: number | string
@@ -32,7 +32,7 @@ declare module 'react' {
         'no-footer'?: boolean | string
         visible?: boolean | string
       }
-      'oas-input': HTMLAttributes<HTMLElement> & {
+      'oas-input': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
         value?: string
         placeholder?: string
         disabled?: boolean | string
@@ -41,6 +41,42 @@ declare module 'react' {
         type?: string
       }
       'oas-kanban': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
+      'oas-virtual-list': React.DetailedHTMLProps<
+        React.HTMLAttributes<HTMLElement>,
+        HTMLElement
+      > & {
+        'item-height'?: number | string
+      }
+      'oas-comment': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        author?: string
+        datetime?: string
+      }
+      'oas-drawer': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        visible?: boolean | string
+        placement?: string
+      }
+      'oas-textarea': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        value?: string
+        placeholder?: string
+      }
+      'oas-segmented': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
+      'oas-statistic': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        title?: string
+      }
+      'oas-popconfirm': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        title?: string
+        trigger?: string
+      }
+      'oas-badge': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        type?: string
+        size?: string
+        offset?: string
+      }
+      'oas-select': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        value?: string
+        placeholder?: string
+        multiple?: boolean | string
+      }
     }
   }
 }
