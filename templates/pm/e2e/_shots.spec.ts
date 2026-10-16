@@ -1,4 +1,3 @@
-import { chromium } from '@playwright/test'
 import { expect, test } from '@playwright/test'
 
 test('shots', async ({ page }) => {

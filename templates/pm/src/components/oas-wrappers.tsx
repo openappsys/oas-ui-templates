@@ -78,7 +78,7 @@ export function OSegmented({
     el.addEventListener('oas-change', h)
     return () => el.removeEventListener('oas-change', h)
   }, [])
-  return <oas-segmented ref={ref} block data-testid={testid} />
+  return <oas-segmented ref={ref} block size="small" data-testid={testid} />
 }
 
 /** oas-tag closable 包装：oas-close 事件 → onRemove */

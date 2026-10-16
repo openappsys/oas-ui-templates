@@ -59,7 +59,10 @@ declare module 'react' {
         value?: string
         placeholder?: string
       }
-      'oas-segmented': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
+      'oas-segmented': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        block?: boolean | string
+        size?: string
+      }
       'oas-statistic': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
         title?: string
       }

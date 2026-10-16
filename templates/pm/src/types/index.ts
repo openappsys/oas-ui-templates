@@ -49,6 +49,26 @@ export interface Comment {
   createdAt: number
 }
 
+export interface SavedView {
+  id: string
+  name: string
+  /** Filters JSON（不含 search——搜索是即时动作不进视图） */
+  filters: string
+  createdAt: number
+}
+
+export interface Activity {
+  id: string
+  issueId: string
+  actorId: string
+  /** create | status | priority | assignee | labels | description | delete | title */
+  type: string
+  field?: string
+  from?: string
+  to?: string
+  createdAt: number
+}
+
 // ── 查询 ──────────────────────────────────────────────────────────────
 
 export interface IssueQuery {

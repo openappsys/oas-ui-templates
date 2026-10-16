@@ -6,6 +6,7 @@ import { db } from './db/schema'
 import type { Issue, IssuePriority, IssueStatus, Member, Project } from './types'
 import { ISSUE_PRIORITIES, STATUS_LABEL } from './types'
 import { OSelect, OSegmented, TagChip } from './components/oas-wrappers'
+import { BulkBar, useSavedViews, saveView } from './components/BulkBar'
 
 const STATUSES: IssueStatus[] = ['backlog', 'todo', 'in_progress', 'done', 'cancelled']
 const STATUS_COLOR: Record<IssueStatus, string> = {
@@ -16,7 +17,6 @@ const STATUS_COLOR: Record<IssueStatus, string> = {
   cancelled: '#dc2626',
 }
 const PRIORITY_WEIGHT: Record<IssuePriority, number> = { urgent: 0, high: 1, medium: 2, low: 3 }
-const CURRENT_USER = 'member-1'
 const LIST_WINDOW = 500
 const GROUP_PREVIEW = 30
 
@@ -45,7 +45,7 @@ const DEFAULT_FILTERS: Filters = {
 }
 
 /** 数据窗口：compound index 取项目/状态维度最近 LIST_WINDOW 条，再内存细筛 */
-function useIssueWindow(f: Filters) {
+function useIssueWindow(f: Filters, currentUser: string) {
   return useLiveQuery(async () => {
     const items = f.statusFilter
       ? await db.issues
@@ -69,7 +69,7 @@ function useIssueWindow(f: Filters) {
           .toArray()
     let out = items
     if (f.assigneeFilter) out = out.filter((i) => i.assigneeId === f.assigneeFilter)
-    if (f.myOnly) out = out.filter((i) => i.assigneeId === CURRENT_USER)
+    if (f.myOnly) out = out.filter((i) => i.assigneeId === currentUser)
     if (f.priorityFilter) out = out.filter((i) => i.priority === f.priorityFilter)
     if (f.search.trim()) {
       const kw = f.search.trim().toLowerCase()
@@ -122,6 +122,23 @@ function useWindowAssigneeCounts(issues: Issue[] | undefined) {
     }
     return map
   }, [issues])
+}
+
+/** 活动记录：字段级 diff 落库（type=字段名，from→to） */
+async function logActivity(
+  issueId: string,
+  actorId: string,
+  type: string,
+  extra?: { field?: string; from?: string; to?: string },
+): Promise<void> {
+  await db.activities.add({
+    id: nanoid(),
+    issueId,
+    actorId,
+    type,
+    ...extra,
+    createdAt: Date.now(),
+  })
 }
 
 /** fractional order：在 prev/next 之间取中值（浮点），边界用 ±1024 步进 */
@@ -178,15 +195,106 @@ function Chart({
   return <oas-chart ref={ref} data-testid={testid} aria-label={label} data-className="pm-chart" />
 }
 
+/** 与我相关的最近动态：他人对我负责 Issue 的变更（近 7 天，最多 20 条） */
+function useMyNotifications(currentUser: string) {
+  return useLiveQuery(async () => {
+    const acts = await db.activities
+      .where('createdAt')
+      .belowOrEqual(Date.now())
+      .reverse()
+      .limit(300)
+      .toArray()
+    const mine = acts.filter((a) => a.actorId !== currentUser)
+    const out: Array<{
+      id: string
+      actorId: string
+      text: string
+      issueId: string
+      createdAt: number
+    }> = []
+    for (const a of mine) {
+      const issue = await db.issues.get(a.issueId)
+      if (!issue || issue.assigneeId !== currentUser) continue
+      out.push({
+        id: a.id,
+        actorId: a.actorId,
+        text: issue.key + ' ' + (issue.title ?? ''),
+        issueId: a.issueId,
+        createdAt: a.createdAt,
+      })
+      if (out.length >= 20) break
+    }
+    return out
+  }, [currentUser])
+}
+
+function NotificationBadge({ currentUser }: { currentUser: string }) {
+  const list = useMyNotifications(currentUser)
+  const count = list?.length ?? 0
+  if (count === 0) return null
+  return (
+    <oas-badge type="danger" data-testid="notify-badge">
+      {String(count)}
+    </oas-badge>
+  )
+}
+
+function NotificationList({ currentUser }: { currentUser: string }) {
+  const list = useMyNotifications(currentUser)
+  if (!list || list.length === 0) {
+    return <oas-empty description="暂无与我相关的动态" />
+  }
+  return (
+    <div className="notify-list" data-testid="notify-list">
+      {list.map((n) => (
+        <div key={n.id} className="notify-item" data-testid="notify-item">
+          <p className="notify-text">{n.text}</p>
+          <p className="notify-time">{new Date(n.createdAt).toLocaleString()}</p>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export function App() {
+  // 当前登录身份（localStorage 持久化，默认张伟）；头像点击可切换
+  const [currentUser, setCurrentUser] = useState(
+    () => localStorage.getItem('oas-pm-user') ?? 'member-1',
+  )
+  const savedViews = useSavedViews()
+  const saveViewNameRef = useRef<HTMLElement & { value?: string }>(null)
+  const applySavedView = useCallback((filtersJson: string) => {
+    try {
+      const f = JSON.parse(filtersJson)
+      setFilters((prev) => ({ ...prev, ...f, search: '' }))
+    } catch {
+      // 忽略损坏的视图数据
+    }
+  }, [])
+  const switchUser = useCallback((id: string) => {
+    setCurrentUser(id)
+    localStorage.setItem('oas-pm-user', id)
+  }, [])
   const [view, setView] = useState<View>('issues')
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS)
   const [grouping, setGrouping] = useState<Grouping>('none')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const aboutRef = useRef<HTMLElement>(null)
+  const userPickRef = useRef<HTMLElement>(null)
+  const notifyRef = useRef<HTMLElement>(null)
+  const saveViewRef = useRef<HTMLElement>(null)
   const createRef = useRef<HTMLElement>(null)
 
-  const issues = useIssueWindow(filters)
+  const doSaveView = useCallback(async () => {
+    const name = (saveViewNameRef.current?.value ?? '').trim()
+    if (!name) return
+    const { search: _s, ...rest } = filters
+    await saveView(name, rest)
+    if (saveViewNameRef.current) saveViewNameRef.current.value = ''
+    saveViewRef.current?.removeAttribute('visible')
+  }, [filters])
+
+  const issues = useIssueWindow(filters, currentUser)
   const counts = useProjectCounts(filters.projectId)
   const members = useMembers()
   const projects = useProjects()
@@ -255,8 +363,9 @@ export function App() {
       return n
     })
     const projectKey = projectsRef.current.find((p) => p.id === projectId)?.key ?? 'OAS'
+    const newId = nanoid()
     await db.issues.add({
-      id: nanoid(),
+      id: newId,
       projectId,
       key: `${projectKey}-${keyNum}`,
       title,
@@ -264,7 +373,7 @@ export function App() {
       status,
       priority,
       assigneeId: assigneeId || null,
-      reporterId: CURRENT_USER,
+      reporterId: currentUser,
       labels: [],
       startAt: null,
       dueAt: null,
@@ -272,6 +381,7 @@ export function App() {
       updatedAt: Date.now(),
       order: Date.now(),
     })
+    await logActivity(newId, currentUser, 'create')
     if (input) input.value = ''
     createRef.current?.removeAttribute('visible')
     // projectsRef 为 ref，不进 deps；projects 仅用于 ref 同步
@@ -328,6 +438,16 @@ export function App() {
         <span className="tb-brand">
           <span className="tb-logo">OAS</span> PM
         </span>
+        <button
+          className="tb-user"
+          type="button"
+          data-testid="tb-user"
+          title="切换身份"
+          onClick={() => setUserPickerOpen(true)}
+        >
+          <Avatar member={memberMap.get(currentUser)} size={22} />
+          <span>{memberMap.get(currentUser)?.name ?? ''}</span>
+        </button>
         <oas-button
           type="primary"
           data-testid="toolbar-new"
@@ -350,6 +470,16 @@ export function App() {
           placeholder="搜索 Key 或标题…（/）"
         />
         <span className="tb-spacer" />
+        <button
+          className="toolbar-btn"
+          type="button"
+          data-testid="toolbar-notify"
+          title="与我相关的最近动态"
+          onClick={() => notifyRef.current?.setAttribute('visible', '')}
+        >
+          动态
+          <NotificationBadge currentUser={currentUser} />
+        </button>
         <button
           className="toolbar-btn"
           type="button"
@@ -403,7 +533,7 @@ export function App() {
             data-testid="view-my"
             onClick={() => setF('myOnly', true)}
           >
-            <span>我的（{memberMap.get(CURRENT_USER)?.name ?? ''}）</span>
+            <span>我的（{memberMap.get(currentUser)?.name ?? ''}）</span>
           </button>
           <p className="side-title">状态</p>
           <button
@@ -428,6 +558,38 @@ export function App() {
               <span className="side-count">{counts?.byStatus[s]?.toLocaleString() ?? '…'}</span>
             </button>
           ))}
+          <p className="side-title">保存的视图</p>
+          {(savedViews ?? []).map((v) => (
+            <div key={v.id} className="side-item saved-view-item">
+              <button
+                className="side-item"
+                type="button"
+                data-testid={`saved-view-${v.id}`}
+                onClick={() => applySavedView(v.filters)}
+                style={{
+                  flex: 1,
+                  border: 'none',
+                  background: 'none',
+                  padding: 0,
+                  textAlign: 'left',
+                  font: 'inherit',
+                  color: 'inherit',
+                  cursor: 'pointer',
+                }}
+              >
+                <span>{v.name}</span>
+              </button>
+              <button
+                className="saved-view-del"
+                type="button"
+                aria-label={`删除视图 ${v.name}`}
+                data-testid={`saved-view-del-${v.id}`}
+                onClick={() => void db.savedViews.delete(v.id)}
+              >
+                ×
+              </button>
+            </div>
+          ))}
           <p className="side-title">成员（窗口内）</p>
           {(members ?? []).map((m) => (
             <button
@@ -445,7 +607,11 @@ export function App() {
         </aside>
         <main className="content">
           {view === 'dashboard' && (
-            <DashboardView projectId={filters.projectId} memberMap={memberMap} />
+            <DashboardView
+              projectId={filters.projectId}
+              memberMap={memberMap}
+              currentUser={currentUser}
+            />
           )}
           {view === 'issues' && issues && (
             <IssueListView
@@ -457,6 +623,8 @@ export function App() {
               setGrouping={setGrouping}
               memberMap={memberMap}
               onSelect={setSelectedId}
+              onSaveView={() => saveViewRef.current?.setAttribute('visible', '')}
+              currentUser={currentUser}
             />
           )}
           {view === 'board' && <KanbanBoard issues={issues ?? []} memberMap={memberMap} />}
@@ -535,9 +703,62 @@ export function App() {
         <IssueDetailDrawer
           issueId={selectedId}
           memberMap={memberMap}
+          currentUser={currentUser}
           onClose={() => setSelectedId(null)}
         />
       )}
+
+      {/* 保存视图 */}
+      <oas-modal ref={saveViewRef} no-footer data-testid="modal-save-view">
+        <div className="create-body">
+          <div className="create-field">
+            <label htmlFor="save-view-name">视图名称</label>
+            <oas-input
+              ref={saveViewNameRef}
+              data-testid="save-view-name"
+              placeholder="如：我的进行中"
+            />
+          </div>
+          <div className="quit-actions">
+            <oas-button
+              data-testid="save-view-cancel"
+              onClick={() => saveViewRef.current?.removeAttribute('visible')}
+            >
+              取消
+            </oas-button>
+            <oas-button type="primary" data-testid="save-view-ok" onClick={() => void doSaveView()}>
+              保存
+            </oas-button>
+          </div>
+        </div>
+      </oas-modal>
+
+      {/* 通知（与我相关的最近动态） */}
+      <oas-modal ref={notifyRef} title="与我相关的最近动态" no-footer data-testid="modal-notify">
+        <NotificationList currentUser={currentUser} />
+      </oas-modal>
+
+      {/* 身份切换 */}
+      <oas-modal ref={userPickRef} title="切换身份" no-footer data-testid="modal-user">
+        <div className="user-picker">
+          {(members ?? []).map((m) => (
+            <button
+              key={m.id}
+              className={`user-pick-item${m.id === currentUser ? ' is-current' : ''}`}
+              type="button"
+              data-testid={`pick-user-${m.id}`}
+              onClick={() => {
+                switchUser(m.id)
+                userPickRef.current?.removeAttribute('visible')
+              }}
+            >
+              <Avatar member={m} size={26} />
+              <span>{m.name}</span>
+              <span className="user-pick-role">{m.role}</span>
+            </button>
+          ))}
+        </div>
+      </oas-modal>
 
       {/* 关于 */}
       <oas-modal ref={aboutRef} no-footer data-testid="modal-about">
@@ -568,9 +789,11 @@ export function App() {
 function DashboardView({
   projectId,
   memberMap,
+  currentUser,
 }: {
   projectId: string
   memberMap: Map<string, Member>
+  currentUser: string
 }) {
   const counts = useProjectCounts(projectId)
   const topAssignees = useLiveQuery(async () => {
@@ -588,6 +811,22 @@ function DashboardView({
     label: STATUS_LABEL[s],
     value: counts?.byStatus[s] ?? 0,
   }))
+
+  // 近 30 天创建趋势（createdAt 索引范围取数，按天聚合）
+  const trend = useLiveQuery(async () => {
+    const day = 86400000
+    const from = Date.now() - 30 * day
+    const rows = await db.issues.where('createdAt').between(from, Date.now()).toArray()
+    const byDay = new Map<string, number>()
+    for (let i = 30; i >= 0; i--) {
+      byDay.set(new Date(Date.now() - i * day).toISOString().slice(5, 10), 0)
+    }
+    for (const r of rows) {
+      const k = new Date(r.createdAt).toISOString().slice(5, 10)
+      if (byDay.has(k)) byDay.set(k, (byDay.get(k) ?? 0) + 1)
+    }
+    return [...byDay.entries()].map(([label, value]) => ({ label, value }))
+  }, [projectId])
 
   return (
     <div className="dash-page" data-testid="dashboard">
@@ -624,8 +863,12 @@ function DashboardView({
           />
         </div>
       </div>
+      <div className="dash-chart-box" data-testid="trend-box">
+        <p className="dash-chart-title">近 30 天创建趋势</p>
+        <Chart type="area" data={trend ?? []} testid="chart-trend" label="创建趋势图" />
+      </div>
       <p className="dash-note" data-testid="dashboard-member-note">
-        {memberMap.get(CURRENT_USER)?.name ?? ''} 的工作台 · 数据实时来自 IndexedDB
+        {memberMap.get(currentUser)?.name ?? ''} 的工作台 · 数据实时来自 IndexedDB
       </p>
     </div>
   )
@@ -641,6 +884,8 @@ function IssueListView({
   setGrouping,
   memberMap,
   onSelect,
+  onSaveView,
+  currentUser,
 }: {
   issues: Issue[]
   total: number
@@ -650,7 +895,20 @@ function IssueListView({
   setGrouping: (g: Grouping) => void
   memberMap: Map<string, Member>
   onSelect: (id: string) => void
+  onSaveView: () => void
+  currentUser: string
 }) {
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+  const clearSelection = useCallback(() => setSelectedIds(new Set()), [])
+
   const groups = useMemo(() => {
     if (grouping === 'none') return null
     const map = new Map<string, Issue[]>()
@@ -669,11 +927,29 @@ function IssueListView({
       className="issue-row"
       role="button"
       tabIndex={0}
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '18px 110px 1fr 24px 70px 90px',
+        alignItems: 'center',
+        gap: 12,
+        height: 44,
+        padding: '0 16px',
+      }}
       onClick={() => onSelect(i.id)}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') onSelect(i.id)
       }}
     >
+      <input
+        type="checkbox"
+        className="row-check"
+        checked={selectedIds.has(i.id)}
+        onClick={(e) => {
+          e.stopPropagation()
+          toggleSelect(i.id)
+        }}
+        readOnly
+      />
       <span className="issue-key">{i.key}</span>
       <span className="issue-title">{i.title}</span>
       <Avatar member={memberMap.get(i.assigneeId ?? '')} size={18} />
@@ -746,6 +1022,14 @@ function IssueListView({
             清除筛选
           </button>
         )}
+        <button
+          className="issue-toolbar-clear"
+          type="button"
+          data-testid="save-view-btn"
+          onClick={onSaveView}
+        >
+          保存视图
+        </button>
       </div>
       <div className="issue-thead">
         <span>Key</span>
@@ -772,8 +1056,15 @@ function IssueListView({
           )}
         </div>
       ) : (
-        <VirtualIssueList issues={issues} onSelect={onSelect} memberMap={memberMap} />
+        <VirtualIssueList
+          issues={issues}
+          onSelect={onSelect}
+          memberMap={memberMap}
+          selectedIds={selectedIds}
+          toggleSelect={toggleSelect}
+        />
       )}
+      <BulkBar selectedIds={selectedIds} currentUser={currentUser} onDone={clearSelection} />
     </div>
   )
 }
@@ -799,6 +1090,8 @@ function renderIssueRow(
   issue: Issue,
   memberMap: Map<string, Member>,
   onSelect: (id: string) => void,
+  selectedIds: Set<string>,
+  toggleSelect: (id: string) => void,
 ) {
   element.textContent = ''
   element.style.display = 'block'
@@ -808,7 +1101,7 @@ function renderIssueRow(
   row.setAttribute('tabindex', '0')
   Object.assign(row.style, {
     display: 'grid',
-    gridTemplateColumns: '110px 1fr 24px 70px 90px',
+    gridTemplateColumns: '18px 110px 1fr 24px 70px 90px',
     alignItems: 'center',
     gap: '12px',
     height: '44px',
@@ -875,16 +1168,20 @@ function VirtualIssueList({
   issues,
   onSelect,
   memberMap,
+  selectedIds,
+  toggleSelect,
 }: {
   issues: Issue[]
   onSelect: (id: string) => void
   memberMap: Map<string, Member>
+  selectedIds: Set<string>
+  toggleSelect: (id: string) => void
 }) {
   const listRef = useRef<HTMLElement>(null)
   const lastTopRef = useRef(0)
   // 稳定的渲染回调：避免 items 变化以外的原因重挂监听
-  const renderRef = useRef({ onSelect, memberMap })
-  renderRef.current = { onSelect, memberMap }
+  const renderRef = useRef({ onSelect, memberMap, selectedIds, toggleSelect })
+  renderRef.current = { onSelect, memberMap, selectedIds, toggleSelect }
 
   // oas-item 渲染通道必须先于 items 挂上（effect 按声明序执行）：
   // 切回视图时数据即刻就位，items setter 同步渲染，通道缺席则列表永远空白
@@ -895,7 +1192,14 @@ function VirtualIssueList({
     const onItem = (e: Event) => {
       const d = (e as CustomEvent<{ index: number; item: unknown; element: HTMLElement }>).detail
       const issue = d.item as Issue
-      renderIssueRow(d.element, issue, renderRef.current.memberMap, renderRef.current.onSelect)
+      renderIssueRow(
+        d.element,
+        issue,
+        renderRef.current.memberMap,
+        renderRef.current.onSelect,
+        renderRef.current.selectedIds,
+        renderRef.current.toggleSelect,
+      )
     }
     el.addEventListener('oas-item', onItem)
     // 记录滚动位置：items 更新后 scrollToIndex 恢复视口用
@@ -933,13 +1237,62 @@ function VirtualIssueList({
   )
 }
 
-/* ── 评论区（详情抽屉，oas-comment + oas-input） ── */
-function CommentsBlock({
+/* ── 活动历史（详情抽屉） ── */
+function DrawerActivities({
   issueId,
   memberMap,
 }: {
   issueId: string
   memberMap: Map<string, Member>
+}) {
+  const acts = useLiveQuery(
+    () =>
+      db.activities
+        .where('[issueId+createdAt]')
+        .between([issueId, Dexie.minKey], [issueId, Dexie.maxKey])
+        .reverse()
+        .toArray(),
+    [issueId],
+  )
+  const TYPE_LABEL: Record<string, string> = {
+    create: '创建了 Issue',
+    status: '变更了状态',
+    priority: '变更了优先级',
+    assignee: '变更了负责人',
+    labels: '更新了标签',
+    description: '更新了描述',
+    title: '更新了标题',
+    dates: '调整了排期',
+  }
+  return (
+    <div className="activities-block" data-testid="activities-block">
+      <span>活动（{acts?.length ?? 0}）</span>
+      <div className="activities-list">
+        {(acts ?? []).map((a) => (
+          <div key={a.id} className="activity-item" data-testid="activity-item">
+            <span className="activity-actor">{memberMap.get(a.actorId)?.name ?? '某人'}</span>
+            <span className="activity-text">
+              {TYPE_LABEL[a.type] ?? a.type}
+              {a.field === '状态' && a.to ? ` → ${STATUS_LABEL[a.to as IssueStatus] ?? a.to}` : ''}
+              {a.field && a.type !== 'status' && a.to ? ` → ${a.to}` : ''}
+            </span>
+            <span className="activity-time">{new Date(a.createdAt).toLocaleString()}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/* ── 评论区（详情抽屉，oas-comment + oas-input） ── */
+function CommentsBlock({
+  issueId,
+  memberMap,
+  currentUser,
+}: {
+  issueId: string
+  memberMap: Map<string, Member>
+  currentUser: string
 }) {
   const comments = useLiveQuery(
     () =>
@@ -957,7 +1310,7 @@ function CommentsBlock({
     await db.comments.add({
       id: nanoid(),
       issueId,
-      authorId: CURRENT_USER,
+      authorId: currentUser,
       body,
       createdAt: Date.now(),
     })
@@ -1005,10 +1358,12 @@ const LABELS = ['frontend', 'backend', 'design', 'bug', 'feature', 'tech-debt', 
 function IssueDetailDrawer({
   issueId,
   memberMap,
+  currentUser,
   onClose,
 }: {
   issueId: string
   memberMap: Map<string, Member>
+  currentUser: string
   onClose: () => void
 }) {
   const issue = useLiveQuery(() => db.issues.get(issueId), [issueId])
@@ -1057,7 +1412,26 @@ function IssueDetailDrawer({
 
   if (!issue) return <oas-drawer ref={drawerRef} />
 
-  const save = (changes: Partial<Issue>) => void db.issues.update(issue.id, changes)
+  const save = (changes: Partial<Issue>) => {
+    const FIELD_LABEL: Partial<Record<keyof Issue, string>> = {
+      status: '状态',
+      priority: '优先级',
+      assigneeId: '负责人',
+      description: '描述',
+      title: '标题',
+    }
+    const acts: Promise<unknown>[] = []
+    for (const k of Object.keys(changes) as Array<keyof Issue>) {
+      if (k === 'updatedAt' || !(k in FIELD_LABEL)) continue
+      const to = String(changes[k] ?? '')
+      const from = String(issue[k] ?? '')
+      if (from === to) continue
+      acts.push(
+        logActivity(issue.id, currentUser, k as string, { field: FIELD_LABEL[k], from, to }),
+      )
+    }
+    void Promise.all(acts).then(() => db.issues.update(issue.id, changes))
+  }
   const memberOptions = [
     { label: '未分配', value: '__none__' },
     ...[...memberMap.values()].map((m) => ({ label: m.name, value: m.id })),
@@ -1145,7 +1519,8 @@ function IssueDetailDrawer({
             />
           </div>
         </div>
-        <CommentsBlock issueId={issue.id} memberMap={memberMap} />
+        <CommentsBlock issueId={issue.id} memberMap={memberMap} currentUser={currentUser} />
+        <DrawerActivities issueId={issue.id} memberMap={memberMap} />
         <div className="detail-foot">
           <span className="detail-dates">
             创建 {new Date(issue.createdAt).toLocaleDateString()} · 更新{' '}

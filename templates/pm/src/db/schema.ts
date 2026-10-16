@@ -1,11 +1,13 @@
 import Dexie, { type EntityTable } from 'dexie'
-import type { Comment, Issue, Project, Member } from '@/types'
+import type { Activity, Comment, Issue, Project, Member, SavedView } from '@/types'
 
 export class PMDatabase extends Dexie {
   issues!: EntityTable<Issue, 'id'>
   projects!: EntityTable<Project, 'id'>
   members!: EntityTable<Member, 'id'>
   comments!: EntityTable<Comment, 'id'>
+  savedViews!: EntityTable<SavedView, 'id'>
+  activities!: EntityTable<Activity, 'id'>
 
   constructor() {
     super('oas-pm')
@@ -30,6 +32,16 @@ export class PMDatabase extends Dexie {
       projects: 'id, key',
       members: 'id, role',
       comments: 'id, issueId, [issueId+createdAt]',
+    })
+    // v4：保存的视图 + 活动历史 + 创建趋势（createdAt 索引）
+    this.version(4).stores({
+      issues:
+        'id, projectId, key, status, priority, assigneeId, createdAt, updatedAt, [projectId+status], [projectId+priority], [projectId+assigneeId], [projectId+updatedAt], [projectId+status+updatedAt]',
+      projects: 'id, key',
+      members: 'id, role',
+      comments: 'id, issueId, [issueId+createdAt]',
+      savedViews: 'id, name',
+      activities: 'id, issueId, [issueId+createdAt], createdAt',
     })
   }
 }
