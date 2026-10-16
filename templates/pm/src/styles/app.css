@@ -1427,3 +1427,25 @@ body {
   flex: 1;
   min-width: 0;
 }
+
+/* ── 标签快捷添加 ── */
+.label-quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.label-quick-btn {
+  appearance: none;
+  border: 1px dashed var(--oas-color-border, #cbd5e1);
+  background: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 11px;
+  color: var(--oas-color-text-secondary, #64748b);
+  cursor: pointer;
+}
+.label-quick-btn:hover {
+  border-color: var(--oas-color-primary, #0b6cff);
+  color: var(--oas-color-primary, #0b6cff);
+}

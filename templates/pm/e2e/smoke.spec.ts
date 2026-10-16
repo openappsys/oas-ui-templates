@@ -466,12 +466,13 @@ test('M12 标签与评论：添加标签 chip + 发送评论', async ({ page }) 
       { timeout: 10_000 },
     )
     .toBe(true)
-  // 加标签
-  await setOSelect(page, 'label-add', 'frontend')
-  await expect(page.getByTestId('detail-drawer').locator('oas-tag').first()).toContainText(
-    'frontend',
-    { timeout: 10_000 },
-  )
+  // 加标签：dynamic-tags 聚焦内部输入框输入回车（自由标签）+ 快捷按钮
+  await page.locator('[data-testid=label-add]').locator('input').first().click()
+  await page.keyboard.type('frontend')
+  await page.keyboard.press('Enter')
+  await expect(page.getByTestId('label-chip-frontend')).toBeVisible({ timeout: 10_000 })
+  await page.getByTestId('label-quick-bug').click()
+  await expect(page.getByTestId('label-chip-bug')).toBeVisible({ timeout: 10_000 })
   // 发评论（回车）
   await fillOInput(page, 'comment-input', 'E2E 评论内容')
   await page.getByTestId('comment-send').click()

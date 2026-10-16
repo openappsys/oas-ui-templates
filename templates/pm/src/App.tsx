@@ -1594,16 +1594,30 @@ function IssueDetailDrawer({
   useEffect(() => {
     const el = labelsTagsRef.current
     if (!el) return
-    const h = (e: Event) => {
-      const v = (e as CustomEvent<{ value?: string[] }>).detail?.value
-      if (Array.isArray(v)) save({ labels: v })
-    }
-    el.addEventListener('oas-change', h)
-    return () => el.removeEventListener('oas-change', h)
-  }, [issueId])
+    // 添加派发 oas-add、删除/编辑走 writeBack——事件形态不一，轮询 modelValue 最可靠
+    const timer = setInterval(() => {
+      const v = (el as unknown as { modelValue?: string[] }).modelValue
+      if (!Array.isArray(v)) return
+      const cur = issue?.labels ?? []
+      const cleaned = v.filter((x) => x && x !== '__none__')
+      if (cleaned.length !== cur.length || cleaned.some((x, i) => x !== cur[i])) {
+        save({ labels: cleaned })
+      }
+    }, 400)
+    return () => clearInterval(timer)
+  }, [issueId, issue?.labels])
 
   // 描述编辑态在切换 issue 时重置；textarea value 跟随 issue.description
   const descRefValue = useRef<HTMLElement & { value?: string }>(null)
+  // 历史脏数据清洗：labels 含 '__none__' 时落库修正
+  useEffect(() => {
+    if (issue?.labels?.includes('__none__')) {
+      void db.issues.update(issue.id, {
+        labels: issue.labels.filter((x) => x !== '__none__'),
+      })
+    }
+  }, [issue?.id, issue?.labels])
+
   useEffect(() => {
     setDescDirty(false)
     if (descRefValue.current) descRefValue.current.value = issue?.description ?? ''
@@ -1646,6 +1660,11 @@ function IssueDetailDrawer({
 
   const relationTarget = (id: string) => relCandidates?.find((x) => x.id === id)
   const save = (changes: Partial<Issue>) => {
+    // 脏数据兜底：历史版本曾把占位符 '__none__' 写进 labels，落库前清洗
+    if (Array.isArray(changes.labels)) {
+      const cleaned = changes.labels.filter((x) => x && x !== '__none__')
+      if (cleaned.length !== changes.labels.length) changes.labels = cleaned
+    }
     const FIELD_LABEL: Partial<Record<keyof Issue, string>> = {
       status: '状态',
       priority: '优先级',
@@ -1845,28 +1864,38 @@ function IssueDetailDrawer({
         <div className="detail-labels-block">
           <span>{t('labels')}</span>
           <div className="detail-labels">
-            {issue.labels.map((l) => (
-              <TagChip
-                key={l}
-                label={l}
-                testid={`label-chip-${l}`}
-                onRemove={() => save({ labels: issue.labels.filter((x) => x !== l) })}
-              />
-            ))}
-            <OSelect
-              testid="label-add"
-              value="__none__"
-              options={[
-                { label: '＋ 标签…', value: '__none__' },
-                ...LABELS.filter((l) => !issue.labels.includes(l)).map((l) => ({
-                  label: l,
-                  value: l,
-                })),
-              ]}
-              onChange={(l) => {
-                if (l && !issue.labels.includes(l)) save({ labels: [...issue.labels, l] })
-              }}
+            {issue.labels
+              .filter((l) => l !== '__none__')
+              .map((l) => (
+                <TagChip
+                  key={l}
+                  label={l}
+                  testid={`label-chip-${l}`}
+                  onRemove={() => save({ labels: issue.labels.filter((x) => x !== l) })}
+                />
+              ))}
+            <oas-dynamic-tags
+              data-testid="label-add"
+              ref={labelsTagsRef}
+              placeholder="＋ 输入标签后回车"
+              style={{ width: '100%' }}
             />
+            <div className="label-quick" data-testid="label-quick">
+              {LABELS.filter((l) => !issue.labels.includes(l)).map((l) => (
+                <button
+                  key={l}
+                  type="button"
+                  className="label-quick-btn"
+                  data-testid={`label-quick-${l}`}
+                  onClick={() => {
+                    if (l !== '__none__' && !issue.labels.includes(l))
+                      save({ labels: [...issue.labels.filter((x) => x !== '__none__'), l] })
+                  }}
+                >
+                  + {l}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
         <CommentsBlock issueId={issue.id} memberMap={memberMap} currentUser={currentUser} />
