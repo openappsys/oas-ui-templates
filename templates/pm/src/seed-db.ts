@@ -39,7 +39,7 @@ function mulberry32(seed: number): () => number {
 
 export async function seedDatabase(): Promise<void> {
   // seed 版本标记：调整 seed 逻辑后 bump，旧库自动清表重建
-  const SEED_VER = 'oas-pm-seed-v2'
+  const SEED_VER = 'oas-pm-seed-v3'
   if (localStorage.getItem(SEED_VER)) return
   // 旧 seed 数据（v1 的 updatedAt 走了未来时间戳）清表重播；
   // 不用 db.delete()——会关闭模块级 Dexie 单例的连接
@@ -75,6 +75,7 @@ export async function seedDatabase(): Promise<void> {
       description: '核心平台研发',
       leadId: 'member-1',
       createdAt: now - 90 * day,
+      nextKeyNum: 100001,
     },
     {
       id: 'project-2',
@@ -83,6 +84,7 @@ export async function seedDatabase(): Promise<void> {
       description: '移动端产品迭代',
       leadId: 'member-2',
       createdAt: now - 60 * day,
+      nextKeyNum: 200001,
     },
   ]
   await db.projects.bulkPut(projects)
@@ -127,8 +129,6 @@ export async function seedDatabase(): Promise<void> {
       })
     }
     await db.issues.bulkPut(batch)
-    // 批间让出事件循环：连续大事务会让 liveQuery 读事务长时间饥饿（仪表盘统计白屏）
-    await new Promise((r) => setTimeout(r, 0))
   }
   console.timeEnd('seed:100k')
   localStorage.setItem(SEED_VER, '1')

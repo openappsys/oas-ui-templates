@@ -3,17 +3,14 @@ import { expect, test, type Page } from '@playwright/test'
 /** 等待 100K seed 完成并以列表行出现（seed 走后台 bulkPut，首次约 5~15s） */
 async function waitForSeed(page: Page) {
   await page.goto('/')
-  await expect(page.getByTestId('titlebar')).toBeVisible({ timeout: 10_000 })
-  // 全量计数（index count）稳定在 ~70K 才算 seed 完成
+  await expect(page.getByTestId('pm-toolbar')).toBeVisible({ timeout: 10_000 })
+  // seed 完成的确定性信号：SEED_VER 标记写入（写完 100K 才 set）
   await expect
-    .poll(
-      async () => {
-        const t = await page.getByTestId('issue-total').textContent()
-        return Number(t?.replace(/[^\d]/g, '') ?? 0)
-      },
-      { timeout: 30_000, intervals: [500, 1000, 2000] },
-    )
-    .toBeGreaterThan(60_000)
+    .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-seed-v3')), {
+      timeout: 30_000,
+      intervals: [500, 1000, 2000],
+    })
+    .toBe('1')
   await expect(page.locator('.issue-row').first()).toBeVisible({ timeout: 10_000 })
 }
 
@@ -351,4 +348,119 @@ test('M10 仪表盘：统计卡 + 图表数据', async ({ page }) => {
       { timeout: 10_000 },
     )
     .toBe(1)
+})
+
+test('M11 快捷键：C 打开新建 + / 聚焦搜索 + Esc 关抽屉', async ({ page }) => {
+  await waitForSeed(page)
+  await page.keyboard.press('c')
+  await expect(page.getByTestId('modal-create')).toHaveAttribute('visible', /.*/, {
+    timeout: 5000,
+  })
+  await page.getByTestId('create-cancel').click()
+  await page.keyboard.press('/')
+  await expect(page.getByTestId('toolbar-search')).toBeFocused()
+  // Esc 关抽屉
+  await page.locator('.issue-row').first().click()
+  await expect(page.locator('.detail-panel')).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page.locator('.detail-panel')).toHaveCount(0, { timeout: 5000 })
+})
+
+test('M12 标签与评论：添加标签 chip + 发送评论', async ({ page }) => {
+  await waitForSeed(page)
+  await page.locator('.issue-row').first().click()
+  const drawer = page.locator('.detail-panel')
+  await expect(drawer).toBeVisible()
+  // 加标签
+  await drawer.locator('[data-testid=label-add]').selectOption('frontend')
+  await expect(drawer.locator('.label-chip').first()).toContainText('frontend', { timeout: 10_000 })
+  // 发评论（回车）
+  await drawer.locator('[data-testid=comment-input]').fill('E2E 评论内容')
+  await drawer.locator('[data-testid=comment-input]').press('Enter')
+  await expect(page.getByTestId('comment-item').first()).toContainText('E2E 评论内容', {
+    timeout: 10_000,
+  })
+  // 关开抽屉持久（IndexedDB）
+  await page.keyboard.press('Escape')
+  await page.locator('.issue-row').first().click()
+  await expect(page.getByTestId('comment-item').first()).toContainText('E2E 评论内容', {
+    timeout: 10_000,
+  })
+})
+
+test('M13 新建 Issue key 严格递增（项目计数器）', async ({ page }) => {
+  await waitForSeed(page)
+  const keys: string[] = []
+  for (let i = 0; i < 2; i++) {
+    await page.getByTestId('toolbar-new').click()
+    await expect(page.getByTestId('modal-create')).toHaveAttribute('visible', /.*/, {
+      timeout: 5000,
+    })
+    await page
+      .getByTestId('create-title')
+      .locator('input')
+      .fill(`递增验证 ${i + 1}`)
+    await page.getByTestId('create-submit').click()
+    await expect(page.locator('.issue-row').first()).toContainText(`递增验证 ${i + 1}`, {
+      timeout: 10_000,
+    })
+    keys.push((await page.locator('.issue-row .issue-key').first().textContent()) ?? '')
+  }
+  // 两条 key 均为 OAS-数字，且第二条数值严格大于第一条
+  const parse = (k: string) => Number(k.replace('OAS-', ''))
+  expect(keys[0]).toMatch(/^OAS-\d+$/)
+  expect(keys[1]).toMatch(/^OAS-\d+$/)
+  expect(parse(keys[1])).toBe(parse(keys[0]) + 1)
+})
+
+test('M14 甘特写回：task-change 改期落库', async ({ page }) => {
+  await waitForSeed(page)
+  await page.getByTestId('nav-timeline').click()
+  await expect(page.getByTestId('gantt')).toBeAttached({ timeout: 10_000 })
+  // 组件 tasks property 读回取第一条的 issue id
+  const target = await page.evaluate(() => {
+    const g = document.querySelector('oas-gantt') as HTMLElement & { tasks?: Array<{ id: string }> }
+    return g.tasks?.[0]?.id ?? null
+  })
+  expect(target).toBeTruthy()
+  // 重放 task-change（组件拖拽改期时派发的同一事件）
+  await page.evaluate(
+    ({ id }) => {
+      const g = document.querySelector('oas-gantt') as HTMLElement
+      g.dispatchEvent(
+        new CustomEvent('task-change', {
+          bubbles: true,
+          detail: {
+            id,
+            start: '2026-01-05',
+            end: '2026-02-10',
+            oldStart: '',
+            oldEnd: '',
+            task: {},
+          },
+        }),
+      )
+    },
+    { id: target },
+  )
+  // liveQuery 列表里该 issue 的 updatedAt 变化 → 排到窗口头部；直接读库验证 dueAt
+  await expect
+    .poll(
+      async () =>
+        page.evaluate(async (issueId) => {
+          const req = indexedDB.open('oas-pm')
+          const dbp = await new Promise<IDBDatabase>((res, rej) => {
+            req.onsuccess = () => res(req.result)
+            req.onerror = () => rej(req.error)
+          })
+          const tx = dbp.transaction('issues', 'readonly')
+          const row = await new Promise<{ dueAt?: number; startAt?: number } | undefined>((res) => {
+            const r = tx.objectStore('issues').get(issueId as string)
+            r.onsuccess = () => res(r.result)
+          })
+          return row ? `${row.startAt}-${row.dueAt}` : 'missing'
+        }, target),
+      { timeout: 10_000 },
+    )
+    .toBe(`${new Date('2026-01-05').getTime()}-${new Date('2026-02-10').getTime()}`)
 })

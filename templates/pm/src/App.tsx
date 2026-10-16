@@ -239,10 +239,19 @@ export function App() {
       .value as IssuePriority
     const assigneeId = (modal.querySelector('[data-testid="create-assignee"]') as HTMLSelectElement)
       .value
+    const projectId = filters.projectId
+    // key 严格递增：事务内读改写项目计数器
+    const keyNum = await db.transaction('rw', db.projects, async () => {
+      const p = await db.projects.get(projectId)
+      const n = p?.nextKeyNum ?? 100001
+      await db.projects.update(projectId, { nextKeyNum: n + 1 })
+      return n
+    })
+    const projectKey = projectsRef.current.find((p) => p.id === projectId)?.key ?? 'OAS'
     await db.issues.add({
       id: nanoid(),
-      projectId: filters.projectId,
-      key: `OAS-${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 10)}`,
+      projectId,
+      key: `${projectKey}-${keyNum}`,
       title,
       description: '',
       status,
@@ -258,15 +267,43 @@ export function App() {
     })
     if (input) input.value = ''
     createRef.current?.removeAttribute('visible')
-  }, [filters.projectId])
+  }, [filters.projectId, projects])
+
+  // projects 的 ref：createIssue 回调里读取最新项目 key
+  const projectsRef = useRef<Project[]>([])
+  useEffect(() => {
+    projectsRef.current = projects ?? []
+  }, [projects])
+
+  // 快捷键：C 新建（输入框聚焦时跳过）/ 聚焦搜索 / Esc 关抽屉
+  const searchRef = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      // Esc 无论焦点在哪都关抽屉（含评论输入框内）
+      if (e.key === 'Escape') {
+        setSelectedId(null)
+        return
+      }
+      const t = e.target as HTMLElement
+      if (t?.closest('input, textarea, select, [contenteditable="true"]')) return
+      if (e.key === 'c' || e.key === 'C') {
+        e.preventDefault()
+        createRef.current?.setAttribute('visible', '')
+      } else if (e.key === '/') {
+        e.preventDefault()
+        searchRef.current?.focus()
+      }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [])
 
   return (
     <div className="app-frame">
-      <header className="titlebar" data-testid="titlebar">
-        <span className="tb-name">OAS PM</span>
-        <span className="tb-spacer" />
-      </header>
-      <nav className="menubar" data-testid="pm-toolbar">
+      <header className="topbar" data-testid="pm-toolbar">
+        <span className="tb-brand">
+          <span className="tb-logo">OAS</span> PM
+        </span>
         <oas-button
           type="primary"
           data-testid="toolbar-new"
@@ -283,9 +320,10 @@ export function App() {
           导出 CSV（当前窗口）
         </button>
         <input
+          ref={searchRef}
           className="toolbar-search"
           type="search"
-          placeholder="搜索 Key 或标题…"
+          placeholder="搜索 Key 或标题…（/）"
           data-testid="toolbar-search"
           value={filters.search}
           onChange={(e) => setF('search', e.target.value)}
@@ -299,47 +337,47 @@ export function App() {
         >
           关于
         </button>
-      </nav>
+      </header>
       <div className="main">
-        <aside className="activity-bar">
-          <button
-            className={`act-btn${view === 'dashboard' ? ' is-active' : ''}`}
-            type="button"
-            title="仪表盘"
-            data-testid="nav-dashboard"
-            onClick={() => setView('dashboard')}
-          >
-            <oas-icon name="star" size="20" />
-          </button>
-          <button
-            className={`act-btn${view === 'issues' ? ' is-active' : ''}`}
-            type="button"
-            title="Issues"
-            data-testid="nav-issues"
-            onClick={() => setView('issues')}
-          >
-            <oas-icon name="tree" size="20" />
-          </button>
-          <button
-            className={`act-btn${view === 'board' ? ' is-active' : ''}`}
-            type="button"
-            title="看板"
-            data-testid="nav-board"
-            onClick={() => setView('board')}
-          >
-            <oas-icon name="organization" size="20" />
-          </button>
-          <button
-            className={`act-btn${view === 'timeline' ? ' is-active' : ''}`}
-            type="button"
-            title="时间线"
-            data-testid="nav-timeline"
-            onClick={() => setView('timeline')}
-          >
-            <oas-icon name="clock" size="20" />
-          </button>
-        </aside>
         <aside className="side-panel" data-testid="side-panel">
+          <div className="view-seg" data-testid="view-seg">
+            <button
+              className={`view-seg-btn${view === 'dashboard' ? ' is-active' : ''}`}
+              type="button"
+              title="仪表盘"
+              data-testid="nav-dashboard"
+              onClick={() => setView('dashboard')}
+            >
+              仪表盘
+            </button>
+            <button
+              className={`view-seg-btn${view === 'issues' ? ' is-active' : ''}`}
+              type="button"
+              title="Issues"
+              data-testid="nav-issues"
+              onClick={() => setView('issues')}
+            >
+              列表
+            </button>
+            <button
+              className={`view-seg-btn${view === 'board' ? ' is-active' : ''}`}
+              type="button"
+              title="看板"
+              data-testid="nav-board"
+              onClick={() => setView('board')}
+            >
+              看板
+            </button>
+            <button
+              className={`view-seg-btn${view === 'timeline' ? ' is-active' : ''}`}
+              type="button"
+              title="时间线"
+              data-testid="nav-timeline"
+              onClick={() => setView('timeline')}
+            >
+              时间线
+            </button>
+          </div>
           <p className="side-title">项目</p>
           {(projects ?? []).map((p) => (
             <button
@@ -429,11 +467,6 @@ export function App() {
           {view === 'timeline' && <TimelineView issues={issues ?? []} />}
         </main>
       </div>
-      <footer className="statusbar">
-        <span>● 就绪</span>
-        <span className="sb-spacer" />
-        <span>{projects?.find((p) => p.id === filters.projectId)?.name ?? ''} · OAS PM v0.2.0</span>
-      </footer>
 
       {/* 新建 Issue */}
       <oas-modal ref={createRef} no-footer data-testid="modal-create">
@@ -824,7 +857,69 @@ function VirtualIssueList({
   )
 }
 
+/* ── 评论区（详情抽屉） ── */
+function CommentsBlock({ issueId }: { issueId: string }) {
+  const comments = useLiveQuery(
+    () =>
+      db.comments
+        .where('[issueId+createdAt]')
+        .between([issueId, Dexie.minKey], [issueId, Dexie.maxKey])
+        .toArray(),
+    [issueId],
+  )
+  const [draft, setDraft] = useState('')
+
+  const submit = async () => {
+    const body = draft.trim()
+    if (!body) return
+    await db.comments.add({
+      id: nanoid(),
+      issueId,
+      authorId: CURRENT_USER,
+      body,
+      createdAt: Date.now(),
+    })
+    setDraft('')
+  }
+
+  return (
+    <div className="comments-block" data-testid="comments-block">
+      <span>评论（{comments?.length ?? 0}）</span>
+      <div className="comments-list">
+        {(comments ?? []).map((c) => (
+          <div key={c.id} className="comment-item" data-testid="comment-item">
+            <p className="comment-body">{c.body}</p>
+            <p className="comment-meta">{new Date(c.createdAt).toLocaleString()}</p>
+          </div>
+        ))}
+      </div>
+      <div className="comment-input-row">
+        <input
+          className="comment-input"
+          data-testid="comment-input"
+          placeholder="写下评论…"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') void submit()
+          }}
+        />
+        <button
+          className="comment-send"
+          type="button"
+          data-testid="comment-send"
+          onClick={() => void submit()}
+        >
+          发送
+        </button>
+      </div>
+    </div>
+  )
+}
+
 /* ── Issue 详情抽屉（即时保存） ── */
+const LABELS = ['frontend', 'backend', 'design', 'bug', 'feature', 'tech-debt', 'docs', 'infra']
+
 function IssueDetailDrawer({
   issueId,
   memberMap,
@@ -858,12 +953,7 @@ function IssueDetailDrawer({
         if (e.key === 'Escape') onClose()
       }}
     >
-      <div
-        className="detail-panel"
-        role="dialog"
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => e.stopPropagation()}
-      >
+      <div className="detail-panel" role="dialog" onClick={(e) => e.stopPropagation()}>
         <div className="detail-head">
           <span className="issue-key">{issue.key}</span>
           <button className="detail-close" type="button" onClick={onClose}>
@@ -938,6 +1028,42 @@ function IssueDetailDrawer({
             </button>
           )}
         </div>
+        <div className="detail-labels-block">
+          <span>标签</span>
+          <div className="detail-labels">
+            {issue.labels.map((l) => (
+              <span key={l} className="label-chip">
+                {l}
+                <button
+                  type="button"
+                  className="label-chip-x"
+                  aria-label={`移除标签 ${l}`}
+                  data-testid={`label-remove-${l}`}
+                  onClick={() => save({ labels: issue.labels.filter((x) => x !== l) })}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+            <select
+              className="label-add"
+              data-testid="label-add"
+              value=""
+              onChange={(e) => {
+                const l = e.target.value
+                if (l && !issue.labels.includes(l)) save({ labels: [...issue.labels, l] })
+              }}
+            >
+              <option value="">＋ 标签…</option>
+              {LABELS.filter((l) => !issue.labels.includes(l)).map((l) => (
+                <option key={l} value={l}>
+                  {l}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <CommentsBlock issueId={issue.id} />
         <div className="detail-foot">
           <span className="detail-dates">
             创建 {new Date(issue.createdAt).toLocaleDateString()} · 更新{' '}
@@ -1115,8 +1241,9 @@ function TimelineView({ issues }: { issues: Issue[] }) {
         .filter((i) => i.dueAt !== null && i.dueAt > i.createdAt)
         .slice(0, 50)
         .map((i) => ({
+          id: i.id,
           name: `${i.key} ${i.title}`,
-          start: new Date(i.createdAt).toISOString().slice(0, 10),
+          start: new Date(i.startAt ?? i.createdAt).toISOString().slice(0, 10),
           end: new Date(i.dueAt as number).toISOString().slice(0, 10),
           type: 'task' as const,
         })),
@@ -1126,6 +1253,22 @@ function TimelineView({ issues }: { issues: Issue[] }) {
   useEffect(() => {
     if (ganttRef.current) ganttRef.current.tasks = tasks
   }, [tasks])
+
+  // task-change 写回：甘特条拖拽/拉伸改期 → startAt/dueAt 落库（liveQuery 全视图自动刷新）
+  useEffect(() => {
+    const el = ganttRef.current
+    if (!el) return
+    const onChange = (e: Event) => {
+      const d = (e as CustomEvent<{ id: string; start: string; end?: string }>).detail
+      if (!d?.id) return
+      const patch: Partial<Issue> = {}
+      if (d.start) patch.startAt = new Date(d.start).getTime()
+      if (d.end) patch.dueAt = new Date(d.end).getTime()
+      void db.issues.update(d.id, patch)
+    }
+    el.addEventListener('task-change', onChange)
+    return () => el.removeEventListener('task-change', onChange)
+  }, [])
 
   if (tasks.length === 0) {
     return <div className="timeline-empty">暂无带截止日期的 Issue</div>

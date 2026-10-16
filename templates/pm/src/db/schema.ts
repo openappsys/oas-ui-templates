@@ -1,17 +1,15 @@
 import Dexie, { type EntityTable } from 'dexie'
-import type { Issue, Project, Member } from '@/types'
+import type { Comment, Issue, Project, Member } from '@/types'
 
 export class PMDatabase extends Dexie {
   issues!: EntityTable<Issue, 'id'>
   projects!: EntityTable<Project, 'id'>
   members!: EntityTable<Member, 'id'>
+  comments!: EntityTable<Comment, 'id'>
 
   constructor() {
     super('oas-pm')
     this.version(1).stores({
-      // compound index：[projectId+status] 支撑看板列查询
-      // [projectId+assigneeId] 支撑按人筛选
-      // [projectId+updatedAt] 支撑默认排序
       issues:
         'id, projectId, key, status, priority, assigneeId, updatedAt, [projectId+status], [projectId+priority], [projectId+assigneeId], [projectId+updatedAt]',
       projects: 'id, key',
@@ -24,6 +22,14 @@ export class PMDatabase extends Dexie {
         'id, projectId, key, status, priority, assigneeId, updatedAt, [projectId+status], [projectId+priority], [projectId+assigneeId], [projectId+updatedAt], [projectId+status+updatedAt]',
       projects: 'id, key',
       members: 'id, role',
+    })
+    // v3：评论表（详情抽屉评论区）
+    this.version(3).stores({
+      issues:
+        'id, projectId, key, status, priority, assigneeId, updatedAt, [projectId+status], [projectId+priority], [projectId+assigneeId], [projectId+updatedAt], [projectId+status+updatedAt]',
+      projects: 'id, key',
+      members: 'id, role',
+      comments: 'id, issueId, [issueId+createdAt]',
     })
   }
 }

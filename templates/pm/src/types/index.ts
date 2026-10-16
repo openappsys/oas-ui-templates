@@ -29,6 +29,8 @@ export interface Project {
   description: string
   leadId: string
   createdAt: number
+  /** Issue key 严格递增计数器（事务内读改写） */
+  nextKeyNum?: number
 }
 
 export interface Member {
@@ -37,6 +39,14 @@ export interface Member {
   email: string
   avatarColor: string
   role: MemberRole
+}
+
+export interface Comment {
+  id: string
+  issueId: string
+  authorId: string
+  body: string
+  createdAt: number
 }
 
 // ── 查询 ──────────────────────────────────────────────────────────────
