@@ -24,6 +24,9 @@ declare module 'react' {
         percent?: number | string
         'show-text'?: boolean | string
       }
+      'oas-gantt': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        'row-height'?: number | string
+      }
     }
   }
 }

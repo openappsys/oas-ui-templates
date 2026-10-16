@@ -521,3 +521,10 @@ body {
   text-align: center;
   color: var(--oas-color-text-secondary, #6b7280);
 }
+
+.board-col-more {
+  padding: 8px 10px;
+  font-size: 11px;
+  color: var(--oas-color-text-tertiary, #9aa3b8);
+  text-align: center;
+}
