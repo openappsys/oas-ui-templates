@@ -213,7 +213,7 @@ export function App() {
         ].join(','),
       ),
     ]
-    const blob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/csv;charset=utf-8' })
+    const blob = new Blob([`\uFEFF${lines.join('\n')}`], { type: 'text/csv;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -267,7 +267,8 @@ export function App() {
     })
     if (input) input.value = ''
     createRef.current?.removeAttribute('visible')
-  }, [filters.projectId, projects])
+    // projectsRef 为 ref，不进 deps；projects 仅用于 ref 同步
+  }, [filters.projectId])
 
   // projects 的 ref：createIssue 回调里读取最新项目 key
   const projectsRef = useRef<Project[]>([])

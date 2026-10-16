@@ -514,10 +514,9 @@ test('M15 看板拖拽取消：dragend 未 drop 预览回滚', async ({ page }) 
   })
   await expect(page.locator('.board-card.is-dragging')).toHaveCount(0, { timeout: 10_000 })
   // todo 列该卡回到原位、done 首位恢复原卡（计数的临时 +1 随预览消失）
-  await expect(page.getByTestId('col-body-todo').locator(`[data-card-key="${todoKey}"]`)).toHaveCount(
-    1,
-    { timeout: 10_000 },
-  )
+  await expect(
+    page.getByTestId('col-body-todo').locator(`[data-card-key="${todoKey}"]`),
+  ).toHaveCount(1, { timeout: 10_000 })
   await expect
     .poll(
       async () =>
