@@ -1385,8 +1385,9 @@ function CommentsBlock({
         .toArray(),
     [issueId],
   )
-  const inputRef = useRef<HTMLElement & { value?: string }>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
   const editRef = useRef<HTMLElement & { value?: string }>(null)
+  const [draft, setDraft] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
 
   const submit = async () => {
@@ -1495,11 +1496,16 @@ function CommentsBlock({
         ))}
       </div>
       <div className="comment-input-row">
-        <oas-input
+        <input
+          ref={inputRef}
           className="comment-input"
           data-testid="comment-input"
           placeholder={t('commentPlaceholder')}
-          ref={inputRef}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') void submit()
+          }}
         />
         <button
           className="comment-send"
@@ -1535,7 +1541,7 @@ function IssueDetailDrawer({
 }) {
   const issue = useLiveQuery(() => db.issues.get(issueId), [issueId])
   const subs = useLiveQuery(() => db.issues.where('parentId').equals(issueId).toArray(), [issueId])
-  const subInputRef = useRef<HTMLElement & { value?: string }>(null)
+  const subInputRef = useRef<HTMLInputElement>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const drawerRef = useRef<HTMLElement>(null)
   const popRef = useRef<HTMLElement>(null)
@@ -1740,11 +1746,14 @@ function IssueDetailDrawer({
             ))}
           </div>
           <div className="sub-add-row">
-            <oas-input
+            <input
               ref={subInputRef}
+              className="comment-input"
               data-testid="sub-add-input"
               placeholder="新子任务标题…"
-              className="comment-input"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') void addSub()
+              }}
             />
             <oas-button size="small" data-testid="sub-add" onClick={() => void addSub()}>
               添加

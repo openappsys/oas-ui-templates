@@ -1422,7 +1422,8 @@ body {
   font-size: 12px;
   color: var(--oas-color-text-tertiary, #94a3b8);
 }
-.detail-meta > div > oas-select, .detail-meta > div > select {
+.detail-meta > div > oas-select,
+.detail-meta > div > select {
   flex: 1;
   min-width: 0;
 }
