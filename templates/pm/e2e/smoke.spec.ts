@@ -46,16 +46,15 @@ test('M2 状态筛选：compound index 直取 + 计数联动', async ({ page }) 
   await expect(page.locator('.issue-row').first()).toBeVisible({ timeout: 10_000 })
 })
 
-test('M3 看板：列渲染 + HTML5 拖拽改状态', async ({ page }) => {
+test('M3 看板：拖拽改状态 + 插入到目标列最前', async ({ page }) => {
   await waitForSeed(page)
   await page.getByTestId('nav-board').click()
   await expect(page.getByTestId('board')).toBeVisible()
-  // 每列截断窗口：卡片数 ≤ 50
   const todoCards = await page.getByTestId('col-body-todo').locator('.board-card').count()
   expect(todoCards).toBeGreaterThan(0)
   expect(todoCards).toBeLessThanOrEqual(50)
 
-  // 拖一张 todo 卡到 done：dataTransfer 通道
+  // 拖 todo 首卡到 done 列（默认坐标 → 插最前）
   const card = page.getByTestId('col-body-todo').locator('.board-card').first()
   const cardKey = await card.getAttribute('data-card-key')
   expect(cardKey).toBeTruthy()
@@ -64,7 +63,6 @@ test('M3 看板：列渲染 + HTML5 拖拽改状态', async ({ page }) => {
     const src = document.querySelector(`[data-card-key="${key}"]`) as HTMLElement
     const dst = document.querySelector('[data-status="done"]') as HTMLElement
     const dt = new DataTransfer()
-    // dragstart 触发 React onDragStart 把 issue.id 写进 dt；drop 时列回调读回
     src.dispatchEvent(
       new DragEvent('dragstart', { bubbles: true, cancelable: true, dataTransfer: dt }),
     )
@@ -73,12 +71,74 @@ test('M3 看板：列渲染 + HTML5 拖拽改状态', async ({ page }) => {
     )
     dst.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt }))
   }, cardKey)
-  // drop 后 liveQuery 推送：done 计数 +1
+  // done 计数 +1，且拖动卡排在 done 列第一
   await expect
     .poll(async () => Number(await page.getByTestId('col-count-done').textContent()), {
       timeout: 10_000,
     })
     .toBe(Number(beforeDone) + 1)
+  const firstKey = await page
+    .getByTestId('col-body-done')
+    .locator('.board-card')
+    .first()
+    .getAttribute('data-card-key')
+  expect(firstKey).toBe(cardKey)
+})
+
+test('M3b 看板：拖拽插入到目标列中间位置（fractional order）', async ({ page }) => {
+  await waitForSeed(page)
+  await page.getByTestId('nav-board').click()
+  await expect(page.getByTestId('board')).toBeVisible()
+
+  // 目标：done 列第二张卡之后（clientY 取第二卡中点 + 2px）
+  const doneBody = page.getByTestId('col-body-done')
+  await doneBody.locator('.board-card').nth(1).waitFor({ timeout: 10_000 })
+  const secondRect = await doneBody
+    .locator('.board-card')
+    .nth(1)
+    .evaluate((el) => {
+      const r = el.getBoundingClientRect()
+      return { midY: r.top + r.height / 2 }
+    })
+  const doneFirst = await doneBody.locator('.board-card').first().getAttribute('data-card-key')
+  const doneSecond = await doneBody.locator('.board-card').nth(1).getAttribute('data-card-key')
+
+  const card = page.getByTestId('col-body-todo').locator('.board-card').first()
+  const cardKey = await card.getAttribute('data-card-key')
+  expect(cardKey).toBeTruthy()
+
+  await page.evaluate(
+    ({ key, y }) => {
+      const src = document.querySelector(`[data-card-key="${key}"]`) as HTMLElement
+      const dst = document.querySelector('[data-status="done"]') as HTMLElement
+      const dt = new DataTransfer()
+      src.dispatchEvent(
+        new DragEvent('dragstart', { bubbles: true, cancelable: true, dataTransfer: dt }),
+      )
+      dst.dispatchEvent(
+        new DragEvent('dragover', {
+          bubbles: true,
+          cancelable: true,
+          dataTransfer: dt,
+          clientY: y,
+        }),
+      )
+      dst.dispatchEvent(
+        new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt, clientY: y }),
+      )
+    },
+    { key: cardKey, y: Math.round(secondRect.midY + 2) },
+  )
+
+  // 拖动卡应落在 done 列第二位（第一张仍是原首卡）
+  await expect
+    .poll(async () => await doneBody.locator('.board-card').nth(1).getAttribute('data-card-key'), {
+      timeout: 10_000,
+    })
+    .toBe(cardKey)
+  const firstAfter = await doneBody.locator('.board-card').first().getAttribute('data-card-key')
+  expect(firstAfter).toBe(doneFirst)
+  expect(doneSecond).not.toBe(cardKey)
 })
 
 test('M4 时间线：oas-gantt 接收 tasks 并渲染', async ({ page }) => {
@@ -97,4 +157,32 @@ test('M4 时间线：oas-gantt 接收 tasks 并渲染', async ({ page }) => {
       { timeout: 10_000 },
     )
     .toBeGreaterThan(0)
+})
+
+test('M5 菜单栏：下拉打开 + 关于弹窗开合 + 玻璃质感切换', async ({ page }) => {
+  await waitForSeed(page)
+  // 帮助 → 下拉出现 → 关于 → oas-modal visible → 知道了关闭
+  await page.getByTestId('menu-帮助').click()
+  await expect(page.getByTestId('menu-pop-帮助')).toBeVisible()
+  await page.getByTestId('menu-act-about').click()
+  const modal = page.locator('oas-modal')
+  await expect(modal).toHaveAttribute('visible', /.*/, { timeout: 5000 })
+  await expect(page.locator('.about-name')).toContainText('OAS PM')
+  await page.getByTestId('about-close').click()
+  await expect(modal).not.toHaveAttribute('visible', /.*/, { timeout: 5000 })
+
+  // 视图 → 玻璃质感 toggle
+  await page.getByTestId('menu-视图').click()
+  await page.getByTestId('menu-act-glass').click()
+  await expect(page.locator('html')).toHaveAttribute('data-glass', /.*/)
+  await page.getByTestId('menu-视图').click()
+  await page.getByTestId('menu-act-glass').click()
+  await expect(page.locator('html')).not.toHaveAttribute('data-glass', /.*/)
+
+  // 文件 → 导出触发下载
+  await page.getByTestId('menu-文件').click()
+  const dl = page.waitForEvent('download', { timeout: 10_000 })
+  await page.getByTestId('menu-act-export').click()
+  const download = await dl
+  expect(download.suggestedFilename()).toMatch(/^oas-pm-issues-\d+\.json$/)
 })

@@ -27,6 +27,11 @@ declare module 'react' {
       'oas-gantt': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
         'row-height'?: number | string
       }
+      'oas-modal': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        title?: string
+        'no-footer'?: boolean | string
+        visible?: boolean | string
+      }
     }
   }
 }

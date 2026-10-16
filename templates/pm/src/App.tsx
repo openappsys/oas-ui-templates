@@ -53,11 +53,83 @@ function useIssueCount(statusFilter: IssueStatus | null) {
   )
 }
 
+/** fractional order：在 prev/next 之间取中值（浮点），边界用 ±1024 步进 */
+function betweenOrder(prev?: number, next?: number): number {
+  if (prev == null && next == null) return 0
+  if (prev == null) return (next as number) - 1024
+  if (next == null) return prev + 1024
+  return (prev + next) / 2
+}
+
+/* ── 菜单栏 ── */
+const MENUS: Record<string, Array<{ label: string; act: string }>> = {
+  文件: [{ label: '导出 Issue（当前窗口）', act: 'export' }],
+  编辑: [{ label: '刷新页面', act: 'reload' }],
+  视图: [
+    { label: '切换玻璃质感', act: 'glass' },
+    { label: '全屏', act: 'fullscreen' },
+  ],
+  帮助: [{ label: '关于 OAS PM', act: 'about' }],
+}
+
 export function App() {
   const [view, setView] = useState<View>('issues')
   const [statusFilter, setStatusFilter] = useState<IssueStatus | null>(null)
+  const [openMenu, setOpenMenu] = useState<string | null>(null)
+  const aboutRef = useRef<HTMLElement>(null)
   const issues = useIssueWindow(statusFilter)
   const total = useIssueCount(statusFilter)
+
+  const closeMenuOnOutside = useCallback((e: Event) => {
+    const t = e.target as HTMLElement
+    if (!t.closest('.menu-wrap')) setOpenMenu(null)
+  }, [])
+  useEffect(() => {
+    document.addEventListener('pointerdown', closeMenuOnOutside)
+    return () => document.removeEventListener('pointerdown', closeMenuOnOutside)
+  }, [closeMenuOnOutside])
+
+  const exportIssues = useCallback(() => {
+    if (!issues?.length) return
+    const blob = new Blob(
+      [
+        JSON.stringify(
+          { exportedAt: new Date().toISOString(), count: issues.length, issues },
+          null,
+          2,
+        ),
+      ],
+      {
+        type: 'application/json',
+      },
+    )
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `oas-pm-issues-${Date.now()}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [issues])
+
+  const runMenuAction = useCallback(
+    (act: string) => {
+      setOpenMenu(null)
+      if (act === 'export') exportIssues()
+      else if (act === 'reload') location.reload()
+      else if (act === 'glass') {
+        const on = document.documentElement.hasAttribute('data-glass')
+        if (on) document.documentElement.removeAttribute('data-glass')
+        else document.documentElement.setAttribute('data-glass', '')
+        localStorage.setItem('oas-admin.settings.glass', on ? 'off' : 'on')
+      } else if (act === 'fullscreen') {
+        if (document.fullscreenElement) void document.exitFullscreen()
+        else void document.documentElement.requestFullscreen().catch(() => {})
+      } else if (act === 'about') {
+        aboutRef.current?.setAttribute('visible', '')
+      }
+    },
+    [exportIssues],
+  )
 
   return (
     <div className="app-frame">
@@ -65,11 +137,33 @@ export function App() {
         <span className="tb-name">OAS PM</span>
         <span className="tb-spacer" />
       </header>
-      <nav className="menubar">
-        {['文件', '编辑', '视图', '帮助'].map((m) => (
-          <button key={m} className="menu-item" type="button">
-            {m}
-          </button>
+      <nav className="menubar" data-testid="menubar">
+        {Object.entries(MENUS).map(([name, items]) => (
+          <div key={name} className="menu-wrap">
+            <button
+              className={`menu-item${openMenu === name ? ' is-open' : ''}`}
+              type="button"
+              data-testid={`menu-${name}`}
+              onClick={() => setOpenMenu(openMenu === name ? null : name)}
+            >
+              {name}
+            </button>
+            {openMenu === name && (
+              <div className="menu-pop" data-testid={`menu-pop-${name}`}>
+                {items.map((it) => (
+                  <button
+                    key={it.act}
+                    className="menu-pop-item"
+                    type="button"
+                    data-testid={`menu-act-${it.act}`}
+                    onClick={() => runMenuAction(it.act)}
+                  >
+                    {it.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         ))}
       </nav>
       <div className="main">
@@ -138,6 +232,27 @@ export function App() {
         <span className="sb-spacer" />
         <span>OAS PM v0.1.0</span>
       </footer>
+
+      <oas-modal ref={aboutRef} title="关于" no-footer>
+        <div className="about-body">
+          <span className="about-logo">OAS</span>
+          <p className="about-name">OAS PM</p>
+          <p className="about-ver">v0.1.0 · oas-ui 2.6.1</p>
+          <p className="about-desc">
+            项目管理模板——React 19 + Dexie.js IndexedDB 本地优先，支持 10W~100W 级 Issue
+            的列表、看板与甘特图。
+          </p>
+          <div className="quit-actions">
+            <oas-button
+              type="primary"
+              data-testid="about-close"
+              onClick={() => aboutRef.current?.removeAttribute('visible')}
+            >
+              知道了
+            </oas-button>
+          </div>
+        </div>
+      </oas-modal>
     </div>
   )
 }
@@ -281,9 +396,10 @@ function IssueDetailPanel({ issue, onClose }: { issue: Issue; onClose: () => voi
   )
 }
 
-/* ── 看板 ── */
+/* ── 看板（列内按 order 升序，支持任意位置插入） ── */
 function KanbanBoard({ issues }: { issues: Issue[] }) {
   const [dragOver, setDragOver] = useState<IssueStatus | null>(null)
+  const [dropTarget, setDropTarget] = useState<{ col: IssueStatus; index: number } | null>(null)
 
   const byStatus = useMemo(() => {
     const map: Partial<Record<IssueStatus, Issue[]>> = {}
@@ -292,11 +408,40 @@ function KanbanBoard({ issues }: { issues: Issue[] }) {
       const k = i.status as IssueStatus
       if (map[k]) map[k].push(i)
     }
+    // 列内按 order 升序——拖拽插入位置由 order 主导，与更新时间无关
+    for (const s of STATUSES) map[s]!.sort((a, b) => a.order - b.order)
     return map
   }, [issues])
 
-  async function moveIssue(issueId: string, toStatus: IssueStatus) {
-    await db.issues.update(issueId, { status: toStatus, updatedAt: Date.now() })
+  async function moveIssue(issueId: string, toStatus: IssueStatus, order: number) {
+    await db.issues.update(issueId, { status: toStatus, order, updatedAt: Date.now() })
+  }
+
+  /** dragover 时按鼠标 Y 与卡片中点比较，计算插入下标 */
+  function calcDropIndex(body: HTMLElement, clientY: number, colLen: number): number {
+    const cards = Array.from(body.querySelectorAll<HTMLElement>('.board-card'))
+    for (let i = 0; i < cards.length; i++) {
+      const r = cards[i].getBoundingClientRect()
+      if (clientY < r.top + r.height / 2) return i
+    }
+    return colLen
+  }
+
+  function handleDrop(s: IssueStatus, body: HTMLElement | null, e: React.DragEvent) {
+    const id = e.dataTransfer.getData('text/plain')
+    if (!id || !body) return
+    const col = byStatus[s] ?? []
+    const index = calcDropIndex(body, e.clientY, col.length)
+    const shown = col.slice(0, BOARD_COL_WINDOW)
+    // 计算插入点两侧的 order（dropTarget 跨列拖拽时基于目标列数组）
+    const prevOrder = index > 0 ? shown[index - 1]?.order : undefined
+    const nextOrder = shown[index]?.order
+    // 与被拖卡片自身相邻的空隙（order 相同的邻居是自己）时取中值无意义，但无副作用
+    const order =
+      prevOrder != null && nextOrder != null && prevOrder === nextOrder
+        ? prevOrder + 1
+        : betweenOrder(prevOrder, nextOrder)
+    void moveIssue(id, s, order)
   }
 
   return (
@@ -305,6 +450,7 @@ function KanbanBoard({ issues }: { issues: Issue[] }) {
         const col = byStatus[s] ?? []
         const shown = col.slice(0, BOARD_COL_WINDOW)
         const hidden = col.length - shown.length
+        const dropIndex = dropTarget?.col === s ? dropTarget.index : null
         return (
           <div
             key={s}
@@ -313,13 +459,25 @@ function KanbanBoard({ issues }: { issues: Issue[] }) {
             onDragOver={(e) => {
               e.preventDefault()
               setDragOver(s)
+              const body = (e.currentTarget as HTMLElement).querySelector<HTMLElement>(
+                '.board-col-body',
+              )
+              if (body) setDropTarget({ col: s, index: calcDropIndex(body, e.clientY, col.length) })
             }}
-            onDragLeave={() => setDragOver(null)}
+            onDragLeave={(e) => {
+              if (!(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) {
+                setDragOver(null)
+                setDropTarget(null)
+              }
+            }}
             onDrop={(e) => {
               e.preventDefault()
+              const body = (e.currentTarget as HTMLElement).querySelector<HTMLElement>(
+                '.board-col-body',
+              )
+              handleDrop(s, body, e)
               setDragOver(null)
-              const id = e.dataTransfer.getData('text/plain')
-              if (id) moveIssue(id, s)
+              setDropTarget(null)
             }}
           >
             <p className="board-col-title" style={{ color: STATUS_COLOR[s] }}>
@@ -329,19 +487,24 @@ function KanbanBoard({ issues }: { issues: Issue[] }) {
               </span>
             </p>
             <div className="board-col-body" data-testid={`col-body-${s}`}>
-              {shown.map((issue) => (
-                <div
-                  key={issue.id}
-                  className="board-card"
-                  draggable
-                  data-card-key={issue.key}
-                  onDragStart={(e) => e.dataTransfer.setData('text/plain', issue.id)}
-                >
-                  <span className="board-card-key">{issue.key}</span>
-                  <p className="board-card-title">{issue.title}</p>
-                  <span className={`issue-priority pri-${issue.priority}`}>{issue.priority}</span>
+              {shown.map((issue, i) => (
+                <div key={issue.id} style={{ display: 'contents' }}>
+                  {dropIndex === i && <div className="drop-line" data-testid="drop-line" />}
+                  <div
+                    className="board-card"
+                    draggable
+                    data-card-key={issue.key}
+                    onDragStart={(e) => e.dataTransfer.setData('text/plain', issue.id)}
+                  >
+                    <span className="board-card-key">{issue.key}</span>
+                    <p className="board-card-title">{issue.title}</p>
+                    <span className={`issue-priority pri-${issue.priority}`}>{issue.priority}</span>
+                  </div>
                 </div>
               ))}
+              {dropIndex !== null && dropIndex >= shown.length && (
+                <div className="drop-line" data-testid="drop-line" />
+              )}
               {hidden > 0 && (
                 <p className="board-col-more">还有 {hidden.toLocaleString()} 条未显示</p>
               )}
