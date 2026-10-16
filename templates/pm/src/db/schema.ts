@@ -43,6 +43,16 @@ export class PMDatabase extends Dexie {
       savedViews: 'id, name',
       activities: 'id, issueId, [issueId+createdAt], createdAt',
     })
+    // v5：子任务（parentId 索引支撑子任务列表直取）
+    this.version(5).stores({
+      issues:
+        'id, projectId, key, status, priority, assigneeId, parentId, createdAt, updatedAt, [projectId+status], [projectId+priority], [projectId+assigneeId], [projectId+updatedAt], [projectId+status+updatedAt]',
+      projects: 'id, key',
+      members: 'id, role',
+      comments: 'id, issueId, [issueId+createdAt]',
+      savedViews: 'id, name',
+      activities: 'id, issueId, [issueId+createdAt], createdAt',
+    })
   }
 }
 

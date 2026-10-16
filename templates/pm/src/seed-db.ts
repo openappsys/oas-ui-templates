@@ -40,7 +40,7 @@ function mulberry32(seed: number): () => number {
 export async function seedDatabase(): Promise<void> {
   // seed 版本标记：调整 seed 逻辑后 bump。标记 + 数据双验证——
   // 单看标记会在「上次 seed 中断」时永久跳过，留下空库
-  const SEED_VER = 'oas-pm-seed-v3'
+  const SEED_VER = 'oas-pm-seed-v4'
   const marked = localStorage.getItem(SEED_VER)
   const issueCount = await db.issues.count()
   if (marked && issueCount > 0) return
@@ -128,6 +128,8 @@ export async function seedDatabase(): Promise<void> {
         createdAt,
         // 更新时间 clamp 到 now——seed 走未来时间戳会把真实新建/拖拽的数据压出窗口头部
         updatedAt: Math.min(createdAt + Math.floor(rand() * 3) * day, now),
+        completedAt:
+          status === 'done' ? Math.min(createdAt + Math.floor(rand() * 5 + 1) * day, now) : null,
         order: idx,
       })
     }

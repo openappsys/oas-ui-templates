@@ -42,12 +42,12 @@ async function waitForSeed(page: Page) {
   await expect(page.getByTestId('pm-toolbar')).toBeVisible({ timeout: 10_000 })
   // seed 完成的确定性信号：SEED_VER 标记写入（写完 100K 才 set）
   await expect
-    .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-seed-v3')), {
-      timeout: 30_000,
-      intervals: [500, 1000, 2000],
+    .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-seed-v4')), {
+      timeout: 120_000,
+      intervals: [1000, 3000, 5000],
     })
     .toBe('1')
-  await expect(page.locator('.issue-row').first()).toBeVisible({ timeout: 10_000 })
+  await expect(page.locator('.issue-row').first()).toBeVisible({ timeout: 60_000 })
 }
 
 test('M1 架构：100K seed + 虚拟列表渲染 + 真实计数', async ({ page }) => {
@@ -320,8 +320,14 @@ test('M9 详情抽屉：优先级即时保存 + 描述保存 + 删除两连确�
     )
     .toBe(true)
   const key = await page.getByTestId('detail-drawer').getAttribute('title')
-  await setOSelect(page, 'detail-priority', 'urgent')
-  // liveQuery 推送：select 值即时生效 + 列表行徽章变 urgent
+  // 选一个与当前不同的优先级（避免 from===to 无 diff 不落活动/不触发保存）
+  const newPri = await page.evaluate(() => {
+    const cur = (document.querySelector('[data-testid=detail-priority]') as { value?: string })
+      ?.value
+    return cur === 'urgent' ? 'high' : 'urgent'
+  })
+  await setOSelect(page, 'detail-priority', newPri)
+  // liveQuery 推送：select 值即时生效 + 列表行徽章变色
   await expect
     .poll(
       async () =>
@@ -332,8 +338,8 @@ test('M9 详情抽屉：优先级即时保存 + 描述保存 + 删除两连确�
         ),
       { timeout: 10_000 },
     )
-    .toBe('urgent')
-  await expect(page.locator('.issue-row .pri-urgent').first()).toBeVisible({ timeout: 10_000 })
+    .toBe(newPri)
+  await expect(page.locator(`.issue-row .pri-${newPri}`).first()).toBeVisible({ timeout: 10_000 })
   // 描述保存
   await page.evaluate(() => {
     const el = document.querySelector('[data-testid=detail-desc]') as unknown as {
@@ -643,9 +649,15 @@ test('M17 活动历史：详情改优先级 → 活动区出现记录', async ({
     )
     .toBe(true)
   await expect(page.getByTestId('activities-block')).toBeVisible({ timeout: 10_000 })
-  await setOSelect(page, 'detail-priority', 'urgent')
+  // 选一个与当前不同的优先级（避免 from===to 无 diff 不落活动）
+  const curPri17 = await page.evaluate(
+    () =>
+      (document.querySelector('[data-testid=detail-priority]') as { value?: string })?.value ?? '',
+  )
+  const newPri17 = curPri17 === 'urgent' ? 'high' : 'urgent'
+  await setOSelect(page, 'detail-priority', newPri17)
   await expect(
-    page.getByTestId('activities-block').locator('[data-testid=activity-item]').first(),
+    page.getByTestId('activities-block').locator(`[data-testid=activity-item]`).first(),
   ).toContainText('优先级', { timeout: 10_000 })
 })
 

@@ -6,6 +6,7 @@ import { db } from './db/schema'
 import type { Issue, IssuePriority, IssueStatus, Member, Project } from './types'
 import { ISSUE_PRIORITIES, STATUS_LABEL } from './types'
 import { OSelect, OSegmented, TagChip } from './components/oas-wrappers'
+import { t, loadLang, storeLang, setLang, type Lang, type DictKey } from './i18n'
 import { BulkBar, useSavedViews, saveView } from './components/BulkBar'
 
 const STATUSES: IssueStatus[] = ['backlog', 'todo', 'in_progress', 'done', 'cancelled']
@@ -207,6 +208,8 @@ function useMyNotifications(currentUser: string) {
       .limit(300)
       .toArray()
     const mine = acts.filter((a) => a.actorId !== currentUser)
+    // bulkGet 一次取齐（逐条 get 300 次会拖慢首屏渲染）
+    const issues = await db.issues.bulkGet(mine.map((a) => a.issueId))
     const out: Array<{
       id: string
       actorId: string
@@ -214,18 +217,17 @@ function useMyNotifications(currentUser: string) {
       issueId: string
       createdAt: number
     }> = []
-    for (const a of mine) {
-      const issue = await db.issues.get(a.issueId)
-      if (!issue || issue.assigneeId !== currentUser) continue
+    issues.forEach((issue, i) => {
+      if (!issue || issue.assigneeId !== currentUser) return
+      if (out.length >= 20) return
       out.push({
-        id: a.id,
-        actorId: a.actorId,
+        id: mine[i].id,
+        actorId: mine[i].actorId,
         text: issue.key + ' ' + (issue.title ?? ''),
-        issueId: a.issueId,
-        createdAt: a.createdAt,
+        issueId: issue.id,
+        createdAt: mine[i].createdAt,
       })
-      if (out.length >= 20) break
-    }
+    })
     return out
   }, [currentUser])
 }
@@ -241,7 +243,13 @@ function NotificationBadge({ currentUser }: { currentUser: string }) {
   )
 }
 
-function NotificationList({ currentUser }: { currentUser: string }) {
+function NotificationList({
+  currentUser,
+  onOpen,
+}: {
+  currentUser: string
+  onOpen: (issueId: string) => void
+}) {
   const list = useMyNotifications(currentUser)
   if (!list || list.length === 0) {
     return <oas-empty description="暂无与我相关的动态" />
@@ -249,7 +257,13 @@ function NotificationList({ currentUser }: { currentUser: string }) {
   return (
     <div className="notify-list" data-testid="notify-list">
       {list.map((n) => (
-        <div key={n.id} className="notify-item" data-testid="notify-item">
+        <div
+          key={n.id}
+          className="notify-item"
+          data-testid="notify-item"
+          style={{ cursor: 'pointer' }}
+          onClick={() => onOpen(n.issueId)}
+        >
           <p className="notify-text">{n.text}</p>
           <p className="notify-time">{new Date(n.createdAt).toLocaleString()}</p>
         </div>
@@ -263,6 +277,12 @@ export function App() {
   const [currentUser, setCurrentUser] = useState(
     () => localStorage.getItem('oas-pm-user') ?? 'member-1',
   )
+  const [lang, setLangState] = useState<Lang>(loadLang())
+  const toggleLang = useCallback(() => {
+    const next: Lang = lang === 'zh' ? 'en' : 'zh'
+    setLangState(next)
+    setLang(next)
+  }, [lang])
   const savedViews = useSavedViews()
   const saveViewNameRef = useRef<HTMLElement & { value?: string }>(null)
   const applySavedView = useCallback((filtersJson: string) => {
@@ -475,6 +495,14 @@ export function App() {
         <button
           className="toolbar-btn"
           type="button"
+          data-testid="lang-toggle"
+          onClick={toggleLang}
+        >
+          {lang === 'zh' ? 'EN' : '中'}
+        </button>
+        <button
+          className="toolbar-btn"
+          type="button"
           data-testid="toolbar-notify"
           title="与我相关的最近动态"
           onClick={() => notifyRef.current?.setAttribute('visible', '')}
@@ -498,15 +526,15 @@ export function App() {
               testid="view-seg"
               value={view}
               options={[
-                { label: '仪表盘', value: 'dashboard' },
-                { label: '列表', value: 'issues' },
-                { label: '看板', value: 'board' },
-                { label: '时间线', value: 'timeline' },
+                { label: t('dashboard'), value: 'dashboard' },
+                { label: t('list'), value: 'issues' },
+                { label: t('board'), value: 'board' },
+                { label: t('timeline'), value: 'timeline' },
               ]}
               onChange={(v) => setView(v as View)}
             />
           </div>
-          <p className="side-title">项目</p>
+          <p className="side-title">{t('projects')}</p>
           {(projects ?? []).map((p) => (
             <button
               key={p.id}
@@ -520,14 +548,14 @@ export function App() {
               <span>{p.name}</span>
             </button>
           ))}
-          <p className="side-title">视图</p>
+          <p className="side-title">{t('views')}</p>
           <button
             className={`side-item${!filters.myOnly ? ' is-active' : ''}`}
             type="button"
             data-testid="view-all"
             onClick={() => setF('myOnly', false)}
           >
-            <span>全部 Issues</span>
+            <span>{t('allIssues')}</span>
           </button>
           <button
             className={`side-item${filters.myOnly ? ' is-active' : ''}`}
@@ -537,14 +565,14 @@ export function App() {
           >
             <span>我的（{memberMap.get(currentUser)?.name ?? ''}）</span>
           </button>
-          <p className="side-title">状态</p>
+          <p className="side-title">{t('status')}</p>
           <button
             className={`side-item${filters.statusFilter === null ? ' is-active' : ''}`}
             type="button"
             data-testid="filter-all"
             onClick={() => setF('statusFilter', null)}
           >
-            <span>全部</span>
+            <span>{t('all')}</span>
             <span className="side-count">{counts?.total.toLocaleString() ?? '…'}</span>
           </button>
           {STATUSES.map((s) => (
@@ -560,7 +588,7 @@ export function App() {
               <span className="side-count">{counts?.byStatus[s]?.toLocaleString() ?? '…'}</span>
             </button>
           ))}
-          <p className="side-title">保存的视图</p>
+          <p className="side-title">{t('savedViews')}</p>
           {(savedViews ?? []).map((v) => (
             <div key={v.id} className="side-item saved-view-item">
               <button
@@ -592,7 +620,7 @@ export function App() {
               </button>
             </div>
           ))}
-          <p className="side-title">成员（窗口内）</p>
+          <p className="side-title">{t('members')}</p>
           {(members ?? []).map((m) => (
             <button
               key={m.id}
@@ -737,7 +765,13 @@ export function App() {
 
       {/* 通知（与我相关的最近动态） */}
       <oas-modal ref={notifyRef} title="与我相关的最近动态" no-footer data-testid="modal-notify">
-        <NotificationList currentUser={currentUser} />
+        <NotificationList
+          currentUser={currentUser}
+          onOpen={(issueId) => {
+            notifyRef.current?.removeAttribute('visible')
+            setSelectedId(issueId)
+          }}
+        />
       </oas-modal>
 
       {/* 身份切换 */}
@@ -867,7 +901,7 @@ function DashboardView({
       </div>
       <div className="dash-chart-box" data-testid="trend-box">
         <p className="dash-chart-title">近 30 天创建趋势</p>
-        <Chart type="area" data={trend ?? []} testid="chart-trend" label="创建趋势图" />
+        <Chart type="area" data={trend ?? []} testid="chart-trend" label="创建与完成趋势图" />
       </div>
       <p className="dash-note" data-testid="dashboard-member-note">
         {memberMap.get(currentUser)?.name ?? ''} 的工作台 · 数据实时来自 IndexedDB
@@ -969,7 +1003,7 @@ function IssueListView({
         </span>
       </div>
       <div className="issue-toolbar" data-testid="issue-toolbar">
-        <span className="issue-toolbar-label">排序</span>
+        <span className="issue-toolbar-label">{t('sort')}</span>
         <OSelect
           testid="sort-by"
           value={filters.sortBy}
@@ -980,7 +1014,7 @@ function IssueListView({
           ]}
           onChange={(v) => setFilters((prev) => ({ ...prev, sortBy: v as SortBy }))}
         />
-        <span className="issue-toolbar-label">分组</span>
+        <span className="issue-toolbar-label">{t('group')}</span>
         <OSelect
           testid="group-by"
           value={grouping}
@@ -991,7 +1025,7 @@ function IssueListView({
           ]}
           onChange={(v) => setGrouping(v as Grouping)}
         />
-        <span className="issue-toolbar-label">优先级</span>
+        <span className="issue-toolbar-label">{t('priority')}</span>
         <OSelect
           testid="filter-priority"
           value={filters.priorityFilter ?? 'all'}
@@ -1021,7 +1055,7 @@ function IssueListView({
               }))
             }
           >
-            清除筛选
+            {t('clearFilters')}
           </button>
         )}
         <button
@@ -1030,15 +1064,15 @@ function IssueListView({
           data-testid="save-view-btn"
           onClick={onSaveView}
         >
-          保存视图
+          {t('saveView')}
         </button>
       </div>
       <div className="issue-thead">
-        <span>Key</span>
-        <span>标题</span>
-        <span>负责人</span>
-        <span>优先级</span>
-        <span>状态</span>
+        <span>{t('key')}</span>
+        <span>{t('title')}</span>
+        <span>{t('assignee')}</span>
+        <span>{t('priority')}</span>
+        <span>{t('status')}</span>
       </div>
       {groups ? (
         <div className="issue-scroll">
@@ -1311,7 +1345,9 @@ function DrawerActivities({
   }
   return (
     <div className="activities-block" data-testid="activities-block">
-      <span>活动（{acts?.length ?? 0}）</span>
+      <span>
+        {t('activities')}（{acts?.length ?? 0}）
+      </span>
       <div className="activities-list">
         {(acts ?? []).map((a) => (
           <div key={a.id} className="activity-item" data-testid="activity-item">
@@ -1348,6 +1384,8 @@ function CommentsBlock({
     [issueId],
   )
   const inputRef = useRef<HTMLElement & { value?: string }>(null)
+  const editRef = useRef<HTMLElement & { value?: string }>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
 
   const submit = async () => {
     const body = (inputRef.current?.value ?? '').trim()
@@ -1359,29 +1397,106 @@ function CommentsBlock({
       body,
       createdAt: Date.now(),
     })
+    await logActivity(issueId, currentUser, 'comment')
     if (inputRef.current) inputRef.current.value = ''
+  }
+
+  /** @提及渲染：@中文/英文名 → 高亮 span（纯文本安全拆分） */
+  const renderMentions = (body: string) => {
+    const parts = body.split(/(@[\u4e00-\u9fa5a-zA-Z0-9]+)/g)
+    return parts.map((seg, i) =>
+      seg.startsWith('@') ? (
+        <span key={i} style={{ color: '#0b6cff', fontWeight: 600 }}>
+          {seg}
+        </span>
+      ) : (
+        <span key={i}>{seg}</span>
+      ),
+    )
   }
 
   return (
     <div className="comments-block" data-testid="comments-block">
-      <span>评论（{comments?.length ?? 0}）</span>
+      <span>
+        {t('comments')}（{comments?.length ?? 0}）
+      </span>
       <div className="comments-list">
-        {(comments ?? []).map((c) => (
-          <oas-comment
-            key={c.id}
-            data-testid="comment-item"
-            author={memberMap.get(c.authorId)?.name ?? '匿名'}
-            datetime={new Date(c.createdAt).toLocaleString()}
-          >
-            <span slot="content">{c.body}</span>
-          </oas-comment>
+        {(comments ?? []).map((cm) => (
+          <div key={cm.id} data-testid="comment-item" style={{ position: 'relative' }}>
+            {editingId === cm.id ? (
+              <div className="comment-edit-row">
+                <oas-textarea
+                  ref={editRef}
+                  data-testid="comment-edit"
+                  className="comment-input"
+                  style={{ minHeight: 60 }}
+                />
+                <div className="quit-actions">
+                  <oas-button
+                    size="small"
+                    data-testid="comment-cancel"
+                    onClick={() => setEditingId(null)}
+                  >
+                    取消
+                  </oas-button>
+                  <oas-button
+                    size="small"
+                    type="primary"
+                    data-testid="comment-save"
+                    onClick={() => {
+                      const v = editRef.current?.value ?? ''
+                      if (v.trim()) {
+                        void db.comments.update(cm.id, { body: v.trim() })
+                        void logActivity(cm.issueId, currentUser, 'comment-edit')
+                      }
+                      setEditingId(null)
+                    }}
+                  >
+                    保存
+                  </oas-button>
+                </div>
+              </div>
+            ) : (
+              <oas-comment
+                author={memberMap.get(cm.authorId)?.name ?? '匿名'}
+                datetime={new Date(cm.createdAt).toLocaleString()}
+              >
+                <span slot="content">{renderMentions(cm.body)}</span>
+                {cm.authorId === currentUser && (
+                  <span slot="actions" className="comment-ops">
+                    <button
+                      type="button"
+                      className="comment-op"
+                      data-testid="comment-edit-btn"
+                      onClick={() => {
+                        setEditingId(cm.id)
+                        setTimeout(() => {
+                          if (editRef.current) editRef.current.value = cm.body
+                        }, 50)
+                      }}
+                    >
+                      编辑
+                    </button>
+                    <button
+                      type="button"
+                      className="comment-op comment-op-del"
+                      data-testid="comment-del"
+                      onClick={() => void db.comments.delete(cm.id)}
+                    >
+                      删除
+                    </button>
+                  </span>
+                )}
+              </oas-comment>
+            )}
+          </div>
         ))}
       </div>
       <div className="comment-input-row">
         <oas-input
           className="comment-input"
           data-testid="comment-input"
-          placeholder="写下评论…"
+          placeholder={t('commentPlaceholder')}
           ref={inputRef}
         />
         <button
@@ -1390,7 +1505,7 @@ function CommentsBlock({
           data-testid="comment-send"
           onClick={() => void submit()}
         >
-          发送
+          {t('send')}
         </button>
       </div>
     </div>
@@ -1398,6 +1513,11 @@ function CommentsBlock({
 }
 
 /* ── Issue 详情抽屉（oas-drawer + OSelect + oas-textarea + oas-tag + popconfirm，即时保存） ── */
+const RELATION_LABEL: Record<string, string> = {
+  blocks: '阻塞',
+  'blocked-by': '被阻塞',
+  relates: '相关',
+}
 const LABELS = ['frontend', 'backend', 'design', 'bug', 'feature', 'tech-debt', 'docs', 'infra']
 
 function IssueDetailDrawer({
@@ -1412,6 +1532,9 @@ function IssueDetailDrawer({
   onClose: () => void
 }) {
   const issue = useLiveQuery(() => db.issues.get(issueId), [issueId])
+  const subs = useLiveQuery(() => db.issues.where('parentId').equals(issueId).toArray(), [issueId])
+  const subInputRef = useRef<HTMLElement & { value?: string }>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   const drawerRef = useRef<HTMLElement>(null)
   const popRef = useRef<HTMLElement>(null)
   const [descDirty, setDescDirty] = useState(false)
@@ -1426,6 +1549,32 @@ function IssueDetailDrawer({
   useEffect(() => {
     drawerRef.current?.setAttribute('title', issue ? issue.key : '')
   }, [issue?.key])
+
+  const addSub = useCallback(async () => {
+    const title = (subInputRef.current?.value ?? '').trim()
+    if (!title || !issue) return
+    const newId = nanoid()
+    await db.issues.add({
+      id: newId,
+      projectId: issue.projectId,
+      key: `SUB-${Date.now().toString().slice(-6)}`,
+      title,
+      description: '',
+      status: 'todo',
+      priority: 'medium',
+      assigneeId: issue.assigneeId,
+      reporterId: currentUser,
+      labels: [],
+      startAt: null,
+      dueAt: null,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      order: issue.order,
+      parentId: issue.id,
+    })
+    if (subInputRef.current) subInputRef.current.value = ''
+    await logActivity(newId, currentUser, 'create')
+  }, [issue, currentUser])
 
   // 描述编辑态在切换 issue 时重置；textarea value 跟随 issue.description
   const descRefValue = useRef<HTMLElement & { value?: string }>(null)
@@ -1455,8 +1604,16 @@ function IssueDetailDrawer({
     return () => el.removeEventListener('oas-open-change', h)
   }, [issueId, onClose])
 
+  // 关联选择 state：必须在早退之前（hooks 顺序恒定）
+  const [relType, setRelType] = useState('__none__')
+  const relCandidates = useLiveQuery(
+    () => db.issues.where('projectId').equals(issueId).limit(100).toArray(),
+    [issueId],
+  )
+
   if (!issue) return <oas-drawer ref={drawerRef} />
 
+  const relationTarget = (id: string) => relCandidates?.find((x) => x.id === id)
   const save = (changes: Partial<Issue>) => {
     const FIELD_LABEL: Partial<Record<keyof Issue, string>> = {
       status: '状态',
@@ -1474,8 +1631,11 @@ function IssueDetailDrawer({
       acts.push(
         logActivity(issue.id, currentUser, k as string, { field: FIELD_LABEL[k], from, to }),
       )
+      if (k === 'status') changes.completedAt = to === 'done' ? Date.now() : null
     }
-    void Promise.all(acts).then(() => db.issues.update(issue.id, changes))
+    Promise.all(acts)
+      .then(() => db.issues.update(issue.id, changes))
+      .catch((e) => console.error('[save acts]', (e as Error)?.message ?? e))
   }
   const memberOptions = [
     { label: '未分配', value: '__none__' },
@@ -1515,12 +1675,63 @@ function IssueDetailDrawer({
             />
           </div>
         </div>
+        <div className="detail-subs-block">
+          <span>
+            {t('subtasks')}（{subs?.length ?? 0}）
+          </span>
+          <div className="subs-list">
+            {(subs ?? []).map((s) => (
+              <div key={s.id} className="sub-item" data-testid="sub-item">
+                <input
+                  type="checkbox"
+                  className="row-check"
+                  checked={s.status === 'done'}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    const done = s.status === 'done'
+                    void db.issues.update(s.id, {
+                      status: done ? 'todo' : 'done',
+                      completedAt: done ? null : Date.now(),
+                      updatedAt: Date.now(),
+                    })
+                    void logActivity(s.id, currentUser, 'status', {
+                      field: '状态',
+                      to: done ? 'todo' : 'done',
+                    })
+                  }}
+                  readOnly
+                />
+                <span
+                  className={`issue-title${s.status === 'done' ? ' sub-done' : ''}`}
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => setSelectedId(s.id)}
+                >
+                  {s.key} {s.title}
+                </span>
+                <oas-tag size="small" type={s.status === 'done' ? 'success' : 'info'}>
+                  {STATUS_LABEL[s.status]}
+                </oas-tag>
+              </div>
+            ))}
+          </div>
+          <div className="sub-add-row">
+            <oas-input
+              ref={subInputRef}
+              data-testid="sub-add-input"
+              placeholder="新子任务标题…"
+              className="comment-input"
+            />
+            <oas-button size="small" data-testid="sub-add" onClick={() => void addSub()}>
+              添加
+            </oas-button>
+          </div>
+        </div>
         <div className="detail-desc-block">
-          <span>描述</span>
+          <span>{t('description')}</span>
           <oas-textarea
             ref={descRefValue}
             data-testid="detail-desc"
-            placeholder="补充描述…"
+            placeholder="Description…"
             className="detail-textarea"
           />
           {descDirty && (
@@ -1537,8 +1748,68 @@ function IssueDetailDrawer({
             </button>
           )}
         </div>
+        <div className="detail-relations-block">
+          <span>{t('relations')}</span>
+          <div className="detail-labels">
+            {(issue.relations ?? []).map((r, i) => {
+              const target = relationTarget(r.targetId)
+              return (
+                <TagChip
+                  key={`${r.type}-${r.targetId}`}
+                  label={`${RELATION_LABEL[r.type] ?? r.type} ${target?.key ?? r.targetId.slice(0, 10)}`}
+                  testid={`relation-chip-${i}`}
+                  onRemove={() => {
+                    const next = (issue.relations ?? []).filter((_, j) => j !== i)
+                    save({ relations: next })
+                    void logActivity(issue.id, currentUser, 'relations', {
+                      field: '关联',
+                      to: `${r.type} ${target?.key ?? r.targetId}`,
+                    })
+                  }}
+                />
+              )
+            })}
+            <OSelect
+              testid="relation-add-type"
+              value={relType}
+              options={[
+                { label: '关联…', value: '__none__' },
+                { label: 'blocks（阻塞）', value: 'blocks' },
+                { label: 'blocked-by（被阻塞）', value: 'blocked-by' },
+                { label: 'relates（相关）', value: 'relates' },
+              ]}
+              onChange={setRelType}
+            />
+            {relType !== '__none__' && (
+              <OSelect
+                testid="relation-add-target"
+                value="__none__"
+                options={[
+                  { label: '选择 Issue…', value: '__none__' },
+                  ...(relCandidates ?? []).map((x) => ({
+                    label: `${x.key} ${x.title.slice(0, 14)}`,
+                    value: x.id,
+                  })),
+                ]}
+                onChange={(tid) => {
+                  if (tid === '__none__') return
+                  const next = [
+                    ...(issue.relations ?? []),
+                    { type: relType as 'blocks', targetId: tid },
+                  ]
+                  save({ relations: next })
+                  setRelType('__none__')
+                  void logActivity(issue.id, currentUser, 'relations', {
+                    field: '关联',
+                    to: `${relType} ${tid}`,
+                  })
+                }}
+              />
+            )}
+          </div>
+        </div>
         <div className="detail-labels-block">
-          <span>标签</span>
+          <span>{t('labels')}</span>
           <div className="detail-labels">
             {issue.labels.map((l) => (
               <TagChip
@@ -1714,6 +1985,11 @@ function TimelineView({ issues }: { issues: Issue[] }) {
           start: new Date(i.startAt ?? i.createdAt).toISOString().slice(0, 10),
           end: new Date(i.dueAt as number).toISOString().slice(0, 10),
           type: 'task' as const,
+        }))
+        // 相邻 fs 依赖演示组件连线能力（前项完成 → 后项开始）
+        .map((t, i, arr) => ({
+          ...t,
+          dependencies: i > 0 ? [{ id: arr[i - 1].id, type: 'fs' as const }] : undefined,
         })),
     [issues],
   )

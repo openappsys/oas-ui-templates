@@ -32,6 +32,7 @@ export function OSelect({
     if (!el) return
     const h = (e: Event) => {
       const v = (e as CustomEvent<{ value: string }>).detail?.value
+      console.log('[OSelect dbg]', testid, v)
       if (typeof v === 'string') onChangeRef.current(v)
     }
     el.addEventListener('oas-change', h)

@@ -20,6 +20,12 @@ export interface Issue {
   createdAt: number
   updatedAt: number
   order: number
+  /** 子任务父 Issue id（空 = 顶层） */
+  parentId?: string | null
+  /** 状态流转为 done 的时间（燃尽/完成趋势用） */
+  completedAt?: number | null
+  /** 关联：blocks / blocked-by / relates */
+  relations?: Array<{ type: 'blocks' | 'blocked-by' | 'relates'; targetId: string }>
 }
 
 export interface Project {

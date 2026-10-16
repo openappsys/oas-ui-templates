@@ -1261,3 +1261,40 @@ body {
   font-size: 11px;
   color: var(--oas-color-text-tertiary, #94a3b8);
 }
+
+/* ── 移动端适配（≤900px） ── */
+@media (max-width: 900px) {
+  .side-panel {
+    width: 64px;
+    padding: 8px 4px;
+    overflow-x: hidden;
+  }
+  .side-panel .side-title,
+  .side-panel .side-item span:last-child,
+  .side-panel .side-count,
+  .side-view-seg oas-segmented {
+    display: none;
+  }
+  .side-panel .side-item {
+    justify-content: center;
+    padding: 8px 0;
+  }
+  .toolbar-search {
+    width: 140px;
+  }
+  .dash-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .dash-charts {
+    grid-template-columns: 1fr;
+  }
+  .board oas-kanban {
+    min-width: 720px;
+  }
+  .board {
+    overflow-x: auto;
+  }
+  .detail-panel {
+    width: 92vw !important;
+  }
+}

@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test'
 test('shots', async ({ page }) => {
   test.setTimeout(120_000)
   await page.goto('/')
-  await page.waitForFunction(() => localStorage.getItem('oas-pm-seed-v3') === '1', {
+  await page.waitForFunction(() => localStorage.getItem('oas-pm-seed-v4') === '1', {
     timeout: 45_000,
   })
   await page.waitForSelector('.issue-row', { timeout: 20_000 })
