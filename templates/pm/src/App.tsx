@@ -1,11 +1,13 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import Dexie from 'dexie'
+import { nanoid } from 'nanoid'
 import { db } from './db/schema'
-import type { Issue, IssueStatus } from './types'
+import type { Issue, IssuePriority, IssueStatus } from './types'
 import { STATUS_LABEL } from './types'
 
 const STATUSES: IssueStatus[] = ['backlog', 'todo', 'in_progress', 'done', 'cancelled']
+const PRIORITIES: IssuePriority[] = ['urgent', 'high', 'medium', 'low']
 const STATUS_COLOR: Record<IssueStatus, string> = {
   backlog: '#9aa3b8',
   todo: '#0b6cff',
@@ -14,7 +16,7 @@ const STATUS_COLOR: Record<IssueStatus, string> = {
   cancelled: '#dc2626',
 }
 const LIST_WINDOW = 500
-const BOARD_COL_WINDOW = 50
+const BOARD_COL_WINDOW = 200
 
 type View = 'issues' | 'board' | 'timeline'
 
@@ -61,75 +63,80 @@ function betweenOrder(prev?: number, next?: number): number {
   return (prev + next) / 2
 }
 
-/* ── 菜单栏 ── */
-const MENUS: Record<string, Array<{ label: string; act: string }>> = {
-  文件: [{ label: '导出 Issue（当前窗口）', act: 'export' }],
-  编辑: [{ label: '刷新页面', act: 'reload' }],
-  视图: [
-    { label: '切换玻璃质感', act: 'glass' },
-    { label: '全屏', act: 'fullscreen' },
-  ],
-  帮助: [{ label: '关于 OAS PM', act: 'about' }],
-}
-
 export function App() {
   const [view, setView] = useState<View>('issues')
   const [statusFilter, setStatusFilter] = useState<IssueStatus | null>(null)
-  const [openMenu, setOpenMenu] = useState<string | null>(null)
   const aboutRef = useRef<HTMLElement>(null)
+  const createRef = useRef<HTMLElement>(null)
   const issues = useIssueWindow(statusFilter)
   const total = useIssueCount(statusFilter)
 
-  const closeMenuOnOutside = useCallback((e: Event) => {
-    const t = e.target as HTMLElement
-    if (!t.closest('.menu-wrap')) setOpenMenu(null)
-  }, [])
+  // oas-modal 的 title 命中 HTMLElement 原生 property（React 19 走 property 不落
+  // attribute，组件收不到），挂载后显式 setAttribute
   useEffect(() => {
-    document.addEventListener('pointerdown', closeMenuOnOutside)
-    return () => document.removeEventListener('pointerdown', closeMenuOnOutside)
-  }, [closeMenuOnOutside])
+    createRef.current?.setAttribute('title', '新建 Issue')
+    aboutRef.current?.setAttribute('title', '关于')
+  }, [])
 
-  const exportIssues = useCallback(() => {
+  const exportCsv = useCallback(() => {
     if (!issues?.length) return
-    const blob = new Blob(
-      [
-        JSON.stringify(
-          { exportedAt: new Date().toISOString(), count: issues.length, issues },
-          null,
-          2,
-        ),
-      ],
-      {
-        type: 'application/json',
-      },
-    )
+    const esc = (s: string) => `"${s.replace(/"/g, '""')}"`
+    const lines = [
+      'Key,标题,状态,优先级,创建日期',
+      ...issues.map((i) =>
+        [
+          i.key,
+          esc(i.title),
+          i.status,
+          i.priority,
+          new Date(i.createdAt).toISOString().slice(0, 10),
+        ].join(','),
+      ),
+    ]
+    const blob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/csv;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `oas-pm-issues-${Date.now()}.json`
+    a.download = `oas-pm-issues-${Date.now()}.csv`
     a.click()
     URL.revokeObjectURL(url)
   }, [issues])
 
-  const runMenuAction = useCallback(
-    (act: string) => {
-      setOpenMenu(null)
-      if (act === 'export') exportIssues()
-      else if (act === 'reload') location.reload()
-      else if (act === 'glass') {
-        const on = document.documentElement.hasAttribute('data-glass')
-        if (on) document.documentElement.removeAttribute('data-glass')
-        else document.documentElement.setAttribute('data-glass', '')
-        localStorage.setItem('oas-admin.settings.glass', on ? 'off' : 'on')
-      } else if (act === 'fullscreen') {
-        if (document.fullscreenElement) void document.exitFullscreen()
-        else void document.documentElement.requestFullscreen().catch(() => {})
-      } else if (act === 'about') {
-        aboutRef.current?.setAttribute('visible', '')
-      }
-    },
-    [exportIssues],
-  )
+  const createIssue = useCallback(async () => {
+    const modal = createRef.current
+    if (!modal) return
+    const input = modal.querySelector('oas-input') as HTMLElement & { value?: string }
+    const title = (input?.value ?? '').trim()
+    const errEl = modal.querySelector<HTMLElement>('[data-testid="create-error"]')
+    if (!title) {
+      if (errEl) errEl.hidden = false
+      return
+    }
+    if (errEl) errEl.hidden = true
+    const status = (modal.querySelector('[data-testid="create-status"]') as HTMLSelectElement)
+      .value as IssueStatus
+    const priority = (modal.querySelector('[data-testid="create-priority"]') as HTMLSelectElement)
+      .value as IssuePriority
+    await db.issues.add({
+      id: nanoid(),
+      projectId: 'project-1',
+      key: `OAS-${Date.now().toString().slice(-6)}`,
+      title,
+      description: '',
+      status,
+      priority,
+      assigneeId: null,
+      reporterId: 'member-1',
+      labels: [],
+      startAt: null,
+      dueAt: null,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      order: Date.now(),
+    })
+    if (input) input.value = ''
+    createRef.current?.removeAttribute('visible')
+  }, [])
 
   return (
     <div className="app-frame">
@@ -137,34 +144,31 @@ export function App() {
         <span className="tb-name">OAS PM</span>
         <span className="tb-spacer" />
       </header>
-      <nav className="menubar" data-testid="menubar">
-        {Object.entries(MENUS).map(([name, items]) => (
-          <div key={name} className="menu-wrap">
-            <button
-              className={`menu-item${openMenu === name ? ' is-open' : ''}`}
-              type="button"
-              data-testid={`menu-${name}`}
-              onClick={() => setOpenMenu(openMenu === name ? null : name)}
-            >
-              {name}
-            </button>
-            {openMenu === name && (
-              <div className="menu-pop" data-testid={`menu-pop-${name}`}>
-                {items.map((it) => (
-                  <button
-                    key={it.act}
-                    className="menu-pop-item"
-                    type="button"
-                    data-testid={`menu-act-${it.act}`}
-                    onClick={() => runMenuAction(it.act)}
-                  >
-                    {it.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
+      <nav className="menubar" data-testid="pm-toolbar">
+        <oas-button
+          type="primary"
+          data-testid="toolbar-new"
+          onClick={() => createRef.current?.setAttribute('visible', '')}
+        >
+          ＋ 新建 Issue
+        </oas-button>
+        <button
+          className="toolbar-btn"
+          type="button"
+          data-testid="toolbar-export"
+          onClick={exportCsv}
+        >
+          导出 CSV
+        </button>
+        <span className="tb-spacer" />
+        <button
+          className="toolbar-btn"
+          type="button"
+          data-testid="toolbar-about"
+          onClick={() => aboutRef.current?.setAttribute('visible', '')}
+        >
+          关于
+        </button>
       </nav>
       <div className="main">
         <aside className="activity-bar">
@@ -233,7 +237,58 @@ export function App() {
         <span>OAS PM v0.1.0</span>
       </footer>
 
-      <oas-modal ref={aboutRef} title="关于" no-footer>
+      {/* 新建 Issue */}
+      <oas-modal ref={createRef} no-footer data-testid="modal-create">
+        <div className="create-body">
+          <div className="create-field">
+            <label htmlFor="create-title">标题</label>
+            <oas-input data-testid="create-title" placeholder="Issue 标题" />
+            <p className="create-error" data-testid="create-error" hidden>
+              标题不能为空
+            </p>
+          </div>
+          <div className="create-row">
+            <div className="create-field">
+              <label htmlFor="create-status">状态</label>
+              <select data-testid="create-status" defaultValue="todo">
+                {STATUSES.map((s) => (
+                  <option key={s} value={s}>
+                    {STATUS_LABEL[s]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="create-field">
+              <label htmlFor="create-priority">优先级</label>
+              <select data-testid="create-priority" defaultValue="medium">
+                {PRIORITIES.map((p) => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="quit-actions">
+            <oas-button
+              data-testid="create-cancel"
+              onClick={() => createRef.current?.removeAttribute('visible')}
+            >
+              取消
+            </oas-button>
+            <oas-button
+              type="primary"
+              data-testid="create-submit"
+              onClick={() => void createIssue()}
+            >
+              创建
+            </oas-button>
+          </div>
+        </div>
+      </oas-modal>
+
+      {/* 关于 */}
+      <oas-modal ref={aboutRef} no-footer data-testid="modal-about">
         <div className="about-body">
           <span className="about-logo">OAS</span>
           <p className="about-name">OAS PM</p>
@@ -396,10 +451,11 @@ function IssueDetailPanel({ issue, onClose }: { issue: Issue; onClose: () => voi
   )
 }
 
-/* ── 看板（列内按 order 升序，支持任意位置插入） ── */
+/* ── 看板（列内按 order 升序；拖拽时虚线占位框指示落点） ── */
 function KanbanBoard({ issues }: { issues: Issue[] }) {
   const [dragOver, setDragOver] = useState<IssueStatus | null>(null)
   const [dropTarget, setDropTarget] = useState<{ col: IssueStatus; index: number } | null>(null)
+  const [draggingId, setDraggingId] = useState<string | null>(null)
 
   const byStatus = useMemo(() => {
     const map: Partial<Record<IssueStatus, Issue[]>> = {}
@@ -433,15 +489,19 @@ function KanbanBoard({ issues }: { issues: Issue[] }) {
     const col = byStatus[s] ?? []
     const index = calcDropIndex(body, e.clientY, col.length)
     const shown = col.slice(0, BOARD_COL_WINDOW)
-    // 计算插入点两侧的 order（dropTarget 跨列拖拽时基于目标列数组）
     const prevOrder = index > 0 ? shown[index - 1]?.order : undefined
     const nextOrder = shown[index]?.order
-    // 与被拖卡片自身相邻的空隙（order 相同的邻居是自己）时取中值无意义，但无副作用
     const order =
       prevOrder != null && nextOrder != null && prevOrder === nextOrder
         ? prevOrder + 1
         : betweenOrder(prevOrder, nextOrder)
     void moveIssue(id, s, order)
+  }
+
+  function clearDrag() {
+    setDragOver(null)
+    setDropTarget(null)
+    setDraggingId(null)
   }
 
   return (
@@ -476,8 +536,7 @@ function KanbanBoard({ issues }: { issues: Issue[] }) {
                 '.board-col-body',
               )
               handleDrop(s, body, e)
-              setDragOver(null)
-              setDropTarget(null)
+              clearDrag()
             }}
           >
             <p className="board-col-title" style={{ color: STATUS_COLOR[s] }}>
@@ -489,12 +548,16 @@ function KanbanBoard({ issues }: { issues: Issue[] }) {
             <div className="board-col-body" data-testid={`col-body-${s}`}>
               {shown.map((issue, i) => (
                 <div key={issue.id} style={{ display: 'contents' }}>
-                  {dropIndex === i && <div className="drop-line" data-testid="drop-line" />}
+                  {dropIndex === i && <div className="board-card-ghost" data-testid="drop-ghost" />}
                   <div
-                    className="board-card"
+                    className={`board-card${draggingId === issue.id ? ' is-dragging' : ''}`}
                     draggable
                     data-card-key={issue.key}
-                    onDragStart={(e) => e.dataTransfer.setData('text/plain', issue.id)}
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData('text/plain', issue.id)
+                      setDraggingId(issue.id)
+                    }}
+                    onDragEnd={clearDrag}
                   >
                     <span className="board-card-key">{issue.key}</span>
                     <p className="board-card-title">{issue.title}</p>
@@ -503,7 +566,7 @@ function KanbanBoard({ issues }: { issues: Issue[] }) {
                 </div>
               ))}
               {dropIndex !== null && dropIndex >= shown.length && (
-                <div className="drop-line" data-testid="drop-line" />
+                <div className="board-card-ghost" data-testid="drop-ghost" />
               )}
               {hidden > 0 && (
                 <p className="board-col-more">还有 {hidden.toLocaleString()} 条未显示</p>

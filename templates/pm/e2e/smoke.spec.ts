@@ -52,7 +52,7 @@ test('M3 看板：拖拽改状态 + 插入到目标列最前', async ({ page }) 
   await expect(page.getByTestId('board')).toBeVisible()
   const todoCards = await page.getByTestId('col-body-todo').locator('.board-card').count()
   expect(todoCards).toBeGreaterThan(0)
-  expect(todoCards).toBeLessThanOrEqual(50)
+  expect(todoCards).toBeLessThanOrEqual(200)
 
   // 拖 todo 首卡到 done 列（默认坐标 → 插最前）
   const card = page.getByTestId('col-body-todo').locator('.board-card').first()
@@ -90,7 +90,7 @@ test('M3b 看板：拖拽插入到目标列中间位置（fractional order）', 
   await page.getByTestId('nav-board').click()
   await expect(page.getByTestId('board')).toBeVisible()
 
-  // 目标：done 列第二张卡之后（clientY 取第二卡中点 + 2px）
+  // 目标：done 列第二张卡上半部（clientY = 中点 - 2 → 插入 index 1，排第二位）
   const doneBody = page.getByTestId('col-body-done')
   await doneBody.locator('.board-card').nth(1).waitFor({ timeout: 10_000 })
   const secondRect = await doneBody
@@ -127,7 +127,7 @@ test('M3b 看板：拖拽插入到目标列中间位置（fractional order）', 
         new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt, clientY: y }),
       )
     },
-    { key: cardKey, y: Math.round(secondRect.midY + 2) },
+    { key: cardKey, y: Math.round(secondRect.midY - 2) },
   )
 
   // 拖动卡应落在 done 列第二位（第一张仍是原首卡）
@@ -159,30 +159,92 @@ test('M4 时间线：oas-gantt 接收 tasks 并渲染', async ({ page }) => {
     .toBeGreaterThan(0)
 })
 
-test('M5 菜单栏：下拉打开 + 关于弹窗开合 + 玻璃质感切换', async ({ page }) => {
+test('M5 工具栏：新建 Issue 全流程 + CSV 导出 + 关于弹窗', async ({ page }) => {
   await waitForSeed(page)
-  // 帮助 → 下拉出现 → 关于 → oas-modal visible → 知道了关闭
-  await page.getByTestId('menu-帮助').click()
-  await expect(page.getByTestId('menu-pop-帮助')).toBeVisible()
-  await page.getByTestId('menu-act-about').click()
-  const modal = page.locator('oas-modal')
+
+  // 新建 Issue：标题空 → 错误提示；填写 → 创建 → 列表与看板出现
+  await page.getByTestId('toolbar-new').click()
+  const modal = page.getByTestId('modal-create')
   await expect(modal).toHaveAttribute('visible', /.*/, { timeout: 5000 })
+  await page.getByTestId('create-submit').click()
+  await expect(page.getByTestId('create-error')).toBeVisible()
+  await page.getByTestId('create-title').locator('input').fill('E2E 新建测试 Issue')
+  await page.getByTestId('create-status').selectOption('todo')
+  await page.getByTestId('create-priority').selectOption('high')
+  await page.getByTestId('create-submit').click()
+  await expect(modal).not.toHaveAttribute('visible', /.*/, { timeout: 5000 })
+  // 新建 updatedAt 最新 → 列表窗口第一行
+  await expect(page.locator('.issue-row').first()).toContainText('E2E 新建测试 Issue', {
+    timeout: 10_000,
+  })
+  // 新建 order = Date.now() 列内最大 → 看板 todo 列尾出现（updatedAt 最新必在窗口内）
+  await page.getByTestId('nav-board').click()
+  await expect(page.getByTestId('col-body-todo').locator('.board-card').last()).toContainText(
+    'E2E 新建测试 Issue',
+    { timeout: 10_000 },
+  )
+
+  // CSV 导出
+  const dl = page.waitForEvent('download', { timeout: 10_000 })
+  await page.getByTestId('toolbar-export').click()
+  const download = await dl
+  expect(download.suggestedFilename()).toMatch(/^oas-pm-issues-\d+\.csv$/)
+
+  // 关于弹窗开合
+  await page.getByTestId('toolbar-about').click()
+  const about = page.getByTestId('modal-about')
+  await expect(about).toHaveAttribute('visible', /.*/, { timeout: 5000 })
   await expect(page.locator('.about-name')).toContainText('OAS PM')
   await page.getByTestId('about-close').click()
-  await expect(modal).not.toHaveAttribute('visible', /.*/, { timeout: 5000 })
+  await expect(about).not.toHaveAttribute('visible', /.*/, { timeout: 5000 })
+})
 
-  // 视图 → 玻璃质感 toggle
-  await page.getByTestId('menu-视图').click()
-  await page.getByTestId('menu-act-glass').click()
-  await expect(page.locator('html')).toHaveAttribute('data-glass', /.*/)
-  await page.getByTestId('menu-视图').click()
-  await page.getByTestId('menu-act-glass').click()
-  await expect(page.locator('html')).not.toHaveAttribute('data-glass', /.*/)
+test('M6 看板拖拽：悬停出现虚线占位框 + 原卡半透明', async ({ page }) => {
+  await waitForSeed(page)
+  await page.getByTestId('nav-board').click()
+  await expect(page.getByTestId('board')).toBeVisible()
+  // liveQuery 就绪后再操作 DOM（否则列是空壳，evaluate 取不到卡）
+  await expect(page.getByTestId('col-body-done').locator('.board-card').first()).toBeVisible({
+    timeout: 10_000,
+  })
 
-  // 文件 → 导出触发下载
-  await page.getByTestId('menu-文件').click()
-  const dl = page.waitForEvent('download', { timeout: 10_000 })
-  await page.getByTestId('menu-act-export').click()
-  const download = await dl
-  expect(download.suggestedFilename()).toMatch(/^oas-pm-issues-\d+\.json$/)
+  // dragover 重放到 done 列中部：ghost 占位框出现
+  await page.evaluate(() => {
+    const src = document.querySelector('[data-status="todo"] .board-card') as HTMLElement
+    const dst = document.querySelector('[data-status="done"]') as HTMLElement
+    const dt = new DataTransfer()
+    src.dispatchEvent(
+      new DragEvent('dragstart', { bubbles: true, cancelable: true, dataTransfer: dt }),
+    )
+    const body = dst.querySelector('.board-col-body') as HTMLElement
+    const card = body.querySelector('.board-card') as HTMLElement
+    const r = card.getBoundingClientRect()
+    dst.dispatchEvent(
+      new DragEvent('dragover', {
+        bubbles: true,
+        cancelable: true,
+        dataTransfer: dt,
+        clientY: Math.round(r.top + r.height / 2),
+      }),
+    )
+  })
+  await expect(page.getByTestId('drop-ghost')).toBeVisible()
+  await expect(page.locator('.board-card.is-dragging')).toHaveCount(1)
+  // drop 后 ghost 消失
+  await page.evaluate(() => {
+    const dst = document.querySelector('[data-status="done"]') as HTMLElement
+    const dt = new DataTransfer()
+    const body = dst.querySelector('.board-col-body') as HTMLElement
+    const card = body.querySelector('.board-card') as HTMLElement
+    const r = card.getBoundingClientRect()
+    dst.dispatchEvent(
+      new DragEvent('drop', {
+        bubbles: true,
+        cancelable: true,
+        dataTransfer: dt,
+        clientY: Math.round(r.top + r.height / 2),
+      }),
+    )
+  })
+  await expect(page.getByTestId('drop-ghost')).toHaveCount(0)
 })

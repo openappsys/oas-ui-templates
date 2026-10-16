@@ -529,59 +529,6 @@ body {
   text-align: center;
 }
 
-/* ── 菜单栏下拉 ── */
-.menu-wrap {
-  position: relative;
-}
-
-.menu-item.is-open {
-  background: var(--oas-color-bg-hover, #f1f5f9);
-}
-
-.menu-pop {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  z-index: 100;
-  min-width: 200px;
-  background: var(--oas-color-bg, #fff);
-  border: 1px solid var(--oas-color-border, #e2e8f0);
-  border-radius: 10px;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.16);
-  padding: 4px;
-}
-
-.menu-pop-item {
-  appearance: none;
-  border: none;
-  background: none;
-  width: 100%;
-  text-align: left;
-  padding: 8px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  font: inherit;
-  font-size: 13px;
-  color: inherit;
-}
-
-.menu-pop-item:hover {
-  background: var(--oas-color-bg-hover, #f1f5f9);
-}
-
-/* ── 看板拖拽插入指示线 ── */
-.drop-line {
-  height: 3px;
-  margin: 2px 0;
-  border-radius: 2px;
-  background: var(--oas-color-primary, #0b6cff);
-  box-shadow: 0 0 6px rgba(11, 108, 255, 0.45);
-}
-
-.board-col-body {
-  position: relative;
-}
-
 /* ── 关于弹窗 ── */
 .about-body {
   display: flex;
@@ -630,4 +577,83 @@ body {
   display: flex;
   justify-content: center;
   margin-top: 10px;
+}
+
+.create-body .quit-actions {
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+/* ── 工具栏（PM 动作直接外露） ── */
+.toolbar-btn {
+  appearance: none;
+  border: none;
+  background: none;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  color: inherit;
+}
+
+.toolbar-btn:hover {
+  background: var(--oas-color-bg-hover, #f1f5f9);
+}
+
+/* ── 看板拖拽虚线占位框 ── */
+.board-card-ghost {
+  height: 64px;
+  margin: 4px 0;
+  border: 2px dashed var(--oas-color-primary, #0b6cff);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--oas-color-primary, #0b6cff) 6%, transparent);
+}
+
+.board-card.is-dragging {
+  opacity: 0.35;
+}
+
+/* ── 新建 Issue 表单 ── */
+.create-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 6px 4px 2px;
+  min-width: 320px;
+}
+
+.create-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.create-field label {
+  font-size: 12px;
+  color: var(--oas-color-text-secondary, #6b7280);
+}
+
+.create-field select {
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--oas-color-border, #e2e8f0);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 13px;
+  background: var(--oas-color-bg, #fff);
+  color: inherit;
+}
+
+.create-row {
+  display: flex;
+  gap: 12px;
+}
+
+.create-error {
+  margin: 0;
+  font-size: 12px;
+  color: #dc2626;
 }

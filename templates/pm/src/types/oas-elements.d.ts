@@ -32,6 +32,11 @@ declare module 'react' {
         'no-footer'?: boolean | string
         visible?: boolean | string
       }
+      'oas-input': HTMLAttributes<HTMLElement> & {
+        value?: string
+        placeholder?: string
+        disabled?: boolean | string
+      }
     }
   }
 }

@@ -38,7 +38,12 @@ function mulberry32(seed: number): () => number {
 }
 
 export async function seedDatabase(): Promise<void> {
-  if ((await db.projects.count()) > 0) return
+  // seed 版本标记：调整 seed 逻辑后 bump，旧库自动清表重建
+  const SEED_VER = 'oas-pm-seed-v2'
+  if (localStorage.getItem(SEED_VER)) return
+  // 旧 seed 数据（v1 的 updatedAt 走了未来时间戳）清表重播；
+  // 不用 db.delete()——会关闭模块级 Dexie 单例的连接
+  await Promise.all(db.tables.map((t) => t.clear()))
 
   const rand = mulberry32(42)
   const now = Date.now()
@@ -116,11 +121,13 @@ export async function seedDatabase(): Promise<void> {
         startAt: null,
         dueAt: rand() > 0.6 ? createdAt + Math.floor(rand() * 14 + 3) * day : null,
         createdAt,
-        updatedAt: createdAt + Math.floor(rand() * 3) * day,
+        // 更新时间 clamp 到 now——seed 走未来时间戳会把真实新建/拖拽的数据压出窗口头部
+        updatedAt: Math.min(createdAt + Math.floor(rand() * 3) * day, now),
         order: idx,
       })
     }
     await db.issues.bulkPut(batch)
   }
   console.timeEnd('seed:100k')
+  localStorage.setItem(SEED_VER, '1')
 }
