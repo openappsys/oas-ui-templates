@@ -580,35 +580,19 @@ function bindVideoEditor(root: HTMLElement): void {
     else selectClip(null)
   })
 
-  // ── 键盘快捷键 ──
+  // ── 键盘快捷键（创作台作用域：空格播放 / Delete 删除选中 clip） ──
   document.addEventListener('keydown', (e) => {
     const t = e.target as HTMLElement
     if (t?.closest('input, textarea, [contenteditable="true"]')) return
-    // Ctrl+1~5 切换板块
-    if ((e.ctrlKey || e.metaKey) && /^[1-5]$/.test(e.key)) {
+    if (e.code === 'Space') {
       e.preventDefault()
-      const idx = Number(e.key) - 1
-      if (idx < SECTIONS.length) switchSection(SECTIONS[idx].id)
-      return
-    }
-    // Ctrl+W 关闭当前 tab
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'w') {
+      play.click()
+    } else if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId !== null) {
       e.preventDefault()
-      closeTab(current)
-      return
-    }
-    // 创作台：空格播放 / Delete 删除选中 clip
-    if (current === 'studio') {
-      if (e.code === 'Space') {
-        e.preventDefault()
-        play.click()
-      } else if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId !== null) {
-        e.preventDefault()
-        studioClips = studioClips.filter((c) => c.id !== selectedId)
-        renderTimeline()
-        selectClip(null)
-        renderPreview()
-      }
+      studioClips = studioClips.filter((c) => c.id !== selectedId)
+      renderTimeline()
+      selectClip(null)
+      renderPreview()
     }
   })
 
@@ -797,7 +781,7 @@ export function mountApp(root: HTMLElement): void {
     const idx = openTabs.indexOf(id)
     if (idx < 0 || id === 'dashboard') return
     openTabs.splice(idx, 1)
-    if (activeTab === id) {
+    if (current === id) {
       const next = openTabs[Math.min(idx, openTabs.length - 1)] ?? 'dashboard'
       switchSection(next)
     }
@@ -864,6 +848,22 @@ export function mountApp(root: HTMLElement): void {
     const btn = (e.target as HTMLElement).closest<HTMLElement>('.act-btn')
     if (!btn || btn.dataset.section === current) return
     switchSection(btn.dataset.section as SectionId)
+  })
+
+  // ── 键盘快捷键（全局作用域：Ctrl+1~5 切板块 / Ctrl+W 关 tab） ──
+  document.addEventListener('keydown', (e) => {
+    const t = e.target as HTMLElement
+    if (t?.closest('input, textarea, [contenteditable="true"]')) return
+    if ((e.ctrlKey || e.metaKey) && /^[1-5]$/.test(e.key)) {
+      e.preventDefault()
+      const idx = Number(e.key) - 1
+      if (idx < SECTIONS.length) switchSection(SECTIONS[idx].id)
+      return
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'w') {
+      e.preventDefault()
+      closeTab(current)
+    }
   })
 
   // 创作台：侧栏媒体分类 → 媒体库过滤（经自定义事件跨到编辑器作用域）
