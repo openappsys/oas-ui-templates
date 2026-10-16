@@ -464,3 +464,69 @@ test('M14 甘特写回：task-change 改期落库', async ({ page }) => {
     )
     .toBe(`${new Date('2026-01-05').getTime()}-${new Date('2026-02-10').getTime()}`)
 })
+
+test('M15 看板拖拽取消：dragend 未 drop 预览回滚', async ({ page }) => {
+  await waitForSeed(page)
+  await page.getByTestId('nav-board').click()
+  await expect(page.getByTestId('board')).toBeVisible()
+  await expect(page.getByTestId('col-body-done').locator('.board-card').first()).toBeVisible({
+    timeout: 10_000,
+  })
+  const todoKey = await page
+    .getByTestId('col-body-todo')
+    .locator('.board-card')
+    .first()
+    .getAttribute('data-card-key')
+  expect(todoKey).toBeTruthy()
+  // 记录 dragover 前 done 列首卡（回滚后应原样恢复；不依赖前面测试留下的数据分布）
+  const doneFirstBefore = await page
+    .getByTestId('col-body-done')
+    .locator('.board-card')
+    .first()
+    .getAttribute('data-card-key')
+  await page.evaluate(() => {
+    const src = document.querySelector('[data-status="todo"] .board-card') as HTMLElement
+    const dst = document.querySelector('[data-status="done"]') as HTMLElement
+    const dt = new DataTransfer()
+    src.dispatchEvent(
+      new DragEvent('dragstart', { bubbles: true, cancelable: true, dataTransfer: dt }),
+    )
+    const body = dst.querySelector('.board-col-body') as HTMLElement
+    const card = body.querySelector('.board-card') as HTMLElement
+    const r = card.getBoundingClientRect()
+    dst.dispatchEvent(
+      new DragEvent('dragover', {
+        bubbles: true,
+        cancelable: true,
+        dataTransfer: dt,
+        clientY: Math.round(r.top - 4),
+      }),
+    )
+  })
+  // 预览中：done 列首位是拖动卡
+  await expect(page.locator('[data-status="done"] .board-card.is-dragging')).toHaveCount(1)
+  // dragend（未 drop）：预览回滚
+  await page.evaluate(() => {
+    const src = document.querySelector(
+      '[data-status="done"] .board-card.is-dragging',
+    ) as HTMLElement
+    src?.dispatchEvent(new DragEvent('dragend', { bubbles: true }))
+  })
+  await expect(page.locator('.board-card.is-dragging')).toHaveCount(0, { timeout: 10_000 })
+  // todo 列该卡回到原位、done 首位恢复原卡（计数的临时 +1 随预览消失）
+  await expect(page.getByTestId('col-body-todo').locator(`[data-card-key="${todoKey}"]`)).toHaveCount(
+    1,
+    { timeout: 10_000 },
+  )
+  await expect
+    .poll(
+      async () =>
+        await page
+          .getByTestId('col-body-done')
+          .locator('.board-card')
+          .first()
+          .getAttribute('data-card-key'),
+      { timeout: 10_000 },
+    )
+    .toBe(doneFirstBefore)
+})

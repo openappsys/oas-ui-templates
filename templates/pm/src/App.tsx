@@ -1095,6 +1095,8 @@ function KanbanBoard({ issues, memberMap }: { issues: Issue[]; memberMap: Map<st
   const [dragOver, setDragOver] = useState<IssueStatus | null>(null)
   const [dropTarget, setDropTarget] = useState<{ col: IssueStatus; index: number } | null>(null)
   const [draggingId, setDraggingId] = useState<string | null>(null)
+  // drop 路径由 handleDrop 完成后清预览；dragEnd 仅负责取消/无效释放
+  const droppedRef = useRef(false)
 
   const byStatus = useMemo(() => {
     const map: Partial<Record<IssueStatus, Issue[]>> = {}
@@ -1111,20 +1113,23 @@ function KanbanBoard({ issues, memberMap }: { issues: Issue[]; memberMap: Map<st
     await db.issues.update(issueId, { status: toStatus, order, updatedAt: Date.now() })
   }
 
-  function calcDropIndex(body: HTMLElement, clientY: number): number {
+  /** dragover 落点计算（排除被拖卡自身）；lastIndex 附近加 10px 迟滞带防边界来回跳 */
+  function calcDropIndex(body: HTMLElement, clientY: number, lastIndex: number): number {
     const cards = Array.from(body.querySelectorAll<HTMLElement>('.board-card:not(.is-dragging)'))
     for (let i = 0; i < cards.length; i++) {
       const r = cards[i].getBoundingClientRect()
-      if (clientY < r.top + r.height / 2) return i
+      const mid = r.top + r.height / 2
+      const bias = lastIndex >= 0 && (i === lastIndex || i === lastIndex - 1) ? 10 : 0
+      if (clientY < mid - bias) return i
     }
     return cards.length
   }
 
-  function handleDrop(s: IssueStatus, body: HTMLElement | null, e: React.DragEvent) {
+  async function handleDrop(s: IssueStatus, body: HTMLElement | null, e: React.DragEvent) {
     const id = e.dataTransfer.getData('text/plain')
     if (!id || !body) return
     const col = byStatus[s] ?? []
-    const index = calcDropIndex(body, e.clientY)
+    const index = calcDropIndex(body, e.clientY, dropTarget?.col === s ? dropTarget.index : -1)
     const rest = col.filter((c) => c.id !== id)
     const prevOrder = index > 0 ? rest[index - 1]?.order : undefined
     const nextOrder = rest[index]?.order
@@ -1132,7 +1137,8 @@ function KanbanBoard({ issues, memberMap }: { issues: Issue[]; memberMap: Map<st
       prevOrder != null && nextOrder != null && prevOrder === nextOrder
         ? prevOrder + 1
         : betweenOrder(prevOrder, nextOrder)
-    void moveIssue(id, s, order)
+    // 等写库完成再清预览：liveQuery 已推送新序，避免「闪回原位再跳新位」
+    await moveIssue(id, s, order)
   }
 
   function previewCol(s: IssueStatus, col: Issue[]): Issue[] {
@@ -1157,7 +1163,11 @@ function KanbanBoard({ issues, memberMap }: { issues: Issue[]; memberMap: Map<st
       {STATUSES.map((s) => {
         const col = previewCol(s, byStatus[s] ?? [])
         const shown = col.slice(0, BOARD_COL_WINDOW)
-        const hidden = (byStatus[s]?.length ?? 0) - (dropTarget?.col === s ? 0 : shown.length)
+        // 源列在拖动中隐藏了拖卡：hidden = 总数 - 1(拖卡) - 显示数
+        const hidden =
+          dropTarget?.col === s
+            ? 0
+            : Math.max(0, (byStatus[s]?.length ?? 0) - (draggingId ? 1 : 0) - shown.length)
         return (
           <div
             key={s}
@@ -1169,7 +1179,8 @@ function KanbanBoard({ issues, memberMap }: { issues: Issue[]; memberMap: Map<st
                 '.board-col-body',
               )
               if (!body) return
-              const index = calcDropIndex(body, e.clientY)
+              const lastIndex = dropTarget?.col === s ? dropTarget.index : -1
+              const index = calcDropIndex(body, e.clientY, lastIndex)
               setDragOver((prev) => (prev === s ? prev : s))
               setDropTarget((prev) =>
                 prev?.col === s && prev.index === index ? prev : { col: s, index },
@@ -1183,11 +1194,14 @@ function KanbanBoard({ issues, memberMap }: { issues: Issue[]; memberMap: Map<st
             }}
             onDrop={(e) => {
               e.preventDefault()
+              droppedRef.current = true
               const body = (e.currentTarget as HTMLElement).querySelector<HTMLElement>(
                 '.board-col-body',
               )
-              handleDrop(s, body, e)
-              clearDrag()
+              void handleDrop(s, body, e).then(() => {
+                // 写库完成（liveQuery 即将/已推送新序）后再清预览，位置无缝衔接
+                clearDrag()
+              })
             }}
           >
             <p className="board-col-title" style={{ color: STATUS_COLOR[s] }}>
@@ -1205,9 +1219,13 @@ function KanbanBoard({ issues, memberMap }: { issues: Issue[]; memberMap: Map<st
                   data-card-key={issue.key}
                   onDragStart={(e) => {
                     e.dataTransfer.setData('text/plain', issue.id)
+                    droppedRef.current = false
                     setDraggingId(issue.id)
                   }}
-                  onDragEnd={clearDrag}
+                  onDragEnd={() => {
+                    // 取消/无效释放路径；drop 路径由 handleDrop 完成后清理
+                    if (!droppedRef.current) clearDrag()
+                  }}
                 >
                   <div className="board-card-top">
                     <span className="board-card-key">{issue.key}</span>
