@@ -68,15 +68,17 @@ function useIssueWindow(f: Filters, currentUser: string) {
           .limit(LIST_WINDOW)
           .toArray()
     let out = items
+    // 全库搜索：search 非空时跨窗口全表匹配（key/标题，前 2000 条封顶）
+    if (f.search.trim()) {
+      const kw = f.search.trim().toLowerCase()
+      out = await db.issues
+        .filter((i) => i.title.toLowerCase().includes(kw) || i.key.toLowerCase().includes(kw))
+        .limit(2000)
+        .toArray()
+    }
     if (f.assigneeFilter) out = out.filter((i) => i.assigneeId === f.assigneeFilter)
     if (f.myOnly) out = out.filter((i) => i.assigneeId === currentUser)
     if (f.priorityFilter) out = out.filter((i) => i.priority === f.priorityFilter)
-    if (f.search.trim()) {
-      const kw = f.search.trim().toLowerCase()
-      out = out.filter(
-        (i) => i.title.toLowerCase().includes(kw) || i.key.toLowerCase().includes(kw),
-      )
-    }
     if (f.sortBy === 'priority') {
       out = [...out].sort((a, b) => PRIORITY_WEIGHT[a.priority] - PRIORITY_WEIGHT[b.priority])
     } else if (f.sortBy === 'createdAt') {

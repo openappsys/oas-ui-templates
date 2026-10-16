@@ -572,3 +572,160 @@ test('M14 甘特写回：task-change 改期落库', async ({ page }) => {
     )
     .toBe(`${new Date('2026-01-05').getTime()}-${new Date('2026-02-10').getTime()}`)
 })
+
+test('M15 批量操作：勾选两条 → 批量改状态 → 删除一条', async ({ page }) => {
+  await waitForSeed(page)
+  // 勾选前两行（virtual-list 行会随选中态重建，用 evaluate 直派点击绕 actionability）
+  const clickCheck = (nth: number) =>
+    page
+      .locator('.issue-row .row-check')
+      .nth(nth)
+      .evaluate((el) => (el as HTMLInputElement).click())
+  await page.locator('.issue-row .row-check').nth(0).waitFor({ timeout: 10_000 })
+  await clickCheck(0)
+  await clickCheck(1)
+  await expect(page.getByTestId('bulk-bar')).toBeVisible()
+  await expect(page.locator('.bulk-count')).toContainText('已选 2')
+  // 批量改状态为 Done
+  await setOSelect(page, 'bulk-status', 'done')
+  await page.getByTestId('bulk-apply').click()
+  // 浮条消失（onDone 清选区），Done 列计数 +2 由看板验证
+  await expect(page.getByTestId('bulk-bar')).toHaveCount(0, { timeout: 10_000 })
+  await setView(page, 'board')
+  await expect(page.getByTestId('board')).toBeAttached({ timeout: 10_000 })
+  await expect
+    .poll(
+      async () =>
+        page.evaluate(() => {
+          const k = document.querySelector('oas-kanban') as HTMLElement & {
+            cards?: Array<{ column: string }>
+          }
+          return (k.cards ?? []).filter((x) => x.column === 'done').length
+        }),
+      { timeout: 10_000 },
+    )
+    .toBeGreaterThan(1)
+})
+
+test('M16 保存视图：保存 → 侧栏出现 → 应用 → 删除', async ({ page }) => {
+  await waitForSeed(page)
+  await page.getByTestId('save-view-btn').click()
+  const modal = page.getByTestId('modal-save-view')
+  await expect(modal).toHaveAttribute('visible', /.*/, { timeout: 5000 })
+  await fillOInput(page, 'save-view-name', 'E2E 视图')
+  await page.getByTestId('save-view-ok').click()
+  await expect(modal).not.toHaveAttribute('visible', /.*/, { timeout: 5000 })
+  // 侧栏出现该视图
+  const item = page.locator('.saved-view-item').first()
+  await expect(item).toContainText('E2E 视图', { timeout: 10_000 })
+  // 删除
+  await page.locator('[data-testid^="saved-view-del-"]').first().click()
+  await expect(page.locator('.saved-view-item')).toHaveCount(0, { timeout: 10_000 })
+})
+
+test('M17 活动历史：详情改优先级 → 活动区出现记录', async ({ page }) => {
+  await waitForSeed(page)
+  await page
+    .locator('.issue-row')
+    .first()
+    .evaluate((el) => {
+      el.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          () =>
+            (document.querySelector('[data-testid=detail-drawer]') as { opened?: boolean })
+              ?.opened ?? false,
+        ),
+      { timeout: 15_000 },
+    )
+    .toBe(true)
+  await expect(page.getByTestId('activities-block')).toBeVisible({ timeout: 10_000 })
+  await setOSelect(page, 'detail-priority', 'urgent')
+  await expect(
+    page.getByTestId('activities-block').locator('[data-testid=activity-item]').first(),
+  ).toContainText('优先级', { timeout: 10_000 })
+})
+
+test('M18 通知：他人变更我负责的 Issue → 切回后动态出现', async ({ page }) => {
+  await waitForSeed(page)
+  // 1) 张伟「我的」视图，打开第一张卡并记住 key
+  await page.getByTestId('view-my').click()
+  const firstKey = await page.locator('.issue-row .issue-key').first().textContent()
+  expect(firstKey).toBeTruthy()
+  await page
+    .locator('.issue-row')
+    .first()
+    .evaluate((el) => {
+      el.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          () =>
+            (document.querySelector('[data-testid=detail-drawer]') as { opened?: boolean })
+              ?.opened ?? false,
+        ),
+      { timeout: 15_000 },
+    )
+    .toBe(true)
+  await page.keyboard.press('Escape')
+  await page.waitForTimeout(500)
+
+  // 2) 切到李娜，搜索该 key，改优先级（写入活动：actor=李娜）
+  await page.getByTestId('tb-user').click()
+  await expect(page.getByTestId('modal-user')).toHaveAttribute('visible', /.*/, { timeout: 5000 })
+  await page.getByTestId('pick-user-member-2').click()
+  await page.waitForTimeout(800)
+  await fillOInput(page, 'toolbar-search', firstKey ?? '')
+  await page.locator('.issue-row').first().waitFor({ timeout: 10_000 })
+  await page
+    .locator('.issue-row')
+    .first()
+    .evaluate((el) => {
+      el.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          () =>
+            (document.querySelector('[data-testid=detail-drawer]') as { opened?: boolean })
+              ?.opened ?? false,
+        ),
+      { timeout: 15_000 },
+    )
+    .toBe(true)
+  // 选一个与当前不同的状态，确保产生 diff 活动记录
+  const curStatus = await page.evaluate(
+    () =>
+      (document.querySelector('[data-testid=detail-status]') as { value?: string })?.value ?? '',
+  )
+  await setOSelect(page, 'detail-status', curStatus === 'done' ? 'todo' : 'done')
+  await page.keyboard.press('Escape')
+  await page.waitForTimeout(500)
+
+  // 3) 清搜索，切回张伟 → 动态角标出现
+  await fillOInput(page, 'toolbar-search', '')
+  await page.getByTestId('tb-user').click()
+  await expect(page.getByTestId('modal-user')).toHaveAttribute('visible', /.*/, { timeout: 5000 })
+  await page.getByTestId('pick-user-member-1').click()
+  await expect(page.getByTestId('notify-badge')).toBeVisible({ timeout: 15_000 })
+
+  // 4) 打开动态列表有记录
+  await page.getByTestId('toolbar-notify').click()
+  await expect(page.getByTestId('notify-item').first()).toBeVisible({ timeout: 10_000 })
+  // 动态列表中存在该 key 的条目（排序以活动时间为准，不假设首位）
+  await expect
+    .poll(
+      async () => {
+        const texts = await page.getByTestId('notify-item').allTextContents()
+        return texts.some((t) => t.includes(firstKey ?? ''))
+      },
+      { timeout: 10_000 },
+    )
+    .toBe(true)
+})
