@@ -1,18 +1,14 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
-import { useLiveQuery } from 'dexie-react-hooks'
-import Dexie from 'dexie'
-import { nanoid } from 'nanoid'
-import { db } from './db/schema'
 import type { Issue, IssuePriority, IssueStatus, Member, Project } from './types'
 import { ISSUE_PRIORITIES, STATUS_LABEL } from './types'
 import { OSelect, OSegmented } from './components/oas-wrappers'
 import { t, loadLang, storeLang, setLang, type Lang, type DictKey } from './i18n'
 import { useSavedViews, saveView } from './components/BulkBar'
 import { STATUS_COLOR } from './lib/colors'
-import { PRIORITY_WEIGHT } from './lib/order'
-import { DEFAULT_FILTERS, LIST_WINDOW, type Filters, type Grouping } from './lib/filters'
-import { logActivity } from './lib/activity'
+import { DEFAULT_FILTERS, type Filters, type Grouping } from './lib/filters'
 import { useProjectCounts } from './lib/hooks'
+import { useRepositories } from './data/context'
+import { useObservable } from './data/use-observable'
 import { Avatar } from './components/Avatar'
 import { DashboardView } from './views/dashboard/DashboardView'
 import { IssueListView } from './views/list/IssueListView'
@@ -26,62 +22,33 @@ type View = 'dashboard' | 'issues' | 'board' | 'timeline'
 
 /** 数据窗口：compound index 取项目/状态维度最近 LIST_WINDOW 条，再内存细筛 */
 function useIssueWindow(f: Filters, currentUser: string) {
-  return useLiveQuery(async () => {
-    const items = f.statusFilter
-      ? await db.issues
-          .where('[projectId+status+updatedAt]')
-          .between(
-            ['project-placeholder', f.statusFilter, Dexie.minKey].map((v, i) =>
-              i === 0 ? f.projectId : v,
-            ),
-            ['project-placeholder', f.statusFilter, Dexie.maxKey].map((v, i) =>
-              i === 0 ? f.projectId : v,
-            ),
-          )
-          .reverse()
-          .limit(LIST_WINDOW)
-          .toArray()
-      : await db.issues
-          .where('[projectId+updatedAt]')
-          .between([f.projectId, Dexie.minKey], [f.projectId, Dexie.maxKey])
-          .reverse()
-          .limit(LIST_WINDOW)
-          .toArray()
-    let out = items
-    // 全库搜索：search 非空时跨窗口全表匹配（key/标题，前 2000 条封顶）
-    if (f.search.trim()) {
-      const kw = f.search.trim().toLowerCase()
-      out = await db.issues
-        .filter((i) => i.title.toLowerCase().includes(kw) || i.key.toLowerCase().includes(kw))
-        .limit(2000)
-        .toArray()
-    }
-    if (f.assigneeFilter) out = out.filter((i) => i.assigneeId === f.assigneeFilter)
-    if (f.myOnly) out = out.filter((i) => i.assigneeId === currentUser)
-    if (f.priorityFilter) out = out.filter((i) => i.priority === f.priorityFilter)
-    if (f.sortBy === 'priority') {
-      out = [...out].sort((a, b) => PRIORITY_WEIGHT[a.priority] - PRIORITY_WEIGHT[b.priority])
-    } else if (f.sortBy === 'createdAt') {
-      out = [...out].sort((a, b) => b.createdAt - a.createdAt)
-    }
-    return out
-  }, [
-    f.projectId,
-    f.statusFilter,
-    f.assigneeFilter,
-    f.priorityFilter,
-    f.search,
-    f.myOnly,
-    f.sortBy,
-  ])
+  const { issues } = useRepositories()
+  return useObservable(
+    () =>
+      issues.liveWindow(
+        {
+          projectId: f.projectId,
+          statusFilter: f.statusFilter,
+          assigneeFilter: f.assigneeFilter,
+          priorityFilter: f.priorityFilter,
+          search: f.search,
+          myOnly: f.myOnly,
+          sortBy: f.sortBy,
+        },
+        currentUser,
+      ),
+    [f.projectId, f.statusFilter, f.assigneeFilter, f.priorityFilter, f.search, f.myOnly, f.sortBy],
+  )
 }
 
 function useMembers(): Member[] | undefined {
-  return useLiveQuery(() => db.members.toArray(), [])
+  const { members } = useRepositories()
+  return useObservable(() => members.liveAll(), [members])
 }
 
 function useProjects(): Project[] | undefined {
-  return useLiveQuery(() => db.projects.toArray(), [])
+  const { projects } = useRepositories()
+  return useObservable(() => projects.liveAll(), [projects])
 }
 
 /** 成员在当前窗口内的计数（窗口 500 内，展示用） */
@@ -97,36 +64,47 @@ function useWindowAssigneeCounts(issues: Issue[] | undefined) {
 
 /** 与我相关的最近动态：他人对我负责 Issue 的变更（近 7 天，最多 20 条） */
 function useMyNotifications(currentUser: string) {
-  return useLiveQuery(async () => {
-    const acts = await db.activities
-      .where('createdAt')
-      .belowOrEqual(Date.now())
-      .reverse()
-      .limit(300)
-      .toArray()
+  const { issues: issuesRepo, activities: activitiesRepo } = useRepositories()
+  const acts = useObservable(() => activitiesRepo.liveRecent(300), [activitiesRepo])
+  const [list, setList] =
+    useState<
+      Array<{ id: string; actorId: string; text: string; issueId: string; createdAt: number }>
+    >()
+  useEffect(() => {
+    if (!acts) return
+    let alive = true
     const mine = acts.filter((a) => a.actorId !== currentUser)
     // bulkGet 一次取齐（逐条 get 300 次会拖慢首屏渲染）
-    const issues = await db.issues.bulkGet(mine.map((a) => a.issueId))
-    const out: Array<{
-      id: string
-      actorId: string
-      text: string
-      issueId: string
-      createdAt: number
-    }> = []
-    issues.forEach((issue, i) => {
-      if (!issue || issue.assigneeId !== currentUser) return
-      if (out.length >= 20) return
-      out.push({
-        id: mine[i].id,
-        actorId: mine[i].actorId,
-        text: issue.key + ' ' + (issue.title ?? ''),
-        issueId: issue.id,
-        createdAt: mine[i].createdAt,
+    issuesRepo
+      .bulkGet(mine.map((a) => a.issueId))
+      .then((issues) => {
+        if (!alive) return
+        const out: Array<{
+          id: string
+          actorId: string
+          text: string
+          issueId: string
+          createdAt: number
+        }> = []
+        issues.forEach((issue, i) => {
+          if (!issue || issue.assigneeId !== currentUser) return
+          if (out.length >= 20) return
+          out.push({
+            id: mine[i].id,
+            actorId: mine[i].actorId,
+            text: issue.key + ' ' + (issue.title ?? ''),
+            issueId: issue.id,
+            createdAt: mine[i].createdAt,
+          })
+        })
+        setList(out)
       })
-    })
-    return out
-  }, [currentUser])
+      .catch((e) => console.error('[useMyNotifications]', (e as Error)?.message ?? e))
+    return () => {
+      alive = false
+    }
+  }, [acts, currentUser, issuesRepo])
+  return list
 }
 
 function NotificationBadge({ currentUser }: { currentUser: string }) {
@@ -170,6 +148,11 @@ function NotificationList({
 }
 
 export function App() {
+  const {
+    issues: issuesRepo,
+    activities: activitiesRepo,
+    savedViews: savedViewsRepo,
+  } = useRepositories()
   // 当前登录身份（localStorage 持久化，默认张伟）；头像点击可切换
   const [currentUser, setCurrentUser] = useState(
     () => localStorage.getItem('oas-pm-user') ?? 'member-1',
@@ -274,43 +257,18 @@ export function App() {
     const priority = createPriority
     const assigneeId = createAssignee === '__none__' ? '' : createAssignee
     const projectId = filters.projectId
-    // key 严格递增：事务内读改写项目计数器
-    const keyNum = await db.transaction('rw', db.projects, async () => {
-      const p = await db.projects.get(projectId)
-      const n = p?.nextKeyNum ?? 100001
-      await db.projects.update(projectId, { nextKeyNum: n + 1 })
-      return n
-    })
-    const projectKey = projectsRef.current.find((p) => p.id === projectId)?.key ?? 'OAS'
-    const newId = nanoid()
-    await db.issues.add({
-      id: newId,
+    const created = await issuesRepo.create({
       projectId,
-      key: `${projectKey}-${keyNum}`,
       title,
-      description: '',
       status,
       priority,
       assigneeId: assigneeId || null,
       reporterId: currentUser,
-      labels: [],
-      startAt: null,
-      dueAt: null,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-      order: Date.now(),
     })
-    await logActivity(newId, currentUser, 'create')
+    await activitiesRepo.log({ issueId: created.id, actorId: currentUser, type: 'create' })
     if (input) input.value = ''
     createRef.current?.removeAttribute('visible')
-    // projectsRef 为 ref，不进 deps；projects 仅用于 ref 同步
   }, [filters.projectId])
-
-  // projects 的 ref：createIssue 回调里读取最新项目 key
-  const projectsRef = useRef<Project[]>([])
-  useEffect(() => {
-    projectsRef.current = projects ?? []
-  }, [projects])
 
   // 快捷键：C 新建（输入框聚焦时跳过）/ 聚焦搜索 / Esc 关抽屉
   const searchRef = useRef<HTMLElement & { value?: string }>(null)
@@ -511,7 +469,7 @@ export function App() {
                 type="button"
                 aria-label={`删除视图 ${v.name}`}
                 data-testid={`saved-view-del-${v.id}`}
-                onClick={() => void db.savedViews.delete(v.id)}
+                onClick={() => void savedViewsRepo.delete(v.id)}
               >
                 ×
               </button>

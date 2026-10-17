@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react'
-import { db } from '@/db/schema'
+import { useRepositories } from '@/data/context'
 import type { Issue } from '@/types'
 
 /* ── 时间线（oas-gantt） ── */
@@ -8,6 +8,7 @@ interface GanttElement extends HTMLElement {
 }
 
 export function TimelineView({ issues }: { issues: Issue[] }) {
+  const { issues: issuesRepo } = useRepositories()
   const ganttRef = useRef<GanttElement>(null)
   const tasks = useMemo(
     () =>
@@ -43,7 +44,7 @@ export function TimelineView({ issues }: { issues: Issue[] }) {
       const patch: Partial<Issue> = {}
       if (d.start) patch.startAt = new Date(d.start).getTime()
       if (d.end) patch.dueAt = new Date(d.end).getTime()
-      void db.issues.update(d.id, patch)
+      void issuesRepo.update(d.id, patch)
     }
     el.addEventListener('task-change', onChange)
     return () => el.removeEventListener('task-change', onChange)

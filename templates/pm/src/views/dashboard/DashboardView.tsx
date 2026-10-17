@@ -1,5 +1,6 @@
-import { useLiveQuery } from 'dexie-react-hooks'
-import { db } from '@/db/schema'
+import { useMemo } from 'react'
+import { useRepositories } from '@/data/context'
+import { useObservable } from '@/data/use-observable'
 import type { IssueStatus, Member } from '@/types'
 import { ISSUE_STATUSES, STATUS_LABEL } from '@/types'
 import { STATUS_COLOR } from '@/lib/colors'
@@ -16,17 +17,21 @@ export function DashboardView({
   memberMap: Map<string, Member>
   currentUser: string
 }) {
+  const { issues: issuesRepo, members: membersRepo } = useRepositories()
   const counts = useProjectCounts(projectId)
-  const topAssignees = useLiveQuery(async () => {
-    const members = await db.members.toArray()
-    const rows = await Promise.all(
-      members.map(async (m) => ({
-        label: m.name,
-        value: await db.issues.where('[projectId+assigneeId]').equals([projectId, m.id]).count(),
-      })),
-    )
-    return rows.sort((a, b) => b.value - a.value).slice(0, 6)
-  }, [projectId])
+  const members = useObservable(() => membersRepo.liveAll(), [membersRepo])
+  const workload = useObservable(
+    () => issuesRepo.liveAssigneeWorkload(projectId),
+    [issuesRepo, projectId],
+  )
+  const topAssignees = useMemo(() => {
+    if (!members || !workload) return undefined
+    const countByMemberId = new Map(workload.map((r) => [r.memberId, r.count]))
+    return members
+      .map((m) => ({ label: m.name, value: countByMemberId.get(m.id) ?? 0 }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 6)
+  }, [members, workload])
 
   const statusData = ISSUE_STATUSES.map((s) => ({
     label: STATUS_LABEL[s],
@@ -34,20 +39,24 @@ export function DashboardView({
   }))
 
   // 近 30 天创建趋势（createdAt 索引范围取数，按天聚合）
-  const trend = useLiveQuery(async () => {
+  const trendFrom = useMemo(() => Date.now() - 30 * 86400000, [])
+  const trendRows = useObservable(
+    () => issuesRepo.liveByCreatedSince(trendFrom),
+    [issuesRepo, trendFrom],
+  )
+  const trend = useMemo(() => {
+    if (!trendRows) return undefined
     const day = 86400000
-    const from = Date.now() - 30 * day
-    const rows = await db.issues.where('createdAt').between(from, Date.now()).toArray()
     const byDay = new Map<string, number>()
     for (let i = 30; i >= 0; i--) {
       byDay.set(new Date(Date.now() - i * day).toISOString().slice(5, 10), 0)
     }
-    for (const r of rows) {
+    for (const r of trendRows) {
       const k = new Date(r.createdAt).toISOString().slice(5, 10)
       if (byDay.has(k)) byDay.set(k, (byDay.get(k) ?? 0) + 1)
     }
     return [...byDay.entries()].map(([label, value]) => ({ label, value }))
-  }, [projectId])
+  }, [trendRows])
 
   return (
     <div className="dash-page" data-testid="dashboard">

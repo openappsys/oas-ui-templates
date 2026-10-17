@@ -19,6 +19,10 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
   return {
     get: (id) => db.issues.get(id),
 
+    live(id: string): Observable<Issue | undefined> {
+      return fromLiveQuery(() => db.issues.get(id))
+    },
+
     async create(input: CreateIssueInput): Promise<Issue> {
       const { keyNum, projectKey } = await allocateProjectKey(db, input.projectId)
       const issue: Issue = {
@@ -31,12 +35,13 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
         priority: input.priority,
         assigneeId: input.assigneeId,
         reporterId: input.reporterId,
+        parentId: input.parentId ?? null,
         labels: [],
         startAt: null,
         dueAt: null,
         createdAt: Date.now(),
         updatedAt: Date.now(),
-        order: Date.now(),
+        order: input.order ?? Date.now(),
       }
       await db.issues.add(issue)
       return issue

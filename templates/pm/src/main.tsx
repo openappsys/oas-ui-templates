@@ -34,6 +34,7 @@ import './styles/app.css'
 
 import { App } from './App'
 import { seedDatabase } from './seed-db'
+import { RepositoriesProvider } from './data/context'
 
 // 启动兜底：IndexedDB 不可用/配额满/隐私模式 → 错误页而非白屏
 import { resultPage } from './boot-fallback'
@@ -50,6 +51,8 @@ try {
 
 createRoot(document.querySelector<HTMLDivElement>('#app')!).render(
   <StrictMode>
-    <App />
+    <RepositoriesProvider>
+      <App />
+    </RepositoriesProvider>
   </StrictMode>,
 )

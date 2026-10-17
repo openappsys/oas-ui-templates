@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react'
-import { db } from '@/db/schema'
+import { useRepositories } from '@/data/context'
 import type { Issue, IssueStatus, Member } from '@/types'
 import { ISSUE_STATUSES, STATUS_LABEL } from '@/types'
 import { betweenOrder } from '@/lib/order'
@@ -20,6 +20,7 @@ export function KanbanBoard({
   memberMap: Map<string, Member>
   onOpenIssue: (id: string) => void
 }) {
+  const { issues: issuesRepo } = useRepositories()
   const boardRef = useRef<KanbanElement>(null)
   const onOpenIssueRef = useRef(onOpenIssue)
   onOpenIssueRef.current = onOpenIssue
@@ -107,20 +108,14 @@ export function KanbanBoard({
       const rest = colCards.filter((c) => !ids.includes(String(c.id)))
       const finalArr = [...rest]
       finalArr.splice(Math.min(d.index, finalArr.length), 0, ...moving)
-      void db.transaction('rw', db.issues, async () => {
-        const now = Date.now()
-        for (const iid of ids) {
-          const pos = finalArr.findIndex((c) => String(c.id) === iid)
-          const prevOrder = pos > 0 ? (finalArr[pos - 1].order as number) : undefined
-          const nextOrder =
-            pos < finalArr.length - 1 ? (finalArr[pos + 1].order as number) : undefined
-          await db.issues.update(iid, {
-            status: to,
-            order: betweenOrder(prevOrder, nextOrder),
-            updatedAt: now,
-          })
-        }
+      const updates = ids.map((iid) => {
+        const pos = finalArr.findIndex((c) => String(c.id) === iid)
+        const prevOrder = pos > 0 ? (finalArr[pos - 1].order as number) : undefined
+        const nextOrder =
+          pos < finalArr.length - 1 ? (finalArr[pos + 1].order as number) : undefined
+        return { id: iid, changes: { status: to, order: betweenOrder(prevOrder, nextOrder) } }
       })
+      void issuesRepo.updateMany(updates)
     }
     el.addEventListener('oas-change', onChange)
     return () => el.removeEventListener('oas-change', onChange)

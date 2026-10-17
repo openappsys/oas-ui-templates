@@ -1,9 +1,8 @@
 import { useState } from 'react'
-import { useLiveQuery } from 'dexie-react-hooks'
-import type Dexie from 'dexie'
-import { nanoid } from 'nanoid'
-import { db } from '../db/schema'
-import type { Issue, IssuePriority, IssueStatus, Member } from '../types'
+import { useRepositories } from '@/data/context'
+import { useObservable } from '@/data/use-observable'
+import { dexieRepositories } from '@/data/dexie'
+import type { IssuePriority, IssueStatus } from '../types'
 import { ISSUE_PRIORITIES, STATUS_LABEL } from '../types'
 import { OSelect } from './oas-wrappers'
 
@@ -22,69 +21,24 @@ export function BulkBar({
   const [status, setStatus] = useState('')
   const [priority, setPriority] = useState('')
   const [assignee, setAssignee] = useState('__none__')
-  const members = useLiveQuery(() => db.members.toArray(), [])
+  const { issues: issuesRepo, members: membersRepo } = useRepositories()
+  const members = useObservable(() => membersRepo.liveAll(), [membersRepo])
 
   if (selectedIds.size === 0) return null
 
   const apply = async () => {
-    const now = Date.now()
-    await db.transaction('rw', db.issues, db.activities, async () => {
-      for (const id of selectedIds) {
-        const patch: Partial<Issue> = { updatedAt: now }
-        const acts: Array<Promise<unknown>> = []
-        if (status) {
-          acts.push(
-            db.activities.add({
-              id: nanoid(),
-              issueId: id,
-              actorId: currentUser,
-              type: 'status',
-              field: 'status',
-              to: status,
-              createdAt: now,
-            }),
-          )
-          patch.status = status as IssueStatus
-        }
-        if (priority) {
-          acts.push(
-            db.activities.add({
-              id: nanoid(),
-              issueId: id,
-              actorId: currentUser,
-              type: 'priority',
-              field: 'priority',
-              to: priority,
-              createdAt: now,
-            }),
-          )
-          patch.priority = priority as IssuePriority
-        }
-        if (assignee !== '') {
-          acts.push(
-            db.activities.add({
-              id: nanoid(),
-              issueId: id,
-              actorId: currentUser,
-              type: 'assignee',
-              field: 'assigneeId',
-              to: assignee === '__none__' ? '' : assignee,
-              createdAt: now,
-            }),
-          )
-          patch.assigneeId = assignee === '__none__' ? null : assignee
-        }
-        await Promise.all(acts)
-        await db.issues.update(id, patch)
-      }
-    })
+    const patch: { status?: IssueStatus; priority?: IssuePriority; assigneeId?: string | null } = {}
+    if (status) patch.status = status as IssueStatus
+    if (priority) patch.priority = priority as IssuePriority
+    if (assignee !== '') patch.assigneeId = assignee === '__none__' ? null : assignee
+    if (patch.status || patch.priority || patch.assigneeId !== undefined) {
+      await issuesRepo.bulkApply([...selectedIds], patch, currentUser)
+    }
     onDone()
   }
 
   const remove = async () => {
-    await db.transaction('rw', db.issues, async () => {
-      for (const id of selectedIds) await db.issues.delete(id)
-    })
+    await issuesRepo.bulkDelete([...selectedIds])
     onDone()
   }
 
@@ -144,16 +98,12 @@ export function BulkBar({
 
 /** 保存的视图（schema v4 savedViews 表）：侧栏列表 + 保存/应用/删除 */
 export function useSavedViews() {
-  return useLiveQuery(() => db.savedViews.orderBy('name').toArray(), [])
+  const { savedViews } = useRepositories()
+  return useObservable(() => savedViews.liveAll(), [savedViews])
 }
 
 export async function saveView(name: string, filters: unknown): Promise<void> {
-  await db.savedViews.add({
-    id: nanoid(),
-    name,
-    filters: JSON.stringify(filters),
-    createdAt: Date.now(),
-  })
+  await dexieRepositories.savedViews.create(name, filters)
 }
 
 export function filtersKey(f: Record<string, unknown>): string {
@@ -166,5 +116,3 @@ export function filtersKey(f: Record<string, unknown>): string {
     f.sortBy,
   ])
 }
-
-export type { Issue, IssueStatus, Member, Dexie }

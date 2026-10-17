@@ -1,13 +1,10 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { useLiveQuery } from 'dexie-react-hooks'
-import Dexie from 'dexie'
-import { nanoid } from 'nanoid'
-import { db } from '@/db/schema'
 import type { Issue, IssuePriority, IssueStatus, Member } from '@/types'
 import { ISSUE_PRIORITIES, ISSUE_STATUSES, STATUS_LABEL } from '@/types'
 import { OSelect, TagChip } from '@/components/oas-wrappers'
 import { t } from '@/i18n'
-import { logActivity } from '@/lib/activity'
+import { useRepositories } from '@/data/context'
+import { useObservable } from '@/data/use-observable'
 
 /* ── 活动历史（详情抽屉） ── */
 function DrawerActivities({
@@ -17,15 +14,8 @@ function DrawerActivities({
   issueId: string
   memberMap: Map<string, Member>
 }) {
-  const acts = useLiveQuery(
-    () =>
-      db.activities
-        .where('[issueId+createdAt]')
-        .between([issueId, Dexie.minKey], [issueId, Dexie.maxKey])
-        .reverse()
-        .toArray(),
-    [issueId],
-  )
+  const { activities: activitiesRepo } = useRepositories()
+  const acts = useObservable(() => activitiesRepo.liveByIssue(issueId), [issueId, activitiesRepo])
   const TYPE_LABEL: Record<string, string> = {
     create: '创建了 Issue',
     status: '变更了状态',
@@ -68,14 +58,8 @@ function CommentsBlock({
   memberMap: Map<string, Member>
   currentUser: string
 }) {
-  const comments = useLiveQuery(
-    () =>
-      db.comments
-        .where('[issueId+createdAt]')
-        .between([issueId, Dexie.minKey], [issueId, Dexie.maxKey])
-        .toArray(),
-    [issueId],
-  )
+  const { comments: commentsRepo, activities: activitiesRepo } = useRepositories()
+  const comments = useObservable(() => commentsRepo.liveByIssue(issueId), [issueId, commentsRepo])
   const inputRef = useRef<HTMLInputElement>(null)
   const editRef = useRef<HTMLElement & { value?: string }>(null)
   const [draft, setDraft] = useState('')
@@ -84,14 +68,8 @@ function CommentsBlock({
   const submit = async () => {
     const body = (inputRef.current?.value ?? '').trim()
     if (!body) return
-    await db.comments.add({
-      id: nanoid(),
-      issueId,
-      authorId: currentUser,
-      body,
-      createdAt: Date.now(),
-    })
-    await logActivity(issueId, currentUser, 'comment')
+    await commentsRepo.add({ issueId, authorId: currentUser, body })
+    await activitiesRepo.log({ issueId, actorId: currentUser, type: 'comment' })
     if (inputRef.current) inputRef.current.value = ''
   }
 
@@ -140,8 +118,12 @@ function CommentsBlock({
                     onClick={() => {
                       const v = editRef.current?.value ?? ''
                       if (v.trim()) {
-                        void db.comments.update(cm.id, { body: v.trim() })
-                        void logActivity(cm.issueId, currentUser, 'comment-edit')
+                        void commentsRepo.update(cm.id, v.trim())
+                        void activitiesRepo.log({
+                          issueId: cm.issueId,
+                          actorId: currentUser,
+                          type: 'comment-edit',
+                        })
                       }
                       setEditingId(null)
                     }}
@@ -175,7 +157,7 @@ function CommentsBlock({
                       type="button"
                       className="comment-op comment-op-del"
                       data-testid="comment-del"
-                      onClick={() => void db.comments.delete(cm.id)}
+                      onClick={() => void commentsRepo.delete(cm.id)}
                     >
                       删除
                     </button>
@@ -230,8 +212,9 @@ export function IssueDetailDrawer({
   currentUser: string
   onClose: () => void
 }) {
-  const issue = useLiveQuery(() => db.issues.get(issueId), [issueId])
-  const subs = useLiveQuery(() => db.issues.where('parentId').equals(issueId).toArray(), [issueId])
+  const { issues: issuesRepo, activities: activitiesRepo } = useRepositories()
+  const issue = useObservable(() => issuesRepo.live(issueId), [issueId, issuesRepo])
+  const subs = useObservable(() => issuesRepo.liveSubIssues(issueId), [issueId, issuesRepo])
   const subInputRef = useRef<HTMLInputElement>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const drawerRef = useRef<HTMLElement>(null)
@@ -252,28 +235,19 @@ export function IssueDetailDrawer({
   const addSub = useCallback(async () => {
     const title = (subInputRef.current?.value ?? '').trim()
     if (!title || !issue) return
-    const newId = nanoid()
-    await db.issues.add({
-      id: newId,
+    const created = await issuesRepo.create({
       projectId: issue.projectId,
-      key: `SUB-${Date.now().toString().slice(-6)}`,
       title,
-      description: '',
       status: 'todo',
       priority: 'medium',
       assigneeId: issue.assigneeId,
       reporterId: currentUser,
-      labels: [],
-      startAt: null,
-      dueAt: null,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-      order: issue.order,
       parentId: issue.id,
+      order: issue.order,
     })
     if (subInputRef.current) subInputRef.current.value = ''
-    await logActivity(newId, currentUser, 'create')
-  }, [issue, currentUser])
+    await activitiesRepo.log({ issueId: created.id, actorId: currentUser, type: 'create' })
+  }, [issue, currentUser, issuesRepo, activitiesRepo])
 
   // 标签编辑（oas-dynamic-tags）：modelValue 双向同步 issue.labels
   const labelsTagsRef = useRef<HTMLElement & { modelValue?: string[]; value?: string[] }>(null)
@@ -303,11 +277,11 @@ export function IssueDetailDrawer({
   // 历史脏数据清洗：labels 含 '__none__' 时落库修正
   useEffect(() => {
     if (issue?.labels?.includes('__none__')) {
-      void db.issues.update(issue.id, {
+      void issuesRepo.update(issue.id, {
         labels: issue.labels.filter((x) => x !== '__none__'),
       })
     }
-  }, [issue?.id, issue?.labels])
+  }, [issue?.id, issue?.labels, issuesRepo])
 
   useEffect(() => {
     setDescDirty(false)
@@ -329,22 +303,17 @@ export function IssueDetailDrawer({
     if (!el) return
     const h = (e: Event) => {
       const reason = (e as CustomEvent<{ reason?: string }>).detail?.reason
-      if (reason === 'ok') void db.issues.delete(issueId).then(onClose)
+      if (reason === 'ok') void issuesRepo.delete(issueId).then(onClose)
     }
     el.addEventListener('oas-open-change', h)
     return () => el.removeEventListener('oas-open-change', h)
-  }, [issueId, onClose])
+  }, [issueId, onClose, issuesRepo])
 
   // 关联选择 state：必须在早退之前（hooks 顺序恒定）
   const [relType, setRelType] = useState('__none__')
-  const relCandidates = useLiveQuery(
-    () =>
-      db.issues
-        .where('projectId')
-        .equals(issue?.projectId ?? '')
-        .limit(100)
-        .toArray(),
-    [issueId],
+  const relCandidates = useObservable(
+    () => issuesRepo.liveRelationCandidates(issue?.projectId ?? '', 100),
+    [issueId, issuesRepo],
   )
 
   if (!issue) return <oas-drawer ref={drawerRef} />
@@ -370,12 +339,19 @@ export function IssueDetailDrawer({
       const from = String(issue[k] ?? '')
       if (from === to) continue
       acts.push(
-        logActivity(issue.id, currentUser, k as string, { field: FIELD_LABEL[k], from, to }),
+        activitiesRepo.log({
+          issueId: issue.id,
+          actorId: currentUser,
+          type: k as string,
+          field: FIELD_LABEL[k],
+          from,
+          to,
+        }),
       )
       if (k === 'status') changes.completedAt = to === 'done' ? Date.now() : null
     }
     Promise.all(acts)
-      .then(() => db.issues.update(issue.id, changes))
+      .then(() => issuesRepo.update(issue.id, changes))
       .catch((e) => console.error('[save acts]', (e as Error)?.message ?? e))
   }
   const memberOptions = [
@@ -430,12 +406,15 @@ export function IssueDetailDrawer({
                   onClick={(e) => {
                     e.stopPropagation()
                     const done = s.status === 'done'
-                    void db.issues.update(s.id, {
+                    void issuesRepo.update(s.id, {
                       status: done ? 'todo' : 'done',
                       completedAt: done ? null : Date.now(),
                       updatedAt: Date.now(),
                     })
-                    void logActivity(s.id, currentUser, 'status', {
+                    void activitiesRepo.log({
+                      issueId: s.id,
+                      actorId: currentUser,
+                      type: 'status',
                       field: '状态',
                       to: done ? 'todo' : 'done',
                     })
@@ -505,7 +484,10 @@ export function IssueDetailDrawer({
                   onRemove={() => {
                     const next = (issue.relations ?? []).filter((_, j) => j !== i)
                     save({ relations: next })
-                    void logActivity(issue.id, currentUser, 'relations', {
+                    void activitiesRepo.log({
+                      issueId: issue.id,
+                      actorId: currentUser,
+                      type: 'relations',
                       field: '关联',
                       to: `${r.type} ${target?.key ?? r.targetId}`,
                     })
@@ -543,7 +525,10 @@ export function IssueDetailDrawer({
                   ]
                   save({ relations: next })
                   setRelType('__none__')
-                  void logActivity(issue.id, currentUser, 'relations', {
+                  void activitiesRepo.log({
+                    issueId: issue.id,
+                    actorId: currentUser,
+                    type: 'relations',
                     field: '关联',
                     to: `${relType} ${tid}`,
                   })

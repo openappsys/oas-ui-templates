@@ -32,6 +32,8 @@ export interface CreateIssueInput {
   priority: IssuePriority
   assigneeId: string | null
   reporterId: string
+  parentId?: string | null
+  order?: number
 }
 
 export interface CreateCommentInput {
@@ -51,6 +53,7 @@ export interface ActivityInput {
 
 export interface IssueRepository {
   get(id: string): Promise<Issue | undefined>
+  live(id: string): Observable<Issue | undefined>
   create(input: CreateIssueInput): Promise<Issue>
   update(id: string, changes: Partial<Issue>): Promise<void>
   delete(id: string): Promise<void>
