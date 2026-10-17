@@ -74,6 +74,7 @@ export function IssueListView({
       registerKey(
         'j',
         (e) => {
+          if (e.ctrlKey || e.metaKey || e.altKey) return
           e.preventDefault()
           const len = navRef.current.issues.length
           if (len === 0) return
@@ -84,6 +85,7 @@ export function IssueListView({
       registerKey(
         'k',
         (e) => {
+          if (e.ctrlKey || e.metaKey || e.altKey) return
           e.preventDefault()
           const len = navRef.current.issues.length
           if (len === 0) return

@@ -63,7 +63,7 @@ test('K4 ? 快捷键帮助：打开 + Esc 关闭且抽屉状态不受影响', as
   await expect(page.getByTestId('shortcuts-help')).toHaveAttribute('visible', /.*/, {
     timeout: 5000,
   })
-  await expect(page.locator('.shortcuts-body .shortcut-row')).toHaveCount(7)
+  await expect(page.locator('.shortcuts-body .shortcut-row')).toHaveCount(8)
   await page.keyboard.press('Escape')
   await expect(page.getByTestId('shortcuts-help')).not.toHaveAttribute('visible', /.*/, {
     timeout: 5000,

@@ -118,6 +118,12 @@ declare module 'react' {
         description?: string
         size?: string
       }
+      'oas-command': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        open?: boolean | string
+        'should-filter'?: boolean | string
+        placeholder?: string
+        hotkey?: string
+      }
     }
   }
 }

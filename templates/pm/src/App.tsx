@@ -15,6 +15,7 @@ import { useObservable } from './data/use-observable'
 import { can as policyCan, type Action, type Ctx } from './permission/policy'
 import { Avatar } from './components/Avatar'
 import { ShortcutsHelp } from './components/ShortcutsHelp'
+import { CommandPalette } from './components/CommandPalette'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { DashboardView } from './views/dashboard/DashboardView'
 import { IssueListView } from './views/list/IssueListView'
@@ -210,6 +211,7 @@ export function App() {
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS)
   const [grouping, setGrouping] = useState<Grouping>('none')
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [paletteOpen, setPaletteOpen] = useState(false)
   const aboutRef = useRef<HTMLElement>(null)
   const userPickRef = useRef<HTMLElement>(null)
   const notifyRef = useRef<HTMLElement>(null)
@@ -351,6 +353,11 @@ export function App() {
     const whenNoOverlay = () => !isOverlayOpen()
     const unsubs = [
       registerKey('Escape', () => setSelectedId(null)),
+      registerKey('k', (e) => {
+        if (!(e.ctrlKey || e.metaKey)) return
+        e.preventDefault()
+        setPaletteOpen((v) => !v)
+      }),
       registerKey('c', openCreate, whenCreate),
       registerKey('C', openCreate, whenCreate),
       registerKey('/', (e) => {
@@ -391,6 +398,15 @@ export function App() {
         )}
         <oas-button type="text" size="small" data-testid="toolbar-export" onClick={exportCsv}>
           导出 CSV（当前窗口）
+        </oas-button>
+        <oas-button
+          type="text"
+          size="small"
+          data-testid="command-open"
+          title={t('shortcutPalette')}
+          onClick={() => setPaletteOpen(true)}
+        >
+          <oas-icon name="search" size={14} />
         </oas-button>
         <oas-input
           ref={searchRef}
@@ -728,6 +744,22 @@ export function App() {
           ))}
         </div>
       </oas-modal>
+
+      {/* 命令面板 */}
+      <CommandPalette
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        can={can}
+        onView={(v) => setView(v)}
+        onNewIssue={() => createRef.current?.setAttribute('visible', '')}
+        onExportCsv={exportCsv}
+        onSaveView={() => saveViewRef.current?.setAttribute('visible', '')}
+        onToggleTheme={cycleTheme}
+        onToggleLang={toggleLang}
+        onShortcuts={() => setHelpOpen(true)}
+        onSwitchUser={switchUser}
+        onOpenIssue={setSelectedId}
+      />
 
       {/* 快捷键帮助 */}
       <ShortcutsHelp open={helpOpen} onClose={() => setHelpOpen(false)} />

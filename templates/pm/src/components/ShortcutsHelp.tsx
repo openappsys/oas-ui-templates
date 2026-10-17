@@ -24,6 +24,7 @@ export function ShortcutsHelp({ open, onClose }: { open: boolean; onClose: () =>
     }
   }, [onClose])
   const rows: Array<{ keys: string[]; label: string }> = [
+    { keys: ['ctrl', 'k'], label: t('shortcutPalette') },
     { keys: ['C'], label: t('shortcutNew') },
     { keys: ['/'], label: t('shortcutSearch') },
     { keys: ['j', 'k'], label: t('shortcutCursor') },
