@@ -12,7 +12,7 @@
 6. **提交**：git commit（信息说明「做了什么 + 修了什么根因」）
 
 **验证深度按影响面分层**（日常执行，收尾/推送前不适用）：
-- 数据层 `data/**`、权限、keyboard/App 壳、依赖变更（含 oas-ui link 切换）→ **全量 e2e**
+- 数据层 `data/**`、权限、keyboard/App 壳、依赖变更 → **全量 e2e**
 - 纯样式/app.css（无 DOM·testid 变化）→ biome + build + 相关视图截图，跳过 e2e
 - 单一视图局部改动 → biome + build + 该视图相关 e2e 子集（`playwright test <spec> [--grep]`）
 - 纯 chore（注释/格式化/死代码删除）→ 仅 biome
