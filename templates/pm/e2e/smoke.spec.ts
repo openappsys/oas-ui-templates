@@ -663,41 +663,49 @@ test('M17 活动历史：详情改优先级 → 活动区出现记录', async ({
 })
 
 test('M18 通知：他人变更我负责的 Issue → 切回后动态出现', async ({ page }) => {
+  test.setTimeout(120_000)
   await waitForSeed(page)
-  // 1) 张伟「我的」视图，打开第一张卡并记住 key
-  await page.getByTestId('view-my').click()
-  const firstKey = await page.locator('.issue-row .issue-key').first().textContent()
-  expect(firstKey).toBeTruthy()
-  await page
-    .locator('.issue-row')
-    .first()
-    .evaluate((el) => {
-      el.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-  await expect
-    .poll(
-      () =>
-        page.evaluate(
-          () =>
-            (document.querySelector('[data-testid=detail-drawer]') as { opened?: boolean })
-              ?.opened ?? false,
-        ),
-      { timeout: 15_000 },
-    )
-    .toBe(true)
-  await page.keyboard.press('Escape')
-  await page.waitForTimeout(500)
 
-  // 2) 切到李娜后「我的」即时重滤（看不到张伟的 Issue），先回「全部」再搜索该 key，改状态（写入活动：actor=李娜）
+  // 1) 切到李娜（member）：她新建「负责人=张伟」的 Issue——reporter 身份创建/编辑均合法（can(issue:edit) 放行）
   await page.getByTestId('tb-user').click()
   await expect(page.getByTestId('modal-user')).toHaveAttribute('visible', /.*/, { timeout: 5000 })
   await page.getByTestId('pick-user-member-2').click()
   await page.waitForTimeout(800)
   await page.getByTestId('view-all').click()
-  await fillOInput(page, 'toolbar-search', firstKey ?? '')
-  await expect(page.locator('.issue-row').first()).toContainText(firstKey ?? '', {
+
+  // 预读项目计数器 → 新 Issue 的 key 可预知（OAS-<nextKeyNum>），标题内嵌 #序号 供末段 detail-title 断言
+  const nextNum = await page.evaluate(async () => {
+    const req = indexedDB.open('oas-pm')
+    const dbp = await new Promise<IDBDatabase>((res, rej) => {
+      req.onsuccess = () => res(req.result)
+      req.onerror = () => rej(req.error)
+    })
+    const tx = dbp.transaction('projects', 'readonly')
+    return await new Promise<number>((res) => {
+      const r = tx.objectStore('projects').get('project-1')
+      r.onsuccess = () => res((r.result as { nextKeyNum?: number } | undefined)?.nextKeyNum ?? -1)
+      r.onerror = () => res(-1)
+    })
+  })
+  expect(nextNum).toBeGreaterThan(0)
+
+  await page.getByTestId('toolbar-new').click()
+  const modal = page.getByTestId('modal-create')
+  await expect(modal).toHaveAttribute('visible', /.*/, { timeout: 5000 })
+  await fillOInput(page, 'create-title', `M18 通知链路 #${nextNum}`)
+  // 负责人下拉 options 为成员（value=成员 id）：张伟 = member-1
+  await setOSelect(page, 'create-assignee', 'member-1')
+  await page.getByTestId('create-submit').click()
+  await expect(modal).not.toHaveAttribute('visible', /.*/, { timeout: 5000 })
+
+  // 2) 新 Issue updatedAt 最新 → 列表首行；捕获 key 并核对与项目计数器一致
+  await expect(page.locator('.issue-row').first()).toContainText('M18 通知链路', {
     timeout: 10_000,
   })
+  const firstKey = (await page.locator('.issue-row .issue-key').first().textContent()) ?? ''
+  expect(firstKey).toBe(`OAS-${nextNum}`)
+
+  // 3) 李娜打开该 Issue 详情，做差异化状态变更（活动 actor=李娜，issue 负责人=张伟）
   await page
     .locator('.issue-row')
     .first()
@@ -715,42 +723,28 @@ test('M18 通知：他人变更我负责的 Issue → 切回后动态出现', as
       { timeout: 15_000 },
     )
     .toBe(true)
-  // 选一个与当前不同的状态，确保产生 diff 活动记录
+  // 选一个与当前不同的状态，确保产生 diff 活动记录（新建默认 todo → in_progress）
   const curStatus = await page.evaluate(
     () =>
       (document.querySelector('[data-testid=detail-status]') as { value?: string })?.value ?? '',
   )
-  await setOSelect(page, 'detail-status', curStatus === 'done' ? 'todo' : 'done')
+  await setOSelect(page, 'detail-status', curStatus === 'in_progress' ? 'todo' : 'in_progress')
   await page.keyboard.press('Escape')
   await page.waitForTimeout(500)
 
-  // 3) 清搜索，切回张伟 → 动态角标出现
-  await fillOInput(page, 'toolbar-search', '')
+  // 4) 切回张伟 → 负责的 Issue 被他人合法变更 → 动态角标出现
   await page.getByTestId('tb-user').click()
   await expect(page.getByTestId('modal-user')).toHaveAttribute('visible', /.*/, { timeout: 5000 })
   await page.getByTestId('pick-user-member-1').click()
   await expect(page.getByTestId('notify-badge')).toBeVisible({ timeout: 15_000 })
 
-  // 4) 打开动态列表有记录
+  // 5) 打开动态列表：liveRecent 按 createdAt 倒序，最新一条即李娜对该 Issue 的状态变更
   await page.getByTestId('toolbar-notify').click()
   await expect(page.getByTestId('notify-item').first()).toBeVisible({ timeout: 10_000 })
-  // 动态列表中存在该 key 的条目（排序以活动时间为准，不假设首位）
-  await expect
-    .poll(
-      async () => {
-        const texts = await page.getByTestId('notify-item').allTextContents()
-        return texts.some((t) => t.includes(firstKey ?? ''))
-      },
-      { timeout: 10_000 },
-    )
-    .toBe(true)
+  await expect(page.getByTestId('notify-item').first()).toContainText(firstKey)
 
-  // 5) 点击该条动态 → 打开对应 Issue 详情抽屉（title 属性被组件消费，以 detail-title 序号断言）
-  await page
-    .getByTestId('notify-item')
-    .filter({ hasText: firstKey ?? '' })
-    .first()
-    .click()
+  // 6) 点击该条动态 → 打开对应 Issue 详情抽屉（title 属性被组件消费，以 detail-title 序号断言）
+  await page.getByTestId('notify-item').filter({ hasText: firstKey }).first().click()
   await expect
     .poll(
       () =>
@@ -762,7 +756,7 @@ test('M18 通知：他人变更我负责的 Issue → 切回后动态出现', as
       { timeout: 10_000 },
     )
     .toBe(true)
-  const seq18 = (firstKey ?? '').split('-')[1] ?? ''
+  const seq18 = firstKey.split('-')[1] ?? ''
   await expect(page.locator('.detail-title')).toContainText(`#${seq18}`, { timeout: 10_000 })
 })
 
