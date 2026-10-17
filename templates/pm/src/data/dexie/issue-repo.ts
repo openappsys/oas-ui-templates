@@ -1,7 +1,7 @@
 import Dexie from 'dexie'
 import { nanoid } from 'nanoid'
 import type { PMDatabase } from '@/db/schema'
-import type { Issue, IssueStatus } from '@/types'
+import type { Issue, IssuePriority, IssueStatus } from '@/types'
 import { ISSUE_STATUSES } from '@/types'
 import { fromLiveQuery, type Observable } from '@/data/observable'
 import type {
@@ -12,20 +12,19 @@ import type {
 } from '@/data/types'
 
 const LIST_WINDOW = 500
-const PRIORITY_WEIGHT: Record<string, number> = { urgent: 0, high: 1, medium: 2, low: 3 }
+const PRIORITY_WEIGHT: Record<IssuePriority, number> = { urgent: 0, high: 1, medium: 2, low: 3 }
 
 export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
   return {
     get: (id) => db.issues.get(id),
 
     async create(input: CreateIssueInput): Promise<Issue> {
-      const keyNum = await db.transaction('rw', db.projects, async () => {
+      const { keyNum, projectKey } = await db.transaction('rw', db.projects, async () => {
         const p = await db.projects.get(input.projectId)
         const n = p?.nextKeyNum ?? 100001
         await db.projects.update(input.projectId, { nextKeyNum: n + 1 })
-        return n
+        return { keyNum: n, projectKey: p?.key ?? 'OAS' }
       })
-      const projectKey = (await db.projects.get(input.projectId))?.key ?? 'OAS'
       const issue: Issue = {
         id: nanoid(),
         projectId: input.projectId,

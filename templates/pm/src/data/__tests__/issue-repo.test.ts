@@ -63,6 +63,19 @@ describe('dexie issue repository', () => {
     expect(b.key).toBe('OAS-100002')
   })
 
+  it('create 项目不存在时回退 OAS key（沿用 App 语义）', async () => {
+    const repo = createDexieIssueRepository(db)
+    const created = await repo.create({
+      projectId: 'ghost',
+      title: 'X',
+      status: 'todo',
+      priority: 'low',
+      assigneeId: null,
+      reporterId: 'm1',
+    })
+    expect(created.key).toBe('OAS-100001')
+  })
+
   it('update/delete 生效', async () => {
     const it0 = seedIssue(db, { id: 'i1' })
     await db.issues.add(it0)
@@ -164,5 +177,69 @@ describe('dexie issue repository', () => {
         })
     })
     expect(rows.map((r) => r.priority)).toEqual(['urgent', 'high', 'low'])
+  })
+
+  it('liveWindow statusFilter 走复合索引且按 updatedAt 倒序、跨项目隔离', async () => {
+    const now = 1_000_000
+    await db.issues.bulkAdd([
+      seedIssue(db, { id: 't1', status: 'todo', updatedAt: now - 300 }),
+      seedIssue(db, { id: 't2', status: 'todo', updatedAt: now - 100 }),
+      seedIssue(db, { id: 't3', status: 'done', updatedAt: now - 50 }),
+      seedIssue(db, { id: 't4', status: 'todo', updatedAt: now - 10, projectId: 'p2' }),
+    ])
+    const repo = createDexieIssueRepository(db)
+    const rows = await new Promise<Issue[]>((resolve) => {
+      const unsub = repo
+        .liveWindow(
+          {
+            projectId: 'p1',
+            statusFilter: 'todo',
+            assigneeFilter: null,
+            priorityFilter: null,
+            search: '',
+            myOnly: false,
+            sortBy: 'updatedAt',
+          },
+          'm1',
+        )
+        .subscribe({
+          next: (v) => {
+            resolve(v)
+            unsub()
+          },
+        })
+    })
+    expect(rows.map((r) => r.id)).toEqual(['t2', 't1'])
+  })
+
+  it('liveWindow search 跨项目全表匹配（沿用 App 语义）', async () => {
+    await db.issues.bulkAdd([
+      seedIssue(db, { id: 'q1', title: '修复登录白屏' }),
+      seedIssue(db, { id: 'q2', title: '修复登录白屏', projectId: 'p2' }),
+      seedIssue(db, { id: 'q3', title: '无关标题' }),
+    ])
+    const repo = createDexieIssueRepository(db)
+    const rows = await new Promise<Issue[]>((resolve) => {
+      const unsub = repo
+        .liveWindow(
+          {
+            projectId: 'p1',
+            statusFilter: null,
+            assigneeFilter: null,
+            priorityFilter: null,
+            search: '登录',
+            myOnly: false,
+            sortBy: 'updatedAt',
+          },
+          'm1',
+        )
+        .subscribe({
+          next: (v) => {
+            resolve(v)
+            unsub()
+          },
+        })
+    })
+    expect(new Set(rows.map((r) => r.id))).toEqual(new Set(['q1', 'q2']))
   })
 })
