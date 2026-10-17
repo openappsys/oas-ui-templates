@@ -16,17 +16,17 @@ function ensureRowStyles(root: ShadowRoot | null): void {
       gap: 10px;
       height: 44px;
       padding: 0 16px;
-      border-bottom: 1px solid #eef2f7;
+      border-bottom: 1px solid var(--oas-color-border, #eef2f7);
       cursor: pointer;
       font-size: 12px;
       width: 100%;
       box-sizing: border-box;
     }
     .issue-row:hover {
-      background: #f8fafc;
+      background: var(--oas-color-bg-hover, #f8fafc);
     }
     .issue-row .issue-key {
-      color: #0b6cff;
+      color: var(--oas-color-primary, #0b6cff);
       font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
       white-space: nowrap;
       overflow: hidden;
@@ -46,12 +46,12 @@ function ensureRowStyles(root: ShadowRoot | null): void {
       justify-content: center;
       font-size: 11px;
       font-weight: 600;
-      color: #fff;
+      color: var(--oas-color-on-ink);
     }
     .issue-row .row-check {
       width: 14px;
       height: 14px;
-      accent-color: #0b6cff;
+      accent-color: var(--oas-color-primary, #0b6cff);
       cursor: pointer;
     }
     .issue-row.no-check {
@@ -103,7 +103,7 @@ function renderIssueRow(
   const m = memberMap.get(issue.assigneeId ?? '')
   const av = document.createElement('span')
   av.className = 'avatar'
-  av.style.background = m?.avatarColor ?? '#cbd5e1'
+  av.style.background = m?.avatarColor ?? 'var(--oas-color-border-strong, #cbd5e1)'
   av.textContent = m ? m.name[0] : '?'
   if (m) av.title = m.name
   row.appendChild(av)

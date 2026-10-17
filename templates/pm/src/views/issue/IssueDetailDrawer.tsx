@@ -81,7 +81,7 @@ function CommentsBlock({
     const parts = body.split(/(@[\u4e00-\u9fa5a-zA-Z0-9]+)/g)
     return parts.map((seg, i) =>
       seg.startsWith('@') ? (
-        <span key={i} style={{ color: '#0b6cff', fontWeight: 600 }}>
+        <span key={i} style={{ color: 'var(--oas-color-primary, #0b6cff)', fontWeight: 600 }}>
           {seg}
         </span>
       ) : (
