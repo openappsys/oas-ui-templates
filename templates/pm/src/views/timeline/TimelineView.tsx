@@ -52,7 +52,7 @@ export function TimelineView({
       const d = (e as CustomEvent<{ id: string; start: string; end?: string }>).detail
       if (!d?.id) return
       const it = gateRef.current.issues.find((i) => i.id === d.id)
-      if (!it || !gateRef.current.can('issue:change-status', { issue: it })) return
+      if (!it || !gateRef.current.can('issue:edit', { issue: it })) return
       const patch: Partial<Issue> = {}
       if (d.start) patch.startAt = new Date(d.start).getTime()
       if (d.end) patch.dueAt = new Date(d.end).getTime()
