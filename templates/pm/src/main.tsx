@@ -35,6 +35,7 @@ import './styles/app.css'
 import { App } from './App'
 import { seedDatabase } from './seed-db'
 import { RepositoriesProvider } from './data/context'
+import { initTheme } from './lib/theme'
 
 // 启动兜底：IndexedDB 不可用/配额满/隐私模式 → 错误页而非白屏
 import { resultPage } from './boot-fallback'
@@ -48,6 +49,8 @@ try {
   console.error(e)
   resultPage('数据引擎初始化失败', String((e as Error)?.message ?? e))
 }
+
+initTheme()
 
 createRoot(document.querySelector<HTMLDivElement>('#app')!).render(
   <StrictMode>

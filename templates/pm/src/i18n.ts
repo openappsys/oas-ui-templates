@@ -50,6 +50,9 @@ const dict = {
     send: '发送',
     commentPlaceholder: '写下评论…',
     ready: '就绪',
+    themeLight: '浅色',
+    themeDark: '深色',
+    themeSystem: '跟随系统',
   },
   en: {
     newIssue: '＋ New Issue',
@@ -99,6 +102,9 @@ const dict = {
     send: 'Send',
     commentPlaceholder: 'Write a comment…',
     ready: 'Ready',
+    themeLight: 'Light',
+    themeDark: 'Dark',
+    themeSystem: 'System',
   },
 } as const
 

@@ -7,6 +7,8 @@ import { useSavedViews, saveView } from './components/BulkBar'
 import { STATUS_COLOR } from './lib/colors'
 import { DEFAULT_FILTERS, type Filters, type Grouping } from './lib/filters'
 import { useProjectCounts } from './lib/hooks'
+import { loadTheme, storeTheme, type ThemePreference } from './lib/preferences'
+import { applyTheme } from './lib/theme'
 import { useRepositories } from './data/context'
 import { useObservable } from './data/use-observable'
 import { can as policyCan, type Action, type Ctx } from './permission/policy'
@@ -173,6 +175,20 @@ export function App() {
     setLangState(next)
     setLang(next)
   }, [lang])
+  const [themePref, setThemePref] = useState<ThemePreference>(loadTheme())
+  const cycleTheme = useCallback(() => {
+    const next: ThemePreference =
+      themePref === 'light' ? 'dark' : themePref === 'dark' ? 'system' : 'light'
+    setThemePref(next)
+    storeTheme(next)
+    applyTheme(next)
+  }, [themePref])
+  const themeLabel =
+    themePref === 'light'
+      ? t('themeLight')
+      : themePref === 'dark'
+        ? t('themeDark')
+        : t('themeSystem')
   const savedViews = useSavedViews()
   const saveViewNameRef = useRef<HTMLElement & { value?: string }>(null)
   const applySavedView = useCallback((filtersJson: string) => {
@@ -383,6 +399,15 @@ export function App() {
           placeholder="搜索 Key 或标题…（/）"
         />
         <span className="tb-spacer" />
+        <button
+          className="toolbar-btn"
+          type="button"
+          data-testid="theme-toggle"
+          title={themeLabel}
+          onClick={cycleTheme}
+        >
+          {themeLabel}
+        </button>
         <button
           className="toolbar-btn"
           type="button"
