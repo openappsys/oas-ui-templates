@@ -384,14 +384,9 @@ export function App() {
             ＋ 新建 Issue
           </oas-button>
         )}
-        <button
-          className="toolbar-btn"
-          type="button"
-          data-testid="toolbar-export"
-          onClick={exportCsv}
-        >
+        <oas-button type="text" size="small" data-testid="toolbar-export" onClick={exportCsv}>
           导出 CSV（当前窗口）
-        </button>
+        </oas-button>
         <oas-input
           ref={searchRef}
           className="toolbar-search"
@@ -399,41 +394,36 @@ export function App() {
           placeholder="搜索 Key 或标题…（/）"
         />
         <span className="tb-spacer" />
-        <button
-          className="toolbar-btn"
-          type="button"
+        <oas-button
+          type="text"
+          size="small"
           data-testid="theme-toggle"
           title={themeLabel}
           onClick={cycleTheme}
         >
           {themeLabel}
-        </button>
-        <button
-          className="toolbar-btn"
-          type="button"
-          data-testid="lang-toggle"
-          onClick={toggleLang}
-        >
+        </oas-button>
+        <oas-button type="text" size="small" data-testid="lang-toggle" onClick={toggleLang}>
           {lang === 'zh' ? 'EN' : '中'}
-        </button>
-        <button
-          className="toolbar-btn"
-          type="button"
+        </oas-button>
+        <oas-button
+          type="text"
+          size="small"
           data-testid="toolbar-notify"
           title="与我相关的最近动态"
           onClick={() => notifyRef.current?.setAttribute('visible', '')}
         >
           动态
           <NotificationBadge currentUser={currentUser} />
-        </button>
-        <button
-          className="toolbar-btn"
-          type="button"
+        </oas-button>
+        <oas-button
+          type="text"
+          size="small"
           data-testid="toolbar-about"
           onClick={() => aboutRef.current?.setAttribute('visible', '')}
         >
           关于
-        </button>
+        </oas-button>
       </header>
       <div className="main">
         <aside className="side-panel" data-testid="side-panel">

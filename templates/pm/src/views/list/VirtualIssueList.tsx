@@ -37,22 +37,13 @@ function ensureRowStyles(root: ShadowRoot | null): void {
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .issue-row .avatar {
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--oas-color-on-ink);
-    }
     .issue-row .row-check {
       width: 14px;
       height: 14px;
-      accent-color: var(--oas-color-primary, #0b6cff);
       cursor: pointer;
+    }
+    .issue-row .row-check::part(box) {
+      margin-block-start: 0;
     }
     .issue-row.no-check {
       grid-template-columns: 96px minmax(0, 1fr) 22px 64px 84px;
@@ -101,11 +92,16 @@ function renderIssueRow(
   add('issue-key', issue.key)
   add('issue-title', issue.title)
   const m = memberMap.get(issue.assigneeId ?? '')
-  const av = document.createElement('span')
-  av.className = 'avatar'
-  av.style.background = m?.avatarColor ?? 'var(--oas-color-border-strong, #cbd5e1)'
-  av.textContent = m ? m.name[0] : '?'
-  if (m) av.title = m.name
+  const av = document.createElement('oas-avatar')
+  av.setAttribute('size', '20')
+  if (m) {
+    av.setAttribute('color', m.avatarColor)
+    av.title = m.name
+    av.textContent = m.name[0]
+  } else {
+    av.setAttribute('color', 'var(--oas-color-border-strong)')
+    av.title = '未分配'
+  }
   row.appendChild(av)
   add(`issue-priority pri-${issue.priority}`, issue.priority, {
     color: PRIORITY_TEXT[issue.priority],
@@ -119,12 +115,15 @@ function renderIssueRow(
   })
   if (showCheckbox) {
     // 行首多选框：点击不触发行打开
-    const check = document.createElement('input')
-    check.type = 'checkbox'
+    const check = document.createElement('oas-checkbox')
     check.className = 'row-check'
-    check.checked = selectedIds.has(issue.id)
+    check.setAttribute('data-testid', 'row-check')
+    check.setAttribute('size', 'small')
+    check.toggleAttribute('checked', selectedIds.has(issue.id))
     check.addEventListener('click', (e) => {
       e.stopPropagation()
+    })
+    check.addEventListener('oas-change', () => {
       toggleSelect(issue.id)
     })
     row.insertBefore(check, row.firstChild)

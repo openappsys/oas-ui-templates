@@ -1146,9 +1146,12 @@ body {
 .row-check {
   width: 14px;
   height: 14px;
-  accent-color: var(--oas-color-primary, #0b6cff);
   cursor: pointer;
   flex-shrink: 0;
+}
+
+.row-check::part(box) {
+  margin-block-start: 0;
 }
 
 .bulk-bar {

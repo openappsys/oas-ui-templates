@@ -1,9 +1,10 @@
 import { loadTheme, type ThemePreference } from './preferences'
 
-const media = window.matchMedia('(prefers-color-scheme: dark)')
+const media =
+  typeof window === 'undefined' ? null : window.matchMedia('(prefers-color-scheme: dark)')
 
 export function resolveTheme(p: ThemePreference): 'light' | 'dark' {
-  return p === 'system' ? (media.matches ? 'dark' : 'light') : p
+  return p === 'system' ? (media?.matches ? 'dark' : 'light') : p
 }
 
 export function applyTheme(p: ThemePreference): void {
@@ -13,6 +14,7 @@ export function applyTheme(p: ThemePreference): void {
 }
 
 export function initTheme(): () => void {
+  if (!media) return () => {}
   applyTheme(loadTheme())
   const onChange = () => applyTheme(loadTheme())
   media.addEventListener('change', onChange)

@@ -7,7 +7,7 @@ test('T1 默认跟随系统色', async ({ page }) => {
   await expect(page.getByTestId('theme-toggle')).toHaveText('跟随系统')
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
   await page.emulateMedia({ colorScheme: 'light' })
-  await expect(page.locator('html')).not.toHaveAttribute('data-theme', 'dark')
+  await expect(page.locator('html')).not.toHaveAttribute('data-theme')
   await expect(page.getByTestId('theme-toggle')).toHaveText('跟随系统')
 })
 
@@ -33,11 +33,11 @@ test('T3 循环三态：跟随系统 → 浅色 → 深色 → 跟随系统', as
   const toggle = page.getByTestId('theme-toggle')
   await expect(toggle).toBeVisible({ timeout: 10_000 })
   await expect(toggle).toHaveText('跟随系统')
-  await expect(page.locator('html')).not.toHaveAttribute('data-theme', 'dark')
+  await expect(page.locator('html')).not.toHaveAttribute('data-theme')
 
   await toggle.click()
   await expect(toggle).toHaveText('浅色')
-  await expect(page.locator('html')).not.toHaveAttribute('data-theme', 'dark')
+  await expect(page.locator('html')).not.toHaveAttribute('data-theme')
 
   await toggle.click()
   await expect(toggle).toHaveText('深色')
@@ -45,6 +45,6 @@ test('T3 循环三态：跟随系统 → 浅色 → 深色 → 跟随系统', as
 
   await toggle.click()
   await expect(toggle).toHaveText('跟随系统')
-  await expect(page.locator('html')).not.toHaveAttribute('data-theme', 'dark')
+  await expect(page.locator('html')).not.toHaveAttribute('data-theme')
   await expect.poll(() => page.evaluate(() => localStorage.getItem('oas-pm-theme'))).toBe('system')
 })

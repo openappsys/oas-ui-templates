@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import type { Issue, IssuePriority, IssueStatus, Member } from '@/types'
 import { ISSUE_PRIORITIES, ISSUE_STATUSES, STATUS_LABEL } from '@/types'
-import { OSelect, TagChip } from '@/components/oas-wrappers'
+import { OSelect, OCheckbox, TagChip } from '@/components/oas-wrappers'
 import { t } from '@/i18n'
 import { useRepositories } from '@/data/context'
 import { useObservable } from '@/data/use-observable'
@@ -421,13 +421,12 @@ export function IssueDetailDrawer({
           <div className="subs-list">
             {(subs ?? []).map((s) => (
               <div key={s.id} className="sub-item" data-testid="sub-item">
-                <input
-                  type="checkbox"
+                <OCheckbox
                   className="row-check"
+                  testid="row-check"
                   checked={s.status === 'done'}
                   disabled={!can('issue:change-status', { issue: s })}
-                  onClick={(e) => {
-                    e.stopPropagation()
+                  onChange={() => {
                     const done = s.status === 'done'
                     void issuesRepo.update(s.id, {
                       status: done ? 'todo' : 'done',
@@ -442,7 +441,6 @@ export function IssueDetailDrawer({
                       to: done ? 'todo' : 'done',
                     })
                   }}
-                  readOnly
                 />
                 <span
                   className={`issue-title${s.status === 'done' ? ' sub-done' : ''}`}

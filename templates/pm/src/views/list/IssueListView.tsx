@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo } from 'react'
 import type { Issue, IssuePriority, Member } from '@/types'
 import { ISSUE_PRIORITIES } from '@/types'
-import { OSelect } from '@/components/oas-wrappers'
+import { OSelect, OCheckbox } from '@/components/oas-wrappers'
 import { t } from '@/i18n'
 import { BulkBar } from '@/components/BulkBar'
 import { Avatar } from '@/components/Avatar'
@@ -79,15 +79,11 @@ export function IssueListView({
       }}
     >
       {canBulk && (
-        <input
-          type="checkbox"
+        <OCheckbox
           className="row-check"
+          testid="row-check"
           checked={selectedIds.has(i.id)}
-          onClick={(e) => {
-            e.stopPropagation()
-            toggleSelect(i.id)
-          }}
-          readOnly
+          onChange={() => toggleSelect(i.id)}
         />
       )}
       <span className="issue-key">{i.key}</span>

@@ -84,14 +84,15 @@ export function KanbanBoard({
       k.textContent = String(card.key ?? '')
       top.appendChild(k)
       const m = memberMap.get(String(card.assigneeId ?? ''))
-      const av = document.createElement('span')
+      const av = document.createElement('oas-avatar')
+      av.setAttribute('size', '18')
       if (m) {
-        av.className = 'avatar'
-        av.style.background = m.avatarColor
+        av.setAttribute('color', m.avatarColor)
+        av.title = m.name
         av.textContent = m.name[0]
       } else {
-        av.className = 'avatar avatar-empty'
-        av.textContent = '?'
+        av.setAttribute('color', 'var(--oas-color-border-strong)')
+        av.title = '未分配'
       }
       top.appendChild(av)
       const t = document.createElement('p')

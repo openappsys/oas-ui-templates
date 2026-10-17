@@ -47,6 +47,49 @@ export function OSelect({
   return <oas-select ref={ref} data-testid={testid} aria-label={ariaLabel} />
 }
 
+export function OCheckbox({
+  testid,
+  className,
+  checked,
+  disabled,
+  onChange,
+}: {
+  testid: string
+  className?: string
+  checked: boolean
+  disabled?: boolean
+  onChange: () => void
+}) {
+  const ref = useRef<HTMLElement>(null)
+  const onChangeRef = useRef(onChange)
+  onChangeRef.current = onChange
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    el.toggleAttribute('checked', checked)
+  }, [checked])
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    el.toggleAttribute('disabled', disabled ?? false)
+  }, [disabled])
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const h = () => onChangeRef.current()
+    el.addEventListener('oas-change', h)
+    const c = (e: Event) => {
+      e.stopPropagation()
+    }
+    el.addEventListener('click', c)
+    return () => {
+      el.removeEventListener('oas-change', h)
+      el.removeEventListener('click', c)
+    }
+  }, [])
+  return <oas-checkbox ref={ref} size="small" className={className} data-testid={testid} />
+}
+
 /** oas-segmented 包装。
  *  注意：segmented 的渲染签名只看 options attribute（property setter 仅存内存不触发重建），
  *  必须走 attribute JSON 通道。 */

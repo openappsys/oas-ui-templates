@@ -86,6 +86,16 @@ declare module 'react' {
         placeholder?: string
         multiple?: boolean | string
       }
+      'oas-checkbox': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        checked?: boolean | string
+        disabled?: boolean | string
+        size?: string
+      }
+      'oas-avatar': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        color?: string
+        size?: number | string
+        text?: string
+      }
     }
   }
 }
