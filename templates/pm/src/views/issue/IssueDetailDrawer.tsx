@@ -338,6 +338,7 @@ export function IssueDetailDrawer({
 
   const relationTarget = (id: string) => relCandidates?.find((x) => x.id === id)
   const save = (changes: Partial<Issue>) => {
+    if (issue && !can('issue:edit', { issue })) return
     // 脏数据兜底：历史版本曾把占位符 '__none__' 写进 labels，落库前清洗
     if (Array.isArray(changes.labels)) {
       const cleaned = changes.labels.filter((x) => x && x !== '__none__')
