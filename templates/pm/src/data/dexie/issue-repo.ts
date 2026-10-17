@@ -125,5 +125,94 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
     listAll(limit: number): Promise<Issue[]> {
       return db.issues.limit(limit).toArray()
     },
+
+    liveAssigneeWorkload(projectId: string) {
+      return fromLiveQuery(async () => {
+        const rows = await db.issues.where('projectId').equals(projectId).toArray()
+        const map = new Map<string, number>()
+        for (const i of rows) {
+          if (!i.assigneeId) continue
+          map.set(i.assigneeId, (map.get(i.assigneeId) ?? 0) + 1)
+        }
+        return [...map.entries()].map(([memberId, count]) => ({ memberId, count }))
+      })
+    },
+
+    bulkGet(ids: string[]): Promise<Array<Issue | undefined>> {
+      return db.issues.bulkGet(ids)
+    },
+
+    async updateMany(updates: Array<{ id: string; changes: Partial<Issue> }>): Promise<void> {
+      await db.transaction('rw', db.issues, async () => {
+        const now = Date.now()
+        for (const u of updates) {
+          await db.issues.update(u.id, { ...u.changes, updatedAt: now })
+        }
+      })
+    },
+
+    async bulkApply(
+      ids: string[],
+      patch: { status?: IssueStatus; priority?: IssuePriority; assigneeId?: string | null },
+      actorId: string,
+    ): Promise<void> {
+      await db.transaction('rw', db.issues, db.activities, async () => {
+        const now = Date.now()
+        for (const id of ids) {
+          const acts: Array<Promise<unknown>> = []
+          if (patch.status) {
+            acts.push(
+              db.activities.add({
+                id: nanoid(),
+                issueId: id,
+                actorId,
+                type: 'status',
+                field: 'status',
+                to: patch.status,
+                createdAt: now,
+              }),
+            )
+          }
+          if (patch.priority) {
+            acts.push(
+              db.activities.add({
+                id: nanoid(),
+                issueId: id,
+                actorId,
+                type: 'priority',
+                field: 'priority',
+                to: patch.priority,
+                createdAt: now,
+              }),
+            )
+          }
+          if (patch.assigneeId !== undefined) {
+            acts.push(
+              db.activities.add({
+                id: nanoid(),
+                issueId: id,
+                actorId,
+                type: 'assignee',
+                field: 'assigneeId',
+                to: patch.assigneeId ?? '',
+                createdAt: now,
+              }),
+            )
+          }
+          await Promise.all(acts)
+          const changes: Partial<Issue> = { updatedAt: now }
+          if (patch.status) changes.status = patch.status
+          if (patch.priority) changes.priority = patch.priority
+          if (patch.assigneeId !== undefined) changes.assigneeId = patch.assigneeId
+          await db.issues.update(id, changes)
+        }
+      })
+    },
+
+    async bulkDelete(ids: string[]): Promise<void> {
+      await db.transaction('rw', db.issues, async () => {
+        for (const id of ids) await db.issues.delete(id)
+      })
+    },
   }
 }

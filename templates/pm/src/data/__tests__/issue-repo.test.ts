@@ -242,4 +242,92 @@ describe('dexie issue repository', () => {
     })
     expect(new Set(rows.map((r) => r.id))).toEqual(new Set(['q1', 'q2']))
   })
+
+  it('bulkGet 返回与入参对齐的数组（含 undefined 洞）', async () => {
+    await db.issues.bulkAdd([seedIssue(db, { id: 'g1' }), seedIssue(db, { id: 'g2' })])
+    const repo = createDexieIssueRepository(db)
+    const rows = await repo.bulkGet(['g2', 'missing', 'g1'])
+    expect(rows.length).toBe(3)
+    expect(rows[0]?.id).toBe('g2')
+    expect(rows[1]).toBeUndefined()
+    expect(rows[2]?.id).toBe('g1')
+  })
+
+  it('updateMany 单事务批量更新并盖 updatedAt', async () => {
+    await db.issues.bulkAdd([
+      seedIssue(db, { id: 'u1', status: 'todo' }),
+      seedIssue(db, { id: 'u2', status: 'todo' }),
+    ])
+    const repo = createDexieIssueRepository(db)
+    await repo.updateMany([
+      { id: 'u1', changes: { status: 'done' } },
+      { id: 'u2', changes: { priority: 'urgent' } },
+    ])
+    expect((await repo.get('u1'))?.status).toBe('done')
+    expect((await repo.get('u2'))?.priority).toBe('urgent')
+    expect((await repo.get('u1'))!.updatedAt).toBeGreaterThan(1000)
+  })
+
+  it('bulkApply 事务内写活动并落补丁（assignee null 化）', async () => {
+    await db.issues.bulkAdd([
+      seedIssue(db, { id: 'b1', status: 'todo' }),
+      seedIssue(db, { id: 'b2', status: 'todo' }),
+    ])
+    const repo = createDexieIssueRepository(db)
+    await repo.bulkApply(['b1', 'b2'], { status: 'done', assigneeId: null }, 'm9')
+    for (const id of ['b1', 'b2']) {
+      expect((await repo.get(id))?.status).toBe('done')
+      expect((await repo.get(id))?.assigneeId).toBeNull()
+    }
+    const acts = await db.activities.toArray()
+    expect(acts.length).toBe(4)
+    expect(acts.filter((a) => a.type === 'status' && a.to === 'done').length).toBe(2)
+    expect(
+      acts.filter((a) => a.type === 'assignee' && a.field === 'assigneeId' && a.to === '').length,
+    ).toBe(2)
+    expect(acts.every((a) => a.actorId === 'm9')).toBe(true)
+  })
+
+  it('bulkApply 无补丁字段时不写活动', async () => {
+    await db.issues.bulkAdd([seedIssue(db, { id: 'n1' })])
+    const repo = createDexieIssueRepository(db)
+    await repo.bulkApply(['n1'], {}, 'm9')
+    expect((await db.activities.toArray()).length).toBe(0)
+  })
+
+  it('bulkDelete 批量删除', async () => {
+    await db.issues.bulkAdd([
+      seedIssue(db, { id: 'd1' }),
+      seedIssue(db, { id: 'd2' }),
+      seedIssue(db, { id: 'd3' }),
+    ])
+    const repo = createDexieIssueRepository(db)
+    await repo.bulkDelete(['d1', 'd3'])
+    expect(await repo.get('d1')).toBeUndefined()
+    expect(await repo.get('d2')).toBeDefined()
+    expect(await repo.get('d3')).toBeUndefined()
+  })
+
+  it('liveAssigneeWorkload 按成员计数且跳过未分配', async () => {
+    await db.issues.bulkAdd([
+      seedIssue(db, { id: 'k1', assigneeId: 'm1' }),
+      seedIssue(db, { id: 'k2', assigneeId: 'm1' }),
+      seedIssue(db, { id: 'k3', assigneeId: 'm2' }),
+      seedIssue(db, { id: 'k4', assigneeId: null }),
+      seedIssue(db, { id: 'k5', assigneeId: 'm1', projectId: 'p2' }),
+    ])
+    const repo = createDexieIssueRepository(db)
+    const rows = await new Promise<Array<{ memberId: string; count: number }>>((resolve) => {
+      const unsub = repo.liveAssigneeWorkload('p1').subscribe({
+        next: (v) => {
+          resolve(v)
+          unsub()
+        },
+      })
+    })
+    const map = new Map(rows.map((r) => [r.memberId, r.count]))
+    expect(map.get('m1')).toBe(2)
+    expect(map.get('m2')).toBe(1)
+    expect(rows.some((r) => r.memberId === '')).toBe(false)
+  })
 })

@@ -60,6 +60,15 @@ export interface IssueRepository {
   liveRelationCandidates(projectId: string, limit: number): Observable<Issue[]>
   liveByCreatedSince(sinceMs: number): Observable<Issue[]>
   listAll(limit: number): Promise<Issue[]>
+  liveAssigneeWorkload(projectId: string): Observable<Array<{ memberId: string; count: number }>>
+  bulkGet(ids: string[]): Promise<Array<Issue | undefined>>
+  updateMany(updates: Array<{ id: string; changes: Partial<Issue> }>): Promise<void>
+  bulkApply(
+    ids: string[],
+    patch: { status?: IssueStatus; priority?: IssuePriority; assigneeId?: string | null },
+    actorId: string,
+  ): Promise<void>
+  bulkDelete(ids: string[]): Promise<void>
 }
 
 export interface ProjectRepository {
