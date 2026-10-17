@@ -313,7 +313,7 @@ export function IssueDetailDrawer({
   const [relType, setRelType] = useState('__none__')
   const relCandidates = useObservable(
     () => issuesRepo.liveRelationCandidates(issue?.projectId ?? '', 100),
-    [issueId, issuesRepo],
+    [issueId, issuesRepo, issue?.projectId],
   )
 
   if (!issue) return <oas-drawer ref={drawerRef} />

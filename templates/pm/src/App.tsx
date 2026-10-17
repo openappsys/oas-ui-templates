@@ -37,7 +37,16 @@ function useIssueWindow(f: Filters, currentUser: string) {
         },
         currentUser,
       ),
-    [f.projectId, f.statusFilter, f.assigneeFilter, f.priorityFilter, f.search, f.myOnly, f.sortBy],
+    [
+      f.projectId,
+      f.statusFilter,
+      f.assigneeFilter,
+      f.priorityFilter,
+      f.search,
+      f.myOnly,
+      f.sortBy,
+      currentUser,
+    ],
   )
 }
 

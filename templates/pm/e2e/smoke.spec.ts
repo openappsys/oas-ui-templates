@@ -688,13 +688,16 @@ test('M18 通知：他人变更我负责的 Issue → 切回后动态出现', as
   await page.keyboard.press('Escape')
   await page.waitForTimeout(500)
 
-  // 2) 切到李娜，搜索该 key，改优先级（写入活动：actor=李娜）
+  // 2) 切到李娜后「我的」即时重滤（看不到张伟的 Issue），先回「全部」再搜索该 key，改状态（写入活动：actor=李娜）
   await page.getByTestId('tb-user').click()
   await expect(page.getByTestId('modal-user')).toHaveAttribute('visible', /.*/, { timeout: 5000 })
   await page.getByTestId('pick-user-member-2').click()
   await page.waitForTimeout(800)
+  await page.getByTestId('view-all').click()
   await fillOInput(page, 'toolbar-search', firstKey ?? '')
-  await page.locator('.issue-row').first().waitFor({ timeout: 10_000 })
+  await expect(page.locator('.issue-row').first()).toContainText(firstKey ?? '', {
+    timeout: 10_000,
+  })
   await page
     .locator('.issue-row')
     .first()
@@ -741,6 +744,26 @@ test('M18 通知：他人变更我负责的 Issue → 切回后动态出现', as
       { timeout: 10_000 },
     )
     .toBe(true)
+
+  // 5) 点击该条动态 → 打开对应 Issue 详情抽屉（title 属性被组件消费，以 detail-title 序号断言）
+  await page
+    .getByTestId('notify-item')
+    .filter({ hasText: firstKey ?? '' })
+    .first()
+    .click()
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          () =>
+            (document.querySelector('[data-testid=detail-drawer]') as { opened?: boolean })
+              ?.opened ?? false,
+        ),
+      { timeout: 10_000 },
+    )
+    .toBe(true)
+  const seq18 = (firstKey ?? '').split('-')[1] ?? ''
+  await expect(page.locator('.detail-title')).toContainText(`#${seq18}`, { timeout: 10_000 })
 })
 
 test('M20 看板：卡片点击打开详情抽屉', async ({ page }) => {

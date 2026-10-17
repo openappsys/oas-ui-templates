@@ -330,4 +330,67 @@ describe('dexie issue repository', () => {
     expect(map.get('m2')).toBe(1)
     expect(rows.some((r) => r.memberId === '')).toBe(false)
   })
+
+  it('create 支持 parentId/order 透传（子任务）', async () => {
+    await db.projects.add({
+      id: 'p1',
+      name: 'P',
+      key: 'OAS',
+      description: '',
+      leadId: 'm1',
+      createdAt: 0,
+      nextKeyNum: 100001,
+    })
+    const repo = createDexieIssueRepository(db)
+    const created = await repo.create({
+      projectId: 'p1',
+      title: '子任务',
+      status: 'todo',
+      priority: 'medium',
+      assigneeId: null,
+      reporterId: 'm1',
+      parentId: 'parent-1',
+      order: 42,
+    })
+    expect(created.parentId).toBe('parent-1')
+    expect(created.order).toBe(42)
+    expect(created.key).toBe('OAS-100001')
+  })
+
+  it('live 推送单条 Issue 的创建与更新', async () => {
+    await db.projects.add({
+      id: 'p1',
+      name: 'P',
+      key: 'OAS',
+      description: '',
+      leadId: 'm1',
+      createdAt: 0,
+      nextKeyNum: 100001,
+    })
+    const repo = createDexieIssueRepository(db)
+    const created = await repo.create({
+      projectId: 'p1',
+      title: 'A',
+      status: 'todo',
+      priority: 'low',
+      assigneeId: null,
+      reporterId: 'm1',
+    })
+    const emissions: Array<Issue | undefined> = []
+    let unsub: (() => void) | undefined
+    const second = new Promise<void>((resolve) => {
+      unsub = repo.live(created.id).subscribe({
+        next: (v) => {
+          emissions.push(v)
+          if (emissions.length >= 2) resolve()
+        },
+      })
+    })
+    while (emissions.length === 0) await new Promise((r) => setTimeout(r, 5))
+    expect(emissions[0]?.id).toBe(created.id)
+    await repo.update(created.id, { status: 'done' })
+    await second
+    unsub?.()
+    expect(emissions[1]?.status).toBe('done')
+  })
 })
