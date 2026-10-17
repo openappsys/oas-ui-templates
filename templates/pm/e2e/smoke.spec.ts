@@ -302,6 +302,8 @@ test('M8 搜索：标题命中过滤 + 清除筛选', async ({ page }) => {
 
 test('M9 详情抽屉：优先级即时保存 + 描述保存 + 删除两连确认', async ({ page }) => {
   await waitForSeed(page)
+  const key = (await page.locator('.issue-row .issue-key').first().textContent()) ?? ''
+  expect(key).toBeTruthy()
   await page
     .locator('.issue-row')
     .first()
@@ -319,7 +321,9 @@ test('M9 详情抽屉：优先级即时保存 + 描述保存 + 删除两连确�
       { timeout: 10_000 },
     )
     .toBe(true)
-  const key = await page.getByTestId('detail-drawer').getAttribute('title')
+  // title 属性被组件消费，以 detail-title 序号断言抽屉打开的是首行 Issue
+  const seq = key.split('-')[1] ?? ''
+  await expect(page.locator('.detail-title')).toContainText(`#${seq}`, { timeout: 10_000 })
   // 选一个与当前不同的优先级（避免 from===to 无 diff 不落活动/不触发保存）
   const newPri = await page.evaluate(() => {
     const cur = (document.querySelector('[data-testid=detail-priority]') as { value?: string })
@@ -372,10 +376,16 @@ test('M9 详情抽屉：优先级即时保存 + 描述保存 + 删除两连确�
     )
   })
   await expect(page.getByTestId('detail-drawer')).toHaveCount(0, { timeout: 10_000 })
-  // 列表中该 key 消失
-  await page.waitForTimeout(1500)
-  const left = await page.locator('.issue-row .issue-key').allTextContents()
-  expect(left).not.toContain(key)
+  // 列表中该 key 消失（liveQuery 推送最终一致）
+  await expect
+    .poll(
+      async () => {
+        const left = await page.locator('.issue-row .issue-key').allTextContents()
+        return left.includes(key)
+      },
+      { timeout: 10_000 },
+    )
+    .toBe(false)
 })
 
 test('M10 仪表盘：统计卡 + 图表数据', async ({ page }) => {

@@ -9,10 +9,12 @@ import { DEFAULT_FILTERS, type Filters, type Grouping } from './lib/filters'
 import { useProjectCounts } from './lib/hooks'
 import { loadTheme, storeTheme, type ThemePreference } from './lib/preferences'
 import { applyTheme } from './lib/theme'
+import { registerKey } from './lib/keyboard'
 import { useRepositories } from './data/context'
 import { useObservable } from './data/use-observable'
 import { can as policyCan, type Action, type Ctx } from './permission/policy'
 import { Avatar } from './components/Avatar'
+import { ShortcutsHelp } from './components/ShortcutsHelp'
 import { DashboardView } from './views/dashboard/DashboardView'
 import { IssueListView } from './views/list/IssueListView'
 import { KanbanBoard } from './views/board/KanbanBoard'
@@ -319,8 +321,9 @@ export function App() {
     activitiesRepo,
   ])
 
-  // 快捷键：C 新建（输入框聚焦时跳过）/ 聚焦搜索 / Esc 关抽屉
+  // 快捷键：C 新建（输入框聚焦时跳过）/ 聚焦搜索 / Esc 关抽屉 / ? 帮助
   const searchRef = useRef<HTMLElement & { value?: string }>(null)
+  const [helpOpen, setHelpOpen] = useState(false)
   useEffect(() => {
     const el = searchRef.current
     if (!el) return
@@ -338,25 +341,26 @@ export function App() {
     return () => el.removeEventListener('oas-input', h)
   }, [setF])
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      // Esc 无论焦点在哪都关抽屉（含评论输入框内）
-      if (e.key === 'Escape') {
-        setSelectedId(null)
-        return
-      }
-      const t = e.target as HTMLElement
-      if (t?.closest('input, textarea, select, [contenteditable="true"]')) return
-      if (e.key === 'c' || e.key === 'C') {
-        if (!canCreateRef.current) return
-        e.preventDefault()
-        createRef.current?.setAttribute('visible', '')
-      } else if (e.key === '/') {
+    // Esc 无论焦点在哪都关抽屉（含评论输入框内）
+    const openCreate = (e: KeyboardEvent) => {
+      e.preventDefault()
+      createRef.current?.setAttribute('visible', '')
+    }
+    const whenCreate = () => canCreateRef.current
+    const whenNoOverlay = () => !document.querySelector('oas-modal[visible], oas-drawer[visible]')
+    const unsubs = [
+      registerKey('Escape', () => setSelectedId(null)),
+      registerKey('c', openCreate, whenCreate),
+      registerKey('C', openCreate, whenCreate),
+      registerKey('/', (e) => {
         e.preventDefault()
         searchRef.current?.focus()
-      }
+      }),
+      registerKey('?', () => setHelpOpen(true), whenNoOverlay),
+    ]
+    return () => {
+      for (const u of unsubs) u()
     }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
   }, [])
 
   return (
@@ -564,6 +568,7 @@ export function App() {
               onSaveView={() => saveViewRef.current?.setAttribute('visible', '')}
               currentUser={currentUser}
               can={can}
+              navActive={view === 'issues' && selectedId === null}
             />
           )}
           {view === 'board' && (
@@ -712,6 +717,9 @@ export function App() {
           ))}
         </div>
       </oas-modal>
+
+      {/* 快捷键帮助 */}
+      <ShortcutsHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
 
       {/* 关于 */}
       <oas-modal ref={aboutRef} no-footer data-testid="modal-about">

@@ -32,12 +32,14 @@ import '@oas-ui/ui/form/segmented'
 import '@oas-ui/ui/form/dynamic-tags'
 import '@oas-ui/ui/form/input-number'
 import '@oas-ui/ui/basic/badge'
+import '@oas-ui/ui/basic/kbd'
 import './styles/app.css'
 
 import { App } from './App'
 import { seedDatabase } from './seed-db'
 import { RepositoriesProvider } from './data/context'
 import { initTheme } from './lib/theme'
+import { bindKeys } from './lib/keyboard'
 
 // 启动兜底：IndexedDB 不可用/配额满/隐私模式 → 错误页而非白屏
 import { resultPage } from './boot-fallback'
@@ -53,6 +55,7 @@ try {
 }
 
 initTheme()
+bindKeys()
 
 createRoot(document.querySelector<HTMLDivElement>('#app')!).render(
   <StrictMode>

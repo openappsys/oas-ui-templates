@@ -183,6 +183,36 @@ body {
   border-bottom: 1px solid color-mix(in srgb, var(--oas-color-border, #e2e8f0) 50%, transparent);
 }
 
+.issue-row.is-cursor {
+  background: var(--oas-color-bg-hover);
+  box-shadow: inset 2px 0 0 var(--oas-color-primary);
+}
+
+.shortcuts-body {
+  display: grid;
+  gap: 12px;
+  padding: 4px 0 8px;
+  min-width: 300px;
+}
+
+.shortcut-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+}
+
+.shortcut-keys {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.shortcut-label {
+  font-size: 13px;
+  color: var(--oas-color-text-secondary);
+}
+
 .issue-key {
   width: 90px;
   flex-shrink: 0;

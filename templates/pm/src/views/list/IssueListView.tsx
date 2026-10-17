@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import type { Issue, IssuePriority, Member } from '@/types'
 import { ISSUE_PRIORITIES } from '@/types'
 import { OSelect, OCheckbox } from '@/components/oas-wrappers'
@@ -7,6 +7,7 @@ import { BulkBar } from '@/components/BulkBar'
 import { Avatar } from '@/components/Avatar'
 import type { Action, Ctx } from '@/permission/policy'
 import { GROUP_PREVIEW, type Filters, type SortBy, type Grouping } from '@/lib/filters'
+import { registerKey } from '@/lib/keyboard'
 import { VirtualIssueList } from './VirtualIssueList'
 
 /* ── Issue 列表（筛选/排序/分组工具条） ── */
@@ -22,6 +23,7 @@ export function IssueListView({
   onSaveView,
   currentUser,
   can,
+  navActive,
 }: {
   issues: Issue[]
   total: number
@@ -34,8 +36,10 @@ export function IssueListView({
   onSaveView: () => void
   currentUser: string
   can: (action: Action, ctx?: Ctx) => boolean
+  navActive: boolean
 }) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [cursorIndex, setCursorIndex] = useState(-1)
   const canBulk = can('bulk:apply')
   const toggleSelect = useCallback((id: string) => {
     setSelectedIds((prev) => {
@@ -46,6 +50,70 @@ export function IssueListView({
     })
   }, [])
   const clearSelection = useCallback(() => setSelectedIds(new Set()), [])
+
+  const navRef = useRef({ navActive, issues, cursorIndex, onSelect, can, toggleSelect })
+  navRef.current = { navActive, issues, cursorIndex, onSelect, can, toggleSelect }
+
+  useEffect(() => {
+    setCursorIndex((i) => Math.min(i, issues.length - 1))
+  }, [issues])
+
+  useEffect(() => {
+    const whenNav = () =>
+      navRef.current.navActive && !document.querySelector('oas-modal[visible], oas-drawer[visible]')
+    const unsubs = [
+      registerKey(
+        'j',
+        (e) => {
+          e.preventDefault()
+          const len = navRef.current.issues.length
+          if (len === 0) return
+          setCursorIndex((i) => Math.min(i + 1, len - 1))
+        },
+        whenNav,
+      ),
+      registerKey(
+        'k',
+        (e) => {
+          e.preventDefault()
+          const len = navRef.current.issues.length
+          if (len === 0) return
+          setCursorIndex((i) => Math.max(i - 1, 0))
+        },
+        whenNav,
+      ),
+      registerKey(
+        'Enter',
+        (e) => {
+          const { issues: list, cursorIndex: idx, onSelect: open } = navRef.current
+          const target = list[idx]
+          if (!target) return
+          e.preventDefault()
+          open(target.id)
+        },
+        whenNav,
+      ),
+      registerKey(
+        'x',
+        (e) => {
+          const {
+            issues: list,
+            cursorIndex: idx,
+            can: check,
+            toggleSelect: toggle,
+          } = navRef.current
+          const target = list[idx]
+          if (!target || !check('bulk:apply')) return
+          e.preventDefault()
+          toggle(target.id)
+        },
+        whenNav,
+      ),
+    ]
+    return () => {
+      for (const u of unsubs) u()
+    }
+  }, [])
 
   const groups = useMemo(() => {
     if (grouping === 'none') return null
@@ -59,10 +127,12 @@ export function IssueListView({
     return [...map.entries()]
   }, [issues, grouping])
 
+  const cursorId = cursorIndex >= 0 && cursorIndex < issues.length ? issues[cursorIndex].id : null
+
   const rowEl = (i: Issue) => (
     <div
       key={i.id}
-      className="issue-row"
+      className={`issue-row${i.id === cursorId ? ' is-cursor' : ''}`}
       role="button"
       tabIndex={0}
       style={{
@@ -201,6 +271,7 @@ export function IssueListView({
           selectedIds={selectedIds}
           toggleSelect={toggleSelect}
           showCheckbox={canBulk}
+          cursorIndex={cursorIndex}
         />
       )}
       <BulkBar

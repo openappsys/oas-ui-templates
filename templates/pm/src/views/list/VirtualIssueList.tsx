@@ -25,6 +25,10 @@ function ensureRowStyles(root: ShadowRoot | null): void {
     .issue-row:hover {
       background: var(--oas-color-bg-hover, #f8fafc);
     }
+    .issue-row.is-cursor {
+      background: var(--oas-color-bg-hover, #f8fafc);
+      box-shadow: inset 2px 0 0 var(--oas-color-primary, #0b6cff);
+    }
     .issue-row .issue-key {
       color: var(--oas-color-primary, #0b6cff);
       font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
@@ -66,13 +70,14 @@ function renderIssueRow(
   selectedIds: Set<string>,
   toggleSelect: (id: string) => void,
   showCheckbox: boolean,
+  isCursor: boolean,
 ) {
   element.textContent = ''
   element.style.display = 'block'
   element.style.width = '100%'
   ensureRowStyles(element.getRootNode() as ShadowRoot)
   const row = document.createElement('div')
-  row.className = 'issue-row'
+  row.className = isCursor ? 'issue-row is-cursor' : 'issue-row'
   if (!showCheckbox) row.classList.add('no-check')
   row.setAttribute('role', 'button')
   row.setAttribute('tabindex', '0')
@@ -138,6 +143,7 @@ export function VirtualIssueList({
   selectedIds,
   toggleSelect,
   showCheckbox,
+  cursorIndex,
 }: {
   issues: Issue[]
   onSelect: (id: string) => void
@@ -145,12 +151,20 @@ export function VirtualIssueList({
   selectedIds: Set<string>
   toggleSelect: (id: string) => void
   showCheckbox: boolean
+  cursorIndex: number
 }) {
   const listRef = useRef<HTMLElement>(null)
   const lastTopRef = useRef(0)
   // 稳定的渲染回调：避免 items 变化以外的原因重挂监听
-  const renderRef = useRef({ onSelect, memberMap, selectedIds, toggleSelect, showCheckbox })
-  renderRef.current = { onSelect, memberMap, selectedIds, toggleSelect, showCheckbox }
+  const renderRef = useRef({
+    onSelect,
+    memberMap,
+    selectedIds,
+    toggleSelect,
+    showCheckbox,
+    cursorIndex,
+  })
+  renderRef.current = { onSelect, memberMap, selectedIds, toggleSelect, showCheckbox, cursorIndex }
 
   // oas-item 渲染通道必须先于 items 挂上（effect 按声明序执行）：
   // 切回视图时数据即刻就位，items setter 同步渲染，通道缺席则列表永远空白
@@ -169,6 +183,7 @@ export function VirtualIssueList({
         renderRef.current.selectedIds,
         renderRef.current.toggleSelect,
         renderRef.current.showCheckbox,
+        d.index === renderRef.current.cursorIndex,
       )
     }
     el.addEventListener('oas-item', onItem)
@@ -196,6 +211,14 @@ export function VirtualIssueList({
     el.items = issues
     el.scrollToIndex?.(Math.round(lastTopRef.current / 44), { align: 'start' })
   }, [issues])
+
+  useEffect(() => {
+    if (cursorIndex < 0) return
+    const el = listRef.current as
+      | (HTMLElement & { scrollToIndex?: (i: number, o?: { align?: string }) => void })
+      | null
+    el?.scrollToIndex?.(cursorIndex, { align: 'nearest' })
+  }, [cursorIndex])
 
   return (
     <oas-virtual-list

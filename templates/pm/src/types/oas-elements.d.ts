@@ -96,6 +96,12 @@ declare module 'react' {
         size?: number | string
         text?: string
       }
+      'oas-kbd': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        keys?: string
+        variant?: string
+        size?: string
+        color?: string
+      }
     }
   }
 }
