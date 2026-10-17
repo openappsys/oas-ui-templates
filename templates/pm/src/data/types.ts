@@ -1,0 +1,110 @@
+import type {
+  Activity,
+  Comment,
+  Issue,
+  IssuePriority,
+  IssueStatus,
+  Member,
+  Project,
+  SavedView,
+} from '@/types'
+import type { Observable } from './observable'
+
+export interface IssueWindowFilters {
+  projectId: string
+  statusFilter: IssueStatus | null
+  assigneeFilter: string | null
+  priorityFilter: IssuePriority | null
+  search: string
+  myOnly: boolean
+  sortBy: 'updatedAt' | 'priority' | 'createdAt'
+}
+
+export interface ProjectCounts {
+  total: number
+  byStatus: Record<IssueStatus, number>
+}
+
+export interface CreateIssueInput {
+  projectId: string
+  title: string
+  status: IssueStatus
+  priority: IssuePriority
+  assigneeId: string | null
+  reporterId: string
+}
+
+export interface CreateCommentInput {
+  issueId: string
+  authorId: string
+  body: string
+}
+
+export interface ActivityInput {
+  issueId: string
+  actorId: string
+  type: string
+  field?: string
+  from?: string
+  to?: string
+}
+
+export interface IssueRepository {
+  get(id: string): Promise<Issue | undefined>
+  create(input: CreateIssueInput): Promise<Issue>
+  update(id: string, changes: Partial<Issue>): Promise<void>
+  delete(id: string): Promise<void>
+  liveWindow(filters: IssueWindowFilters, currentUser: string): Observable<Issue[]>
+  liveCounts(projectId: string): Observable<ProjectCounts>
+  liveSubIssues(parentId: string): Observable<Issue[]>
+  liveRelationCandidates(projectId: string, limit: number): Observable<Issue[]>
+  liveByCreatedSince(sinceMs: number): Observable<Issue[]>
+  listAll(limit: number): Promise<Issue[]>
+}
+
+export interface ProjectRepository {
+  all(): Promise<Project[]>
+  get(id: string): Promise<Project | undefined>
+  liveAll(): Observable<Project[]>
+  create(project: Project): Promise<void>
+  update(id: string, changes: Partial<Project>): Promise<void>
+  delete(id: string): Promise<void>
+  allocateKey(projectId: string): Promise<number>
+}
+
+export interface MemberRepository {
+  all(): Promise<Member[]>
+  get(id: string): Promise<Member | undefined>
+  liveAll(): Observable<Member[]>
+  create(member: Member): Promise<void>
+  update(id: string, changes: Partial<Member>): Promise<void>
+  delete(id: string): Promise<void>
+}
+
+export interface CommentRepository {
+  liveByIssue(issueId: string): Observable<Comment[]>
+  add(input: CreateCommentInput): Promise<void>
+  update(id: string, body: string): Promise<void>
+  delete(id: string): Promise<void>
+}
+
+export interface ActivityRepository {
+  log(entry: ActivityInput): Promise<void>
+  liveByIssue(issueId: string): Observable<Activity[]>
+  liveRecent(limit: number): Observable<Activity[]>
+}
+
+export interface SavedViewRepository {
+  liveAll(): Observable<SavedView[]>
+  create(name: string, filters: unknown): Promise<void>
+  delete(id: string): Promise<void>
+}
+
+export interface Repositories {
+  issues: IssueRepository
+  projects: ProjectRepository
+  members: MemberRepository
+  comments: CommentRepository
+  activities: ActivityRepository
+  savedViews: SavedViewRepository
+}
