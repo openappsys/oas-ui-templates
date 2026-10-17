@@ -9,7 +9,7 @@ import { DEFAULT_FILTERS, type Filters, type Grouping } from './lib/filters'
 import { useProjectCounts } from './lib/hooks'
 import { loadTheme, storeTheme, type ThemePreference } from './lib/preferences'
 import { applyTheme } from './lib/theme'
-import { registerKey } from './lib/keyboard'
+import { isOverlayOpen, registerKey } from './lib/keyboard'
 import { useRepositories } from './data/context'
 import { useObservable } from './data/use-observable'
 import { can as policyCan, type Action, type Ctx } from './permission/policy'
@@ -347,7 +347,7 @@ export function App() {
       createRef.current?.setAttribute('visible', '')
     }
     const whenCreate = () => canCreateRef.current
-    const whenNoOverlay = () => !document.querySelector('oas-modal[visible], oas-drawer[visible]')
+    const whenNoOverlay = () => !isOverlayOpen()
     const unsubs = [
       registerKey('Escape', () => setSelectedId(null)),
       registerKey('c', openCreate, whenCreate),

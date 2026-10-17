@@ -217,7 +217,7 @@ export function VirtualIssueList({
     const el = listRef.current as
       | (HTMLElement & { scrollToIndex?: (i: number, o?: { align?: string }) => void })
       | null
-    el?.scrollToIndex?.(cursorIndex, { align: 'nearest' })
+    el?.scrollToIndex?.(cursorIndex, { align: 'auto' })
   }, [cursorIndex])
 
   return (

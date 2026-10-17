@@ -7,7 +7,7 @@ import { BulkBar } from '@/components/BulkBar'
 import { Avatar } from '@/components/Avatar'
 import type { Action, Ctx } from '@/permission/policy'
 import { GROUP_PREVIEW, type Filters, type SortBy, type Grouping } from '@/lib/filters'
-import { registerKey } from '@/lib/keyboard'
+import { isOverlayOpen, registerKey } from '@/lib/keyboard'
 import { VirtualIssueList } from './VirtualIssueList'
 
 /* ── Issue 列表（筛选/排序/分组工具条） ── */
@@ -59,8 +59,7 @@ export function IssueListView({
   }, [issues])
 
   useEffect(() => {
-    const whenNav = () =>
-      navRef.current.navActive && !document.querySelector('oas-modal[visible], oas-drawer[visible]')
+    const whenNav = () => navRef.current.navActive && !isOverlayOpen()
     const unsubs = [
       registerKey(
         'j',

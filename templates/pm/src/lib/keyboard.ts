@@ -23,9 +23,17 @@ function onKey(e: KeyboardEvent) {
     if (e.key !== entry.key) continue
     if (entry.key !== 'Escape' && isTypingContext(e)) continue
     if (entry.when && !entry.when()) continue
-    entry.handler(e)
+    try {
+      entry.handler(e)
+    } catch (err) {
+      console.error('[keyboard]', err)
+    }
     if (e.defaultPrevented) return
   }
+}
+
+export function isOverlayOpen(): boolean {
+  return !!document.querySelector('oas-modal[visible], oas-drawer[visible]')
 }
 
 export function bindKeys(): void {

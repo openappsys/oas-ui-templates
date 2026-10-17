@@ -12,7 +12,10 @@ export function ShortcutsHelp({ open, onClose }: { open: boolean; onClose: () =>
   useEffect(() => {
     const el = ref.current
     if (!el) return
-    const h = () => onClose()
+    const h = (e: Event) => {
+      if (e.defaultPrevented) return
+      onClose()
+    }
     el.addEventListener('oas-before-close', h)
     el.addEventListener('oas-close', h)
     return () => {
