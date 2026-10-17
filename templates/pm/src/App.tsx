@@ -9,6 +9,7 @@ import { DEFAULT_FILTERS, type Filters, type Grouping } from './lib/filters'
 import { useProjectCounts } from './lib/hooks'
 import { useRepositories } from './data/context'
 import { useObservable } from './data/use-observable'
+import { can as policyCan, type Action, type Ctx } from './permission/policy'
 import { Avatar } from './components/Avatar'
 import { DashboardView } from './views/dashboard/DashboardView'
 import { IssueListView } from './views/list/IssueListView'
@@ -211,6 +212,21 @@ export function App() {
   const projects = useProjects()
   const memberCounts = useWindowAssigneeCounts(issues)
   const memberMap = useMemo(() => new Map((members ?? []).map((m) => [m.id, m])), [members])
+  const can = useCallback(
+    (action: Action, ctx?: Ctx) =>
+      policyCan(
+        {
+          id: currentUser,
+          role: members?.find((m) => m.id === currentUser)?.role ?? 'viewer',
+        },
+        action,
+        ctx,
+      ),
+    [currentUser, members],
+  )
+  const canCreateIssue = can('issue:create')
+  const canCreateRef = useRef(canCreateIssue)
+  canCreateRef.current = canCreateIssue
   const memberOptions = useMemo(
     () => [
       { label: '未分配', value: '__none__' },
@@ -277,7 +293,15 @@ export function App() {
     await activitiesRepo.log({ issueId: created.id, actorId: currentUser, type: 'create' })
     if (input) input.value = ''
     createRef.current?.removeAttribute('visible')
-  }, [filters.projectId])
+  }, [
+    filters.projectId,
+    currentUser,
+    createStatus,
+    createPriority,
+    createAssignee,
+    issuesRepo,
+    activitiesRepo,
+  ])
 
   // 快捷键：C 新建（输入框聚焦时跳过）/ 聚焦搜索 / Esc 关抽屉
   const searchRef = useRef<HTMLElement & { value?: string }>(null)
@@ -307,6 +331,7 @@ export function App() {
       const t = e.target as HTMLElement
       if (t?.closest('input, textarea, select, [contenteditable="true"]')) return
       if (e.key === 'c' || e.key === 'C') {
+        if (!canCreateRef.current) return
         e.preventDefault()
         createRef.current?.setAttribute('visible', '')
       } else if (e.key === '/') {
@@ -334,13 +359,15 @@ export function App() {
           <Avatar member={memberMap.get(currentUser)} size={22} />
           <span>{memberMap.get(currentUser)?.name ?? ''}</span>
         </button>
-        <oas-button
-          type="primary"
-          data-testid="toolbar-new"
-          onClick={() => createRef.current?.setAttribute('visible', '')}
-        >
-          ＋ 新建 Issue
-        </oas-button>
+        {canCreateIssue && (
+          <oas-button
+            type="primary"
+            data-testid="toolbar-new"
+            onClick={() => createRef.current?.setAttribute('visible', '')}
+          >
+            ＋ 新建 Issue
+          </oas-button>
+        )}
         <button
           className="toolbar-btn"
           type="button"
@@ -473,15 +500,17 @@ export function App() {
               >
                 <span>{v.name}</span>
               </button>
-              <button
-                className="saved-view-del"
-                type="button"
-                aria-label={`删除视图 ${v.name}`}
-                data-testid={`saved-view-del-${v.id}`}
-                onClick={() => void savedViewsRepo.delete(v.id)}
-              >
-                ×
-              </button>
+              {can('view:delete') && (
+                <button
+                  className="saved-view-del"
+                  type="button"
+                  aria-label={`删除视图 ${v.name}`}
+                  data-testid={`saved-view-del-${v.id}`}
+                  onClick={() => void savedViewsRepo.delete(v.id)}
+                >
+                  ×
+                </button>
+              )}
             </div>
           ))}
           <p className="side-title">{t('members')}</p>
@@ -519,12 +548,18 @@ export function App() {
               onSelect={setSelectedId}
               onSaveView={() => saveViewRef.current?.setAttribute('visible', '')}
               currentUser={currentUser}
+              can={can}
             />
           )}
           {view === 'board' && (
-            <KanbanBoard issues={issues ?? []} memberMap={memberMap} onOpenIssue={setSelectedId} />
+            <KanbanBoard
+              issues={issues ?? []}
+              memberMap={memberMap}
+              onOpenIssue={setSelectedId}
+              can={can}
+            />
           )}
-          {view === 'timeline' && <TimelineView issues={issues ?? []} />}
+          {view === 'timeline' && <TimelineView issues={issues ?? []} can={can} />}
         </main>
       </div>
 
@@ -601,6 +636,7 @@ export function App() {
           memberMap={memberMap}
           currentUser={currentUser}
           onClose={() => setSelectedId(null)}
+          can={can}
         />
       )}
 

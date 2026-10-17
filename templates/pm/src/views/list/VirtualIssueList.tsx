@@ -54,6 +54,9 @@ function ensureRowStyles(root: ShadowRoot | null): void {
       accent-color: #0b6cff;
       cursor: pointer;
     }
+    .issue-row.no-check {
+      grid-template-columns: 96px minmax(0, 1fr) 22px 64px 84px;
+    }
     .issue-row .issue-priority,
     .issue-row .issue-status {
       overflow: hidden;
@@ -71,6 +74,7 @@ function renderIssueRow(
   onSelect: (id: string) => void,
   selectedIds: Set<string>,
   toggleSelect: (id: string) => void,
+  showCheckbox: boolean,
 ) {
   element.textContent = ''
   element.style.display = 'block'
@@ -78,6 +82,7 @@ function renderIssueRow(
   ensureRowStyles(element.getRootNode() as ShadowRoot)
   const row = document.createElement('div')
   row.className = 'issue-row'
+  if (!showCheckbox) row.classList.add('no-check')
   row.setAttribute('role', 'button')
   row.setAttribute('tabindex', '0')
   const add = (
@@ -112,16 +117,18 @@ function renderIssueRow(
   row.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') onSelect(issue.id)
   })
-  // 行首多选框：点击不触发行打开
-  const check = document.createElement('input')
-  check.type = 'checkbox'
-  check.className = 'row-check'
-  check.checked = selectedIds.has(issue.id)
-  check.addEventListener('click', (e) => {
-    e.stopPropagation()
-    toggleSelect(issue.id)
-  })
-  row.insertBefore(check, row.firstChild)
+  if (showCheckbox) {
+    // 行首多选框：点击不触发行打开
+    const check = document.createElement('input')
+    check.type = 'checkbox'
+    check.className = 'row-check'
+    check.checked = selectedIds.has(issue.id)
+    check.addEventListener('click', (e) => {
+      e.stopPropagation()
+      toggleSelect(issue.id)
+    })
+    row.insertBefore(check, row.firstChild)
+  }
   element.appendChild(row)
 }
 
@@ -131,18 +138,20 @@ export function VirtualIssueList({
   memberMap,
   selectedIds,
   toggleSelect,
+  showCheckbox,
 }: {
   issues: Issue[]
   onSelect: (id: string) => void
   memberMap: Map<string, Member>
   selectedIds: Set<string>
   toggleSelect: (id: string) => void
+  showCheckbox: boolean
 }) {
   const listRef = useRef<HTMLElement>(null)
   const lastTopRef = useRef(0)
   // 稳定的渲染回调：避免 items 变化以外的原因重挂监听
-  const renderRef = useRef({ onSelect, memberMap, selectedIds, toggleSelect })
-  renderRef.current = { onSelect, memberMap, selectedIds, toggleSelect }
+  const renderRef = useRef({ onSelect, memberMap, selectedIds, toggleSelect, showCheckbox })
+  renderRef.current = { onSelect, memberMap, selectedIds, toggleSelect, showCheckbox }
 
   // oas-item 渲染通道必须先于 items 挂上（effect 按声明序执行）：
   // 切回视图时数据即刻就位，items setter 同步渲染，通道缺席则列表永远空白
@@ -160,6 +169,7 @@ export function VirtualIssueList({
         renderRef.current.onSelect,
         renderRef.current.selectedIds,
         renderRef.current.toggleSelect,
+        renderRef.current.showCheckbox,
       )
     }
     el.addEventListener('oas-item', onItem)

@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useRepositories } from '@/data/context'
 import type { Issue, IssueStatus, Member } from '@/types'
 import { ISSUE_STATUSES, STATUS_LABEL } from '@/types'
 import { betweenOrder } from '@/lib/order'
+import type { Action, Ctx } from '@/permission/policy'
 
 /* ── 看板（oas-kanban：拖拽/多选/键盘/触屏全部组件库内建） ── */
 interface KanbanElement extends HTMLElement {
@@ -15,10 +16,12 @@ export function KanbanBoard({
   issues,
   memberMap,
   onOpenIssue,
+  can,
 }: {
   issues: Issue[]
   memberMap: Map<string, Member>
   onOpenIssue: (id: string) => void
+  can: (action: Action, ctx?: Ctx) => boolean
 }) {
   const { issues: issuesRepo } = useRepositories()
   const boardRef = useRef<KanbanElement>(null)
@@ -44,6 +47,15 @@ export function KanbanBoard({
     [issues],
   )
 
+  const issueMap = useMemo(() => new Map(issues.map((i) => [i.id, i])), [issues])
+  const gateRef = useRef({ can, issueMap })
+  gateRef.current = { can, issueMap }
+
+  const canDragCard = useCallback((id: string): boolean => {
+    const it = gateRef.current.issueMap.get(id)
+    return it ? gateRef.current.can('issue:change-status', { issue: it }) : false
+  }, [])
+
   // renderCard/数据走 property 通道；拖放后组件内存持有，宿主经 oas-change 落库
   useEffect(() => {
     const el = boardRef.current
@@ -53,7 +65,14 @@ export function KanbanBoard({
     el.renderCard = (card) => {
       const wrap = document.createElement('div')
       wrap.className = 'kb-card'
-      wrap.style.cursor = 'pointer'
+      const draggable = canDragCard(String(card.id ?? ''))
+      wrap.style.cursor = draggable ? 'pointer' : 'default'
+      if (!draggable) {
+        wrap.addEventListener('pointerdown', (e) => {
+          e.preventDefault()
+          e.stopPropagation()
+        })
+      }
       wrap.addEventListener('click', (e) => {
         e.stopPropagation()
         onOpenIssueRef.current(String(card.id ?? ''))
@@ -84,7 +103,7 @@ export function KanbanBoard({
       wrap.append(top, t, pr)
       return wrap
     }
-  }, [columns, cards, memberMap])
+  }, [columns, cards, memberMap, canDragCard])
 
   // oas-change（from/to/index/ids）→ 落点前后卡 order 取中值落库（status 变更/列内排序统一）
   useEffect(() => {
@@ -102,7 +121,8 @@ export function KanbanBoard({
       ).detail
       if (!d?.id || !d.to) return
       const to = d.to as IssueStatus
-      const ids = d.ids ?? [d.id]
+      const ids = (d.ids ?? [d.id]).filter((iid) => canDragCard(iid))
+      if (ids.length === 0) return
       const colCards = (el.cards ?? []).filter((c) => c.column === to)
       const moving = colCards.filter((c) => ids.includes(String(c.id)))
       const rest = colCards.filter((c) => !ids.includes(String(c.id)))

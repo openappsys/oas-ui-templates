@@ -7,12 +7,14 @@ export function OSelect({
   options,
   onChange,
   ariaLabel,
+  disabled,
 }: {
   testid: string
   value: string
   options: Array<{ label: string; value: string }>
   onChange: (v: string) => void
   ariaLabel?: string
+  disabled?: boolean
 }) {
   const ref = useRef<HTMLElement>(null)
   const onChangeRef = useRef(onChange)
@@ -22,6 +24,11 @@ export function OSelect({
     if (!el) return
     ;(el as unknown as { options: unknown }).options = options
   }, [options])
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    el.toggleAttribute('disabled', disabled ?? false)
+  }, [disabled])
   useEffect(() => {
     const el = ref.current
     if (!el) return

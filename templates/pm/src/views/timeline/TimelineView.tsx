@@ -1,13 +1,20 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useRepositories } from '@/data/context'
 import type { Issue } from '@/types'
+import type { Action, Ctx } from '@/permission/policy'
 
 /* ── 时间线（oas-gantt） ── */
 interface GanttElement extends HTMLElement {
   tasks?: unknown[]
 }
 
-export function TimelineView({ issues }: { issues: Issue[] }) {
+export function TimelineView({
+  issues,
+  can,
+}: {
+  issues: Issue[]
+  can: (action: Action, ctx?: Ctx) => boolean
+}) {
   const { issues: issuesRepo } = useRepositories()
   const ganttRef = useRef<GanttElement>(null)
   const tasks = useMemo(
@@ -34,6 +41,9 @@ export function TimelineView({ issues }: { issues: Issue[] }) {
     if (ganttRef.current) ganttRef.current.tasks = tasks
   }, [tasks])
 
+  const gateRef = useRef({ can, issues })
+  gateRef.current = { can, issues }
+
   // task-change 写回：甘特条拖拽/拉伸改期 → startAt/dueAt 落库（liveQuery 全视图自动刷新）
   useEffect(() => {
     const el = ganttRef.current
@@ -41,6 +51,8 @@ export function TimelineView({ issues }: { issues: Issue[] }) {
     const onChange = (e: Event) => {
       const d = (e as CustomEvent<{ id: string; start: string; end?: string }>).detail
       if (!d?.id) return
+      const it = gateRef.current.issues.find((i) => i.id === d.id)
+      if (!it || !gateRef.current.can('issue:change-status', { issue: it })) return
       const patch: Partial<Issue> = {}
       if (d.start) patch.startAt = new Date(d.start).getTime()
       if (d.end) patch.dueAt = new Date(d.end).getTime()

@@ -5,6 +5,7 @@ import { OSelect, TagChip } from '@/components/oas-wrappers'
 import { t } from '@/i18n'
 import { useRepositories } from '@/data/context'
 import { useObservable } from '@/data/use-observable'
+import type { Action, Ctx } from '@/permission/policy'
 
 /* ── 活动历史（详情抽屉） ── */
 function DrawerActivities({
@@ -53,10 +54,12 @@ function CommentsBlock({
   issueId,
   memberMap,
   currentUser,
+  can,
 }: {
   issueId: string
   memberMap: Map<string, Member>
   currentUser: string
+  can: (action: Action, ctx?: Ctx) => boolean
 }) {
   const { comments: commentsRepo, activities: activitiesRepo } = useRepositories()
   const comments = useObservable(() => commentsRepo.liveByIssue(issueId), [issueId, commentsRepo])
@@ -140,27 +143,31 @@ function CommentsBlock({
                 <span slot="content">{renderMentions(cm.body)}</span>
                 {cm.authorId === currentUser && (
                   <span slot="actions" className="comment-ops">
-                    <button
-                      type="button"
-                      className="comment-op"
-                      data-testid="comment-edit-btn"
-                      onClick={() => {
-                        setEditingId(cm.id)
-                        setTimeout(() => {
-                          if (editRef.current) editRef.current.value = cm.body
-                        }, 50)
-                      }}
-                    >
-                      编辑
-                    </button>
-                    <button
-                      type="button"
-                      className="comment-op comment-op-del"
-                      data-testid="comment-del"
-                      onClick={() => void commentsRepo.delete(cm.id)}
-                    >
-                      删除
-                    </button>
+                    {can('comment:edit', { comment: cm }) && (
+                      <button
+                        type="button"
+                        className="comment-op"
+                        data-testid="comment-edit-btn"
+                        onClick={() => {
+                          setEditingId(cm.id)
+                          setTimeout(() => {
+                            if (editRef.current) editRef.current.value = cm.body
+                          }, 50)
+                        }}
+                      >
+                        编辑
+                      </button>
+                    )}
+                    {can('comment:delete', { comment: cm }) && (
+                      <button
+                        type="button"
+                        className="comment-op comment-op-del"
+                        data-testid="comment-del"
+                        onClick={() => void commentsRepo.delete(cm.id)}
+                      >
+                        删除
+                      </button>
+                    )}
                   </span>
                 )}
               </oas-comment>
@@ -168,27 +175,29 @@ function CommentsBlock({
           </div>
         ))}
       </div>
-      <div className="comment-input-row">
-        <input
-          ref={inputRef}
-          className="comment-input"
-          data-testid="comment-input"
-          placeholder={t('commentPlaceholder')}
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') void submit()
-          }}
-        />
-        <button
-          className="comment-send"
-          type="button"
-          data-testid="comment-send"
-          onClick={() => void submit()}
-        >
-          {t('send')}
-        </button>
-      </div>
+      {can('comment:create') && (
+        <div className="comment-input-row">
+          <input
+            ref={inputRef}
+            className="comment-input"
+            data-testid="comment-input"
+            placeholder={t('commentPlaceholder')}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') void submit()
+            }}
+          />
+          <button
+            className="comment-send"
+            type="button"
+            data-testid="comment-send"
+            onClick={() => void submit()}
+          >
+            {t('send')}
+          </button>
+        </div>
+      )}
     </div>
   )
 }
@@ -206,11 +215,13 @@ export function IssueDetailDrawer({
   memberMap,
   currentUser,
   onClose,
+  can,
 }: {
   issueId: string
   memberMap: Map<string, Member>
   currentUser: string
   onClose: () => void
+  can: (action: Action, ctx?: Ctx) => boolean
 }) {
   const { issues: issuesRepo, activities: activitiesRepo } = useRepositories()
   const issue = useObservable(() => issuesRepo.live(issueId), [issueId, issuesRepo])
@@ -316,6 +327,13 @@ export function IssueDetailDrawer({
     [issueId, issuesRepo, issue?.projectId],
   )
 
+  const canEdit = issue ? can('issue:edit', { issue }) : true
+  const canDelete = issue ? can('issue:delete', { issue }) : false
+
+  useEffect(() => {
+    descRefValue.current?.toggleAttribute('disabled', !canEdit)
+  }, [canEdit])
+
   if (!issue) return <oas-drawer ref={drawerRef} />
 
   const relationTarget = (id: string) => relCandidates?.find((x) => x.id === id)
@@ -371,6 +389,7 @@ export function IssueDetailDrawer({
               value={issue.status}
               options={ISSUE_STATUSES.map((s) => ({ label: STATUS_LABEL[s], value: s }))}
               onChange={(v) => save({ status: v as IssueStatus })}
+              disabled={!canEdit}
             />
           </div>
           <div className="detail-field">
@@ -380,6 +399,7 @@ export function IssueDetailDrawer({
               value={issue.priority}
               options={ISSUE_PRIORITIES.map((p) => ({ label: p, value: p }))}
               onChange={(v) => save({ priority: v as IssuePriority })}
+              disabled={!canEdit}
             />
           </div>
           <div className="detail-field">
@@ -389,6 +409,7 @@ export function IssueDetailDrawer({
               value={issue.assigneeId ?? '__none__'}
               options={memberOptions}
               onChange={(v) => save({ assigneeId: v === '__none__' ? null : v })}
+              disabled={!canEdit}
             />
           </div>
         </div>
@@ -403,6 +424,7 @@ export function IssueDetailDrawer({
                   type="checkbox"
                   className="row-check"
                   checked={s.status === 'done'}
+                  disabled={!can('issue:change-status', { issue: s })}
                   onClick={(e) => {
                     e.stopPropagation()
                     const done = s.status === 'done'
@@ -434,20 +456,22 @@ export function IssueDetailDrawer({
               </div>
             ))}
           </div>
-          <div className="sub-add-row">
-            <input
-              ref={subInputRef}
-              className="comment-input"
-              data-testid="sub-add-input"
-              placeholder="新子任务标题…"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') void addSub()
-              }}
-            />
-            <oas-button size="small" data-testid="sub-add" onClick={() => void addSub()}>
-              添加
-            </oas-button>
-          </div>
+          {canEdit && (
+            <div className="sub-add-row">
+              <input
+                ref={subInputRef}
+                className="comment-input"
+                data-testid="sub-add-input"
+                placeholder="新子任务标题…"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') void addSub()
+                }}
+              />
+              <oas-button size="small" data-testid="sub-add" onClick={() => void addSub()}>
+                添加
+              </oas-button>
+            </div>
+          )}
         </div>
         <div className="detail-desc-block">
           <span>{t('description')}</span>
@@ -457,7 +481,7 @@ export function IssueDetailDrawer({
             placeholder="Description…"
             className="detail-textarea"
           />
-          {descDirty && (
+          {descDirty && canEdit && (
             <button
               className="detail-save-desc"
               type="button"
@@ -476,10 +500,11 @@ export function IssueDetailDrawer({
           <div className="detail-labels">
             {(issue.relations ?? []).map((r, i) => {
               const target = relationTarget(r.targetId)
-              return (
+              const relLabel = `${RELATION_LABEL[r.type] ?? r.type} ${target?.key ?? r.targetId.slice(0, 10)}`
+              return canEdit ? (
                 <TagChip
                   key={`${r.type}-${r.targetId}`}
-                  label={`${RELATION_LABEL[r.type] ?? r.type} ${target?.key ?? r.targetId.slice(0, 10)}`}
+                  label={relLabel}
                   testid={`relation-chip-${i}`}
                   onRemove={() => {
                     const next = (issue.relations ?? []).filter((_, j) => j !== i)
@@ -493,20 +518,24 @@ export function IssueDetailDrawer({
                     })
                   }}
                 />
+              ) : (
+                <oas-tag key={`${r.type}-${r.targetId}`}>{relLabel}</oas-tag>
               )
             })}
-            <OSelect
-              testid="relation-add-type"
-              value={relType}
-              options={[
-                { label: '关联…', value: '__none__' },
-                { label: 'blocks（阻塞）', value: 'blocks' },
-                { label: 'blocked-by（被阻塞）', value: 'blocked-by' },
-                { label: 'relates（相关）', value: 'relates' },
-              ]}
-              onChange={setRelType}
-            />
-            {relType !== '__none__' && (
+            {canEdit && (
+              <OSelect
+                testid="relation-add-type"
+                value={relType}
+                options={[
+                  { label: '关联…', value: '__none__' },
+                  { label: 'blocks（阻塞）', value: 'blocks' },
+                  { label: 'blocked-by（被阻塞）', value: 'blocked-by' },
+                  { label: 'relates（相关）', value: 'relates' },
+                ]}
+                onChange={setRelType}
+              />
+            )}
+            {canEdit && relType !== '__none__' && (
               <OSelect
                 testid="relation-add-target"
                 value="__none__"
@@ -542,39 +571,52 @@ export function IssueDetailDrawer({
           <div className="detail-labels">
             {issue.labels
               .filter((l) => l !== '__none__')
-              .map((l) => (
-                <TagChip
-                  key={l}
-                  label={l}
-                  testid={`label-chip-${l}`}
-                  onRemove={() => save({ labels: issue.labels.filter((x) => x !== l) })}
+              .map((l) =>
+                canEdit ? (
+                  <TagChip
+                    key={l}
+                    label={l}
+                    testid={`label-chip-${l}`}
+                    onRemove={() => save({ labels: issue.labels.filter((x) => x !== l) })}
+                  />
+                ) : (
+                  <oas-tag key={l}>{l}</oas-tag>
+                ),
+              )}
+            {canEdit && (
+              <>
+                <oas-dynamic-tags
+                  data-testid="label-add"
+                  ref={labelsTagsRef}
+                  placeholder="＋ 输入标签后回车"
+                  style={{ width: '100%' }}
                 />
-              ))}
-            <oas-dynamic-tags
-              data-testid="label-add"
-              ref={labelsTagsRef}
-              placeholder="＋ 输入标签后回车"
-              style={{ width: '100%' }}
-            />
-            <div className="label-quick" data-testid="label-quick">
-              {LABELS.filter((l) => !issue.labels.includes(l)).map((l) => (
-                <button
-                  key={l}
-                  type="button"
-                  className="label-quick-btn"
-                  data-testid={`label-quick-${l}`}
-                  onClick={() => {
-                    if (l !== '__none__' && !issue.labels.includes(l))
-                      save({ labels: [...issue.labels.filter((x) => x !== '__none__'), l] })
-                  }}
-                >
-                  + {l}
-                </button>
-              ))}
-            </div>
+                <div className="label-quick" data-testid="label-quick">
+                  {LABELS.filter((l) => !issue.labels.includes(l)).map((l) => (
+                    <button
+                      key={l}
+                      type="button"
+                      className="label-quick-btn"
+                      data-testid={`label-quick-${l}`}
+                      onClick={() => {
+                        if (l !== '__none__' && !issue.labels.includes(l))
+                          save({ labels: [...issue.labels.filter((x) => x !== '__none__'), l] })
+                      }}
+                    >
+                      + {l}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </div>
-        <CommentsBlock issueId={issue.id} memberMap={memberMap} currentUser={currentUser} />
+        <CommentsBlock
+          issueId={issue.id}
+          memberMap={memberMap}
+          currentUser={currentUser}
+          can={can}
+        />
         <DrawerActivities issueId={issue.id} memberMap={memberMap} />
         <div className="detail-foot">
           <span className="detail-dates">
@@ -582,9 +624,11 @@ export function IssueDetailDrawer({
             {new Date(issue.updatedAt).toLocaleString()}
           </span>
           <oas-popconfirm ref={popRef} title="删除后不可恢复，确认？" data-testid="detail-delete">
-            <oas-button slot="trigger" type="danger" data-testid="detail-delete-btn">
-              删除
-            </oas-button>
+            {canDelete && (
+              <oas-button type="danger" data-testid="detail-delete-btn">
+                删除
+              </oas-button>
+            )}
           </oas-popconfirm>
         </div>
       </div>

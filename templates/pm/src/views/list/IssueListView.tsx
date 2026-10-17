@@ -5,6 +5,7 @@ import { OSelect } from '@/components/oas-wrappers'
 import { t } from '@/i18n'
 import { BulkBar } from '@/components/BulkBar'
 import { Avatar } from '@/components/Avatar'
+import type { Action, Ctx } from '@/permission/policy'
 import { GROUP_PREVIEW, type Filters, type SortBy, type Grouping } from '@/lib/filters'
 import { VirtualIssueList } from './VirtualIssueList'
 
@@ -20,6 +21,7 @@ export function IssueListView({
   onSelect,
   onSaveView,
   currentUser,
+  can,
 }: {
   issues: Issue[]
   total: number
@@ -31,8 +33,10 @@ export function IssueListView({
   onSelect: (id: string) => void
   onSaveView: () => void
   currentUser: string
+  can: (action: Action, ctx?: Ctx) => boolean
 }) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const canBulk = can('bulk:apply')
   const toggleSelect = useCallback((id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev)
@@ -63,7 +67,7 @@ export function IssueListView({
       tabIndex={0}
       style={{
         display: 'grid',
-        gridTemplateColumns: '18px 110px 1fr 24px 70px 90px',
+        gridTemplateColumns: canBulk ? '18px 110px 1fr 24px 70px 90px' : '110px 1fr 24px 70px 90px',
         alignItems: 'center',
         gap: 12,
         height: 44,
@@ -74,16 +78,18 @@ export function IssueListView({
         if (e.key === 'Enter' || e.key === ' ') onSelect(i.id)
       }}
     >
-      <input
-        type="checkbox"
-        className="row-check"
-        checked={selectedIds.has(i.id)}
-        onClick={(e) => {
-          e.stopPropagation()
-          toggleSelect(i.id)
-        }}
-        readOnly
-      />
+      {canBulk && (
+        <input
+          type="checkbox"
+          className="row-check"
+          checked={selectedIds.has(i.id)}
+          onClick={(e) => {
+            e.stopPropagation()
+            toggleSelect(i.id)
+          }}
+          readOnly
+        />
+      )}
       <span className="issue-key">{i.key}</span>
       <span className="issue-title">{i.title}</span>
       <Avatar member={memberMap.get(i.assigneeId ?? '')} size={18} />
@@ -156,14 +162,16 @@ export function IssueListView({
             {t('clearFilters')}
           </button>
         )}
-        <button
-          className="issue-toolbar-clear"
-          type="button"
-          data-testid="save-view-btn"
-          onClick={onSaveView}
-        >
-          {t('saveView')}
-        </button>
+        {can('view:save') && (
+          <button
+            className="issue-toolbar-clear"
+            type="button"
+            data-testid="save-view-btn"
+            onClick={onSaveView}
+          >
+            {t('saveView')}
+          </button>
+        )}
       </div>
       <div className="issue-thead">
         <span>{t('key')}</span>
@@ -196,9 +204,15 @@ export function IssueListView({
           memberMap={memberMap}
           selectedIds={selectedIds}
           toggleSelect={toggleSelect}
+          showCheckbox={canBulk}
         />
       )}
-      <BulkBar selectedIds={selectedIds} currentUser={currentUser} onDone={clearSelection} />
+      <BulkBar
+        selectedIds={selectedIds}
+        currentUser={currentUser}
+        onDone={clearSelection}
+        can={can}
+      />
     </div>
   )
 }

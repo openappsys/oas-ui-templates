@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useRepositories } from '@/data/context'
 import { useObservable } from '@/data/use-observable'
 import { dexieRepositories } from '@/data/dexie'
+import type { Action, Ctx } from '@/permission/policy'
 import type { IssuePriority, IssueStatus } from '../types'
 import { ISSUE_PRIORITIES, STATUS_LABEL } from '../types'
 import { OSelect } from './oas-wrappers'
@@ -13,10 +14,12 @@ export function BulkBar({
   selectedIds,
   currentUser,
   onDone,
+  can,
 }: {
   selectedIds: Set<string>
   currentUser: string
   onDone: () => void
+  can: (action: Action, ctx?: Ctx) => boolean
 }) {
   const [status, setStatus] = useState('')
   const [priority, setPriority] = useState('')
@@ -24,6 +27,7 @@ export function BulkBar({
   const { issues: issuesRepo, members: membersRepo } = useRepositories()
   const members = useObservable(() => membersRepo.liveAll(), [membersRepo])
 
+  if (!can('bulk:apply')) return null
   if (selectedIds.size === 0) return null
 
   const apply = async () => {
