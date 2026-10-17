@@ -102,6 +102,22 @@ declare module 'react' {
         size?: string
         color?: string
       }
+      'oas-skeleton': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        rows?: number | string
+        count?: number | string
+        widths?: string
+        avatar?: boolean | string
+        active?: boolean | string
+        loading?: boolean | string
+        effect?: string
+        delay?: number | string
+      }
+      'oas-result': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        status?: string
+        title?: string
+        description?: string
+        size?: string
+      }
     }
   }
 }

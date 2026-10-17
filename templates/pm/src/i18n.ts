@@ -61,6 +61,10 @@ const dict = {
     shortcutOpen: '打开 Issue',
     shortcutHelp: '快捷键帮助',
     shortcutClose: '关闭弹层/抽屉',
+    errorTitle: '出错了',
+    errorRetry: '重试',
+    emptyNoData: '该项目还没有 Issue',
+    emptyNoMatch: '无匹配 Issue',
   },
   en: {
     newIssue: '＋ New Issue',
@@ -121,6 +125,10 @@ const dict = {
     shortcutOpen: 'Open issue',
     shortcutHelp: 'Shortcut help',
     shortcutClose: 'Close overlay/drawer',
+    errorTitle: 'Something went wrong',
+    errorRetry: 'Retry',
+    emptyNoData: 'No issues in this project yet',
+    emptyNoMatch: 'No matching issues',
   },
 } as const
 

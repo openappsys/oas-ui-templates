@@ -1513,3 +1513,115 @@ body {
   border-color: var(--oas-color-primary, #0b6cff);
   color: var(--oas-color-primary, #0b6cff);
 }
+
+.skl-list {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.skl-row {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr) 24px 70px 90px;
+  gap: 12px;
+  align-items: center;
+  height: 44px;
+  padding: 0 16px;
+  border-bottom: 1px solid color-mix(in srgb, var(--oas-color-border, #e2e8f0) 45%, transparent);
+}
+
+.skl-row oas-skeleton {
+  height: 12px;
+}
+
+.skl-row oas-skeleton::part(line) {
+  height: 12px;
+  margin: 0;
+}
+
+.skl-row.skl-head {
+  height: 30px;
+}
+
+.skl-row.skl-head oas-skeleton {
+  height: 9px;
+}
+
+.skl-row.skl-head oas-skeleton::part(line) {
+  height: 9px;
+}
+
+.skl-dash {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.skl-stat {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+  min-height: 92px;
+}
+
+.skl-stat oas-skeleton {
+  height: 12px;
+}
+
+.skl-stat oas-skeleton::part(line) {
+  height: 12px;
+  margin: 0;
+}
+
+.skl-stat oas-skeleton:last-child {
+  height: 24px;
+}
+
+.skl-stat oas-skeleton:last-child::part(line) {
+  height: 24px;
+}
+
+.skl-chart {
+  display: flex;
+  flex-direction: column;
+  min-height: 300px;
+}
+
+.skl-chart-title {
+  margin: 0 0 12px;
+  max-width: 180px;
+  height: 14px;
+}
+
+.skl-chart-title oas-skeleton {
+  height: 14px;
+}
+
+.skl-chart-title oas-skeleton::part(line) {
+  height: 14px;
+  margin: 0;
+}
+
+.skl-chart > oas-skeleton {
+  flex: 1;
+}
+
+.skl-chart > oas-skeleton::part(line) {
+  height: 14px;
+}
+
+.error-boundary {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 40px 16px;
+}
+
+.error-boundary oas-result {
+  max-width: 420px;
+}

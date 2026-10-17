@@ -6,6 +6,7 @@ import { ISSUE_STATUSES, STATUS_LABEL } from '@/types'
 import { STATUS_COLOR } from '@/lib/colors'
 import { useProjectCounts } from '@/lib/hooks'
 import { Chart } from '@/components/Chart'
+import { DashSkeleton } from '@/components/skeletons/DashSkeleton'
 
 /* ── 仪表盘 ── */
 export function DashboardView({
@@ -57,6 +58,18 @@ export function DashboardView({
     }
     return [...byDay.entries()].map(([label, value]) => ({ label, value }))
   }, [trendRows])
+
+  if (counts === undefined) {
+    return (
+      <div className="dash-page" data-testid="dashboard">
+        <h1 className="page-h1">仪表盘</h1>
+        <DashSkeleton />
+        <p className="dash-note" data-testid="dashboard-member-note">
+          {memberMap.get(currentUser)?.name ?? ''} 的工作台 · 数据实时来自 IndexedDB
+        </p>
+      </div>
+    )
+  }
 
   return (
     <div className="dash-page" data-testid="dashboard">

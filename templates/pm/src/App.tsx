@@ -15,6 +15,7 @@ import { useObservable } from './data/use-observable'
 import { can as policyCan, type Action, type Ctx } from './permission/policy'
 import { Avatar } from './components/Avatar'
 import { ShortcutsHelp } from './components/ShortcutsHelp'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { DashboardView } from './views/dashboard/DashboardView'
 import { IssueListView } from './views/list/IssueListView'
 import { KanbanBoard } from './views/board/KanbanBoard'
@@ -549,37 +550,47 @@ export function App() {
         </aside>
         <main className="content">
           {view === 'dashboard' && (
-            <DashboardView
-              projectId={filters.projectId}
-              memberMap={memberMap}
-              currentUser={currentUser}
-            />
+            <ErrorBoundary key={view}>
+              <DashboardView
+                projectId={filters.projectId}
+                memberMap={memberMap}
+                currentUser={currentUser}
+              />
+            </ErrorBoundary>
           )}
-          {view === 'issues' && issues && (
-            <IssueListView
-              issues={issues}
-              total={counts?.total ?? issues.length}
-              filters={filters}
-              setFilters={setFilters}
-              grouping={grouping}
-              setGrouping={setGrouping}
-              memberMap={memberMap}
-              onSelect={setSelectedId}
-              onSaveView={() => saveViewRef.current?.setAttribute('visible', '')}
-              currentUser={currentUser}
-              can={can}
-              navActive={view === 'issues' && selectedId === null}
-            />
+          {view === 'issues' && (
+            <ErrorBoundary key={view}>
+              <IssueListView
+                issues={issues}
+                total={counts?.total ?? issues?.length ?? 0}
+                filters={filters}
+                setFilters={setFilters}
+                grouping={grouping}
+                setGrouping={setGrouping}
+                memberMap={memberMap}
+                onSelect={setSelectedId}
+                onSaveView={() => saveViewRef.current?.setAttribute('visible', '')}
+                currentUser={currentUser}
+                can={can}
+                navActive={view === 'issues' && selectedId === null}
+              />
+            </ErrorBoundary>
           )}
           {view === 'board' && (
-            <KanbanBoard
-              issues={issues ?? []}
-              memberMap={memberMap}
-              onOpenIssue={setSelectedId}
-              can={can}
-            />
+            <ErrorBoundary key={view}>
+              <KanbanBoard
+                issues={issues ?? []}
+                memberMap={memberMap}
+                onOpenIssue={setSelectedId}
+                can={can}
+              />
+            </ErrorBoundary>
           )}
-          {view === 'timeline' && <TimelineView issues={issues ?? []} can={can} />}
+          {view === 'timeline' && (
+            <ErrorBoundary key={view}>
+              <TimelineView issues={issues ?? []} can={can} />
+            </ErrorBoundary>
+          )}
         </main>
       </div>
 

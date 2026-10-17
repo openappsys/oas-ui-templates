@@ -5,6 +5,7 @@ import { OSelect, OCheckbox } from '@/components/oas-wrappers'
 import { t } from '@/i18n'
 import { BulkBar } from '@/components/BulkBar'
 import { Avatar } from '@/components/Avatar'
+import { ListSkeleton } from '@/components/skeletons/ListSkeleton'
 import type { Action, Ctx } from '@/permission/policy'
 import { GROUP_PREVIEW, type Filters, type SortBy, type Grouping } from '@/lib/filters'
 import { isOverlayOpen, registerKey } from '@/lib/keyboard'
@@ -25,7 +26,7 @@ export function IssueListView({
   can,
   navActive,
 }: {
-  issues: Issue[]
+  issues: Issue[] | undefined
   total: number
   filters: Filters
   setFilters: React.Dispatch<React.SetStateAction<Filters>>
@@ -40,6 +41,15 @@ export function IssueListView({
 }) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [cursorIndex, setCursorIndex] = useState(-1)
+  const list = issues ?? []
+  const loading = issues === undefined
+  const hasActiveFilter =
+    filters.statusFilter !== null ||
+    filters.assigneeFilter !== null ||
+    filters.priorityFilter !== null ||
+    filters.search !== '' ||
+    filters.myOnly
+  const emptyText = hasActiveFilter ? t('emptyNoMatch') : t('emptyNoData')
   const canBulk = can('bulk:apply')
   const toggleSelect = useCallback((id: string) => {
     setSelectedIds((prev) => {
@@ -51,12 +61,12 @@ export function IssueListView({
   }, [])
   const clearSelection = useCallback(() => setSelectedIds(new Set()), [])
 
-  const navRef = useRef({ navActive, issues, cursorIndex, onSelect, can, toggleSelect })
-  navRef.current = { navActive, issues, cursorIndex, onSelect, can, toggleSelect }
+  const navRef = useRef({ navActive, issues: list, cursorIndex, onSelect, can, toggleSelect })
+  navRef.current = { navActive, issues: list, cursorIndex, onSelect, can, toggleSelect }
 
   useEffect(() => {
-    setCursorIndex((i) => Math.min(i, issues.length - 1))
-  }, [issues])
+    setCursorIndex((i) => Math.min(i, list.length - 1))
+  }, [list])
 
   useEffect(() => {
     const whenNav = () => navRef.current.navActive && !isOverlayOpen()
@@ -117,16 +127,16 @@ export function IssueListView({
   const groups = useMemo(() => {
     if (grouping === 'none') return null
     const map = new Map<string, Issue[]>()
-    for (const i of issues) {
+    for (const i of list) {
       const k = grouping === 'priority' ? i.priority : (i.assigneeId ?? '未分配')
       const arr = map.get(k) ?? []
       arr.push(i)
       map.set(k, arr)
     }
     return [...map.entries()]
-  }, [issues, grouping])
+  }, [list, grouping])
 
-  const cursorId = cursorIndex >= 0 && cursorIndex < issues.length ? issues[cursorIndex].id : null
+  const cursorId = cursorIndex >= 0 && cursorIndex < list.length ? list[cursorIndex].id : null
 
   const rowEl = (i: Issue) => (
     <div
@@ -168,7 +178,9 @@ export function IssueListView({
       <div className="issue-header">
         <h1>Issues</h1>
         <span className="issue-total" data-testid="issue-total">
-          {total.toLocaleString()} 条{total > issues.length ? `（窗口 ${issues.length} 条）` : ''}
+          {loading
+            ? '…'
+            : `${total.toLocaleString()} 条${total > list.length ? `（窗口 ${list.length} 条）` : ''}`}
         </span>
       </div>
       <div className="issue-toolbar" data-testid="issue-toolbar">
@@ -245,7 +257,9 @@ export function IssueListView({
         <span>{t('priority')}</span>
         <span>{t('status')}</span>
       </div>
-      {groups ? (
+      {loading ? (
+        <ListSkeleton />
+      ) : groups ? (
         <div className="issue-scroll">
           {groups.map(([k, arr]) => (
             <div key={k} className="issue-group">
@@ -258,13 +272,15 @@ export function IssueListView({
               )}
             </div>
           ))}
-          {groups.length === 0 && (
-            <oas-empty description="无匹配 Issue" data-testid="issues-empty" />
-          )}
+          {groups.length === 0 && <oas-empty description={emptyText} data-testid="issues-empty" />}
+        </div>
+      ) : list.length === 0 ? (
+        <div className="issue-scroll">
+          <oas-empty description={emptyText} data-testid="issues-empty" />
         </div>
       ) : (
         <VirtualIssueList
-          issues={issues}
+          issues={list}
           onSelect={onSelect}
           memberMap={memberMap}
           selectedIds={selectedIds}
