@@ -9,8 +9,8 @@ export class PMDatabase extends Dexie {
   savedViews!: EntityTable<SavedView, 'id'>
   activities!: EntityTable<Activity, 'id'>
 
-  constructor() {
-    super('oas-pm')
+  constructor(name = 'oas-pm') {
+    super(name)
     this.version(1).stores({
       issues:
         'id, projectId, key, status, priority, assigneeId, updatedAt, [projectId+status], [projectId+priority], [projectId+assigneeId], [projectId+updatedAt]',
