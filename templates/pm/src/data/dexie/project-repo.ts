@@ -3,6 +3,18 @@ import type { Project } from '@/types'
 import { fromLiveQuery } from '@/data/observable'
 import type { ProjectRepository } from '@/data/types'
 
+export function allocateProjectKey(
+  db: PMDatabase,
+  projectId: string,
+): Promise<{ keyNum: number; projectKey: string }> {
+  return db.transaction('rw', db.projects, async () => {
+    const p = await db.projects.get(projectId)
+    const n = p?.nextKeyNum ?? 100001
+    await db.projects.update(projectId, { nextKeyNum: n + 1 })
+    return { keyNum: n, projectKey: p?.key ?? 'OAS' }
+  })
+}
+
 export function createDexieProjectRepository(db: PMDatabase): ProjectRepository {
   return {
     all: () => db.projects.toArray(),
@@ -12,11 +24,6 @@ export function createDexieProjectRepository(db: PMDatabase): ProjectRepository 
     update: (id, changes) => db.projects.update(id, changes).then(() => undefined),
     delete: (id) => db.projects.delete(id),
     allocateKey: (projectId: string) =>
-      db.transaction('rw', db.projects, async () => {
-        const p = await db.projects.get(projectId)
-        const n = p?.nextKeyNum ?? 100001
-        await db.projects.update(projectId, { nextKeyNum: n + 1 })
-        return n
-      }),
+      allocateProjectKey(db, projectId).then(({ keyNum }) => keyNum),
   }
 }

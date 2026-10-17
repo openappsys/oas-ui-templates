@@ -10,6 +10,7 @@ import type {
   IssueWindowFilters,
   ProjectCounts,
 } from '@/data/types'
+import { allocateProjectKey } from './project-repo'
 
 const LIST_WINDOW = 500
 const PRIORITY_WEIGHT: Record<IssuePriority, number> = { urgent: 0, high: 1, medium: 2, low: 3 }
@@ -19,12 +20,7 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
     get: (id) => db.issues.get(id),
 
     async create(input: CreateIssueInput): Promise<Issue> {
-      const { keyNum, projectKey } = await db.transaction('rw', db.projects, async () => {
-        const p = await db.projects.get(input.projectId)
-        const n = p?.nextKeyNum ?? 100001
-        await db.projects.update(input.projectId, { nextKeyNum: n + 1 })
-        return { keyNum: n, projectKey: p?.key ?? 'OAS' }
-      })
+      const { keyNum, projectKey } = await allocateProjectKey(db, input.projectId)
       const issue: Issue = {
         id: nanoid(),
         projectId: input.projectId,

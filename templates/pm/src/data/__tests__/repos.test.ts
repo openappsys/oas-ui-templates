@@ -54,9 +54,18 @@ describe('other repositories', () => {
 
   it('member liveAll 响应变化', async () => {
     const repo = createDexieMemberRepository(db)
-    const seen: number[] = []
-    const unsub = repo.liveAll().subscribe({ next: (v) => seen.push(v.length) })
-    while (seen.length === 0) await new Promise((r) => setTimeout(r, 5))
+    const emissions: number[] = []
+    let unsub: () => void = () => {}
+    const second = new Promise<void>((resolve) => {
+      unsub = repo.liveAll().subscribe({
+        next: (v) => {
+          emissions.push(v.length)
+          if (emissions.length >= 2) resolve()
+        },
+      })
+    })
+    while (emissions.length === 0) await new Promise((r) => setTimeout(r, 5))
+    expect(emissions[0]).toBe(0)
     await db.members.add({
       id: 'm1',
       name: '张',
@@ -64,10 +73,9 @@ describe('other repositories', () => {
       avatarColor: '#000',
       role: 'admin',
     })
-    await new Promise((r) => setTimeout(r, 20))
+    await second
     unsub()
-    expect(seen[0]).toBe(0)
-    expect(seen[seen.length - 1]).toBe(1)
+    expect(emissions[1]).toBe(1)
   })
 
   it('member get/all 往返', async () => {
