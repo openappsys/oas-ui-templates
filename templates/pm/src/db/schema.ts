@@ -1,6 +1,12 @@
 import Dexie, { type EntityTable } from 'dexie'
 import type { Activity, Comment, Issue, Project, Member, SavedView } from '@/types'
 
+export interface SettingRow {
+  key: string
+  value: unknown
+  updatedAt: number
+}
+
 export class PMDatabase extends Dexie {
   issues!: EntityTable<Issue, 'id'>
   projects!: EntityTable<Project, 'id'>
@@ -8,6 +14,7 @@ export class PMDatabase extends Dexie {
   comments!: EntityTable<Comment, 'id'>
   savedViews!: EntityTable<SavedView, 'id'>
   activities!: EntityTable<Activity, 'id'>
+  settings!: EntityTable<SettingRow, 'key'>
 
   constructor(name = 'oas-pm') {
     super(name)
@@ -52,6 +59,16 @@ export class PMDatabase extends Dexie {
       comments: 'id, issueId, [issueId+createdAt]',
       savedViews: 'id, name',
       activities: 'id, issueId, [issueId+createdAt], createdAt',
+    })
+    this.version(6).stores({
+      issues:
+        'id, projectId, key, status, priority, assigneeId, parentId, createdAt, updatedAt, [projectId+status], [projectId+priority], [projectId+assigneeId], [projectId+updatedAt], [projectId+status+updatedAt]',
+      projects: 'id, key',
+      members: 'id, role',
+      comments: 'id, issueId, [issueId+createdAt]',
+      savedViews: 'id, name',
+      activities: 'id, issueId, [issueId+createdAt], createdAt',
+      settings: 'key',
     })
   }
 }

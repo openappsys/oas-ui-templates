@@ -112,6 +112,46 @@ export interface SavedViewRepository {
   delete(id: string): Promise<void>
 }
 
+export interface SettingsRepository {
+  get<T>(key: string): Promise<T | undefined>
+  set(key: string, value: unknown): Promise<void>
+  live<T>(key: string): Observable<T | undefined>
+}
+
+export interface GlobalStats {
+  projects: number
+  members: number
+  issues: number
+  done: number
+}
+
+export interface MemberWorkload {
+  memberId: string
+  total: number
+  todo: number
+  inProgress: number
+  done: number
+}
+
+export interface ProjectHealth {
+  projectId: string
+  name: string
+  total: number
+  overdue: number
+  unassigned: number
+  stale: number
+}
+
+export interface AdminRepository {
+  liveGlobalStats(): Observable<GlobalStats>
+  liveMemberWorkload(): Observable<MemberWorkload[]>
+  liveProjectHealth(): Observable<ProjectHealth[]>
+  exportAll(): Promise<string>
+  importAll(json: string): Promise<void>
+  resetDemo(): Promise<void>
+  wipeAll(): Promise<void>
+}
+
 export interface Repositories {
   issues: IssueRepository
   projects: ProjectRepository
@@ -119,4 +159,6 @@ export interface Repositories {
   comments: CommentRepository
   activities: ActivityRepository
   savedViews: SavedViewRepository
+  settings: SettingsRepository
+  admin: AdminRepository
 }

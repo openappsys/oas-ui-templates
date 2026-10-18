@@ -22,7 +22,12 @@ export function createDexieProjectRepository(db: PMDatabase): ProjectRepository 
     liveAll: () => fromLiveQuery(() => db.projects.toArray()),
     create: (p: Project) => db.projects.add(p).then(() => undefined),
     update: (id, changes) => db.projects.update(id, changes).then(() => undefined),
-    delete: (id) => db.projects.delete(id),
+    delete: (id) =>
+      db.transaction('rw', db.projects, db.issues, async () => {
+        const count = await db.issues.where('projectId').equals(id).count()
+        if (count > 0) throw new Error('project has issues')
+        await db.projects.delete(id)
+      }),
     allocateKey: (projectId: string) =>
       allocateProjectKey(db, projectId).then(({ keyNum }) => keyNum),
   }

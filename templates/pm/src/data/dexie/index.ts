@@ -7,6 +7,8 @@ import { createDexieMemberRepository } from './member-repo'
 import { createDexieCommentRepository } from './comment-repo'
 import { createDexieActivityRepository } from './activity-repo'
 import { createDexieSavedViewRepository } from './saved-view-repo'
+import { createDexieSettingsRepository } from './settings-repo'
+import { createDexieAdminRepository } from './admin-repo'
 
 export function createDexieRepositories(database: PMDatabase): Repositories {
   return {
@@ -16,6 +18,8 @@ export function createDexieRepositories(database: PMDatabase): Repositories {
     comments: createDexieCommentRepository(database),
     activities: createDexieActivityRepository(database),
     savedViews: createDexieSavedViewRepository(database),
+    settings: createDexieSettingsRepository(database),
+    admin: createDexieAdminRepository(database),
   }
 }
 

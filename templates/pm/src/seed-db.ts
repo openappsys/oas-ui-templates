@@ -40,7 +40,7 @@ function mulberry32(seed: number): () => number {
 export async function seedDatabase(): Promise<void> {
   // seed 版本标记：调整 seed 逻辑后 bump。标记 + 数据双验证——
   // 单看标记会在「上次 seed 中断」时永久跳过，留下空库
-  const SEED_VER = 'oas-pm-seed-v4'
+  const SEED_VER = 'oas-pm-seed-v5'
   const marked = localStorage.getItem(SEED_VER)
   const issueCount = await db.issues.count()
   if (marked && issueCount > 0) return
@@ -136,5 +136,6 @@ export async function seedDatabase(): Promise<void> {
     await db.issues.bulkPut(batch)
   }
   console.timeEnd('seed:100k')
+  await db.settings.put({ key: 'labels', value: LABELS, updatedAt: Date.now() })
   localStorage.setItem(SEED_VER, '1')
 }
