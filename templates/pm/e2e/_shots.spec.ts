@@ -86,6 +86,79 @@ async function expectDarkTheme(page: Page) {
     .toBe('dark')
 }
 
+async function openAdmin(page: Page) {
+  await page.getByTestId('admin-entry').click()
+  await expect(page.getByTestId('admin-view')).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByTestId('admin-tab-overview')).toBeVisible({ timeout: 10_000 })
+  await expect
+    .poll(
+      () =>
+        page
+          .getByTestId('admin-table-health')
+          .evaluate((el) => ((el as { data?: unknown[] }).data ?? []).length),
+      { timeout: 60_000 },
+    )
+    .toBeGreaterThan(0)
+}
+
+const tableDataLength = (page: Page, testid: string) =>
+  page.getByTestId(testid).evaluate((el) => ((el as { data?: unknown[] }).data ?? []).length)
+
+async function captureAdminTabs(page: Page, suffix: string) {
+  await expect
+    .poll(
+      async () => {
+        const d = await page.getByTestId('admin-chart-workload').getAttribute('data')
+        return /"value":\d/.test(d ?? '') ? 1 : 0
+      },
+      { timeout: 60_000 },
+    )
+    .toBe(1)
+  await page.waitForTimeout(2000)
+  await page.screenshot({ path: `shots/pm-admin-overview${suffix}.png` })
+
+  await page.getByTestId('admin-nav-projects').click()
+  await expect(page.getByTestId('admin-tab-projects')).toBeVisible({ timeout: 10_000 })
+  await expect
+    .poll(() => tableDataLength(page, 'admin-table-projects'), { timeout: 30_000 })
+    .toBeGreaterThan(0)
+  await expect(page.getByTestId('admin-table-projects').locator('tbody tr').first()).toBeVisible({
+    timeout: 10_000,
+  })
+  await page.waitForTimeout(1200)
+  await page.screenshot({ path: `shots/pm-admin-projects${suffix}.png` })
+
+  await page.getByTestId('admin-nav-members').click()
+  await expect(page.getByTestId('admin-tab-members')).toBeVisible({ timeout: 10_000 })
+  await expect
+    .poll(() => tableDataLength(page, 'admin-table-members'), { timeout: 30_000 })
+    .toBeGreaterThan(0)
+  await expect(page.getByTestId('admin-table-members').locator('tbody tr').first()).toBeVisible({
+    timeout: 10_000,
+  })
+  await page.waitForTimeout(1200)
+  await page.screenshot({ path: `shots/pm-admin-members${suffix}.png` })
+
+  await page.getByTestId('admin-nav-config').click()
+  await expect(page.getByTestId('admin-config-labels')).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByTestId('admin-config-priorities')).toBeVisible()
+  await expect(page.getByTestId('admin-config-statuses')).toBeVisible()
+  await page.waitForTimeout(1200)
+  await page.screenshot({ path: `shots/pm-admin-config${suffix}.png` })
+
+  await page.getByTestId('admin-nav-permissions').click()
+  const matrix = page.getByTestId('admin-permissions-matrix')
+  await expect(matrix).toBeVisible({ timeout: 10_000 })
+  await expect(matrix.locator('tbody tr')).toHaveCount(14, { timeout: 10_000 })
+  await page.waitForTimeout(1200)
+  await page.screenshot({ path: `shots/pm-admin-permissions${suffix}.png` })
+
+  await page.getByTestId('admin-nav-settings').click()
+  await expect(page.getByTestId('admin-data-actions')).toBeVisible({ timeout: 10_000 })
+  await page.waitForTimeout(1200)
+  await page.screenshot({ path: `shots/pm-admin-settings${suffix}.png` })
+}
+
 async function captureReadonlyDrawer(page: Page, suffix: string) {
   await switchUser(page, 'member-4')
   await expect(page.locator('.issue-row .row-check')).toHaveCount(0)
@@ -129,4 +202,24 @@ test('shots readonly drawer dark', async ({ page }) => {
   await openApp(page)
   await expectDarkTheme(page)
   await captureReadonlyDrawer(page, '-dark')
+})
+
+test('shots admin', async ({ page }) => {
+  test.setTimeout(180_000)
+  await openApp(page)
+  await openAdmin(page)
+  await captureAdminTabs(page, '')
+
+  console.log('shots admin done')
+})
+
+test('shots admin dark', async ({ page }) => {
+  test.setTimeout(180_000)
+  await page.addInitScript(() => localStorage.setItem('oas-pm-theme', 'dark'))
+  await openApp(page)
+  await expectDarkTheme(page)
+  await openAdmin(page)
+  await captureAdminTabs(page, '-dark')
+
+  console.log('shots admin dark done')
 })
