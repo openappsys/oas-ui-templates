@@ -188,6 +188,14 @@ body {
   box-shadow: inset 2px 0 0 var(--oas-color-primary);
 }
 
+.issue-row:focus-visible,
+.tb-user:focus-visible,
+.side-item:focus-visible,
+.saved-view-del:focus-visible {
+  outline: 2px solid var(--oas-color-primary);
+  outline-offset: -2px;
+}
+
 .shortcuts-body {
   display: grid;
   gap: 12px;
@@ -356,42 +364,6 @@ body {
 
 .issue-priority {
   font-size: 11px;
-}
-
-.st-done {
-  color: var(--pm-status-done);
-}
-.st-in_progress {
-  color: var(--pm-status-in-progress);
-}
-.st-todo {
-  color: var(--pm-status-todo);
-}
-.pri-urgent {
-  color: var(--pm-priority-urgent);
-  font-weight: 600;
-}
-.pri-high {
-  color: var(--pm-priority-high);
-}
-
-.issue-thead {
-  display: grid;
-  grid-template-columns: 90px 1fr 80px 100px;
-  gap: 12px;
-  padding: 6px 8px;
-  font-size: 11px;
-  color: var(--oas-color-text-secondary, #6b7280);
-  border-bottom: 1px solid var(--oas-color-border, #e2e8f0);
-}
-
-.detail-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  background: rgba(0, 0, 0, 0.3);
-  display: flex;
-  justify-content: flex-end;
 }
 
 .detail-panel {

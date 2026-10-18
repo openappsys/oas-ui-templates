@@ -4,10 +4,8 @@ import { useObservable } from '@/data/use-observable'
 import { dexieRepositories } from '@/data/dexie'
 import type { Action, Ctx } from '@/permission/policy'
 import type { IssuePriority, IssueStatus } from '../types'
-import { ISSUE_PRIORITIES, STATUS_LABEL } from '../types'
+import { ISSUE_PRIORITIES, ISSUE_STATUSES, STATUS_LABEL } from '../types'
 import { OSelect } from './oas-wrappers'
-
-const STATUSES: IssueStatus[] = ['backlog', 'todo', 'in_progress', 'done', 'cancelled']
 
 /** 批量操作浮条：选中集 → 批量改状态/优先级/负责人/删除（写活动历史） */
 export function BulkBar({
@@ -54,7 +52,7 @@ export function BulkBar({
         value={status}
         options={[
           { label: '改状态…', value: '' },
-          ...STATUSES.map((s) => ({ label: STATUS_LABEL[s], value: s })),
+          ...ISSUE_STATUSES.map((s) => ({ label: STATUS_LABEL[s], value: s })),
         ]}
         onChange={setStatus}
       />

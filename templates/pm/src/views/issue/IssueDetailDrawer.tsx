@@ -227,7 +227,7 @@ export function IssueDetailDrawer({
   const issue = useObservable(() => issuesRepo.live(issueId), [issueId, issuesRepo])
   const subs = useObservable(() => issuesRepo.liveSubIssues(issueId), [issueId, issuesRepo])
   const subInputRef = useRef<HTMLInputElement>(null)
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [, setSelectedId] = useState<string | null>(null)
   const drawerRef = useRef<HTMLElement>(null)
   const popRef = useRef<HTMLElement>(null)
   const [descDirty, setDescDirty] = useState(false)

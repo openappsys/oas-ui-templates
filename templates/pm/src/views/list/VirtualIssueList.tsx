@@ -11,9 +11,9 @@ function ensureRowStyles(root: ShadowRoot | null): void {
   st.textContent = `
     .issue-row {
       display: grid;
-      grid-template-columns: 22px 96px minmax(0, 1fr) 22px 64px 84px;
+      grid-template-columns: 22px 110px minmax(0, 1fr) 24px 70px 90px;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
       height: 44px;
       padding: 0 16px;
       border-bottom: 1px solid var(--oas-color-border, #eef2f7);
@@ -24,6 +24,10 @@ function ensureRowStyles(root: ShadowRoot | null): void {
     }
     .issue-row:hover {
       background: var(--oas-color-bg-hover, #f8fafc);
+    }
+    .issue-row:focus-visible {
+      outline: 2px solid var(--oas-color-primary, #0b6cff);
+      outline-offset: -2px;
     }
     .issue-row.is-cursor {
       background: var(--oas-color-bg-hover, #f8fafc);
@@ -50,7 +54,7 @@ function ensureRowStyles(root: ShadowRoot | null): void {
       margin-block-start: 0;
     }
     .issue-row.no-check {
-      grid-template-columns: 96px minmax(0, 1fr) 22px 64px 84px;
+      grid-template-columns: 110px minmax(0, 1fr) 24px 70px 90px;
     }
     .issue-row .issue-priority,
     .issue-row .issue-status {

@@ -1,8 +1,8 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import type { Issue, IssuePriority, IssueStatus, Member, Project } from './types'
-import { ISSUE_PRIORITIES, STATUS_LABEL } from './types'
+import { ISSUE_PRIORITIES, ISSUE_STATUSES, STATUS_LABEL } from './types'
 import { OSelect, OSegmented } from './components/oas-wrappers'
-import { t, loadLang, storeLang, setLang, type Lang, type DictKey } from './i18n'
+import { t, loadLang, setLang, type Lang } from './i18n'
 import { useSavedViews, saveView } from './components/BulkBar'
 import { STATUS_COLOR } from './lib/colors'
 import { DEFAULT_FILTERS, type Filters, type Grouping } from './lib/filters'
@@ -22,8 +22,6 @@ import { IssueListView } from './views/list/IssueListView'
 import { KanbanBoard } from './views/board/KanbanBoard'
 import { TimelineView } from './views/timeline/TimelineView'
 import { IssueDetailDrawer } from './views/issue/IssueDetailDrawer'
-
-const STATUSES: IssueStatus[] = ['backlog', 'todo', 'in_progress', 'done', 'cancelled']
 
 type View = 'dashboard' | 'issues' | 'board' | 'timeline'
 
@@ -506,7 +504,7 @@ export function App() {
             <span>{t('all')}</span>
             <span className="side-count">{counts?.total.toLocaleString() ?? '…'}</span>
           </button>
-          {STATUSES.map((s) => (
+          {ISSUE_STATUSES.map((s) => (
             <button
               key={s}
               className={`side-item${filters.statusFilter === s ? ' is-active' : ''}`}
@@ -630,7 +628,7 @@ export function App() {
               <OSelect
                 testid="create-status"
                 value={createStatus}
-                options={STATUSES.map((s) => ({ label: STATUS_LABEL[s], value: s }))}
+                options={ISSUE_STATUSES.map((s) => ({ label: STATUS_LABEL[s], value: s }))}
                 onChange={(v) => setCreateStatus(v as IssueStatus)}
               />
             </div>
