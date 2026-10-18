@@ -216,6 +216,10 @@ describe('admin repository', () => {
     await repo.update('m1', { role: 'admin' })
   })
 
+  it('issues 表含 [assigneeId+status] 复合索引', () => {
+    expect(db.issues.schema.indexes.map((i) => i.name)).toContain('[assigneeId+status]')
+  })
+
   it('liveMemberWorkload 跨项目聚合', async () => {
     await seedMember(db, 'm1', 'admin')
     await db.issues.bulkAdd([

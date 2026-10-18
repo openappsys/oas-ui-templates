@@ -2,8 +2,7 @@ import type { Table } from 'dexie'
 import type { PMDatabase } from '@/db/schema'
 import { fromLiveQuery } from '@/data/observable'
 import type { AdminRepository, GlobalStats, MemberWorkload, ProjectHealth } from '@/data/types'
-
-const STALE_MS = 14 * 86400000
+import type { IssueStatus } from '@/types'
 
 export function createDexieAdminRepository(db: PMDatabase): AdminRepository {
   const allTables: Table[] = [
@@ -32,34 +31,42 @@ export function createDexieAdminRepository(db: PMDatabase): AdminRepository {
       }),
     liveMemberWorkload: () =>
       fromLiveQuery(async (): Promise<MemberWorkload[]> => {
-        const [members, issues] = await Promise.all([db.members.toArray(), db.issues.toArray()])
-        return members.map((m) => {
-          const mine = issues.filter((i) => i.assigneeId === m.id)
-          return {
-            memberId: m.id,
-            total: mine.length,
-            todo: mine.filter((i) => i.status === 'todo').length,
-            inProgress: mine.filter((i) => i.status === 'in_progress').length,
-            done: mine.filter((i) => i.status === 'done').length,
-          }
-        })
+        const members = await db.members.toArray()
+        return Promise.all(
+          members.map(async (m) => {
+            const count = (status: IssueStatus | null) =>
+              status === null
+                ? db.issues.where('assigneeId').equals(m.id).count()
+                : db.issues.where('[assigneeId+status]').equals([m.id, status]).count()
+            const [total, todo, inProgress, done] = await Promise.all([
+              count(null),
+              count('todo'),
+              count('in_progress'),
+              count('done'),
+            ])
+            return { memberId: m.id, total, todo, inProgress, done }
+          }),
+        )
       }),
     liveProjectHealth: () =>
       fromLiveQuery(async (): Promise<ProjectHealth[]> => {
+        const projects = await db.projects.toArray()
         const now = Date.now()
-        const [projects, issues] = await Promise.all([db.projects.toArray(), db.issues.toArray()])
-        return projects.map((p) => {
-          const mine = issues.filter((i) => i.projectId === p.id)
-          const open = mine.filter((i) => i.status !== 'done' && i.status !== 'cancelled')
-          return {
-            projectId: p.id,
-            name: p.name,
-            total: mine.length,
-            overdue: open.filter((i) => i.dueAt !== null && (i.dueAt as number) < now).length,
-            unassigned: mine.filter((i) => !i.assigneeId).length,
-            stale: open.filter((i) => i.updatedAt < now - STALE_MS).length,
-          }
-        })
+        const day = 86400000
+        return Promise.all(
+          projects.map(async (p) => {
+            const rows = await db.issues.where('projectId').equals(p.id).toArray()
+            const open = rows.filter((i) => i.status !== 'done' && i.status !== 'cancelled')
+            return {
+              projectId: p.id,
+              name: p.name,
+              total: rows.length,
+              overdue: open.filter((i) => i.dueAt !== null && i.dueAt < now).length,
+              unassigned: open.filter((i) => !i.assigneeId).length,
+              stale: open.filter((i) => i.updatedAt < now - 14 * day).length,
+            }
+          }),
+        )
       }),
     exportAll: async () => {
       const [issues, projects, members, comments, savedViews, activities, settings] =

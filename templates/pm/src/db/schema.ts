@@ -70,6 +70,16 @@ export class PMDatabase extends Dexie {
       activities: 'id, issueId, [issueId+createdAt], createdAt',
       settings: 'key',
     })
+    this.version(7).stores({
+      issues:
+        'id, projectId, key, status, priority, assigneeId, parentId, createdAt, updatedAt, [projectId+status], [projectId+priority], [projectId+assigneeId], [projectId+updatedAt], [projectId+status+updatedAt], [assigneeId+status]',
+      projects: 'id, key',
+      members: 'id, role',
+      comments: 'id, issueId, [issueId+createdAt]',
+      savedViews: 'id, name',
+      activities: 'id, issueId, [issueId+createdAt], createdAt',
+      settings: 'key',
+    })
   }
 }
 
