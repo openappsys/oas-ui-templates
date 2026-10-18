@@ -127,7 +127,7 @@ test('A1 管理总览：入口 → 统计/工作量/健康度 → 行点击回�
   await expect(page.getByTestId('admin-view')).toBeVisible()
   await page.getByTestId('admin-nav-config').click()
   await expect(page.getByTestId('admin-tab-config')).toBeVisible()
-  await expect(page.getByTestId('admin-tab-config')).toContainText('本页签在后续任务实现')
+  await expect(page.getByTestId('admin-config-labels')).toBeVisible()
   await page.getByTestId('admin-back').click()
   await expect(page.getByTestId('admin-view')).toHaveCount(0)
   await expect(page.getByTestId('side-panel')).toBeVisible()
@@ -258,4 +258,155 @@ test('A8 最后管理员守卫：行内降级被拒 → 错误提示 + 角色回
     .poll(() => roleSel.evaluate((el) => (el as unknown as { value?: string }).value ?? ''))
     .toBe('admin')
   await expect(table.locator('tbody tr', { hasText: '张伟' })).toBeVisible()
+})
+
+test('A9 标签集：工作项配置新增标签 → 抽屉快捷按钮可见并落 chip → 回收清理', async ({ page }) => {
+  await waitForSeed(page)
+  await page.getByTestId('admin-entry').click()
+  await page.getByTestId('admin-nav-config').click()
+  await expect(page.getByTestId('admin-config-labels')).toBeVisible()
+
+  const tags = page.getByTestId('admin-labels-tags')
+  await tags.locator('input').first().click()
+  await page.keyboard.type('p3-label')
+  await page.keyboard.press('Enter')
+  await expect
+    .poll(() =>
+      tags.evaluate((el) =>
+        ((el as unknown as { modelValue?: string[] }).modelValue ?? []).includes('p3-label'),
+      ),
+    )
+    .toBe(true)
+
+  await page.getByTestId('admin-back').click()
+  await expect(page.getByTestId('side-panel')).toBeVisible()
+  await page
+    .locator('.issue-row')
+    .first()
+    .evaluate((el) => {
+      el.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          () =>
+            (document.querySelector('[data-testid=detail-drawer]') as { opened?: boolean })
+              ?.opened ?? false,
+        ),
+      { timeout: 10_000 },
+    )
+    .toBe(true)
+  await expect(page.getByTestId('label-quick-p3-label')).toBeVisible()
+  await page.getByTestId('label-quick-p3-label').click()
+  await expect(page.getByTestId('label-chip-p3-label')).toBeVisible({ timeout: 10_000 })
+  await page.keyboard.press('Escape')
+  await expect(page.getByTestId('detail-drawer')).toHaveCount(0, { timeout: 5000 })
+
+  await page.getByTestId('admin-entry').click()
+  await page.getByTestId('admin-nav-config').click()
+  await tags.locator('.tag', { hasText: 'p3-label' }).locator('.tag-remove').click()
+  await expect
+    .poll(() =>
+      tags.evaluate((el) =>
+        ((el as unknown as { modelValue?: string[] }).modelValue ?? []).includes('p3-label'),
+      ),
+    )
+    .toBe(false)
+})
+
+test('A10 权限矩阵：行数与 ACTIONS 一致，viewer×新建只读为 —，admin 列全 ✓', async ({ page }) => {
+  await waitForSeed(page)
+  await page.getByTestId('admin-entry').click()
+  await page.getByTestId('admin-nav-permissions').click()
+  const matrix = page.getByTestId('admin-permissions-matrix')
+  await expect(matrix).toBeVisible()
+  const rows = matrix.locator('tbody tr')
+  await expect(rows).toHaveCount(14, { timeout: 10_000 })
+  const viewerCell = rows.filter({ hasText: '新建 Issue' }).first().locator('td').nth(1)
+  await expect(viewerCell).toHaveText('—')
+  const adminCells = matrix.locator('tbody tr td:nth-child(4)')
+  await expect(adminCells).toHaveCount(14)
+  for (const cell of await adminCells.all()) {
+    expect(await cell.textContent()).toContain('✓')
+  }
+})
+
+test('A11 数据闭环：导出 JSON → 清空（管理态被收回+空态）→ 导入恢复 → 统计回归', async ({
+  page,
+}, testInfo) => {
+  test.setTimeout(300_000)
+  await waitForSeed(page)
+  await page.getByTestId('admin-entry').click()
+  await page.getByTestId('admin-nav-settings').click()
+  await expect(page.getByTestId('admin-data-actions')).toBeVisible()
+
+  const downloadPromise = page.waitForEvent('download')
+  await page.getByTestId('admin-export-json').click()
+  const download = await downloadPromise
+  const backup = testInfo.outputPath('oas-pm-backup.json')
+  await download.saveAs(backup)
+
+  await confirmPop(page.getByTestId('admin-wipe-all'))
+  await expect(page.getByTestId('admin-view')).toHaveCount(0, { timeout: 20_000 })
+  await expect(page.getByTestId('side-panel')).toBeVisible()
+  await expect(page.getByTestId('admin-entry')).toHaveCount(0)
+  await expect(page.getByTestId('issues-empty')).toBeVisible({ timeout: 20_000 })
+  await expect(page.locator('.issue-row')).toHaveCount(0)
+
+  await page.reload()
+  await expect(page.getByTestId('pm-toolbar')).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByTestId('admin-entry')).toBeVisible({ timeout: 120_000 })
+  await page.getByTestId('admin-entry').click()
+  await page.getByTestId('admin-nav-settings').click()
+  await expect(page.getByTestId('admin-data-actions')).toBeVisible()
+  await page.getByTestId('admin-import-json').setInputFiles(backup)
+  await page.getByTestId('admin-import-btn').click()
+  await expect(page.getByTestId('admin-data-ok')).toBeVisible({ timeout: 120_000 })
+
+  await page.reload()
+  await expect(page.getByTestId('pm-toolbar')).toBeVisible({ timeout: 10_000 })
+  await page.getByTestId('admin-entry').click()
+  await expect
+    .poll(async () => statNumber(await page.getByTestId('admin-stat-issues').textContent()), {
+      timeout: 120_000,
+      intervals: [1000, 3000, 5000],
+    })
+    .toBeGreaterThan(60000)
+})
+
+test('A12 重建演示数据：确认 → 页面重载 → 数据恢复（统计 > 6 万）', async ({ page }) => {
+  test.setTimeout(300_000)
+  await waitForSeed(page)
+  await page.getByTestId('admin-entry').click()
+  await page.getByTestId('admin-nav-settings').click()
+  await expect(page.getByTestId('admin-data-actions')).toBeVisible()
+  await page.evaluate(() => {
+    ;(window as unknown as { __t4Boot?: number }).__t4Boot = 1
+  })
+  await confirmPop(page.getByTestId('admin-reset-demo'))
+  await expect
+    .poll(
+      async () => {
+        try {
+          return await page.evaluate(
+            () => (window as unknown as { __t4Boot?: number }).__t4Boot ?? 0,
+          )
+        } catch {
+          return 1
+        }
+      },
+      { timeout: 300_000, intervals: [1000, 3000, 5000] },
+    )
+    .toBe(0)
+  await page.goto('/')
+  await expect(page.getByTestId('pm-toolbar')).toBeVisible({ timeout: 60_000 })
+  await expect(page.locator('.issue-row').first()).toBeVisible({ timeout: 120_000 })
+  await page.getByTestId('admin-entry').click()
+  await expect
+    .poll(async () => statNumber(await page.getByTestId('admin-stat-issues').textContent()), {
+      timeout: 120_000,
+      intervals: [1000, 3000, 5000],
+    })
+    .toBeGreaterThan(60000)
 })

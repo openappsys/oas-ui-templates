@@ -49,6 +49,7 @@ export function MembersTab({
   const [fieldError, setFieldError] = useState('')
   const [error, setError] = useState('')
   const errorTimer = useRef<number | undefined>(undefined)
+  const inFlightRef = useRef(false)
 
   const list = useObservable(() => membersRepo.liveAll(), [membersRepo])
   const workload = useObservable(() => admin.liveMemberWorkload(), [admin])
@@ -91,6 +92,7 @@ export function MembersTab({
   openModalRef.current = openModal
 
   const save = useCallback(async () => {
+    if (inFlightRef.current) return
     const name = (nameRef.current?.value ?? '').trim()
     const email = (emailRef.current?.value ?? '').trim()
     if (!name) {
@@ -102,15 +104,22 @@ export function MembersTab({
       return
     }
     setFieldError('')
-    await membersRepo.create({
-      id: nanoid(),
-      name,
-      email,
-      role: newRole,
-      avatarColor: PALETTE[(listRef.current?.length ?? 0) % PALETTE.length],
-    })
-    modalRef.current?.removeAttribute('visible')
-  }, [membersRepo, newRole])
+    inFlightRef.current = true
+    try {
+      await membersRepo.create({
+        id: nanoid(),
+        name,
+        email,
+        role: newRole,
+        avatarColor: PALETTE[(listRef.current?.length ?? 0) % PALETTE.length],
+      })
+      modalRef.current?.removeAttribute('visible')
+    } catch (e) {
+      showError(e instanceof Error ? e.message : String(e))
+    } finally {
+      inFlightRef.current = false
+    }
+  }, [membersRepo, newRole, showError])
 
   const changeRole = useCallback(
     async (id: string, role: string, sel: SelectEl, prev: string) => {

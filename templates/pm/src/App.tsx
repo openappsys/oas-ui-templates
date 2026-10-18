@@ -179,13 +179,20 @@ export function App() {
     setLang(next)
   }, [lang])
   const [themePref, setThemePref] = useState<ThemePreference>(loadTheme())
-  const cycleTheme = useCallback(() => {
-    const next: ThemePreference =
-      themePref === 'light' ? 'dark' : themePref === 'dark' ? 'system' : 'light'
+  const applyThemeAndStore = useCallback((next: ThemePreference) => {
     setThemePref(next)
     storeTheme(next)
     applyTheme(next)
-  }, [themePref])
+  }, [])
+  const cycleTheme = useCallback(() => {
+    const next: ThemePreference =
+      themePref === 'light' ? 'dark' : themePref === 'dark' ? 'system' : 'light'
+    applyThemeAndStore(next)
+  }, [themePref, applyThemeAndStore])
+  const setLangAndApply = useCallback((next: Lang) => {
+    setLangState(next)
+    setLang(next)
+  }, [])
   const themeLabel =
     themePref === 'light'
       ? t('themeLight')
@@ -487,6 +494,10 @@ export function App() {
             onOpenProject={openProject}
             currentUser={currentUser}
             onMemberDeleted={handleMemberDeleted}
+            themePref={themePref}
+            onSetTheme={applyThemeAndStore}
+            lang={lang}
+            onSetLang={setLangAndApply}
           />
         ) : (
           <>

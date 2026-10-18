@@ -10,7 +10,11 @@ declare module 'react' {
         type?: string
         closable?: boolean | string
       }
-      'oas-button': HTMLAttributes<HTMLElement> & { type?: string; size?: string }
+      'oas-button': HTMLAttributes<HTMLElement> & {
+        type?: string
+        size?: string
+        disabled?: boolean | string
+      }
       'oas-card': HTMLAttributes<HTMLElement> & { title?: string }
       'oas-switch': HTMLAttributes<HTMLElement> & { checked?: boolean | string }
       'oas-slider': HTMLAttributes<HTMLElement> & {

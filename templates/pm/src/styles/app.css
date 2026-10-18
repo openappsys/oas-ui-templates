@@ -1488,13 +1488,6 @@ body {
   width: 100%;
 }
 
-.admin-tab {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 320px;
-}
-
 .admin-crud-page {
   display: flex;
   flex-direction: column;
@@ -1515,6 +1508,71 @@ body {
 
 .admin-crud-error {
   margin: 0;
+}
+
+.admin-hint {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--oas-color-text-secondary, #64748b);
+}
+
+.admin-ro-badge {
+  margin-left: 8px;
+  padding: 1px 8px;
+  border: 1px solid var(--oas-color-border, #e2e8f0);
+  border-radius: var(--oas-radius-md, 6px);
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--oas-color-text-secondary, #64748b);
+}
+
+.admin-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-labels-tags {
+  display: block;
+  max-width: 560px;
+}
+
+.admin-perm-table {
+  display: block;
+  width: 100%;
+}
+
+.admin-field-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-field-row + .admin-field-row {
+  margin-top: 10px;
+}
+
+.admin-field-row > span {
+  width: 48px;
+  font-size: 13px;
+  color: var(--oas-color-text-secondary, #64748b);
+}
+
+.admin-field-row oas-select {
+  width: 220px;
+}
+
+.admin-data-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-import-file {
+  font-size: 12px;
+  color: var(--oas-color-text-secondary, #64748b);
+  max-width: 260px;
 }
 
 /* ── 抽屉内子任务/表单布局统一 ── */

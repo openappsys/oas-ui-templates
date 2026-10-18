@@ -1,8 +1,12 @@
-import { t, type DictKey } from '@/i18n'
+import { t, type DictKey, type Lang } from '@/i18n'
 import type { Member } from '@/types'
+import type { ThemePreference } from '@/lib/preferences'
+import { ConfigTab } from './ConfigTab'
 import { MembersTab } from './MembersTab'
 import { OverviewTab } from './OverviewTab'
+import { PermissionsTab } from './PermissionsTab'
 import { ProjectsTab } from './ProjectsTab'
+import { SettingsTab } from './SettingsTab'
 
 export type AdminTab = 'overview' | 'projects' | 'members' | 'config' | 'permissions' | 'settings'
 
@@ -23,6 +27,10 @@ export function AdminView({
   onOpenProject,
   currentUser,
   onMemberDeleted,
+  themePref,
+  onSetTheme,
+  lang,
+  onSetLang,
 }: {
   tab: AdminTab
   onTab: (tab: AdminTab) => void
@@ -31,6 +39,10 @@ export function AdminView({
   onOpenProject: (projectId: string) => void
   currentUser: string
   onMemberDeleted: (id: string) => void
+  themePref: ThemePreference
+  onSetTheme: (pref: ThemePreference) => void
+  lang: Lang
+  onSetLang: (lang: Lang) => void
 }) {
   return (
     <div className="admin-layout" data-testid="admin-view">
@@ -58,10 +70,17 @@ export function AdminView({
           <ProjectsTab memberMap={memberMap} />
         ) : tab === 'members' ? (
           <MembersTab currentUser={currentUser} onMemberDeleted={onMemberDeleted} />
+        ) : tab === 'config' ? (
+          <ConfigTab />
+        ) : tab === 'permissions' ? (
+          <PermissionsTab />
         ) : (
-          <div className="admin-tab" data-testid={`admin-tab-${tab}`}>
-            <oas-empty description={t('adminTabPlaceholder')} />
-          </div>
+          <SettingsTab
+            themePref={themePref}
+            onSetTheme={onSetTheme}
+            lang={lang}
+            onSetLang={onSetLang}
+          />
         )}
       </div>
     </div>

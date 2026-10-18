@@ -29,6 +29,7 @@ export function ProjectsTab({ memberMap }: { memberMap: Map<string, Member> }) {
   const [fieldError, setFieldError] = useState('')
   const [error, setError] = useState('')
   const errorTimer = useRef<number | undefined>(undefined)
+  const inFlightRef = useRef(false)
 
   const list = useObservable(() => projectsRepo.liveAll(), [projectsRepo])
   const health = useObservable(() => admin.liveProjectHealth(), [admin])
@@ -67,6 +68,7 @@ export function ProjectsTab({ memberMap }: { memberMap: Map<string, Member> }) {
   openModalRef.current = openModal
 
   const save = useCallback(async () => {
+    if (inFlightRef.current) return
     const name = (nameRef.current?.value ?? '').trim()
     const key = (keyRef.current?.value ?? '').trim().toUpperCase()
     const description = (descRef.current?.value ?? '').trim()
@@ -79,21 +81,28 @@ export function ProjectsTab({ memberMap }: { memberMap: Map<string, Member> }) {
       return
     }
     setFieldError('')
-    if (editing) {
-      await projectsRepo.update(editing.id, { name, key, description, leadId: lead })
-    } else {
-      await projectsRepo.create({
-        id: nanoid(),
-        name,
-        key,
-        description,
-        leadId: lead,
-        createdAt: Date.now(),
-        nextKeyNum: 100001,
-      })
+    inFlightRef.current = true
+    try {
+      if (editing) {
+        await projectsRepo.update(editing.id, { name, key, description, leadId: lead })
+      } else {
+        await projectsRepo.create({
+          id: nanoid(),
+          name,
+          key,
+          description,
+          leadId: lead,
+          createdAt: Date.now(),
+          nextKeyNum: 100001,
+        })
+      }
+      modalRef.current?.removeAttribute('visible')
+    } catch (e) {
+      showError(e instanceof Error ? e.message : String(e))
+    } finally {
+      inFlightRef.current = false
     }
-    modalRef.current?.removeAttribute('visible')
-  }, [editing, lead, projectsRepo])
+  }, [editing, lead, projectsRepo, showError])
 
   const remove = useCallback(
     async (id: string) => {

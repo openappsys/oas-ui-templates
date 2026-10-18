@@ -5,6 +5,7 @@ import { OSelect, OCheckbox, TagChip } from '@/components/oas-wrappers'
 import { t } from '@/i18n'
 import { useRepositories } from '@/data/context'
 import { useObservable } from '@/data/use-observable'
+import { useLabelSet } from '@/lib/labels'
 import type { Action, Ctx } from '@/permission/policy'
 
 /* ── 活动历史（详情抽屉） ── */
@@ -208,7 +209,6 @@ const RELATION_LABEL: Record<string, string> = {
   'blocked-by': '被阻塞',
   relates: '相关',
 }
-const LABELS = ['frontend', 'backend', 'design', 'bug', 'feature', 'tech-debt', 'docs', 'infra']
 
 export function IssueDetailDrawer({
   issueId,
@@ -226,6 +226,7 @@ export function IssueDetailDrawer({
   const { issues: issuesRepo, activities: activitiesRepo } = useRepositories()
   const issue = useObservable(() => issuesRepo.live(issueId), [issueId, issuesRepo])
   const subs = useObservable(() => issuesRepo.liveSubIssues(issueId), [issueId, issuesRepo])
+  const labelSet = useLabelSet()
   const subInputRef = useRef<HTMLInputElement>(null)
   const [, setSelectedId] = useState<string | null>(null)
   const drawerRef = useRef<HTMLElement>(null)
@@ -591,20 +592,22 @@ export function IssueDetailDrawer({
                   style={{ width: '100%' }}
                 />
                 <div className="label-quick" data-testid="label-quick">
-                  {LABELS.filter((l) => !issue.labels.includes(l)).map((l) => (
-                    <button
-                      key={l}
-                      type="button"
-                      className="label-quick-btn"
-                      data-testid={`label-quick-${l}`}
-                      onClick={() => {
-                        if (l !== '__none__' && !issue.labels.includes(l))
-                          save({ labels: [...issue.labels.filter((x) => x !== '__none__'), l] })
-                      }}
-                    >
-                      + {l}
-                    </button>
-                  ))}
+                  {labelSet
+                    .filter((l) => !issue.labels.includes(l))
+                    .map((l) => (
+                      <button
+                        key={l}
+                        type="button"
+                        className="label-quick-btn"
+                        data-testid={`label-quick-${l}`}
+                        onClick={() => {
+                          if (l !== '__none__' && !issue.labels.includes(l))
+                            save({ labels: [...issue.labels.filter((x) => x !== '__none__'), l] })
+                        }}
+                      >
+                        + {l}
+                      </button>
+                    ))}
                 </div>
               </>
             )}
