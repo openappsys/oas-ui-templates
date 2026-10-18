@@ -66,6 +66,11 @@ declare module 'react' {
       'oas-statistic': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
         title?: string
       }
+      'oas-table': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        columns?: unknown
+        data?: unknown
+        'row-key'?: string
+      }
       'oas-popconfirm': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
         title?: string
         trigger?: string

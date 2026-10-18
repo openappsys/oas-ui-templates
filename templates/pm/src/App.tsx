@@ -22,8 +22,9 @@ import { IssueListView } from './views/list/IssueListView'
 import { KanbanBoard } from './views/board/KanbanBoard'
 import { TimelineView } from './views/timeline/TimelineView'
 import { IssueDetailDrawer } from './views/issue/IssueDetailDrawer'
+import { AdminView, type AdminTab } from './views/admin/AdminView'
 
-type View = 'dashboard' | 'issues' | 'board' | 'timeline'
+type View = 'dashboard' | 'issues' | 'board' | 'timeline' | 'admin'
 
 /** 数据窗口：compound index 取项目/状态维度最近 LIST_WINDOW 条，再内存细筛 */
 function useIssueWindow(f: Filters, currentUser: string) {
@@ -206,6 +207,7 @@ export function App() {
     localStorage.setItem('oas-pm-user', id)
   }, [])
   const [view, setView] = useState<View>('issues')
+  const [adminTab, setAdminTab] = useState<AdminTab>('overview')
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS)
   const [grouping, setGrouping] = useState<Grouping>('none')
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -244,6 +246,14 @@ export function App() {
     [currentUser, members],
   )
   const canCreateIssue = can('issue:create')
+  const canManage = can('project:manage')
+  useEffect(() => {
+    if (view === 'admin' && !canManage) setView('issues')
+  }, [view, canManage])
+  const openProject = useCallback((projectId: string) => {
+    setFilters((prev) => ({ ...prev, projectId, statusFilter: null }))
+    setView('issues')
+  }, [])
   const canCreateRef = useRef(canCreateIssue)
   canCreateRef.current = canCreateIssue
   const memberOptions = useMemo(
@@ -389,6 +399,17 @@ export function App() {
           <Avatar member={memberMap.get(currentUser)} size={22} />
           <span>{memberMap.get(currentUser)?.name ?? ''}</span>
         </button>
+        {canManage && (
+          <oas-button
+            type="text"
+            size="small"
+            data-testid="admin-entry"
+            onClick={() => setView('admin')}
+          >
+            <oas-icon name="gear" size={14} />
+            {t('adminEntry')}
+          </oas-button>
+        )}
         {canCreateIssue && (
           <oas-button
             type="primary"
@@ -449,167 +470,181 @@ export function App() {
         </oas-button>
       </header>
       <div className="main">
-        <aside className="side-panel" data-testid="side-panel">
-          <div className="side-view-seg">
-            <OSegmented
-              testid="view-seg"
-              value={view}
-              options={[
-                { label: t('dashboard'), value: 'dashboard' },
-                { label: t('list'), value: 'issues' },
-                { label: t('board'), value: 'board' },
-                { label: t('timeline'), value: 'timeline' },
-              ]}
-              onChange={(v) => setView(v as View)}
-            />
-          </div>
-          <p className="side-title">{t('projects')}</p>
-          {(projects ?? []).map((p) => (
-            <button
-              key={p.id}
-              className={`side-item${filters.projectId === p.id ? ' is-active' : ''}`}
-              type="button"
-              data-testid={`project-${p.id}`}
-              onClick={() => {
-                setFilters((prev) => ({ ...prev, projectId: p.id, statusFilter: null }))
-              }}
-            >
-              <span>{p.name}</span>
-            </button>
-          ))}
-          <p className="side-title">{t('views')}</p>
-          <button
-            className={`side-item${!filters.myOnly ? ' is-active' : ''}`}
-            type="button"
-            data-testid="view-all"
-            onClick={() => setF('myOnly', false)}
-          >
-            <span>{t('allIssues')}</span>
-          </button>
-          <button
-            className={`side-item${filters.myOnly ? ' is-active' : ''}`}
-            type="button"
-            data-testid="view-my"
-            onClick={() => setF('myOnly', true)}
-          >
-            <span>我的（{memberMap.get(currentUser)?.name ?? ''}）</span>
-          </button>
-          <p className="side-title">{t('status')}</p>
-          <button
-            className={`side-item${filters.statusFilter === null ? ' is-active' : ''}`}
-            type="button"
-            data-testid="filter-all"
-            onClick={() => setF('statusFilter', null)}
-          >
-            <span>{t('all')}</span>
-            <span className="side-count">{counts?.total.toLocaleString() ?? '…'}</span>
-          </button>
-          {ISSUE_STATUSES.map((s) => (
-            <button
-              key={s}
-              className={`side-item${filters.statusFilter === s ? ' is-active' : ''}`}
-              type="button"
-              data-testid={`filter-${s}`}
-              onClick={() => setF('statusFilter', s)}
-            >
-              <span style={{ color: STATUS_COLOR[s] }}>●</span>
-              <span>{STATUS_LABEL[s]}</span>
-              <span className="side-count">{counts?.byStatus[s]?.toLocaleString() ?? '…'}</span>
-            </button>
-          ))}
-          <p className="side-title">{t('savedViews')}</p>
-          {(savedViews ?? []).map((v) => (
-            <div key={v.id} className="side-item saved-view-item">
-              <button
-                className="side-item"
-                type="button"
-                data-testid={`saved-view-${v.id}`}
-                onClick={() => applySavedView(v.filters)}
-                style={{
-                  flex: 1,
-                  border: 'none',
-                  background: 'none',
-                  padding: 0,
-                  textAlign: 'left',
-                  font: 'inherit',
-                  color: 'inherit',
-                  cursor: 'pointer',
-                }}
-              >
-                <span>{v.name}</span>
-              </button>
-              {can('view:delete') && (
+        {view === 'admin' ? (
+          <AdminView
+            tab={adminTab}
+            onTab={setAdminTab}
+            onBack={() => setView('issues')}
+            memberMap={memberMap}
+            onOpenProject={openProject}
+          />
+        ) : (
+          <>
+            <aside className="side-panel" data-testid="side-panel">
+              <div className="side-view-seg">
+                <OSegmented
+                  testid="view-seg"
+                  value={view}
+                  options={[
+                    { label: t('dashboard'), value: 'dashboard' },
+                    { label: t('list'), value: 'issues' },
+                    { label: t('board'), value: 'board' },
+                    { label: t('timeline'), value: 'timeline' },
+                  ]}
+                  onChange={(v) => setView(v as View)}
+                />
+              </div>
+              <p className="side-title">{t('projects')}</p>
+              {(projects ?? []).map((p) => (
                 <button
-                  className="saved-view-del"
+                  key={p.id}
+                  className={`side-item${filters.projectId === p.id ? ' is-active' : ''}`}
                   type="button"
-                  aria-label={`删除视图 ${v.name}`}
-                  data-testid={`saved-view-del-${v.id}`}
-                  onClick={() => void savedViewsRepo.delete(v.id)}
+                  data-testid={`project-${p.id}`}
+                  onClick={() => {
+                    setFilters((prev) => ({ ...prev, projectId: p.id, statusFilter: null }))
+                  }}
                 >
-                  ×
+                  <span>{p.name}</span>
                 </button>
+              ))}
+              <p className="side-title">{t('views')}</p>
+              <button
+                className={`side-item${!filters.myOnly ? ' is-active' : ''}`}
+                type="button"
+                data-testid="view-all"
+                onClick={() => setF('myOnly', false)}
+              >
+                <span>{t('allIssues')}</span>
+              </button>
+              <button
+                className={`side-item${filters.myOnly ? ' is-active' : ''}`}
+                type="button"
+                data-testid="view-my"
+                onClick={() => setF('myOnly', true)}
+              >
+                <span>我的（{memberMap.get(currentUser)?.name ?? ''}）</span>
+              </button>
+              <p className="side-title">{t('status')}</p>
+              <button
+                className={`side-item${filters.statusFilter === null ? ' is-active' : ''}`}
+                type="button"
+                data-testid="filter-all"
+                onClick={() => setF('statusFilter', null)}
+              >
+                <span>{t('all')}</span>
+                <span className="side-count">{counts?.total.toLocaleString() ?? '…'}</span>
+              </button>
+              {ISSUE_STATUSES.map((s) => (
+                <button
+                  key={s}
+                  className={`side-item${filters.statusFilter === s ? ' is-active' : ''}`}
+                  type="button"
+                  data-testid={`filter-${s}`}
+                  onClick={() => setF('statusFilter', s)}
+                >
+                  <span style={{ color: STATUS_COLOR[s] }}>●</span>
+                  <span>{STATUS_LABEL[s]}</span>
+                  <span className="side-count">{counts?.byStatus[s]?.toLocaleString() ?? '…'}</span>
+                </button>
+              ))}
+              <p className="side-title">{t('savedViews')}</p>
+              {(savedViews ?? []).map((v) => (
+                <div key={v.id} className="side-item saved-view-item">
+                  <button
+                    className="side-item"
+                    type="button"
+                    data-testid={`saved-view-${v.id}`}
+                    onClick={() => applySavedView(v.filters)}
+                    style={{
+                      flex: 1,
+                      border: 'none',
+                      background: 'none',
+                      padding: 0,
+                      textAlign: 'left',
+                      font: 'inherit',
+                      color: 'inherit',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <span>{v.name}</span>
+                  </button>
+                  {can('view:delete') && (
+                    <button
+                      className="saved-view-del"
+                      type="button"
+                      aria-label={`删除视图 ${v.name}`}
+                      data-testid={`saved-view-del-${v.id}`}
+                      onClick={() => void savedViewsRepo.delete(v.id)}
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              ))}
+              <p className="side-title">{t('members')}</p>
+              {(members ?? []).map((m) => (
+                <button
+                  key={m.id}
+                  className={`side-item${filters.assigneeFilter === m.id ? ' is-active' : ''}`}
+                  type="button"
+                  data-testid={`member-${m.id}`}
+                  onClick={() =>
+                    setF('assigneeFilter', filters.assigneeFilter === m.id ? null : m.id)
+                  }
+                >
+                  <Avatar member={m} size={16} />
+                  <span>{m.name}</span>
+                  <span className="side-count">{memberCounts.get(m.id) ?? 0}</span>
+                </button>
+              ))}
+            </aside>
+            <main className="content">
+              {view === 'dashboard' && (
+                <ErrorBoundary key={view}>
+                  <DashboardView
+                    projectId={filters.projectId}
+                    memberMap={memberMap}
+                    currentUser={currentUser}
+                  />
+                </ErrorBoundary>
               )}
-            </div>
-          ))}
-          <p className="side-title">{t('members')}</p>
-          {(members ?? []).map((m) => (
-            <button
-              key={m.id}
-              className={`side-item${filters.assigneeFilter === m.id ? ' is-active' : ''}`}
-              type="button"
-              data-testid={`member-${m.id}`}
-              onClick={() => setF('assigneeFilter', filters.assigneeFilter === m.id ? null : m.id)}
-            >
-              <Avatar member={m} size={16} />
-              <span>{m.name}</span>
-              <span className="side-count">{memberCounts.get(m.id) ?? 0}</span>
-            </button>
-          ))}
-        </aside>
-        <main className="content">
-          {view === 'dashboard' && (
-            <ErrorBoundary key={view}>
-              <DashboardView
-                projectId={filters.projectId}
-                memberMap={memberMap}
-                currentUser={currentUser}
-              />
-            </ErrorBoundary>
-          )}
-          {view === 'issues' && (
-            <ErrorBoundary key={view}>
-              <IssueListView
-                issues={issues}
-                total={counts?.total ?? issues?.length ?? 0}
-                filters={filters}
-                setFilters={setFilters}
-                grouping={grouping}
-                setGrouping={setGrouping}
-                memberMap={memberMap}
-                onSelect={setSelectedId}
-                onSaveView={() => saveViewRef.current?.setAttribute('visible', '')}
-                currentUser={currentUser}
-                can={can}
-                navActive={view === 'issues' && selectedId === null}
-              />
-            </ErrorBoundary>
-          )}
-          {view === 'board' && (
-            <ErrorBoundary key={view}>
-              <KanbanBoard
-                issues={issues ?? []}
-                memberMap={memberMap}
-                onOpenIssue={setSelectedId}
-                can={can}
-              />
-            </ErrorBoundary>
-          )}
-          {view === 'timeline' && (
-            <ErrorBoundary key={view}>
-              <TimelineView issues={issues ?? []} can={can} />
-            </ErrorBoundary>
-          )}
-        </main>
+              {view === 'issues' && (
+                <ErrorBoundary key={view}>
+                  <IssueListView
+                    issues={issues}
+                    total={counts?.total ?? issues?.length ?? 0}
+                    filters={filters}
+                    setFilters={setFilters}
+                    grouping={grouping}
+                    setGrouping={setGrouping}
+                    memberMap={memberMap}
+                    onSelect={setSelectedId}
+                    onSaveView={() => saveViewRef.current?.setAttribute('visible', '')}
+                    currentUser={currentUser}
+                    can={can}
+                    navActive={view === 'issues' && selectedId === null}
+                  />
+                </ErrorBoundary>
+              )}
+              {view === 'board' && (
+                <ErrorBoundary key={view}>
+                  <KanbanBoard
+                    issues={issues ?? []}
+                    memberMap={memberMap}
+                    onOpenIssue={setSelectedId}
+                    can={can}
+                  />
+                </ErrorBoundary>
+              )}
+              {view === 'timeline' && (
+                <ErrorBoundary key={view}>
+                  <TimelineView issues={issues ?? []} can={can} />
+                </ErrorBoundary>
+              )}
+            </main>
+          </>
+        )}
       </div>
 
       {/* 新建 Issue */}
