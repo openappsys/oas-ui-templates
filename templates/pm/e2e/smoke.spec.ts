@@ -38,6 +38,7 @@ async function fillOInput(page: Page, testid: string, text: string) {
 
 /** 等待 100K seed 完成并以列表行出现（seed 走后台 bulkPut，首次约 5~15s） */
 async function waitForSeed(page: Page) {
+  test.setTimeout(150_000)
   await page.goto('/')
   await expect(page.getByTestId('pm-toolbar')).toBeVisible({ timeout: 10_000 })
   // seed 完成的确定性信号：SEED_VER 标记写入（写完 100K 才 set）

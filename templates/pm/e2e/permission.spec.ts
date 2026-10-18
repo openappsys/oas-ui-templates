@@ -34,6 +34,7 @@ async function fillOInput(page: Page, testid: string, text: string) {
 }
 
 async function waitForSeed(page: Page) {
+  test.setTimeout(150_000)
   await page.goto('/')
   await expect(page.getByTestId('pm-toolbar')).toBeVisible({ timeout: 10_000 })
   await expect

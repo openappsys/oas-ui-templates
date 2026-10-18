@@ -3,7 +3,7 @@ import type { Issue, IssuePriority, IssueStatus, Member, Project } from './types
 import { ISSUE_PRIORITIES, ISSUE_STATUSES, STATUS_LABEL } from './types'
 import { OSelect, OSegmented } from './components/oas-wrappers'
 import { t, loadLang, setLang, type Lang } from './i18n'
-import { useSavedViews, saveView } from './components/BulkBar'
+import { useSavedViews } from './components/BulkBar'
 import { STATUS_COLOR } from './lib/colors'
 import { DEFAULT_FILTERS, type Filters, type Grouping } from './lib/filters'
 import { useProjectCounts } from './lib/hooks'
@@ -220,10 +220,10 @@ export function App() {
     const name = (saveViewNameRef.current?.value ?? '').trim()
     if (!name) return
     const { search: _s, ...rest } = filters
-    await saveView(name, rest)
+    await savedViewsRepo.create(name, rest)
     if (saveViewNameRef.current) saveViewNameRef.current.value = ''
     saveViewRef.current?.removeAttribute('visible')
-  }, [filters])
+  }, [filters, savedViewsRepo])
 
   const issues = useIssueWindow(filters, currentUser)
   const counts = useProjectCounts(filters.projectId)

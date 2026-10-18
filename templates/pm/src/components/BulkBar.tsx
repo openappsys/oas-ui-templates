@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useRepositories } from '@/data/context'
 import { useObservable } from '@/data/use-observable'
-import { dexieRepositories } from '@/data/dexie'
 import type { Action, Ctx } from '@/permission/policy'
 import type { IssuePriority, IssueStatus } from '../types'
 import { ISSUE_PRIORITIES, ISSUE_STATUSES, STATUS_LABEL } from '../types'
@@ -102,10 +101,6 @@ export function BulkBar({
 export function useSavedViews() {
   const { savedViews } = useRepositories()
   return useObservable(() => savedViews.liveAll(), [savedViews])
-}
-
-export async function saveView(name: string, filters: unknown): Promise<void> {
-  await dexieRepositories.savedViews.create(name, filters)
 }
 
 export function filtersKey(f: Record<string, unknown>): string {

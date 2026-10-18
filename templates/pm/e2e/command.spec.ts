@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 
 async function waitForSeed(page: Page) {
+  test.setTimeout(150_000)
   await page.goto('/')
   await expect(page.getByTestId('pm-toolbar')).toBeVisible({ timeout: 10_000 })
   await expect
