@@ -1466,6 +1466,15 @@ body {
   border: 1px solid var(--oas-color-border, #e2e8f0);
   border-radius: 12px;
   background: var(--oas-color-bg-elevated, #fff);
+  overflow: hidden;
+}
+
+.admin-chart-box {
+  height: 320px;
+}
+
+.admin-chart-box .pm-chart {
+  height: 100%;
 }
 
 .admin-panel-title {

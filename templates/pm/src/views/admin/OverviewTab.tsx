@@ -100,12 +100,14 @@ export function OverviewTab({
       </div>
       <div className="admin-panel">
         <p className="admin-panel-title">{t('adminWorkloadChart')}</p>
-        <Chart
-          type="bar"
-          data={workloadData}
-          testid="admin-chart-workload"
-          label={t('adminWorkloadChart')}
-        />
+        <div className="admin-chart-box">
+          <Chart
+            type="bar"
+            data={workloadData}
+            testid="admin-chart-workload"
+            label={t('adminWorkloadChart')}
+          />
+        </div>
       </div>
       <div className="admin-panel">
         <p className="admin-panel-title">{t('adminHealthTitle')}</p>
