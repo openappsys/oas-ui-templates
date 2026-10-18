@@ -1,6 +1,8 @@
 import { t, type DictKey } from '@/i18n'
 import type { Member } from '@/types'
+import { MembersTab } from './MembersTab'
 import { OverviewTab } from './OverviewTab'
+import { ProjectsTab } from './ProjectsTab'
 
 export type AdminTab = 'overview' | 'projects' | 'members' | 'config' | 'permissions' | 'settings'
 
@@ -19,12 +21,16 @@ export function AdminView({
   onBack,
   memberMap,
   onOpenProject,
+  currentUser,
+  onMemberDeleted,
 }: {
   tab: AdminTab
   onTab: (tab: AdminTab) => void
   onBack: () => void
   memberMap: Map<string, Member>
   onOpenProject: (projectId: string) => void
+  currentUser: string
+  onMemberDeleted: (id: string) => void
 }) {
   return (
     <div className="admin-layout" data-testid="admin-view">
@@ -48,6 +54,10 @@ export function AdminView({
       <div className="admin-content">
         {tab === 'overview' ? (
           <OverviewTab memberMap={memberMap} onOpenProject={onOpenProject} />
+        ) : tab === 'projects' ? (
+          <ProjectsTab memberMap={memberMap} />
+        ) : tab === 'members' ? (
+          <MembersTab currentUser={currentUser} onMemberDeleted={onMemberDeleted} />
         ) : (
           <div className="admin-tab" data-testid={`admin-tab-${tab}`}>
             <oas-empty description={t('adminTabPlaceholder')} />

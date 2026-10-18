@@ -39,20 +39,23 @@ export function OverviewTab({
       })),
     [health],
   )
-  const columns = [
-    { key: 'name', title: t('adminHealthProject') },
-    { key: 'total', title: t('adminHealthTotal'), align: 'right' },
-    { key: 'overdue', title: t('adminHealthOverdue'), align: 'right' },
-    { key: 'unassigned', title: t('adminHealthUnassigned'), align: 'right' },
-    { key: 'stale', title: t('adminHealthStale'), align: 'right' },
-  ]
+  const columns = useMemo(
+    () => [
+      { key: 'name', title: t('adminHealthProject') },
+      { key: 'total', title: t('adminHealthTotal'), align: 'right' },
+      { key: 'overdue', title: t('adminHealthOverdue'), align: 'right' },
+      { key: 'unassigned', title: t('adminHealthUnassigned'), align: 'right' },
+      { key: 'stale', title: t('adminHealthStale'), align: 'right' },
+    ],
+    [],
+  )
 
   useEffect(() => {
     const el = tableRef.current
     if (!el) return
     el.columns = columns
     el.data = healthRows
-  })
+  }, [columns, healthRows])
 
   useEffect(() => {
     const el = tableRef.current

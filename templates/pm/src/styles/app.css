@@ -1495,6 +1495,28 @@ body {
   min-height: 320px;
 }
 
+.admin-crud-page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.admin-crud-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-crud-table {
+  display: block;
+  width: 100%;
+}
+
+.admin-crud-error {
+  margin: 0;
+}
+
 /* ── 抽屉内子任务/表单布局统一 ── */
 .sub-add-row {
   display: flex;

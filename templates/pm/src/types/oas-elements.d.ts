@@ -75,6 +75,11 @@ declare module 'react' {
         title?: string
         trigger?: string
       }
+      'oas-alert': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        type?: string
+        variant?: string
+        size?: string
+      }
       'oas-badge': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
         type?: string
         size?: string

@@ -254,6 +254,14 @@ export function App() {
     setFilters((prev) => ({ ...prev, projectId, statusFilter: null }))
     setView('issues')
   }, [])
+  const handleMemberDeleted = useCallback(
+    (id: string) => {
+      if (id !== currentUser) return
+      const next = (members ?? []).find((m) => m.role === 'admin' && m.id !== id)
+      switchUser(next?.id ?? 'member-1')
+    },
+    [currentUser, members, switchUser],
+  )
   const canCreateRef = useRef(canCreateIssue)
   canCreateRef.current = canCreateIssue
   const memberOptions = useMemo(
@@ -477,6 +485,8 @@ export function App() {
             onBack={() => setView('issues')}
             memberMap={memberMap}
             onOpenProject={openProject}
+            currentUser={currentUser}
+            onMemberDeleted={handleMemberDeleted}
           />
         ) : (
           <>
