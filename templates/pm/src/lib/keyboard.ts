@@ -3,6 +3,7 @@ interface Entry {
   key: string
   handler: Handler
   when?: () => boolean
+  mod?: boolean
 }
 const entries: Entry[] = []
 let bound = false
@@ -18,9 +19,14 @@ function isTypingContext(e: KeyboardEvent): boolean {
   return e.composedPath().some((n) => n instanceof Element && isTypingTarget(n))
 }
 
+function hasCommandModifier(e: KeyboardEvent): boolean {
+  return e.ctrlKey || e.metaKey || e.altKey
+}
+
 function onKey(e: KeyboardEvent) {
   for (const entry of entries) {
     if (e.key !== entry.key) continue
+    if (entry.mod ? !hasCommandModifier(e) : hasCommandModifier(e)) continue
     if (entry.key !== 'Escape' && isTypingContext(e)) continue
     if (entry.when && !entry.when()) continue
     try {
@@ -42,8 +48,13 @@ export function bindKeys(): void {
   bound = true
 }
 
-export function registerKey(key: string, handler: Handler, when?: () => boolean): () => void {
-  const entry: Entry = { key, handler, when }
+export function registerKey(
+  key: string,
+  handler: Handler,
+  when?: () => boolean,
+  opts?: { mod?: boolean },
+): () => void {
+  const entry: Entry = { key, handler, when, mod: opts?.mod }
   entries.push(entry)
   return () => {
     const i = entries.indexOf(entry)

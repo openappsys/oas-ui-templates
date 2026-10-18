@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { t } from '@/i18n'
+import { t, type Lang } from '@/i18n'
 import { useRepositories } from '@/data/context'
 import { useObservable } from '@/data/use-observable'
 import type { Action, Ctx } from '@/permission/policy'
@@ -35,6 +35,7 @@ export function CommandPalette({
   onShortcuts,
   onSwitchUser,
   onOpenIssue,
+  lang,
 }: {
   open: boolean
   onClose: () => void
@@ -48,13 +49,13 @@ export function CommandPalette({
   onShortcuts: () => void
   onSwitchUser: (id: string) => void
   onOpenIssue: (id: string) => void
+  lang: Lang
 }) {
   const hostRef = useRef<CommandHost>(null)
   const { issues: issuesRepo, members: membersRepo } = useRepositories()
   const members = useObservable(() => membersRepo.liveAll(), [membersRepo])
   const [query, setQuery] = useState('')
   const [issueCache, setIssueCache] = useState<Issue[] | null>(null)
-  const queryRef = useRef('')
   const depthRef = useRef(0)
 
   const rootItems = useMemo<CommandItem[]>(() => {
@@ -132,7 +133,7 @@ export function CommandPalette({
       page: (members ?? []).map((m) => ({ label: m.name, value: `user:${m.id}` })),
     }
     return [...nav, ...actions, switcher]
-  }, [can, members])
+  }, [can, members, lang])
 
   useEffect(() => {
     if (!open || issueCache) return
@@ -152,15 +153,21 @@ export function CommandPalette({
   useEffect(() => {
     const el = hostRef.current
     if (!el) return
-    if (open) el.setAttribute('open', '')
-    else {
-      el.removeAttribute('open')
-      queryRef.current = ''
-      depthRef.current = 0
-      setQuery('')
+    const sync = () => {
+      if (open) {
+        if (!el.hasAttribute('open')) el.setAttribute('open', '')
+      } else {
+        if (el.hasAttribute('open')) el.removeAttribute('open')
+        depthRef.current = 0
+        setQuery('')
+      }
+      const search = el.shadowRoot?.querySelector<HTMLInputElement>('.search')
+      if (search) search.placeholder = t('palettePlaceholder')
     }
-    const search = el.shadowRoot?.querySelector<HTMLInputElement>('.search')
-    if (search) search.placeholder = t('palettePlaceholder')
+    sync()
+    const obs = new MutationObserver(sync)
+    obs.observe(el, { attributes: true, attributeFilter: ['open'] })
+    return () => obs.disconnect()
   }, [open])
 
   useEffect(() => {
@@ -192,14 +199,13 @@ export function CommandPalette({
     el.items = next
     const search = el.shadowRoot?.querySelector<HTMLInputElement>('.search')
     if (search) search.placeholder = t('palettePlaceholder')
-  }, [query, rootItems, issueCache])
+  }, [query, rootItems, issueCache, lang])
 
   useEffect(() => {
     const el = hostRef.current
     if (!el) return
     const onInput = (e: Event) => {
       const v = (e as CustomEvent<{ value: string }>).detail?.value ?? ''
-      queryRef.current = v
       if (depthRef.current === 0) setQuery(v)
     }
     const onSelect = (e: Event) => {
@@ -225,7 +231,6 @@ export function CommandPalette({
       const d = (e as CustomEvent<{ depth: number }>).detail?.depth ?? 0
       depthRef.current = d
       if (d === 0) {
-        queryRef.current = ''
         setQuery('')
       }
     }

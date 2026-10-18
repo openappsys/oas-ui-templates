@@ -6,21 +6,32 @@ export function ShortcutsHelp({ open, onClose }: { open: boolean; onClose: () =>
   useEffect(() => {
     const el = ref.current
     if (!el) return
-    if (open) el.setAttribute('visible', '')
-    else el.removeAttribute('visible')
+    const sync = () => {
+      if (open && !el.hasAttribute('visible')) el.setAttribute('visible', '')
+      else if (!open && el.hasAttribute('visible')) el.removeAttribute('visible')
+    }
+    sync()
+    const obs = new MutationObserver(sync)
+    obs.observe(el, { attributes: true, attributeFilter: ['visible'] })
+    return () => obs.disconnect()
   }, [open])
   useEffect(() => {
     const el = ref.current
     if (!el) return
-    const h = (e: Event) => {
+    const onBeforeClose = (e: Event) => {
       if (e.defaultPrevented) return
       onClose()
     }
-    el.addEventListener('oas-before-close', h)
-    el.addEventListener('oas-close', h)
+    const onCloseEvent = (e: Event) => {
+      if (e.defaultPrevented) return
+      if (el.hasAttribute('visible')) return
+      onClose()
+    }
+    el.addEventListener('oas-before-close', onBeforeClose)
+    el.addEventListener('oas-close', onCloseEvent)
     return () => {
-      el.removeEventListener('oas-before-close', h)
-      el.removeEventListener('oas-close', h)
+      el.removeEventListener('oas-before-close', onBeforeClose)
+      el.removeEventListener('oas-close', onCloseEvent)
     }
   }, [onClose])
   const rows: Array<{ keys: string[]; label: string }> = [

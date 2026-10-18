@@ -353,11 +353,15 @@ export function App() {
     const whenNoOverlay = () => !isOverlayOpen()
     const unsubs = [
       registerKey('Escape', () => setSelectedId(null)),
-      registerKey('k', (e) => {
-        if (!(e.ctrlKey || e.metaKey)) return
-        e.preventDefault()
-        setPaletteOpen((v) => !v)
-      }),
+      registerKey(
+        'k',
+        (e) => {
+          e.preventDefault()
+          setPaletteOpen((v) => !v)
+        },
+        undefined,
+        { mod: true },
+      ),
       registerKey('c', openCreate, whenCreate),
       registerKey('C', openCreate, whenCreate),
       registerKey('/', (e) => {
@@ -759,6 +763,7 @@ export function App() {
         onShortcuts={() => setHelpOpen(true)}
         onSwitchUser={switchUser}
         onOpenIssue={setSelectedId}
+        lang={lang}
       />
 
       {/* 快捷键帮助 */}
