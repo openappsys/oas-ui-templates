@@ -3,7 +3,7 @@ import { levelResources, type ResourceTask } from '@oas-ui/ui/data/resource'
 import { useRepositories } from '@/data/context'
 import { useObservable } from '@/data/use-observable'
 import { t } from '@/i18n'
-import { UNASSIGNED_ID, toResourceData } from '@/lib/resource-data'
+import { diffResourceAssignments, UNASSIGNED_ID, toResourceData } from '@/lib/resource-data'
 import type { Action, Ctx } from '@/permission/policy'
 import type { Issue } from '@/types'
 
@@ -119,7 +119,7 @@ export function ResourceView({
   useEffect(() => () => window.clearTimeout(noticeTimer.current), [])
 
   // reassign 求解：把任务从最忙资源搬到较空闲资源（时长不动、尊重 capacity）；
-  // 写回只采纳改派（resources[0] 变 → assigneeId，__unassigned__ → null），逐条过 issue:edit 门禁
+  // 写回 diff 走 diffResourceAssignments（只比 resources[0]，__unassigned__ → null），逐条过 issue:edit 门禁
   const runLevel = useCallback(async () => {
     if (levelingRef.current) return
     levelingRef.current = true
@@ -130,24 +130,15 @@ export function ResourceView({
         scale: 'day',
         capacity: 1,
       })
-      const prev = new Map(cur.map((task) => [task.id, task]))
       const updates: Array<Promise<unknown>> = []
       let skipped = 0
-      for (const nt of leveled) {
-        if (!nt.id) continue
-        const ot = prev.get(nt.id)
-        if (!ot) continue
-        const nextOwner = nt.resources?.[0] ?? UNASSIGNED_ID
-        const prevOwner = ot.resources?.[0] ?? UNASSIGNED_ID
-        if (nextOwner === prevOwner) continue
-        const it = gateRef.current.issues.find((i) => i.id === nt.id)
+      for (const diff of diffResourceAssignments(cur, leveled)) {
+        const it = gateRef.current.issues.find((i) => i.id === diff.id)
         if (!it || !gateRef.current.can('issue:edit', { issue: it })) {
           skipped += 1
           continue
         }
-        updates.push(
-          issuesRepo.update(nt.id, { assigneeId: nextOwner === UNASSIGNED_ID ? null : nextOwner }),
-        )
+        updates.push(issuesRepo.update(diff.id, { assigneeId: diff.assigneeId }))
       }
       await Promise.all(updates)
       let text =
@@ -171,16 +162,18 @@ export function ResourceView({
   // 均载入口：admin（bulk:apply，批量改派跨成员）且存在超载时渲染
   const canLevel = can('bulk:apply')
   const popRef = useRef<HTMLElement>(null)
+  // deps 含 data：空态树卸载 popconfirm（ref 指向脱挂节点）后数据返回会换新节点重挂，
+  // canLevel/overloaded 不变时 effect 不重跑 → 监听仍挂在旧节点上；随 data 重绑保证确认可用
   useEffect(() => {
     const el = popRef.current
-    if (!el || !canLevel || overloaded === 0) return
+    if (!el || !canLevel || overloaded === 0 || data.tasks.length === 0) return
     const h = (e: Event) => {
       const reason = (e as CustomEvent<{ reason?: string }>).detail?.reason
       if (reason === 'ok') void runLevelRef.current()
     }
     el.addEventListener('oas-open-change', h)
     return () => el.removeEventListener('oas-open-change', h)
-  }, [canLevel, overloaded])
+  }, [canLevel, overloaded, data])
 
   if (data.tasks.length === 0) {
     return (

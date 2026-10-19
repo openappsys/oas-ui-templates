@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import type { ResourceTask } from '@oas-ui/ui/data/resource'
 import type { Issue, Member } from '@/types'
-import { UNASSIGNED_ID, toResourceData } from './resource-data'
+import { diffResourceAssignments, UNASSIGNED_ID, toResourceData } from './resource-data'
 
 const member = (id: string, name: string): Member => ({
   id,
@@ -125,5 +126,74 @@ describe('toResourceData 资源映射', () => {
     const snapshot = JSON.stringify(src)
     toResourceData(members, src, '未分配')
     expect(JSON.stringify(src)).toBe(snapshot)
+  })
+})
+
+const rt = (id: string, resources?: string[]): ResourceTask => ({
+  id,
+  name: `T-${id}`,
+  start: '2026-01-10',
+  end: '2026-01-20',
+  resources,
+})
+
+describe('diffResourceAssignments 均载改派 diff', () => {
+  it('改派：resources[0] 变 → 产出条目带新 assigneeId', () => {
+    const before = [rt('a', ['m-1']), rt('b', ['m-2'])]
+    const after = [rt('a', ['m-3']), rt('b', ['m-2'])]
+    expect(diffResourceAssignments(before, after)).toEqual([{ id: 'a', assigneeId: 'm-3' }])
+  })
+
+  it('未动任务不产出条目', () => {
+    expect(diffResourceAssignments([rt('a', ['m-1'])], [rt('a', ['m-1'])])).toEqual([])
+  })
+
+  it('搬到未分配行：__unassigned__ → assigneeId null', () => {
+    expect(diffResourceAssignments([rt('a', ['m-1'])], [rt('a', [UNASSIGNED_ID])])).toEqual([
+      { id: 'a', assigneeId: null },
+    ])
+  })
+
+  it('从未分配行改派到成员：__unassigned__ → 成员 id', () => {
+    expect(diffResourceAssignments([rt('a', [UNASSIGNED_ID])], [rt('a', ['m-2'])])).toEqual([
+      { id: 'a', assigneeId: 'm-2' },
+    ])
+  })
+
+  it('只比 resources[0]：后续位变化不产出条目', () => {
+    const before = [rt('a', ['m-1', 'm-2'])]
+    const after = [rt('a', ['m-1', 'm-3'])]
+    expect(diffResourceAssignments(before, after)).toEqual([])
+  })
+
+  it('resources 缺省视为未分配：与 __unassigned__ 互不产出，反向亦然', () => {
+    expect(diffResourceAssignments([rt('a')], [rt('a', [UNASSIGNED_ID])])).toEqual([])
+    expect(diffResourceAssignments([rt('a', [UNASSIGNED_ID])], [rt('a')])).toEqual([])
+  })
+
+  it('容错：缺 id 或只在一侧出现的任务跳过不抛', () => {
+    const before = [
+      rt('a', ['m-1']),
+      rt('b', ['m-1']),
+      rt('', ['m-1']),
+      { ...rt('c'), id: undefined },
+    ]
+    const after = [
+      rt('a', ['m-2']),
+      rt('d', ['m-2']),
+      rt('', ['m-2']),
+      { ...rt('e'), id: undefined },
+    ]
+    expect(diffResourceAssignments(before, after)).toEqual([{ id: 'a', assigneeId: 'm-2' }])
+  })
+
+  it('纯函数：不改写入参', () => {
+    const before = [rt('a', ['m-1'])]
+    const after = [rt('a', [UNASSIGNED_ID])]
+    const s1 = JSON.stringify(before)
+    const s2 = JSON.stringify(after)
+    diffResourceAssignments(before, after)
+    expect(JSON.stringify(before)).toBe(s1)
+    expect(JSON.stringify(after)).toBe(s2)
   })
 })

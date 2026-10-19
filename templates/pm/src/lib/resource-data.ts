@@ -9,6 +9,11 @@ export interface ResourceViewData {
   tasks: ResourceTask[]
 }
 
+export interface ResourceAssignmentDiff {
+  id: string
+  assigneeId: string | null
+}
+
 const toDate = (ms: number) => new Date(ms).toISOString().slice(0, 10)
 
 /** 成员 + Issue → oas-resource 数据：成员行（容量 1）+ 未分配虚拟行；
@@ -36,4 +41,24 @@ export function toResourceData(
     ...(used.has(UNASSIGNED_ID) ? [{ id: UNASSIGNED_ID, name: unassignedLabel, capacity: 1 }] : []),
   ]
   return { resources, tasks }
+}
+
+/** 均载前后改派 diff：按 id 对齐两批任务，只比 resources[0]（有效分配），
+ *  __unassigned__ ↔ null 互转；仅产出实际改派的条目，缺 id 或只在一侧出现跳过不抛 */
+export function diffResourceAssignments(
+  before: ResourceTask[],
+  after: ResourceTask[],
+): ResourceAssignmentDiff[] {
+  const prev = new Map(before.map((task) => [task.id, task]))
+  const diffs: ResourceAssignmentDiff[] = []
+  for (const nt of after) {
+    if (!nt.id) continue
+    const ot = prev.get(nt.id)
+    if (!ot) continue
+    const nextOwner = nt.resources?.[0] ?? UNASSIGNED_ID
+    const prevOwner = ot.resources?.[0] ?? UNASSIGNED_ID
+    if (nextOwner === prevOwner) continue
+    diffs.push({ id: nt.id, assigneeId: nextOwner === UNASSIGNED_ID ? null : nextOwner })
+  }
+  return diffs
 }
