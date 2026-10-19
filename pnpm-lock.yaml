@@ -434,20 +434,17 @@ importers:
   templates/pm:
     dependencies:
       '@oas-ui/icons':
-        specifier: ^2.6.1
-        version: 2.6.1
+        specifier: ^2.6.2
+        version: 2.6.2
       '@oas-ui/theme':
-        specifier: ^2.6.1
-        version: 2.6.1
+        specifier: ^2.6.2
+        version: 2.6.2
       '@oas-ui/ui':
-        specifier: ^2.6.1
-        version: 2.6.1
+        specifier: ^2.6.2
+        version: 2.6.2
       dexie:
         specifier: ^4.4.6
         version: 4.4.6
-      dexie-react-hooks:
-        specifier: ^4.4.0
-        version: 4.4.0(dexie@4.4.6)(react@19.3.1)
       nanoid:
         specifier: ^6.0.2
         version: 6.0.2
@@ -609,17 +606,32 @@ packages:
   '@oas-ui/core@2.6.1':
     resolution: {integrity: sha512-53Rnz7skjB3GEtZv+7I/kN7QWkjKaKGP/rvrlZSYPc7U1fg9+oEmCK0Olh0uXwM1bOFWQ6DKFzb5vNtVPW587Q==}
 
+  '@oas-ui/core@2.6.2':
+    resolution: {integrity: sha512-Aw1C215WMCv4mczsZa4ZyPWHIprxQEwtSFR5NWgP63ZPNx/gJms0CXBej08qIOMyEawHauZRsswTz0orETNYbw==}
+
   '@oas-ui/i18n@2.6.1':
     resolution: {integrity: sha512-m7ZxImw2BgxQTuUn+5HNSRTyPGVIYKZshN+nLaLrHKWj/UlyGncqh/up+zAem71Ahl14rHPWR+JqSQAeIwV3Rg==}
+
+  '@oas-ui/i18n@2.6.2':
+    resolution: {integrity: sha512-SektYGsuw55m96n30dMWlqJhtxEasxDgTbpRvyWM8kNs/CGAq5ivRBP/3D0GNG46cfYFy5lYkkDwKMnbfT3Fgg==}
 
   '@oas-ui/icons@2.6.1':
     resolution: {integrity: sha512-lfwammmU3Z1tEiLiFlhCZCknw0EV6ZpRnTQH1AcaNnMGVELpGEXYWN+SMS3igdLaYNcx6/OIe/Ufyq/rR9+26w==}
 
+  '@oas-ui/icons@2.6.2':
+    resolution: {integrity: sha512-GKywzgJf/D3IcEgd0jFFS+lVaZFifHJr/DBojVBl8saty85TMdTlwQVcvlCIeCx/5OYVEqEsx6AXreZgH1Ihog==}
+
   '@oas-ui/theme@2.6.1':
     resolution: {integrity: sha512-y86wkfUmOWUzsxlbdBv21A/9I+lztoVfHjPm5ZVsJUUZDtgD8kP8BxfuQLz2IqLjF/97Tc2i+FHJLcqwYLaOZA==}
 
+  '@oas-ui/theme@2.6.2':
+    resolution: {integrity: sha512-VtLgXEzXuD/oBBv8VDtopnfxt5eC9d/CHozBDKU652n39/mpvN3KhwFhI/dQPE55wyxuA7BXmRpM94xbcVMQgg==}
+
   '@oas-ui/ui@2.6.1':
     resolution: {integrity: sha512-Wa9trzbSIxZKn4SlzzR/lcyB0dbwGt6A8Ei8TUhByewFAq2w4p24rP0ep+8zjKu6biikYkP1IqIVIuySdTdA+w==}
+
+  '@oas-ui/ui@2.6.2':
+    resolution: {integrity: sha512-+GWOLE3Lk54XWZYtEfqHTjeL+7P+8kqiQy8OQq8sHBrrAe8aOCPgSBbI3d4tlqUxv4sRZOFKxHzvs8+KZMBYTA==}
 
   '@one-ini/wasm@0.2.1':
     resolution: {integrity: sha512-TUqERXGNTifZ9y2g3wPxQrw3HpHv/02DsW3D90T9x0hhonrL1ZqpSmNrU2XkoIq0fP1N6gZfVQzy2Fw1ZvGBNg==}
@@ -1167,12 +1179,6 @@ packages:
 
   devalue@5.9.4:
     resolution: {integrity: sha512-sPAT4pztbu6586/hrhOnMKS17IJrvg12mXiSPSS3W5qDeN2RGgvZ0diZCm31dBbnevfVmujNO3IM2wrS4Y2Rhg==}
-
-  dexie-react-hooks@4.4.0:
-    resolution: {integrity: sha512-ObLXBS5+4BJU8vtSvBx6b9fY6zZYgniAtwxzjCHsUQadgbqYN6935X2/1TWw4Rf2N1aZV1io5/ziox4vKuxABA==}
-    peerDependencies:
-      dexie: '>=4.2.0-alpha.1 <5.0.0'
-      react: '>=16'
 
   dexie@4.4.6:
     resolution: {integrity: sha512-hJP/BO6mjB+tX6hToIO1kmxYLNmun90wYbfcoAoLpKEyDYal/k33dg0TAfoUe2TDsbbLoVIzljJ3BN2UbR5EOg==}
@@ -1913,19 +1919,35 @@ snapshots:
 
   '@oas-ui/core@2.6.1': {}
 
+  '@oas-ui/core@2.6.2': {}
+
   '@oas-ui/i18n@2.6.1':
     dependencies:
       '@oas-ui/core': 2.6.1
 
+  '@oas-ui/i18n@2.6.2':
+    dependencies:
+      '@oas-ui/core': 2.6.2
+
   '@oas-ui/icons@2.6.1': {}
 
+  '@oas-ui/icons@2.6.2': {}
+
   '@oas-ui/theme@2.6.1': {}
+
+  '@oas-ui/theme@2.6.2': {}
 
   '@oas-ui/ui@2.6.1':
     dependencies:
       '@oas-ui/core': 2.6.1
       '@oas-ui/i18n': 2.6.1
       '@oas-ui/icons': 2.6.1
+
+  '@oas-ui/ui@2.6.2':
+    dependencies:
+      '@oas-ui/core': 2.6.2
+      '@oas-ui/i18n': 2.6.2
+      '@oas-ui/icons': 2.6.2
 
   '@one-ini/wasm@0.2.1': {}
 
@@ -2355,11 +2377,6 @@ snapshots:
   detect-libc@2.1.2: {}
 
   devalue@5.9.4: {}
-
-  dexie-react-hooks@4.4.0(dexie@4.4.6)(react@19.3.1):
-    dependencies:
-      dexie: 4.4.6
-      react: 19.3.1
 
   dexie@4.4.6: {}
 
