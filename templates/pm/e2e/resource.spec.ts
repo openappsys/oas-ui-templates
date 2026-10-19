@@ -31,6 +31,20 @@ async function switchUser(page: Page, id: string) {
   })
 }
 
+async function fillOInput(page: Page, testid: string, text: string) {
+  await page.evaluate(
+    ([tid, val]) => {
+      const host = document.querySelector(`[data-testid="${tid}"]`)
+      const inner =
+        (host?.shadowRoot?.querySelector('input, textarea') as HTMLInputElement) ??
+        (host as HTMLInputElement)
+      inner.value = val as string
+      host?.dispatchEvent(new CustomEvent('oas-input', { bubbles: true, detail: { value: val } }))
+    },
+    [testid, text],
+  )
+}
+
 type ResTask = { id: string; name: string; start: string; end: string; resources?: string[] }
 
 /** oas-resource 的 resources/tasks property 读回（宿主注入通道） */
@@ -264,4 +278,37 @@ test('R7 均载按钮仅 admin 可见：viewer 不渲染', async ({ page }) => {
   // viewer（member-4）：can('bulk:apply') 拒绝 → 按钮不渲染
   await switchUser(page, 'member-4')
   await expect(page.getByTestId('resource-level-btn')).toHaveCount(0)
+})
+
+test('R8 均载确认监听随重挂重绑：搜索清空 → 恢复 → 确认仍生效', async ({ page }) => {
+  await waitForSeed(page)
+  await setView(page, 'resource')
+  await expect(page.getByTestId('resource-view-gantt')).toBeAttached({ timeout: 10_000 })
+  await expect(page.getByTestId('resource-level-btn')).toBeVisible({ timeout: 15_000 })
+
+  // 搜索无结果 → 资源视图空态树卸载 popconfirm（按钮随之消失）
+  await fillOInput(page, 'toolbar-search', 'zzzz不存在')
+  await expect(page.getByTestId('resource-level-btn')).toHaveCount(0, { timeout: 10_000 })
+
+  // 清除搜索 → 数据回流，popconfirm 重挂为全新 DOM 节点（确认监听必须绑在新节点上）
+  await fillOInput(page, 'toolbar-search', '')
+  await expect(page.getByTestId('resource-level-btn')).toBeVisible({ timeout: 15_000 })
+
+  // 在重挂后的节点上派发契约事件（reason='ok'，同 R6）——旧实现监听器滞留死节点时此事件无响应
+  await page.getByTestId('resource-level-btn').evaluate((el) => {
+    el.closest('oas-popconfirm')?.dispatchEvent(
+      new CustomEvent('oas-open-change', { bubbles: true, detail: { reason: 'ok' } }),
+    )
+  })
+
+  // 告警三态之一必现且非失败（4s 自动隐藏，poll 短间隔抢读）
+  await expect
+    .poll(async () => (await page.getByTestId('resource-level-alert').textContent()) ?? '', {
+      timeout: 15_000,
+      intervals: [100, 300, 500],
+    })
+    .not.toBe('')
+  const text = ((await page.getByTestId('resource-level-alert').textContent()) ?? '').trim()
+  expect(text).not.toContain('失败')
+  expect(text).not.toContain('failed')
 })
