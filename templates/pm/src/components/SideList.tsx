@@ -94,10 +94,13 @@ function renderSideRow(element: HTMLElement, row: SideRow, onDelete: (id: string
   }`
   element.setAttribute('data-testid', row.testid)
   element.setAttribute('clickable', '')
+  if (row.active) element.setAttribute('aria-current', 'true')
+  else element.removeAttribute('aria-current')
   if (row.statusColor) {
     const dot = document.createElement('span')
     dot.className = 'status-dot'
     dot.setAttribute('slot', 'icon')
+    dot.setAttribute('aria-hidden', 'true')
     dot.style.background = row.statusColor
     element.appendChild(dot)
   }
