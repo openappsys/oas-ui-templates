@@ -57,7 +57,7 @@ export interface IssueRepository {
   create(input: CreateIssueInput): Promise<Issue>
   update(id: string, changes: Partial<Issue>): Promise<void>
   delete(id: string): Promise<void>
-  liveWindow(filters: IssueWindowFilters, currentUser: string): Observable<Issue[]>
+  liveWindow(filters: IssueWindowFilters, currentUser: string, limit?: number): Observable<Issue[]>
   liveCounts(projectId: string): Observable<ProjectCounts>
   liveSubIssues(parentId: string): Observable<Issue[]>
   liveRelationCandidates(projectId: string, limit: number): Observable<Issue[]>

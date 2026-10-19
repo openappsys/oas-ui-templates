@@ -24,4 +24,5 @@ export const DEFAULT_FILTERS: Filters = {
 }
 
 export const LIST_WINDOW = 500
+export const LIST_WINDOW_STEP = 500
 export const GROUP_PREVIEW = 30

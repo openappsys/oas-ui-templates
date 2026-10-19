@@ -148,6 +148,7 @@ export function VirtualIssueList({
   toggleSelect,
   showCheckbox,
   cursorIndex,
+  onNearBottom,
 }: {
   issues: Issue[]
   onSelect: (id: string) => void
@@ -156,6 +157,7 @@ export function VirtualIssueList({
   toggleSelect: (id: string) => void
   showCheckbox: boolean
   cursorIndex: number
+  onNearBottom: () => void
 }) {
   const listRef = useRef<HTMLElement>(null)
   const lastTopRef = useRef(0)
@@ -167,8 +169,21 @@ export function VirtualIssueList({
     toggleSelect,
     showCheckbox,
     cursorIndex,
+    onNearBottom,
+    rowCount: issues.length,
   })
-  renderRef.current = { onSelect, memberMap, selectedIds, toggleSelect, showCheckbox, cursorIndex }
+  renderRef.current = {
+    onSelect,
+    memberMap,
+    selectedIds,
+    toggleSelect,
+    showCheckbox,
+    cursorIndex,
+    onNearBottom,
+    rowCount: issues.length,
+  }
+  const nearRef = useRef(false)
+  const lastExtendRef = useRef(0)
 
   // oas-item 渲染通道必须先于 items 挂上（effect 按声明序执行）：
   // 切回视图时数据即刻就位，items setter 同步渲染，通道缺席则列表永远空白
@@ -193,7 +208,20 @@ export function VirtualIssueList({
     el.addEventListener('oas-item', onItem)
     // 记录滚动位置：items 更新后 scrollToIndex 恢复视口用
     const onScroll = (e: Event) => {
-      lastTopRef.current = (e as CustomEvent<{ scrollTop: number }>).detail?.scrollTop ?? 0
+      const st = (e as CustomEvent<{ scrollTop: number }>).detail?.scrollTop ?? 0
+      lastTopRef.current = st
+      // 触底续载：接近已渲染内容底部时触发（进入 near 状态沿触发一次，数据落地后复位）
+      const rowCount = renderRef.current.rowCount ?? 0
+      if (rowCount === 0) return
+      const contentH = rowCount * 44
+      const viewportH = el.offsetHeight || 600
+      const near = st + viewportH >= contentH - 900
+      const now = Date.now()
+      if (near && !nearRef.current && now - lastExtendRef.current > 800) {
+        lastExtendRef.current = now
+        renderRef.current.onNearBottom()
+      }
+      nearRef.current = near
     }
     el.addEventListener('oas-scroll', onScroll)
     return () => {

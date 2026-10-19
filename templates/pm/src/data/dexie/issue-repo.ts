@@ -55,7 +55,11 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
       await db.issues.delete(id)
     },
 
-    liveWindow(filters: IssueWindowFilters, currentUser: string): Observable<Issue[]> {
+    liveWindow(
+      filters: IssueWindowFilters,
+      currentUser: string,
+      limit: number = LIST_WINDOW,
+    ): Observable<Issue[]> {
       return fromLiveQuery(async () => {
         const items = filters.statusFilter
           ? await db.issues
@@ -65,13 +69,13 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
                 [filters.projectId, filters.statusFilter, Dexie.maxKey],
               )
               .reverse()
-              .limit(LIST_WINDOW)
+              .limit(limit)
               .toArray()
           : await db.issues
               .where('[projectId+updatedAt]')
               .between([filters.projectId, Dexie.minKey], [filters.projectId, Dexie.maxKey])
               .reverse()
-              .limit(LIST_WINDOW)
+              .limit(limit)
               .toArray()
         let out = items
         if (filters.search.trim()) {

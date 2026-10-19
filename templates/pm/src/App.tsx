@@ -5,7 +5,13 @@ import { OSelect, OTabs } from './components/oas-wrappers'
 import { t, loadLang, setLang, type Lang } from './i18n'
 import { useSavedViews } from './components/BulkBar'
 import { STATUS_COLOR } from './lib/colors'
-import { DEFAULT_FILTERS, type Filters, type Grouping } from './lib/filters'
+import {
+  DEFAULT_FILTERS,
+  LIST_WINDOW,
+  LIST_WINDOW_STEP,
+  type Filters,
+  type Grouping,
+} from './lib/filters'
 import { useProjectCounts } from './lib/hooks'
 import { loadTheme, storeTheme, type ThemePreference } from './lib/preferences'
 import { applyTheme } from './lib/theme'
@@ -28,8 +34,9 @@ import { AdminView, type AdminTab } from './views/admin/AdminView'
 
 type View = 'dashboard' | 'issues' | 'board' | 'timeline' | 'resource' | 'admin'
 
-/** 数据窗口：compound index 取项目/状态维度最近 LIST_WINDOW 条，再内存细筛 */
-function useIssueWindow(f: Filters, currentUser: string) {
+/** 数据窗口：compound index 取项目/状态维度最近 listLimit 条，再内存细筛；
+ *  触底续载：滚动近底时 listLimit 递增（每批 LIST_WINDOW_STEP 条） */
+function useIssueWindow(f: Filters, currentUser: string, listLimit: number) {
   const { issues } = useRepositories()
   return useObservable(
     () =>
@@ -44,6 +51,7 @@ function useIssueWindow(f: Filters, currentUser: string) {
           sortBy: f.sortBy,
         },
         currentUser,
+        listLimit,
       ),
     [
       f.projectId,
@@ -54,6 +62,7 @@ function useIssueWindow(f: Filters, currentUser: string) {
       f.myOnly,
       f.sortBy,
       currentUser,
+      listLimit,
     ],
   )
 }
@@ -236,7 +245,9 @@ export function App() {
     saveViewRef.current?.removeAttribute('visible')
   }, [filters, savedViewsRepo])
 
-  const issues = useIssueWindow(filters, currentUser)
+  const [listLimit, setListLimit] = useState(LIST_WINDOW)
+  const extendList = useCallback(() => setListLimit((n) => n + LIST_WINDOW_STEP), [])
+  const issues = useIssueWindow(filters, currentUser, listLimit)
   const counts = useProjectCounts(filters.projectId)
   const members = useMembers()
   const projects = useProjects()
@@ -668,6 +679,7 @@ export function App() {
                     currentUser={currentUser}
                     can={can}
                     navActive={view === 'issues' && selectedId === null}
+                    onNearBottom={extendList}
                   />
                 </ErrorBoundary>
               )}

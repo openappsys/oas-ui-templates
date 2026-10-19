@@ -25,6 +25,7 @@ export function IssueListView({
   currentUser,
   can,
   navActive,
+  onNearBottom,
 }: {
   issues: Issue[] | undefined
   total: number
@@ -38,6 +39,7 @@ export function IssueListView({
   currentUser: string
   can: (action: Action, ctx?: Ctx) => boolean
   navActive: boolean
+  onNearBottom: () => void
 }) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [cursorIndex, setCursorIndex] = useState(-1)
@@ -182,7 +184,9 @@ export function IssueListView({
         <span className="issue-total" data-testid="issue-total">
           {loading
             ? '…'
-            : `${total.toLocaleString()} 条${total > list.length ? `（窗口 ${list.length} 条）` : ''}`}
+            : total > list.length
+              ? `${total.toLocaleString()} 条 · 已加载 ${list.length.toLocaleString()} 条（滚动加载）`
+              : `${total.toLocaleString()} 条`}
         </span>
       </div>
       <div className="issue-toolbar" data-testid="issue-toolbar">
@@ -289,6 +293,7 @@ export function IssueListView({
           toggleSelect={toggleSelect}
           showCheckbox={canBulk}
           cursorIndex={cursorIndex}
+          onNearBottom={onNearBottom}
         />
       )}
       <BulkBar
