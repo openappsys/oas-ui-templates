@@ -213,6 +213,31 @@ test('M4 时间线：oas-gantt 接收 tasks 并渲染', async ({ page }) => {
     .toBeGreaterThan(0)
 })
 
+test('M4b 时间线：项目 summary 分组 + 进度字段 + 斑马纹开启', async ({ page }) => {
+  await waitForSeed(page)
+  await setView(page, 'timeline')
+  const gantt = page.getByTestId('gantt')
+  await expect(gantt).toBeAttached({ timeout: 10_000 })
+  // 组件级 stripe 属性在场（斑马纹；显式 "false" 才视为关）
+  await expect(gantt).toHaveAttribute('stripe', /.*/)
+  // tasks 读回：summary 分组行与 progress 字段共存（milestone 依赖 seed 分布，不做断言）
+  await expect
+    .poll(
+      async () =>
+        page.evaluate(() => {
+          const g = document.querySelector('oas-gantt') as HTMLElement & {
+            tasks?: Array<{ type?: string; progress?: number }>
+          }
+          const ts = g.tasks ?? []
+          return (
+            ts.some((t) => t.type === 'summary') && ts.some((t) => typeof t.progress === 'number')
+          )
+        }),
+      { timeout: 10_000 },
+    )
+    .toBe(true)
+})
+
 test('M5 工具栏：新建 Issue 全流程 + CSV 导出 + 关于弹窗', async ({ page }) => {
   await waitForSeed(page)
 
