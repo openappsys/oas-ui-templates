@@ -422,7 +422,12 @@ body {
   padding: 14px 16px;
 }
 
+.timeline-page oas-gantt {
+  --oas-gantt-height: calc(100vh - 300px);
+}
+
 .resource-page oas-resource {
+  --oas-resource-height: calc(100vh - 300px);
   display: block;
   flex: 1;
   min-height: 420px;

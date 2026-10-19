@@ -32,18 +32,26 @@ const issue = (over: Partial<Issue>): Issue => ({
 const members = [member('m-1', '张伟'), member('m-2', '李娜')]
 
 describe('toResourceData 资源映射', () => {
-  it('resources = 成员行（capacity 1）+ 未分配虚拟行（尾位）', () => {
-    const { resources } = toResourceData(members, [], '未分配')
+  it('无任务资源行被过滤：只保留有任务的成员与未分配行', () => {
+    const due = Date.UTC(2026, 0, 20)
+    const { resources, tasks } = toResourceData(
+      [member('m-1', '张伟'), member('m-2', '李娜'), member('m-3', '王强')],
+      [
+        issue({ id: 'a', key: 'OAS-1', dueAt: due, assigneeId: 'm-1' }),
+        issue({ id: 'b', key: 'OAS-2', dueAt: due, assigneeId: null }),
+      ],
+      '未分配',
+    )
     expect(resources).toEqual([
       { id: 'm-1', name: '张伟', capacity: 1 },
-      { id: 'm-2', name: '李娜', capacity: 1 },
       { id: UNASSIGNED_ID, name: '未分配', capacity: 1 },
     ])
+    expect(tasks).toHaveLength(2)
   })
 
-  it('无成员时仍有未分配行（空成员不炸）', () => {
-    const { resources } = toResourceData([], [], 'Unassigned')
-    expect(resources).toEqual([{ id: UNASSIGNED_ID, name: 'Unassigned', capacity: 1 }])
+  it('全部为空时 resources 为空数组', () => {
+    const { resources } = toResourceData(members, [], '未分配')
+    expect(resources).toEqual([])
   })
 
   it('仅收未完成且有截止日的 Issue（done/cancelled/无 dueAt 剔除）', () => {

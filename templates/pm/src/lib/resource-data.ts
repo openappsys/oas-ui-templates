@@ -12,16 +12,13 @@ export interface ResourceViewData {
 const toDate = (ms: number) => new Date(ms).toISOString().slice(0, 10)
 
 /** 成员 + Issue → oas-resource 数据：成员行（容量 1）+ 未分配虚拟行；
- *  任务收「未完成且有截止日」的 Issue，start 回落 createdAt，按 end 升序截 200 条 */
+ *  任务收「未完成且有截止日」的 Issue，start 回落 createdAt，按 end 升序截 200 条；
+ *  无任务的资源行不产出（筛选视图下空泳道是噪音） */
 export function toResourceData(
   members: Member[],
   issues: Issue[],
   unassignedLabel: string,
 ): ResourceViewData {
-  const resources: ResourceItem[] = [
-    ...members.map((m) => ({ id: m.id, name: m.name, capacity: 1 })),
-    { id: UNASSIGNED_ID, name: unassignedLabel, capacity: 1 },
-  ]
   const tasks: ResourceTask[] = issues
     .filter((i) => i.dueAt !== null && i.status !== 'done' && i.status !== 'cancelled')
     .map((i) => ({
@@ -33,5 +30,10 @@ export function toResourceData(
     }))
     .sort((a, b) => (a.end < b.end ? -1 : a.end > b.end ? 1 : 0))
     .slice(0, 200)
+  const used = new Set(tasks.flatMap((t) => t.resources))
+  const resources: ResourceItem[] = [
+    ...members.filter((m) => used.has(m.id)).map((m) => ({ id: m.id, name: m.name, capacity: 1 })),
+    ...(used.has(UNASSIGNED_ID) ? [{ id: UNASSIGNED_ID, name: unassignedLabel, capacity: 1 }] : []),
+  ]
   return { resources, tasks }
 }
