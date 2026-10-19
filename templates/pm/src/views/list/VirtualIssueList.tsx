@@ -216,6 +216,21 @@ export function VirtualIssueList({
     el.scrollToIndex?.(Math.round(lastTopRef.current / 44), { align: 'start' })
   }, [issues])
 
+  // 渲染窗高 = height 属性（缺省 320，不测宿主布局）——ResizeObserver 把宿主实际
+  // 高度实时写入，虚拟窗口随视口伸缩（修「只渲染 9 行后大片空白」）
+  useEffect(() => {
+    const el = listRef.current
+    if (!el) return
+    const sync = () => {
+      const h = Math.round(el.getBoundingClientRect().height)
+      if (h > 0) el.setAttribute('height', String(h))
+    }
+    sync()
+    const ro = new ResizeObserver(sync)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
   useEffect(() => {
     if (cursorIndex < 0) return
     const el = listRef.current as
