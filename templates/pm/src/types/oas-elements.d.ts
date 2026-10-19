@@ -24,6 +24,13 @@ declare module 'react' {
       }
       'oas-empty': HTMLAttributes<HTMLElement> & { description?: string }
       'oas-list-item': HTMLAttributes<HTMLElement> & { title?: string }
+      'oas-list': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        size?: string
+        'max-height'?: string
+        bordered?: boolean | string
+        split?: boolean | string
+        hoverable?: boolean | string
+      }
       'oas-progress': HTMLAttributes<HTMLElement> & {
         percent?: number | string
         'show-text'?: boolean | string

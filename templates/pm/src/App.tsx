@@ -14,6 +14,7 @@ import { useRepositories } from './data/context'
 import { useObservable } from './data/use-observable'
 import { can as policyCan, type Action, type Ctx } from './permission/policy'
 import { Avatar } from './components/Avatar'
+import { SideList, type SideRow } from './components/SideList'
 import { ShortcutsHelp } from './components/ShortcutsHelp'
 import { CommandPalette } from './components/CommandPalette'
 import { ErrorBoundary } from './components/ErrorBoundary'
@@ -283,6 +284,125 @@ export function App() {
     setFilters((prev) => ({ ...prev, [k]: v }))
   }, [])
 
+  const canDeleteView = can('view:delete')
+  const sideRows: SideRow[] = []
+  for (const p of projects ?? []) {
+    sideRows.push({
+      group: t('projects'),
+      kind: 'project',
+      value: `project:${p.id}`,
+      id: p.id,
+      testid: `project-${p.id}`,
+      label: p.name,
+      active: filters.projectId === p.id,
+    })
+  }
+  sideRows.push(
+    {
+      group: t('views'),
+      kind: 'view',
+      value: 'view:all',
+      id: 'all',
+      testid: 'view-all',
+      label: t('allIssues'),
+      active: !filters.myOnly,
+    },
+    {
+      group: t('views'),
+      kind: 'view',
+      value: 'view:my',
+      id: 'my',
+      testid: 'view-my',
+      label: `我的（${memberMap.get(currentUser)?.name ?? ''}）`,
+      active: filters.myOnly,
+    },
+    {
+      group: t('status'),
+      kind: 'status',
+      value: 'status:all',
+      id: 'all',
+      testid: 'filter-all',
+      label: t('all'),
+      active: filters.statusFilter === null,
+      count: counts?.total.toLocaleString() ?? '…',
+    },
+  )
+  for (const s of ISSUE_STATUSES) {
+    sideRows.push({
+      group: t('status'),
+      kind: 'status',
+      value: `status:${s}`,
+      id: s,
+      testid: `filter-${s}`,
+      label: STATUS_LABEL[s],
+      active: filters.statusFilter === s,
+      statusColor: STATUS_COLOR[s],
+      count: counts?.byStatus[s]?.toLocaleString() ?? '…',
+    })
+  }
+  for (const v of savedViews ?? []) {
+    sideRows.push({
+      group: t('savedViews'),
+      kind: 'savedview',
+      value: `savedview:${v.id}`,
+      id: v.id,
+      testid: `saved-view-${v.id}`,
+      label: v.name,
+      savedFilters: v.filters,
+      deletable: canDeleteView,
+    })
+  }
+  for (const m of members ?? []) {
+    sideRows.push({
+      group: t('members'),
+      kind: 'member',
+      value: `member:${m.id}`,
+      id: m.id,
+      testid: `member-${m.id}`,
+      label: m.name,
+      active: filters.assigneeFilter === m.id,
+      avatarColor: m.avatarColor,
+      avatarText: m.name[0],
+      count: String(memberCounts.get(m.id) ?? 0),
+    })
+  }
+
+  const handleSideRowClick = useCallback(
+    (row: SideRow) => {
+      switch (row.kind) {
+        case 'project':
+          setFilters((prev) => ({ ...prev, projectId: row.id ?? '', statusFilter: null }))
+          break
+        case 'view':
+          setF('myOnly', row.id === 'my')
+          break
+        case 'status':
+          setF('statusFilter', row.id === 'all' ? null : (row.id as IssueStatus))
+          break
+        case 'savedview':
+          if (row.savedFilters) applySavedView(row.savedFilters)
+          break
+        case 'member': {
+          const memberId = row.id
+          if (!memberId) break
+          setFilters((prev) => ({
+            ...prev,
+            assigneeFilter: prev.assigneeFilter === memberId ? null : memberId,
+          }))
+          break
+        }
+      }
+    },
+    [setF, applySavedView],
+  )
+
+  const handleDeleteSavedView = useCallback(
+    (id: string) => {
+      void savedViewsRepo.delete(id)
+    },
+    [savedViewsRepo],
+  )
+
   const exportCsv = useCallback(() => {
     if (!issues?.length) return
     const esc = (s: string) => `"${s.replace(/"/g, '""')}"`
@@ -515,110 +635,11 @@ export function App() {
                   onChange={(v) => setView(v as View)}
                 />
               </div>
-              <p className="side-title">{t('projects')}</p>
-              {(projects ?? []).map((p) => (
-                <button
-                  key={p.id}
-                  className={`side-item${filters.projectId === p.id ? ' is-active' : ''}`}
-                  type="button"
-                  data-testid={`project-${p.id}`}
-                  onClick={() => {
-                    setFilters((prev) => ({ ...prev, projectId: p.id, statusFilter: null }))
-                  }}
-                >
-                  <span>{p.name}</span>
-                </button>
-              ))}
-              <p className="side-title">{t('views')}</p>
-              <button
-                className={`side-item${!filters.myOnly ? ' is-active' : ''}`}
-                type="button"
-                data-testid="view-all"
-                onClick={() => setF('myOnly', false)}
-              >
-                <span>{t('allIssues')}</span>
-              </button>
-              <button
-                className={`side-item${filters.myOnly ? ' is-active' : ''}`}
-                type="button"
-                data-testid="view-my"
-                onClick={() => setF('myOnly', true)}
-              >
-                <span>我的（{memberMap.get(currentUser)?.name ?? ''}）</span>
-              </button>
-              <p className="side-title">{t('status')}</p>
-              <button
-                className={`side-item${filters.statusFilter === null ? ' is-active' : ''}`}
-                type="button"
-                data-testid="filter-all"
-                onClick={() => setF('statusFilter', null)}
-              >
-                <span>{t('all')}</span>
-                <span className="side-count">{counts?.total.toLocaleString() ?? '…'}</span>
-              </button>
-              {ISSUE_STATUSES.map((s) => (
-                <button
-                  key={s}
-                  className={`side-item${filters.statusFilter === s ? ' is-active' : ''}`}
-                  type="button"
-                  data-testid={`filter-${s}`}
-                  onClick={() => setF('statusFilter', s)}
-                >
-                  <span style={{ color: STATUS_COLOR[s] }}>●</span>
-                  <span>{STATUS_LABEL[s]}</span>
-                  <span className="side-count">{counts?.byStatus[s]?.toLocaleString() ?? '…'}</span>
-                </button>
-              ))}
-              <p className="side-title">{t('savedViews')}</p>
-              {(savedViews ?? []).map((v) => (
-                <div key={v.id} className="side-item saved-view-item">
-                  <button
-                    className="side-item"
-                    type="button"
-                    data-testid={`saved-view-${v.id}`}
-                    onClick={() => applySavedView(v.filters)}
-                    style={{
-                      flex: 1,
-                      border: 'none',
-                      background: 'none',
-                      padding: 0,
-                      textAlign: 'left',
-                      font: 'inherit',
-                      color: 'inherit',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <span>{v.name}</span>
-                  </button>
-                  {can('view:delete') && (
-                    <button
-                      className="saved-view-del"
-                      type="button"
-                      aria-label={`删除视图 ${v.name}`}
-                      data-testid={`saved-view-del-${v.id}`}
-                      onClick={() => void savedViewsRepo.delete(v.id)}
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
-              ))}
-              <p className="side-title">{t('members')}</p>
-              {(members ?? []).map((m) => (
-                <button
-                  key={m.id}
-                  className={`side-item${filters.assigneeFilter === m.id ? ' is-active' : ''}`}
-                  type="button"
-                  data-testid={`member-${m.id}`}
-                  onClick={() =>
-                    setF('assigneeFilter', filters.assigneeFilter === m.id ? null : m.id)
-                  }
-                >
-                  <Avatar member={m} size={16} />
-                  <span>{m.name}</span>
-                  <span className="side-count">{memberCounts.get(m.id) ?? 0}</span>
-                </button>
-              ))}
+              <SideList
+                rows={sideRows}
+                onRowClick={handleSideRowClick}
+                onDeleteSavedView={handleDeleteSavedView}
+              />
             </aside>
             <main className="content">
               {view === 'dashboard' && (

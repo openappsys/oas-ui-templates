@@ -100,35 +100,6 @@ body {
   border-right: 1px solid var(--oas-color-border, #e2e8f0);
 }
 
-.side-title {
-  margin: 2px 8px 8px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.4px;
-  color: var(--oas-color-text-secondary, #6b7280);
-  text-transform: uppercase;
-}
-
-.side-item {
-  appearance: none;
-  border: none;
-  background: none;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  border-radius: 8px;
-  cursor: pointer;
-  font: inherit;
-  font-size: 13px;
-  color: inherit;
-  text-align: left;
-}
-.side-item:hover {
-  background: var(--oas-color-bg-hover, #f1f5f9);
-}
-
 .content {
   flex: 1;
   min-width: 0;
@@ -189,9 +160,7 @@ body {
 }
 
 .issue-row:focus-visible,
-.tb-user:focus-visible,
-.side-item:focus-visible,
-.saved-view-del:focus-visible {
+.tb-user:focus-visible {
   outline: 2px solid var(--oas-color-primary);
   outline-offset: -2px;
 }
@@ -624,13 +593,6 @@ body {
 .avatar-empty {
   background: var(--oas-color-border-strong, #cbd5e1);
   color: var(--oas-color-text-secondary, #64748b);
-}
-
-/* ── 侧栏计数 ── */
-.side-item .side-count {
-  margin-left: auto;
-  font-size: 11px;
-  color: var(--oas-color-text-disabled, #94a3b8);
 }
 
 /* ── 列表工具条 ── */
@@ -1224,27 +1186,6 @@ body {
   cursor: pointer;
 }
 
-/* ── 保存的视图 ── */
-.saved-view-item {
-  display: flex;
-  align-items: center;
-}
-
-.saved-view-del {
-  appearance: none;
-  border: none;
-  background: none;
-  padding: 0 2px;
-  margin-left: auto;
-  font-size: 12px;
-  color: var(--oas-color-text-disabled, #94a3b8);
-  cursor: pointer;
-}
-
-.saved-view-del:hover {
-  color: var(--oas-color-danger-text, #dc2626);
-}
-
 /* ── 活动历史 ── */
 .activities-block {
   display: flex;
@@ -1326,15 +1267,8 @@ body {
     padding: 8px 4px;
     overflow-x: hidden;
   }
-  .side-panel .side-title,
-  .side-panel .side-item span:last-child,
-  .side-panel .side-count,
   .side-view-seg oas-segmented {
     display: none;
-  }
-  .side-panel .side-item {
-    justify-content: center;
-    padding: 8px 0;
   }
   .toolbar-search {
     width: 140px;
