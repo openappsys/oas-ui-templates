@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import type { Issue, IssuePriority, IssueStatus, Member, Project } from './types'
 import { ISSUE_PRIORITIES, ISSUE_STATUSES, STATUS_LABEL } from './types'
-import { OSelect, OSegmented } from './components/oas-wrappers'
+import { OSelect, OTabs } from './components/oas-wrappers'
 import { t, loadLang, setLang, type Lang } from './i18n'
 import { useSavedViews } from './components/BulkBar'
 import { STATUS_COLOR } from './lib/colors'
@@ -22,10 +22,11 @@ import { DashboardView } from './views/dashboard/DashboardView'
 import { IssueListView } from './views/list/IssueListView'
 import { KanbanBoard } from './views/board/KanbanBoard'
 import { TimelineView } from './views/timeline/TimelineView'
+import { ResourceView } from './views/resource/ResourceView'
 import { IssueDetailDrawer } from './views/issue/IssueDetailDrawer'
 import { AdminView, type AdminTab } from './views/admin/AdminView'
 
-type View = 'dashboard' | 'issues' | 'board' | 'timeline' | 'admin'
+type View = 'dashboard' | 'issues' | 'board' | 'timeline' | 'resource' | 'admin'
 
 /** 数据窗口：compound index 取项目/状态维度最近 LIST_WINDOW 条，再内存细筛 */
 function useIssueWindow(f: Filters, currentUser: string) {
@@ -623,7 +624,7 @@ export function App() {
           <>
             <aside className="side-panel" data-testid="side-panel">
               <div className="side-view-seg">
-                <OSegmented
+                <OTabs
                   testid="view-seg"
                   value={view}
                   options={[
@@ -631,6 +632,7 @@ export function App() {
                     { label: t('list'), value: 'issues' },
                     { label: t('board'), value: 'board' },
                     { label: t('timeline'), value: 'timeline' },
+                    { label: t('resource'), value: 'resource' },
                   ]}
                   onChange={(v) => setView(v as View)}
                 />
@@ -682,6 +684,11 @@ export function App() {
               {view === 'timeline' && (
                 <ErrorBoundary key={view}>
                   <TimelineView issues={issues ?? []} can={can} />
+                </ErrorBoundary>
+              )}
+              {view === 'resource' && (
+                <ErrorBoundary key={view}>
+                  <ResourceView issues={issues ?? []} can={can} onOpenIssue={setSelectedId} />
                 </ErrorBoundary>
               )}
             </main>

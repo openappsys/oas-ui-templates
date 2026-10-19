@@ -75,6 +75,20 @@ declare module 'react' {
         block?: boolean | string
         size?: string
       }
+      'oas-tabs': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        'tab-position'?: string
+        size?: string
+        type?: string
+        'hide-content'?: boolean | string
+        items?: string
+        active?: string
+      }
+      'oas-resource': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        scale?: string
+        height?: number | string
+        'show-load-values'?: boolean | string
+        'show-overload-badge'?: boolean | string
+      }
       'oas-statistic': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
         title?: string
       }

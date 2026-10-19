@@ -62,6 +62,10 @@ async function captureViews(page: Page, suffix: string) {
   await page.waitForTimeout(2500)
   await page.screenshot({ path: `shots/pm-timeline${suffix}.png` })
 
+  await setView(page, 'resource')
+  await page.waitForTimeout(2000)
+  await page.screenshot({ path: `shots/pm-resource${suffix}.png` })
+
   // 回列表验证切换往返不丢行
   await setView(page, 'issues')
   await page.waitForSelector('.issue-row', { timeout: 15_000 })

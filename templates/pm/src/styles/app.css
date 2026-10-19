@@ -413,6 +413,38 @@ body {
   color: var(--oas-color-text-secondary, #6b7280);
 }
 
+/* ── 资源视图（oas-resource） ── */
+.resource-page {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 14px 16px;
+}
+
+.resource-page oas-resource {
+  display: block;
+  flex: 1;
+  min-height: 420px;
+}
+
+.resource-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.resource-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--oas-color-text-primary, #1e293b);
+}
+
+.resource-head oas-badge {
+  font-size: 12px;
+}
+
 /* ── 关于弹窗 ── */
 .about-body {
   display: flex;
@@ -840,17 +872,14 @@ body {
   letter-spacing: 0.5px;
 }
 
-/* ── 视图切换（侧栏顶部 segmented） ── */
+/* ── 视图切换（侧栏顶部，垂直 oas-tabs） ── */
 .side-view-seg {
   padding: 8px 10px 0;
 }
 
-.side-view-seg oas-segmented {
+.side-view-seg oas-tabs {
   display: block;
   width: 100%;
-  --oas-font-size-sm: 10px;
-  --oas-control-height-sm: 24px;
-  --oas-space-3: 4px;
 }
 
 .view-seg {
@@ -1267,7 +1296,7 @@ body {
     padding: 8px 4px;
     overflow-x: hidden;
   }
-  .side-view-seg oas-segmented {
+  .side-view-seg oas-tabs {
     display: none;
   }
   .toolbar-search {
