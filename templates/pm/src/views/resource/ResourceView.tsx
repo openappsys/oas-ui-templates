@@ -27,6 +27,7 @@ export function ResourceView({
   const members = useObservable(() => membersRepo.liveAll(), [membersRepo])
   const resRef = useRef<ResourceElement>(null)
   const [overloaded, setOverloaded] = useState(0)
+  const [reinject, setReinject] = useState(0)
 
   // 标签按渲染期求值：切换语言时 App 重渲染 → 值变 → memo 重算，未分配行名随文案重建
   const unassignedLabel = t('resourceUnassigned')
@@ -40,11 +41,11 @@ export function ResourceView({
   const openRef = useRef(onOpenIssue)
   openRef.current = onOpenIssue
 
-  // 监听先于数据注入挂载：oas-overload 按签名去重只派发一次，
-  // 首次 tasks 赋值若在监听之前发生，超载事件会被永久错过（角标丢失）
+  // 监听先于数据注入挂载（deps 含 data：空态挂载时 ref 为空，数据到达重挂后重新绑定）：
+  // oas-overload 按签名去重只派发一次，首次 tasks 赋值若在监听之前发生会被永久错过
   useEffect(() => {
     const el = resRef.current
-    if (!el) return
+    if (!el || data.tasks.length === 0) return
     const onOverload = (e: Event) => {
       const d = (e as CustomEvent<{ overloads: Array<{ resourceId: string }> }>).detail
       setOverloaded(new Set((d?.overloads ?? []).map((o) => o.resourceId)).size)
@@ -55,27 +56,35 @@ export function ResourceView({
     }
     // tasks-change（拖拽改期/换行 = 改分配）写回：与当前映射逐条 diff，
     // start/end 变 → startAt/dueAt；resources[0] 变 → assigneeId（__unassigned__ → null）。
-    // 逐条过 issue:edit 门禁，未过跳过（liveQuery 推回原值）；宿主程序性赋值的回声 diff 为空，天然幂等
+    // 逐条过 issue:edit 门禁，未过跳过并触发重注入把组件内部模型弹回（无写库 liveQuery 不会推新值）；
+    // 宿主程序性赋值的回声 diff 为空，天然幂等
     const onTasksChange = (e: Event) => {
       const d = (e as CustomEvent<{ tasks?: ResourceTask[] }>).detail
       const next = d?.tasks ?? []
       const prev = new Map(gateRef.current.data.tasks.map((task) => [task.id, task]))
+      let denied = false
       for (const nt of next) {
         if (!nt.id) continue
         const ot = prev.get(nt.id)
         if (!ot) continue
+        const nextOwner = nt.resources?.[0] ?? UNASSIGNED_ID
+        const prevOwner = ot.resources?.[0] ?? UNASSIGNED_ID
+        const moved = nt.start !== ot.start || nt.end !== ot.end || nextOwner !== prevOwner
+        if (!moved) continue
         const it = gateRef.current.issues.find((i) => i.id === nt.id)
-        if (!it || !gateRef.current.can('issue:edit', { issue: it })) continue
+        if (!it || !gateRef.current.can('issue:edit', { issue: it })) {
+          denied = true
+          continue
+        }
         const patch: Partial<Issue> = {}
         if (nt.start !== ot.start) patch.startAt = new Date(nt.start).getTime()
         if (nt.end !== ot.end) patch.dueAt = new Date(nt.end).getTime()
-        const nextOwner = nt.resources?.[0] ?? UNASSIGNED_ID
-        const prevOwner = ot.resources?.[0] ?? UNASSIGNED_ID
         if (nextOwner !== prevOwner) {
           patch.assigneeId = nextOwner === UNASSIGNED_ID ? null : nextOwner
         }
-        if (Object.keys(patch).length > 0) void issuesRepo.update(nt.id, patch)
+        void issuesRepo.update(nt.id, patch)
       }
+      if (denied) setReinject((n) => n + 1)
     }
     el.addEventListener('oas-overload', onOverload)
     el.addEventListener('oas-task-click', onTaskClick)
@@ -85,14 +94,16 @@ export function ResourceView({
       el.removeEventListener('oas-task-click', onTaskClick)
       el.removeEventListener('oas-tasks-change', onTasksChange)
     }
-  }, [issuesRepo])
+  }, [issuesRepo, data])
+
+  const inject = useMemo(() => ({ data, reinject }), [data, reinject])
 
   useEffect(() => {
     const el = resRef.current
     if (!el) return
-    el.resources = data.resources
-    el.tasks = data.tasks
-  }, [data])
+    el.resources = inject.data.resources
+    el.tasks = inject.data.tasks
+  }, [inject])
 
   if (data.tasks.length === 0) {
     return (

@@ -151,16 +151,14 @@ test('R4 拖拽改期/转派写回（tasks-change 契约重放）；无权限身
     return g.tasks?.find((t) => (t.resources ?? [])[0] === 'member-2') ?? g.tasks?.[0] ?? null
   })
   expect(adminTarget).toBeTruthy()
+  // 重放走真实契约通道：宿主 property 赋值（setter 更新组件内部模型并派发 oas-tasks-change）
   const replay = (id: string, patch: Partial<ResTask>) =>
     page.evaluate(
       ({ id, patch }) => {
         const g = document.querySelector('[data-testid=resource-view-gantt]') as HTMLElement & {
           tasks?: ResTask[]
         }
-        const tasks = (g.tasks ?? []).map((t) => (t.id === id ? { ...t, ...patch } : t))
-        g.dispatchEvent(
-          new CustomEvent('oas-tasks-change', { bubbles: true, composed: true, detail: { tasks } }),
-        )
+        g.tasks = (g.tasks ?? []).map((t) => (t.id === id ? { ...t, ...patch } : t))
       },
       { id, patch },
     )
@@ -171,7 +169,7 @@ test('R4 拖拽改期/转派写回（tasks-change 契约重放）；无权限身
     .poll(async () => readIssue(page, adminTarget!.id), { timeout: 15_000 })
     .toEqual({ startAt, dueAt, assigneeId: 'member-3' })
 
-  // viewer（member-4）：改他人任务 → 不落库（can('issue:edit') 拒绝，liveQuery 回弹）
+  // viewer（member-4）：改他人任务 → 不落库（can('issue:edit') 拒绝）且组件内部模型回弹
   await switchUser(page, 'member-4')
   await expect
     .poll(async () => (await resHost(page)).tasks.length, { timeout: 15_000 })
@@ -184,12 +182,28 @@ test('R4 拖拽改期/转派写回（tasks-change 契约重放）；无权限身
   })
   expect(viewerTarget).toBeTruthy()
   const before = await readIssue(page, viewerTarget!.id)
+  const hostBefore = (await resHost(page)).tasks.find((t) => t.id === viewerTarget!.id)
+  expect(hostBefore).toBeTruthy()
   await replay(viewerTarget!.id, { start: '2027-05-01', end: '2027-05-06' })
   await page.waitForTimeout(1200)
   const after = await readIssue(page, viewerTarget!.id)
   expect(after?.startAt).toBe(before?.startAt)
   expect(after?.dueAt).toBe(before?.dueAt)
   expect(after?.assigneeId).toBe(before?.assigneeId)
+  // 回归：无写库 liveQuery 不推新值 → 重注入必须把内部模型弹回拖拽前的 start/end/resources
+  await expect
+    .poll(
+      async () => {
+        const t = (await resHost(page)).tasks.find((x) => x.id === viewerTarget!.id)
+        return t ? { start: t.start, end: t.end, resources: t.resources ?? [] } : null
+      },
+      { timeout: 15_000 },
+    )
+    .toEqual({
+      start: hostBefore!.start,
+      end: hostBefore!.end,
+      resources: hostBefore!.resources ?? [],
+    })
 
   await switchUser(page, 'member-1')
 })
