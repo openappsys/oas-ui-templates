@@ -109,7 +109,7 @@ async function captureAdminTabs(page: Page, suffix: string) {
     .poll(
       async () => {
         const d = await page.getByTestId('admin-chart-workload').getAttribute('data')
-        return /"value":\d/.test(d ?? '') ? 1 : 0
+        return /"data":\[\d/.test(d ?? '') ? 1 : 0
       },
       { timeout: 60_000 },
     )

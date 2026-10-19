@@ -743,7 +743,7 @@ body {
 
 .pm-chart {
   width: 100%;
-  height: 260px;
+  aspect-ratio: 520 / 280;
   display: block;
 }
 
@@ -886,9 +886,9 @@ body {
 .side-view-seg oas-segmented {
   display: block;
   width: 100%;
-  --oas-font-size-sm: 11px;
-  --oas-control-height-sm: 26px;
-  --oas-space-3: 6px;
+  --oas-font-size-sm: 10px;
+  --oas-control-height-sm: 24px;
+  --oas-space-3: 4px;
 }
 
 .view-seg {
@@ -1470,11 +1470,7 @@ body {
 }
 
 .admin-chart-box {
-  height: 320px;
-}
-
-.admin-chart-box .pm-chart {
-  height: 100%;
+  max-width: 720px;
 }
 
 .admin-panel-title {

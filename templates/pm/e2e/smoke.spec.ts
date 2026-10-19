@@ -411,7 +411,7 @@ test('M10 仪表盘：统计卡 + 图表数据', async ({ page }) => {
         page.evaluate(() => {
           const el = document.querySelector('[data-testid=chart-status]')
           const d = el?.getAttribute('data') ?? ''
-          return /"value":\d/.test(d) ? 1 : 0
+          return /"data":\[\d/.test(d) ? 1 : 0
         }),
       { timeout: 10_000 },
     )

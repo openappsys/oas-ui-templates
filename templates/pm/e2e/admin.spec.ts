@@ -97,7 +97,7 @@ test('A1 管理总览：入口 → 统计/工作量/健康度 → 行点击回�
   await expect
     .poll(async () => {
       const d = await page.getByTestId('admin-chart-workload').getAttribute('data')
-      return /"value":\d/.test(d ?? '') ? 1 : 0
+      return /"data":\[\d/.test(d ?? '') ? 1 : 0
     })
     .toBe(1)
 

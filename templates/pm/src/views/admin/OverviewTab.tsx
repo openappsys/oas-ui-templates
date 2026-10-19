@@ -3,6 +3,7 @@ import { useRepositories } from '@/data/context'
 import { useObservable } from '@/data/use-observable'
 import type { Member } from '@/types'
 import { t } from '@/i18n'
+import { toChartData } from '@/lib/chart-data'
 import { Chart } from '@/components/Chart'
 
 type TableHost = HTMLElement & { columns?: unknown; data?: unknown }
@@ -106,7 +107,7 @@ export function OverviewTab({
         <div className="admin-chart-box">
           <Chart
             type="bar"
-            data={workloadData}
+            data={toChartData(t('adminWorkloadChart'), workloadData)}
             testid="admin-chart-workload"
             label={t('adminWorkloadChart')}
           />

@@ -6,6 +6,7 @@ import { ISSUE_STATUSES, STATUS_LABEL } from '@/types'
 import { STATUS_COLOR } from '@/lib/colors'
 import { useProjectCounts } from '@/lib/hooks'
 import { Chart } from '@/components/Chart'
+import { toChartData } from '@/lib/chart-data'
 import { DashSkeleton } from '@/components/skeletons/DashSkeleton'
 
 /* ── 仪表盘 ── */
@@ -94,13 +95,18 @@ export function DashboardView({
       <div className="dash-charts">
         <div className="dash-chart-box">
           <p className="dash-chart-title">状态分布</p>
-          <Chart type="donut" data={statusData} testid="chart-status" label="状态分布图" />
+          <Chart
+            type="donut"
+            data={toChartData('状态分布', statusData)}
+            testid="chart-status"
+            label="状态分布图"
+          />
         </div>
         <div className="dash-chart-box">
           <p className="dash-chart-title">成员 Issue 数 Top 6</p>
           <Chart
             type="bar"
-            data={topAssignees ?? []}
+            data={toChartData('成员 Issue 数 Top 6', topAssignees ?? [])}
             testid="chart-assignee"
             label="成员 Issue 分布图"
           />
@@ -108,7 +114,12 @@ export function DashboardView({
       </div>
       <div className="dash-chart-box" data-testid="trend-box">
         <p className="dash-chart-title">近 30 天创建趋势</p>
-        <Chart type="area" data={trend ?? []} testid="chart-trend" label="创建与完成趋势图" />
+        <Chart
+          type="area"
+          data={toChartData('近 30 天创建趋势', trend ?? [])}
+          testid="chart-trend"
+          label="创建与完成趋势图"
+        />
       </div>
       <p className="dash-note" data-testid="dashboard-member-note">
         {memberMap.get(currentUser)?.name ?? ''} 的工作台 · 数据实时来自 IndexedDB
