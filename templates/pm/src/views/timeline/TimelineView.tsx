@@ -31,8 +31,6 @@ export function TimelineView({
   const { issues: issuesRepo, projects: projectsRepo } = useRepositories()
   const projects = useObservable(() => projectsRepo.liveAll(), [projectsRepo])
   const ganttRef = useRef<GanttElement>(null)
-  // projects 装载前不挂 parent 指针（summary 行尚不存在，挂了只会得到悬空告警 + 无谓的中间重排）
-  const parentOf = (projectId: string) => (projects === undefined ? undefined : `proj-${projectId}`)
 
   // can 进依赖：身份/成员变化时 disabled（无编辑权限禁拖）要随任务数据重建
   const tasks = useMemo(() => {
@@ -45,7 +43,7 @@ export function TimelineView({
         start: toDate(i.startAt ?? i.createdAt),
         end: toDate(i.dueAt as number),
         type: 'task' as const,
-        parent: parentOf(i.projectId),
+        parent: projects === undefined ? undefined : `proj-${i.projectId}`,
         progress: PROGRESS[i.status],
         color: PRIORITY_TEXT[i.priority],
         // 截止日即 fnlt 约束：排期超出自动 .conflict 高亮（PM deadline 语义）
@@ -67,10 +65,10 @@ export function TimelineView({
         name: `${i.key} ${i.title}`,
         start: toDate(i.createdAt),
         type: 'milestone' as const,
-        parent: parentOf(i.projectId),
+        parent: projects === undefined ? undefined : `proj-${i.projectId}`,
         disabled: !can('issue:edit', { issue: i }),
       }))
-    const children = [...dueTasks, ...milestones]
+    const children = [...milestones, ...dueTasks]
     // 项目分组 summary：日期聚合自子任务（start 最早 / end 最晚，里程碑按起点计）
     const summaries = (projects ?? [])
       .map((p) => {
