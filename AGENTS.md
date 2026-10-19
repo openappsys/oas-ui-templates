@@ -34,5 +34,7 @@
   - **oas-empty 吸收 title 但保留 description attribute**；e2e 断言走 `toHaveAttribute('description', …)`
   - **oas-checkbox**：原生 change 不穿 shadow，宿主监听 `oas-change`（detail `{checked, value}`）；宿主 click 双发（直派+内部冒泡）——toggle 挂 `oas-change`、stopPropagation 挂 `click`
   - **oas-skeleton**：`title` 属性同样被吸收；`effect` 缺省 `none` 无动画（要动效显式传 `pulse`/`sheen`）
+  - **oas-chart 是 width 驱动等比缩放**（shadow `svg{width:100%;height:auto}`，viewBox 520×280）：宿主定高必溢出/裁剪——宿主用 `aspect-ratio: 520/280` 跟随；「x 轴标签消失」先量宿主与 SVG 实际几何（标签常被画到宿主区域外），勿直接归因抽稀算法
+  - **oas-list 数据通道行在 shadow 内**：宿主自绘行样式需注入 shadow stylesheet（参照 VirtualIssueList/SideList 模式）；数据重挂会整树重建——焦点需按 testid 恢复（SideList 已内置）
 - **PowerShell 陷阱**：`[System.IO.File]`/`[System.IO.File]::ReadAllText` 相对路径不跟随 Set-Location——文件操作一律绝对路径或用 Write/Edit 工具；大段文本处理用 node 脚本文件（`node -e` 多行转义易炸）
 - **e2e 断言**：状态变更类操作避免 from===to 无 diff 不落库的 flaky（先读当前值选不同值）；共享 IndexedDB 的测试 workers=1 串行
