@@ -450,10 +450,6 @@ body {
   font-size: 12px;
 }
 
-.resource-level-alert {
-  margin-bottom: 10px;
-}
-
 /* ── 关于弹窗 ── */
 .about-body {
   display: flex;

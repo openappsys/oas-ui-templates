@@ -226,81 +226,10 @@ test('R5 未分配行存在且承接无 assignee 任务', async ({ page }) => {
     .toBeGreaterThanOrEqual(1)
 })
 
-/** 全量 assigneeId 快照（oas-pm/issues），软断言用 */
-function readAllAssignees(page: Page) {
-  return page.evaluate(
-    () =>
-      new Promise<Record<string, string | null>>((resolve) => {
-        const req = indexedDB.open('oas-pm')
-        req.onsuccess = () => {
-          const tx = req.result.transaction('issues', 'readonly')
-          const r = tx.objectStore('issues').getAll()
-          r.onsuccess = () => {
-            const map: Record<string, string | null> = {}
-            for (const row of (r.result ?? []) as Array<{ id: string; assigneeId: string | null }>)
-              map[row.id] = row.assigneeId
-            resolve(map)
-          }
-          r.onerror = () => resolve({})
-        }
-        req.onerror = () => resolve({})
-      }),
-  )
-}
-
-test('R6 一键均载（admin）：popconfirm 确认 → 无错误告警（写回或已均衡二选一）', async ({
-  page,
-}) => {
+test('R6 均载按钮已移除：超载在场时 no-op 入口不渲染', async ({ page }) => {
   await waitForSeed(page)
   await setView(page, 'resource')
   await expect(page.getByTestId('resource-view-gantt')).toBeAttached({ timeout: 10_000 })
-  // admin（默认 member-1）+ seed 有超载（R2 已断言角标 ≥1）→ 均载按钮可见
-  await expect(page.getByTestId('resource-level-btn')).toBeVisible({ timeout: 15_000 })
-
-  const before = await readAllAssignees(page)
-
-  // popconfirm 确认（契约事件 reason='ok'，同 admin.spec confirmPop / smoke M9）
-  await page.getByTestId('resource-level-btn').evaluate((el) => {
-    el.closest('oas-popconfirm')?.dispatchEvent(
-      new CustomEvent('oas-open-change', { bubbles: true, detail: { reason: 'ok' } }),
-    )
-  })
-
-  // 反馈告警必现（成功 N / 已均衡 / 失败三态之一；告警 4s 自动隐藏，poll 短间隔抢读）
-  await expect
-    .poll(async () => (await page.getByTestId('resource-level-alert').textContent()) ?? '', {
-      timeout: 15_000,
-      intervals: [100, 300, 500],
-    })
-    .not.toBe('')
-  const text = ((await page.getByTestId('resource-level-alert').textContent()) ?? '').trim()
-  expect(text).not.toContain('失败')
-  expect(text).not.toContain('failed')
-
-  // 软断言：要么部分 assigneeId 落库变更（改派写回发生），要么 moved=0（已均衡文案）
-  const after = await readAllAssignees(page)
-  const changed = Object.keys(before).filter((id) => (after[id] ?? null) !== (before[id] ?? null))
-  expect(
-    changed.length > 0 || text.includes('均衡') || text.includes('balanced'),
-    `changed=${changed.length}, text=${text}`,
-  ).toBe(true)
-
-  // 无错误 → 按钮仍在
-  await expect(page.getByTestId('resource-level-btn')).toBeVisible()
-})
-
-test('R7 均载按钮仅 admin 可见：viewer/member 切换后不渲染，切回 admin 恢复', async ({ page }) => {
-  await waitForSeed(page)
-  await setView(page, 'resource')
-  await expect(page.getByTestId('resource-view-gantt')).toBeAttached({ timeout: 10_000 })
-  await expect(page.getByTestId('resource-level-btn')).toBeVisible({ timeout: 15_000 })
-  // viewer（member-4）：can('bulk:apply') 拒绝 → 按钮不渲染
-  await switchUser(page, 'member-4')
+  await expect(page.getByTestId('resource-overload-count')).toBeVisible({ timeout: 15_000 })
   await expect(page.getByTestId('resource-level-btn')).toHaveCount(0)
-  // member（member-2）：批量动作仅 admin → 按钮不渲染
-  await switchUser(page, 'member-2')
-  await expect(page.getByTestId('resource-level-btn')).toHaveCount(0)
-  // 切回 admin 恢复（超载态仍在）
-  await switchUser(page, 'member-1')
-  await expect(page.getByTestId('resource-level-btn')).toBeVisible({ timeout: 5000 })
 })

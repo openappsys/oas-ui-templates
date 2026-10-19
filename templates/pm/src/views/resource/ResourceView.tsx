@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { levelResources, type ResourceTask } from '@oas-ui/ui/data/resource'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import type { ResourceTask } from '@oas-ui/ui/data/resource'
 import { useRepositories } from '@/data/context'
 import { useObservable } from '@/data/use-observable'
 import { t } from '@/i18n'
@@ -13,8 +13,6 @@ interface ResourceElement extends HTMLElement {
   resources?: unknown[]
   tasks?: ResourceTask[]
 }
-
-type LevelNotice = { kind: 'success' | 'info' | 'error'; text: string }
 
 export function ResourceView({
   issues,
@@ -107,70 +105,6 @@ export function ResourceView({
     el.tasks = inject.data.tasks
   }, [inject])
 
-  // 一键均载反馈（成功 N / 已均衡 / 失败，4s 自动隐藏，同 ProjectsTab alert 模式）
-  const [notice, setNotice] = useState<LevelNotice | null>(null)
-  const noticeTimer = useRef<number | undefined>(undefined)
-  const levelingRef = useRef(false)
-  const showNotice = useCallback((n: LevelNotice) => {
-    setNotice(n)
-    window.clearTimeout(noticeTimer.current)
-    noticeTimer.current = window.setTimeout(() => setNotice(null), 4000)
-  }, [])
-  useEffect(() => () => window.clearTimeout(noticeTimer.current), [])
-
-  // 求解器输出只采纳「改派」（resources[0] 变 → assigneeId，__unassigned__ → null）；
-  // 其时间顺延（start/end 平滑）不落库——dueAt 是业务 deadline，不被求解器改写
-  const runLevel = useCallback(async () => {
-    if (levelingRef.current) return
-    levelingRef.current = true
-    try {
-      const cur = gateRef.current.data.tasks
-      const leveled = levelResources(gateRef.current.data.resources, cur, { scale: 'day' })
-      const prev = new Map(cur.map((task) => [task.id, task]))
-      const updates: Array<Promise<unknown>> = []
-      for (const nt of leveled) {
-        if (!nt.id) continue
-        const ot = prev.get(nt.id)
-        if (!ot) continue
-        const nextOwner = nt.resources?.[0] ?? UNASSIGNED_ID
-        const prevOwner = ot.resources?.[0] ?? UNASSIGNED_ID
-        if (nextOwner === prevOwner) continue
-        updates.push(
-          issuesRepo.update(nt.id, { assigneeId: nextOwner === UNASSIGNED_ID ? null : nextOwner }),
-        )
-      }
-      await Promise.all(updates)
-      showNotice(
-        updates.length > 0
-          ? { kind: 'success', text: t('resourceLevelDone').replace('{n}', String(updates.length)) }
-          : { kind: 'info', text: t('resourceLevelNone') },
-      )
-    } catch (e) {
-      showNotice({
-        kind: 'error',
-        text: `${t('resourceLevelFailed')}${e instanceof Error ? e.message : String(e)}`,
-      })
-    } finally {
-      levelingRef.current = false
-    }
-  }, [issuesRepo, showNotice])
-  const runLevelRef = useRef(runLevel)
-  runLevelRef.current = runLevel
-
-  // 均载入口：admin（bulk:apply，批量改派跨成员）且存在超载时渲染
-  const canLevel = can('bulk:apply')
-  const popRef = useRef<HTMLElement>(null)
-  useEffect(() => {
-    const el = popRef.current
-    if (!el || !canLevel || overloaded === 0) return
-    const h = (e: Event) => {
-      const reason = (e as CustomEvent<{ reason?: string }>).detail?.reason
-      if (reason === 'ok') void runLevelRef.current()
-    }
-    el.addEventListener('oas-open-change', h)
-    return () => el.removeEventListener('oas-open-change', h)
-  }, [canLevel, overloaded])
-
   if (data.tasks.length === 0) {
     return (
       <div className="resource-page" data-testid="resource-view">
@@ -191,27 +125,7 @@ export function ResourceView({
             {t('resourceOverload').replace('{n}', String(overloaded))}
           </oas-badge>
         )}
-        {canLevel && overloaded > 0 && (
-          <oas-popconfirm
-            ref={popRef}
-            title={t('resourceLevelConfirm')}
-            data-testid="resource-level-confirm"
-          >
-            <oas-button type="primary" size="small" data-testid="resource-level-btn">
-              {t('resourceLevelBtn')}
-            </oas-button>
-          </oas-popconfirm>
-        )}
       </div>
-      {notice && (
-        <oas-alert
-          type={notice.kind}
-          className="resource-level-alert"
-          data-testid="resource-level-alert"
-        >
-          {notice.text}
-        </oas-alert>
-      )}
       <oas-resource
         ref={resRef}
         data-testid="resource-view-gantt"
