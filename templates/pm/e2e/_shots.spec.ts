@@ -174,6 +174,11 @@ async function captureReadonlyDrawer(page: Page, suffix: string) {
   await page.screenshot({ path: `shots/pm-drawer-readonly${suffix}.png` })
 }
 
+async function captureSidebar(page: Page, suffix: string) {
+  await page.waitForTimeout(1500)
+  await page.getByTestId('side-panel').screenshot({ path: `shots/pm-sidebar${suffix}.png` })
+}
+
 test('shots', async ({ page }) => {
   test.setTimeout(180_000)
   await openApp(page)
@@ -181,6 +186,24 @@ test('shots', async ({ page }) => {
   await captureDrawerAndCreate(page, '')
 
   console.log('shots done')
+})
+
+test('shots sidebar', async ({ page }) => {
+  test.setTimeout(120_000)
+  await openApp(page)
+  await captureSidebar(page, '')
+
+  console.log('shots sidebar done')
+})
+
+test('shots sidebar dark', async ({ page }) => {
+  test.setTimeout(120_000)
+  await page.addInitScript(() => localStorage.setItem('oas-pm-theme', 'dark'))
+  await openApp(page)
+  await expectDarkTheme(page)
+  await captureSidebar(page, '-dark')
+
+  console.log('shots sidebar dark done')
 })
 
 test('shots dark', async ({ page }) => {

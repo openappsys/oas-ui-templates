@@ -55,6 +55,10 @@ async function switchUser(page: Page, id: string) {
   })
 }
 
+/** 侧栏行按钮（oas-sidebar shadow 内 button，accessible name = 行 label） */
+const sideRow = (page: Page, name: string) =>
+  page.getByTestId('side-panel').getByRole('button', { name, exact: true })
+
 async function openFirstRow(page: Page) {
   await page
     .locator('.issue-row')
@@ -169,7 +173,7 @@ test('P2 member 半权：可建可评，仅自己负责的 Issue 可编辑', asy
   test.setTimeout(120_000)
   await waitForSeed(page)
 
-  await page.getByTestId('view-my').click()
+  await sideRow(page, '我的（张伟）').click()
   const adminKey = await page.locator('.issue-row .issue-key').first().textContent()
   expect(adminKey).toBeTruthy()
   await openFirstRow(page)
@@ -182,7 +186,7 @@ test('P2 member 半权：可建可评，仅自己负责的 Issue 可编辑', asy
   await expect(page.getByTestId('detail-drawer')).toHaveCount(0, { timeout: 5000 })
 
   await switchUser(page, 'member-2')
-  await page.getByTestId('view-all').click()
+  await sideRow(page, '全部 Issues').click()
 
   await expect(page.getByTestId('toolbar-new')).toBeVisible()
   await page.getByTestId('toolbar-new').click()
@@ -200,7 +204,7 @@ test('P2 member 半权：可建可评，仅自己负责的 Issue 可编辑', asy
   await expect(page.locator('.issue-row .row-check')).toHaveCount(0)
 
   const createdKey = await page.locator('.issue-row .issue-key').first().textContent()
-  await page.getByTestId('view-my').click()
+  await sideRow(page, '我的（李娜）').click()
   await expect(page.locator('.issue-row').first()).toBeVisible({ timeout: 10_000 })
   await expect
     .poll(async () => (await page.locator('.issue-row .issue-key').first().textContent()) ?? '')
@@ -217,7 +221,7 @@ test('P2 member 半权：可建可评，仅自己负责的 Issue 可编辑', asy
   await page.keyboard.press('Escape')
   await expect(page.getByTestId('detail-drawer')).toHaveCount(0, { timeout: 5000 })
 
-  await page.getByTestId('view-all').click()
+  await sideRow(page, '全部 Issues').click()
   await fillOInput(page, 'toolbar-search', adminKey ?? '')
   await expect(page.locator('.issue-row').first()).toContainText(adminKey ?? '', {
     timeout: 10_000,

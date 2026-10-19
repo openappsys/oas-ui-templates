@@ -26,6 +26,10 @@ function statNumber(text: string | null): number {
   return Number(text?.match(/[\d,]+/)?.[0]?.replace(/,/g, '') ?? 0)
 }
 
+/** 侧栏行按钮（oas-sidebar shadow 内 button，accessible name = 行 label） */
+const sideRow = (page: Page, name: string) =>
+  page.getByTestId('side-panel').getByRole('button', { name, exact: true })
+
 /** oas-input 填值（弹窗在 light DOM，document.querySelector 可达） */
 async function fillOInput(page: Page, testid: string, text: string) {
   await page.evaluate(
@@ -117,7 +121,9 @@ test('A1 管理总览：入口 → 统计/工作量/健康度 → 行点击回�
   await rows.first().click()
   await expect(page.getByTestId('admin-view')).toHaveCount(0)
   await expect(page.getByTestId('side-panel')).toBeVisible()
-  await expect(page.getByTestId(`project-${targetProject}`)).toHaveClass(/is-active/)
+  const projectRow = sideRow(page, targetProject === 'project-2' ? '移动端 App' : 'OAS 平台')
+  await expect(projectRow).toHaveClass(/active/)
+  await expect(projectRow).toHaveAttribute('aria-pressed', 'true')
   await expect(page.locator('.issue-row .issue-key').first()).toContainText(
     targetProject === 'project-2' ? 'APP-' : 'OAS-',
     { timeout: 10_000 },
@@ -183,9 +189,7 @@ test('A5 项目闭环：新建 → 表格行 + 侧栏可见 → 删除 → 行�
 
   await page.getByTestId('admin-back').click()
   await expect(page.getByTestId('side-panel')).toBeVisible()
-  await expect(page.locator('.side-item', { hasText: 'P3 测试项目' })).toBeVisible({
-    timeout: 10_000,
-  })
+  await expect(sideRow(page, 'P3 测试项目')).toBeVisible({ timeout: 10_000 })
 
   await page.getByTestId('admin-entry').click()
   await page.getByTestId('admin-nav-projects').click()

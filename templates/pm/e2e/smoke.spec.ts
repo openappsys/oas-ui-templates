@@ -36,6 +36,10 @@ async function fillOInput(page: Page, testid: string, text: string) {
   )
 }
 
+/** 侧栏行按钮（oas-sidebar shadow 内 button，accessible name = 行 label） */
+const sideRow = (page: Page, name: string) =>
+  page.getByTestId('side-panel').getByRole('button', { name, exact: true })
+
 /** 等待 100K seed 完成并以列表行出现（seed 走后台 bulkPut，首次约 5~15s） */
 async function waitForSeed(page: Page) {
   test.setTimeout(150_000)
@@ -64,7 +68,7 @@ test('M1 架构：100K seed + 虚拟列表渲染 + 真实计数', async ({ page 
 
 test('M2 状态筛选：compound index 直取 + 计数联动', async ({ page }) => {
   await waitForSeed(page)
-  await page.getByTestId('filter-in_progress').click()
+  await sideRow(page, 'In Progress').click()
   // 窗口行全部是 In Progress（行内显示状态标签）
   await expect(page.locator('.issue-row .issue-status').first()).toHaveText('In Progress', {
     timeout: 10_000,
@@ -76,7 +80,7 @@ test('M2 状态筛选：compound index 直取 + 计数联动', async ({ page }) 
   const filtered = await page.getByTestId('issue-total').textContent()
   expect(filtered).not.toBeNull()
   // 切回全部
-  await page.getByTestId('filter-all').click()
+  await sideRow(page, '全部').click()
   await expect(page.locator('.issue-row').first()).toBeVisible({ timeout: 10_000 })
 })
 
@@ -289,7 +293,7 @@ test('M5 工具栏：新建 Issue 全流程 + CSV 导出 + 关于弹窗', async 
 
 test('M7 项目切换：project-2 的 key 前缀为 APP-', async ({ page }) => {
   await waitForSeed(page)
-  await page.getByTestId('project-project-2').click()
+  await sideRow(page, '移动端 App').click()
   await expect(page.locator('.issue-row').first()).toContainText('APP-', { timeout: 10_000 })
   const keys = await page.locator('.issue-row .issue-key').allTextContents()
   expect(keys.length).toBeGreaterThan(0)
@@ -659,11 +663,12 @@ test('M16 保存视图：保存 → 侧栏出现 → 应用 → 删除', async (
   await page.getByTestId('save-view-ok').click()
   await expect(modal).not.toHaveAttribute('visible', /.*/, { timeout: 5000 })
   // 侧栏出现该视图
-  const item = page.locator('.saved-view-item').first()
-  await expect(item).toContainText('E2E 视图', { timeout: 10_000 })
-  // 删除
-  await page.locator('[data-testid^="saved-view-del-"]').first().click()
-  await expect(page.locator('.saved-view-item')).toHaveCount(0, { timeout: 10_000 })
+  const item = sideRow(page, 'E2E 视图')
+  await expect(item).toBeVisible({ timeout: 10_000 })
+  // 删除（行内动作按钮 hover 才出现；点击只派发 oas-action，不触发行选择）
+  await item.hover()
+  await sideRow(page, '删除视图 E2E 视图').click()
+  await expect(sideRow(page, 'E2E 视图')).toHaveCount(0, { timeout: 10_000 })
 })
 
 test('M17 活动历史：详情改优先级 → 活动区出现记录', async ({ page }) => {
@@ -707,7 +712,7 @@ test('M18 通知：他人变更我负责的 Issue → 切回后动态出现', as
   await expect(page.getByTestId('modal-user')).toHaveAttribute('visible', /.*/, { timeout: 5000 })
   await page.getByTestId('pick-user-member-2').click()
   await page.waitForTimeout(800)
-  await page.getByTestId('view-all').click()
+  await sideRow(page, '全部 Issues').click()
 
   // 预读项目计数器 → 新 Issue 的 key 可预知（OAS-<nextKeyNum>），标题内嵌 #序号 供末段 detail-title 断言
   const nextNum = await page.evaluate(async () => {
@@ -804,7 +809,7 @@ test('M20 看板：卡片点击打开详情抽屉', async ({ page }) => {
     .toBe('1')
   await expect(page.locator('.issue-row').first()).toBeVisible({ timeout: 45_000 })
   // 「我的」视图首张卡（张伟负责），记 key
-  await page.getByTestId('view-my').click()
+  await sideRow(page, '我的（张伟）').click()
   const myKey = await page.locator('.issue-row .issue-key').first().textContent()
   expect(myKey).toBeTruthy()
   await page.keyboard.press('Escape')

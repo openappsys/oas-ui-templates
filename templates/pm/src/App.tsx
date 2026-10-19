@@ -304,9 +304,7 @@ export function App() {
       kind: 'project',
       value: `project:${p.id}`,
       id: p.id,
-      testid: `project-${p.id}`,
       label: p.name,
-      active: filters.projectId === p.id,
     })
   }
   sideRows.push(
@@ -315,27 +313,21 @@ export function App() {
       kind: 'view',
       value: 'view:all',
       id: 'all',
-      testid: 'view-all',
       label: t('allIssues'),
-      active: !filters.myOnly,
     },
     {
       group: t('views'),
       kind: 'view',
       value: 'view:my',
       id: 'my',
-      testid: 'view-my',
       label: `我的（${memberMap.get(currentUser)?.name ?? ''}）`,
-      active: filters.myOnly,
     },
     {
       group: t('status'),
       kind: 'status',
       value: 'status:all',
       id: 'all',
-      testid: 'filter-all',
       label: t('all'),
-      active: filters.statusFilter === null,
       count: counts?.total.toLocaleString() ?? '…',
     },
   )
@@ -345,9 +337,7 @@ export function App() {
       kind: 'status',
       value: `status:${s}`,
       id: s,
-      testid: `filter-${s}`,
       label: STATUS_LABEL[s],
-      active: filters.statusFilter === s,
       statusColor: STATUS_COLOR[s],
       count: counts?.byStatus[s]?.toLocaleString() ?? '…',
     })
@@ -358,7 +348,6 @@ export function App() {
       kind: 'savedview',
       value: `savedview:${v.id}`,
       id: v.id,
-      testid: `saved-view-${v.id}`,
       label: v.name,
       savedFilters: v.filters,
       deletable: canDeleteView,
@@ -370,13 +359,17 @@ export function App() {
       kind: 'member',
       value: `member:${m.id}`,
       id: m.id,
-      testid: `member-${m.id}`,
       label: m.name,
-      active: filters.assigneeFilter === m.id,
       avatarColor: m.avatarColor,
       avatarText: m.name[0],
       count: String(memberCounts.get(m.id) ?? 0),
     })
+  }
+  const sideActive: Record<string, string | string[]> = {
+    [t('projects')]: `project:${filters.projectId}`,
+    [t('views')]: filters.myOnly ? 'view:my' : 'view:all',
+    [t('status')]: filters.statusFilter ? `status:${filters.statusFilter}` : 'status:all',
+    [t('members')]: filters.assigneeFilter ? [`member:${filters.assigneeFilter}`] : [],
   }
 
   const handleSideRowClick = useCallback(
@@ -650,6 +643,7 @@ export function App() {
               </div>
               <SideList
                 rows={sideRows}
+                activeByGroup={sideActive}
                 onRowClick={handleSideRowClick}
                 onDeleteSavedView={handleDeleteSavedView}
               />

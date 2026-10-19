@@ -160,6 +160,10 @@ declare module 'react' {
         placeholder?: string
         hotkey?: string
       }
+      'oas-sidebar': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        'hide-toggle'?: boolean | string
+        'active-by-group'?: string
+      }
     }
   }
 }
