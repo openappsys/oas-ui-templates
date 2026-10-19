@@ -226,10 +226,42 @@ test('R5 未分配行存在且承接无 assignee 任务', async ({ page }) => {
     .toBeGreaterThanOrEqual(1)
 })
 
-test('R6 均载按钮已移除：超载在场时 no-op 入口不渲染', async ({ page }) => {
+test('R6 一键均载（admin）：popconfirm 确认 → 无错误告警，按钮仍在', async ({ page }) => {
   await waitForSeed(page)
   await setView(page, 'resource')
   await expect(page.getByTestId('resource-view-gantt')).toBeAttached({ timeout: 10_000 })
-  await expect(page.getByTestId('resource-overload-count')).toBeVisible({ timeout: 15_000 })
+  // admin（默认 member-1）+ seed 超载在场（R2 已断言角标 ≥1）→ 均载按钮可见
+  await expect(page.getByTestId('resource-level-btn')).toBeVisible({ timeout: 15_000 })
+
+  // popconfirm 确认（契约事件 reason='ok'，同 admin.spec confirmPop / smoke M9）
+  await page.getByTestId('resource-level-btn').evaluate((el) => {
+    el.closest('oas-popconfirm')?.dispatchEvent(
+      new CustomEvent('oas-open-change', { bubbles: true, detail: { reason: 'ok' } }),
+    )
+  })
+
+  // 反馈告警必现（成功 N / 已均衡 / 失败三态之一；告警 4s 自动隐藏，poll 短间隔抢读）
+  await expect
+    .poll(async () => (await page.getByTestId('resource-level-alert').textContent()) ?? '', {
+      timeout: 15_000,
+      intervals: [100, 300, 500],
+    })
+    .not.toBe('')
+  const text = ((await page.getByTestId('resource-level-alert').textContent()) ?? '').trim()
+  expect(text).not.toContain('失败')
+  expect(text).not.toContain('failed')
+
+  // 无错误 → 按钮仍在（seed 负载远超容量，reassign 后仍有超载，入口不撤）
+  await expect(page.getByTestId('resource-level-btn')).toBeVisible()
+})
+
+test('R7 均载按钮仅 admin 可见：viewer 不渲染', async ({ page }) => {
+  await waitForSeed(page)
+  await setView(page, 'resource')
+  await expect(page.getByTestId('resource-view-gantt')).toBeAttached({ timeout: 10_000 })
+  // admin + 超载在场 → 按钮渲染（前置，避免超载为 0 时的空过断言）
+  await expect(page.getByTestId('resource-level-btn')).toBeVisible({ timeout: 15_000 })
+  // viewer（member-4）：can('bulk:apply') 拒绝 → 按钮不渲染
+  await switchUser(page, 'member-4')
   await expect(page.getByTestId('resource-level-btn')).toHaveCount(0)
 })
