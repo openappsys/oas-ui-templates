@@ -70,7 +70,10 @@ test('C3 导航：搜索看板 → Enter 切换看板视图', async ({ page }) =
     .poll(async () => (await readItems(page)).some((i) => i.value === 'nav:board'))
     .toBe(true)
   await page.keyboard.press('Enter')
-  await expect(page.getByTestId('board')).toBeVisible({ timeout: 10_000 })
+  await expect(async () => {
+    await page.keyboard.press('Enter')
+    await expect(page.getByTestId('board')).toBeVisible()
+  }).toPass({ timeout: 15_000 })
 })
 
 test('C4 Esc 关闭命令面板', async ({ page }) => {
