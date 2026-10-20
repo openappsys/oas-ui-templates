@@ -8,17 +8,6 @@ async function setView(page: Page, v: string) {
   }, v)
 }
 
-async function setOSelect(page: Page, testid: string, v: string) {
-  await page.evaluate(
-    ([tid, val]) => {
-      const el = document.querySelector(`[data-testid="${tid}"]`)
-      ;(el as unknown as { value: string }).value = val as string
-      el?.dispatchEvent(new CustomEvent('oas-change', { bubbles: true, detail: { value: val } }))
-    },
-    [testid, v],
-  )
-}
-
 async function fillOInput(page: Page, testid: string, text: string) {
   await page.evaluate(
     ([tid, val]) => {
@@ -272,21 +261,6 @@ test('P3 admin 全权：viewer/member 被禁的操作点全部可用', async ({ 
   )
   expect(cursors.length).toBeGreaterThan(0)
   expect(cursors.every((c) => c === 'pointer')).toBe(true)
-})
-
-test('P4 关联候选：选 relates 后目标下拉候选 > 1', async ({ page }) => {
-  test.setTimeout(120_000)
-  await waitForSeed(page)
-  await openFirstRow(page)
-  await setOSelect(page, 'relation-add-type', 'relates')
-  await expect(page.getByTestId('relation-add-target')).toBeAttached({ timeout: 5000 })
-  await expect
-    .poll(() =>
-      page
-        .getByTestId('relation-add-target')
-        .evaluate((el) => (el as { options?: unknown[] }).options?.length ?? 0),
-    )
-    .toBeGreaterThan(1)
 })
 
 test('P5 看板门禁：member 拖自己的卡持久化，他人的卡不持久化', async ({ page }) => {

@@ -807,6 +807,38 @@ test('M18 通知：他人变更我负责的 Issue → 切回后动态出现', as
   await expect(page.locator('.detail-title')).toContainText(`#${seq18}`, { timeout: 10_000 })
 })
 
+// 7e3370f 回归：关联目标下拉的候选数据通道（原 P4，自 permission.spec 迁入——
+// 该用例不断言权限门禁，属抽屉关联区冒烟）
+test('M19 关联候选：选 relates 后目标下拉候选 > 1', async ({ page }) => {
+  await waitForSeed(page)
+  await page
+    .locator('.issue-row')
+    .first()
+    .evaluate((el) => {
+      el.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          () =>
+            (document.querySelector('[data-testid=detail-drawer]') as { opened?: boolean })
+              ?.opened ?? false,
+        ),
+      { timeout: 15_000 },
+    )
+    .toBe(true)
+  await setOSelect(page, 'relation-add-type', 'relates')
+  await expect(page.getByTestId('relation-add-target')).toBeAttached({ timeout: 5000 })
+  await expect
+    .poll(() =>
+      page
+        .getByTestId('relation-add-target')
+        .evaluate((el) => (el as { options?: unknown[] }).options?.length ?? 0),
+    )
+    .toBeGreaterThan(1)
+})
+
 test('M20 看板：卡片点击打开详情抽屉', async ({ page }) => {
   test.setTimeout(120_000)
   await page.goto('/')

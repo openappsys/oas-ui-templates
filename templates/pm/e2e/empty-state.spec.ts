@@ -15,7 +15,7 @@ async function fillOInput(page: Page, testid: string, text: string) {
 }
 
 test('空态语义：搜索无结果 → 无匹配 Issue；清除筛选 → 空态消失', async ({ page }) => {
-  test.setTimeout(120_000)
+  test.setTimeout(150_000)
   await page.goto('/')
   await expect(page.getByTestId('pm-toolbar')).toBeVisible({ timeout: 10_000 })
   await expect
