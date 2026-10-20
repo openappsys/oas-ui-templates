@@ -2,26 +2,19 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useRepositories } from '@/data/context'
 import { t, getLang } from '@/i18n'
 import {
-  bucketToDueAt,
   clampStartAt,
   deriveScheduleEvents,
+  dueAtWithTime,
   scheduleSignature,
-  type ScheduleBucket,
   type ScheduleEvent,
 } from '@/lib/schedule-data'
 import type { Action, Ctx } from '@/permission/policy'
 import type { Issue } from '@/types'
 
-/* ── 日程视图（oas-scheduler 三档：全天/上午/下午）── */
+/* ── 日程视图（oas-scheduler：全天/上午/下午三档 + 精确时刻 HH:mm）── */
 
 interface SchedulerElement extends HTMLElement {
   events?: ScheduleEvent[]
-}
-
-/** 落点归档：组件改写的 start 小时 <12 → 上午、≥12 → 下午（12:00–13:59 归下午）；无 start = 全天 */
-function bucketFromStart(start: string | undefined): ScheduleBucket {
-  if (!start) return 'allday'
-  return Number(start.slice(0, 2)) < 12 ? 'am' : 'pm'
 }
 
 const normEvent = (e: ScheduleEvent) =>
@@ -90,9 +83,11 @@ export function ScheduleView({
       // 合成 +N 封顶块是纯展示聚合、无对应 issue——点击不开抽屉
       if (d?.id && !d.id.startsWith('__more__')) openRef.current(d.id)
     }
-    // events-change（拖拽改期 = 改 date/档位）写回：与派生映射逐条 diff，date 或落点桶变化者
-    // 过 issue:edit 门禁 → dueAt = 桶起点 + startAt 倒挂钳制；deny 或零 diff（resize 只改 end）
-    // → 清签名 + 重注入把组件内部模型弹回（无写库 liveQuery 不推新值）
+    // events-change（拖拽改期 = 改 date/落点时刻）写回：与派生映射逐条 diff（date 或 start 变化者；
+    // resize 只改 end 天然零 diff）→ 过 issue:edit 门禁 → dueAt = 日 + 落点时刻（组件已 15min
+    // 吸附，直写不归桶——归桶会丢精度；start 手拆禁 new Date 隐式解析；全天行 start 缺失写
+    // 00:00 现行为）+ startAt 倒挂钳制；deny 或零 diff → 清签名 + 重注入把组件内部模型弹回
+    // （无写库 liveQuery 不推新值）
     const onEventsChange = (e: Event) => {
       const d = (e as CustomEvent<{ events?: ScheduleEvent[] }>).detail
       const next = d?.events ?? []
@@ -104,13 +99,14 @@ export function ScheduleView({
         if (!nt.id) continue
         const ot = prev.get(nt.id)
         if (!ot) continue
-        if (nt.date === ot.date && bucketFromStart(nt.start) === bucketFromStart(ot.start)) continue
+        if (nt.date === ot.date && (nt.start ?? '') === (ot.start ?? '')) continue
         const it = gateRef.current.issues.find((i) => i.id === nt.id)
         if (!it || !gateRef.current.can('issue:edit', { issue: it })) {
           denied = true
           continue
         }
-        const dueAt = bucketToDueAt(nt.date, bucketFromStart(nt.start))
+        const [hh, mm] = (nt.start ?? '00:00').split(':').map(Number)
+        const dueAt = dueAtWithTime(nt.date, hh ?? 0, mm ?? 0)
         const patch: Partial<Issue> = { dueAt }
         const clamped = clampStartAt(it.startAt, dueAt)
         if (clamped !== it.startAt) patch.startAt = clamped
