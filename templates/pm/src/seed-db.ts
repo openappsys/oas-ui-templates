@@ -1,5 +1,6 @@
 import type { Issue, Project, Member } from './types'
 import { db } from './db/schema'
+import { mulberry32 } from './lib/prng'
 
 const NAMES = ['张伟', '李娜', '王强', '赵敏', '刘洋', '陈静', '杨帆', '周琳']
 const TITLES = [
@@ -25,17 +26,6 @@ const TITLES = [
   '部署 CI/CD 流水线',
 ]
 const LABELS = ['frontend', 'backend', 'design', 'bug', 'feature', 'tech-debt', 'docs', 'infra']
-
-function mulberry32(seed: number): () => number {
-  let a = seed
-  return () => {
-    a |= 0
-    a = (a + 0x6d2b79f5) | 0
-    let t = Math.imul(a ^ (a >>> 15), 1 | a)
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
-  }
-}
 
 export async function seedDatabase(): Promise<void> {
   // seed 版本标记：调整 seed 逻辑后 bump。标记 + 数据双验证——
