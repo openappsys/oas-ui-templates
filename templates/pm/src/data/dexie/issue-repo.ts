@@ -4,6 +4,8 @@ import type { PMDatabase } from '@/db/schema'
 import type { Issue, IssuePriority, IssueStatus } from '@/types'
 import { ISSUE_STATUSES } from '@/types'
 import { fromLiveQuery, type Observable } from '@/data/observable'
+import { LIST_WINDOW } from '@/lib/filters'
+import { PRIORITY_WEIGHT } from '@/lib/order'
 import type {
   CreateIssueInput,
   IssueRepository,
@@ -11,9 +13,6 @@ import type {
   ProjectCounts,
 } from '@/data/types'
 import { allocateProjectKey } from './project-repo'
-
-const LIST_WINDOW = 500
-const PRIORITY_WEIGHT: Record<IssuePriority, number> = { urgent: 0, high: 1, medium: 2, low: 3 }
 
 export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
   return {
