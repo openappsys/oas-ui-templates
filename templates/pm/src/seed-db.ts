@@ -40,7 +40,7 @@ function mulberry32(seed: number): () => number {
 export async function seedDatabase(): Promise<void> {
   // seed 版本标记：调整 seed 逻辑后 bump。标记 + 数据双验证——
   // 单看标记会在「上次 seed 中断」时永久跳过，留下空库
-  const SEED_VER = 'oas-pm-seed-v5'
+  const SEED_VER = 'oas-pm-seed-v6'
   const marked = localStorage.getItem(SEED_VER)
   const issueCount = await db.issues.count()
   if (marked && issueCount > 0) return
@@ -96,6 +96,13 @@ export async function seedDatabase(): Promise<void> {
   const statuses = ['backlog', 'todo', 'in_progress', 'done', 'cancelled'] as const
   const priorities = ['urgent', 'high', 'medium', 'low'] as const
   const CHUNK = 5000
+  // 日程演示组（末 90 条）：未来两周三档铺满（j%3 → UTC 0/9/14 点桶）+ 逾期样本 + done 灰化样本；
+  // updatedAt 取近 2 天 → 恒落默认 500 窗口，日程视图开箱即有内容且分布确定
+  const SCHEDULE_DEMO = 90
+  const schedFirst = ISSUE_COUNT - SCHEDULE_DEMO
+  const nb = new Date(now)
+  const dayAt = (addDays: number, hour: number) =>
+    Date.UTC(nb.getUTCFullYear(), nb.getUTCMonth(), nb.getUTCDate() + addDays, hour)
 
   console.time('seed:100k')
   for (let chunk = 0; chunk < ISSUE_COUNT / CHUNK; chunk++) {
@@ -103,7 +110,13 @@ export async function seedDatabase(): Promise<void> {
     for (let i = 0; i < CHUNK; i++) {
       const idx = chunk * CHUNK + i
       const proj = rand() > 0.3 ? projects[0] : projects[1]
-      const status = statuses[Math.floor(rand() * (idx < ISSUE_COUNT * 0.2 ? 3 : 5))]
+      const schedJ = idx - schedFirst
+      const inSched = schedJ >= 0
+      const status: Issue['status'] = inSched
+        ? schedJ % 10 === 7
+          ? 'done'
+          : (['backlog', 'todo', 'in_progress'] as const)[schedJ % 3]
+        : statuses[Math.floor(rand() * (idx < ISSUE_COUNT * 0.2 ? 3 : 5))]
       const priority = priorities[Math.floor(rand() * 4)]
       const assignee = rand() > 0.15 ? members[Math.floor(rand() * members.length)] : null
       const title = TITLES[Math.floor(rand() * TITLES.length)]
@@ -112,6 +125,26 @@ export async function seedDatabase(): Promise<void> {
       const labelCount = Math.floor(rand() * 3)
       for (let j = 0; j < labelCount; j++) labels.push(LABELS[Math.floor(rand() * LABELS.length)])
 
+      let dueAt: number | null
+      let startAt: number | null = null
+      let updatedAt: number
+      if (inSched) {
+        // j%5===4 → 逾期样本（未完成 + dueAt 已过 1–5 天，供逾期前缀验收）；
+        // 其余铺未来 14 天，6 条一行 → 每天每桶约 2 条（week 同桶 +30min 偏移可验收）
+        const overdueRow = schedJ % 5 === 4
+        const hour = [0, 9, 14][schedJ % 3]
+        const dayOffset = overdueRow ? -(1 + (schedJ % 5)) : 1 + (Math.floor(schedJ / 6) % 14)
+        dueAt = dayAt(dayOffset, hour)
+        // 1/4 带 startAt 紧凑区间（1–3 天，恒 ≤ dueAt）：pm 桶 k=1 样本供 e2e 倒挂钳制（回移一天触发收敛）
+        startAt = schedJ % 4 === 1 ? dueAt - (1 + (schedJ % 3)) * day : null
+        updatedAt = now - rand() * 2 * day
+      } else {
+        dueAt = rand() > 0.6 ? createdAt + Math.floor(rand() * 14 + 3) * day : null
+        startAt =
+          dueAt !== null && rand() < 0.25 ? dueAt - (1 + Math.floor(rand() * 3)) * day : null
+        // 更新时间 clamp 到 now——seed 走未来时间戳会把真实新建/拖拽的数据压出窗口头部
+        updatedAt = Math.min(createdAt + Math.floor(rand() * 3) * day, now)
+      }
       batch.push({
         id: `issue-${proj.id}-${idx + 1}`,
         projectId: proj.id,
@@ -123,11 +156,10 @@ export async function seedDatabase(): Promise<void> {
         assigneeId: assignee?.id ?? null,
         reporterId: members[0].id,
         labels,
-        startAt: null,
-        dueAt: rand() > 0.6 ? createdAt + Math.floor(rand() * 14 + 3) * day : null,
+        startAt,
+        dueAt,
         createdAt,
-        // 更新时间 clamp 到 now——seed 走未来时间戳会把真实新建/拖拽的数据压出窗口头部
-        updatedAt: Math.min(createdAt + Math.floor(rand() * 3) * day, now),
+        updatedAt,
         completedAt:
           status === 'done' ? Math.min(createdAt + Math.floor(rand() * 5 + 1) * day, now) : null,
         order: idx,
