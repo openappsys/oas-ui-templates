@@ -109,6 +109,11 @@ body {
   --oas-sidebar-width: 220px;
 }
 
+/* pm 恒传 hide-toggle 且不用 header slot：head 仅剩 padding，整体隐藏消 24px 死空间 */
+.side-panel oas-sidebar::part(head) {
+  display: none;
+}
+
 .content {
   flex: 1;
   min-width: 0;
