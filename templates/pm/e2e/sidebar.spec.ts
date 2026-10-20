@@ -90,3 +90,44 @@ test('S3 保存的视图：点击行应用筛选，删除动作不触发行选�
   await expect(sideRow(page, 'S3 视图')).toHaveCount(0, { timeout: 10_000 })
   await expect(sideRow(page, '全部')).toHaveAttribute('aria-pressed', 'true')
 })
+
+test('S4 折叠 rail：56px 收窄、项目/成员行存活、badge 角标，再展开恢复', async ({ page }) => {
+  await waitForSeed(page)
+  const sidebar = page.getByTestId('side-list')
+  const panel = page.getByTestId('side-panel')
+  const toggle = sidebar.locator('[part="toggle"]')
+  await expect(toggle).toBeVisible()
+  const barWidth = () => sidebar.evaluate((el) => Math.round(el.getBoundingClientRect().width))
+  const panelWidth = () => panel.evaluate((el) => Math.round(el.getBoundingClientRect().width))
+  await expect.poll(barWidth).toBe(220)
+
+  await toggle.click()
+  await expect(sidebar).toHaveAttribute('collapsed', '')
+  await expect.poll(barWidth).toBe(56)
+  await expect.poll(panelWidth).toBe(72)
+
+  await expect(sideRow(page, 'OAS 平台')).toBeVisible()
+  await expect(sideRow(page, '全部 Issues')).toBeVisible()
+  await expect(sideRow(page, '全部')).toBeVisible()
+  await expect(sideRow(page, '李娜')).toBeVisible()
+  await expect(sidebar.locator('[part="badge"]').first()).toBeVisible()
+
+  await toggle.click()
+  await expect(sidebar).not.toHaveAttribute('collapsed', /.*/)
+  await expect.poll(barWidth).toBe(220)
+
+  await sideRow(page, '已完成').click()
+  await expect(page.locator('.issue-row .issue-status').first()).toHaveText('已完成', {
+    timeout: 10_000,
+  })
+})
+
+test('S5 Ctrl+B 快捷键切换 collapsed', async ({ page }) => {
+  await waitForSeed(page)
+  const sidebar = page.getByTestId('side-list')
+  await expect(sidebar).not.toHaveAttribute('collapsed', /.*/)
+  await page.keyboard.press('Control+b')
+  await expect(sidebar).toHaveAttribute('collapsed', '')
+  await page.keyboard.press('Control+b')
+  await expect(sidebar).not.toHaveAttribute('collapsed', /.*/)
+})

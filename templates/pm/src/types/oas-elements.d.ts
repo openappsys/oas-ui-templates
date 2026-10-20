@@ -163,6 +163,8 @@ declare module 'react' {
       'oas-sidebar': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
         'hide-toggle'?: boolean | string
         'active-by-group'?: string
+        shortcut?: boolean | string
+        collapsed?: boolean | string
       }
       'oas-scheduler': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
         view?: string

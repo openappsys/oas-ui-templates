@@ -32,6 +32,14 @@ registerIcon(
   'pm-status-dot',
   '<circle cx="8" cy="8" r="2.2" fill="none" stroke="currentColor" stroke-width="4.6"/>',
 )
+registerIcon(
+  'pm-project',
+  '<path d="M2.5 4 A1.5 1.5 0 0 1 4 2.5 H6.3 L7.8 4.5 H12 A1.5 1.5 0 0 1 13.5 6 V11.5 A1.5 1.5 0 0 1 12 13 H4 A1.5 1.5 0 0 1 2.5 11.5 Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>',
+)
+registerIcon(
+  'pm-inbox',
+  '<path d="M4 3 H12 L13.5 9 V11.5 A1.5 1.5 0 0 1 12 13 H4 A1.5 1.5 0 0 1 2.5 11.5 V9 Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M2.5 9 H5.2 L6.4 11 H9.6 L10.8 9 H13.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
+)
 
 export function SideList({
   rows,
@@ -82,6 +90,17 @@ export function SideList({
       if (row.statusColor) {
         item.icon = 'pm-status-dot'
         item.iconColor = row.statusColor
+      } else if (row.kind === 'project') {
+        item.icon = 'pm-project'
+      } else if (row.kind === 'view') {
+        item.icon = row.id === 'my' ? 'user' : 'pm-inbox'
+      } else if (row.kind === 'status') {
+        item.icon = 'menu'
+      } else if (row.kind === 'savedview') {
+        item.icon = 'star'
+      } else if (row.kind === 'member') {
+        item.icon = 'user'
+        if (row.avatarColor) item.iconColor = row.avatarColor
       }
       if (row.avatarColor) {
         item.avatarText = row.avatarText ?? ''
@@ -110,5 +129,15 @@ export function SideList({
     }
   }, [rows, activeByGroup])
 
-  return <oas-sidebar ref={barRef} data-testid="side-list" hide-toggle="" />
+  useEffect(() => {
+    const root = barRef.current?.shadowRoot
+    if (!root || root.querySelector('style[data-pm-sidebar]')) return
+    const style = document.createElement('style')
+    style.setAttribute('data-pm-sidebar', '')
+    style.textContent =
+      ':host(:not([collapsed])) .item[data-value^="member:"] > .icon{display:none}'
+    root.appendChild(style)
+  }, [])
+
+  return <oas-sidebar ref={barRef} data-testid="side-list" shortcut="" />
 }

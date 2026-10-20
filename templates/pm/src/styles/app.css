@@ -107,6 +107,23 @@ body {
   min-height: 0;
   --oas-sidebar-bg: transparent;
   --oas-sidebar-width: 220px;
+  --oas-sidebar-collapsed-width: 56px;
+}
+
+.side-panel oas-sidebar:not([drawer-open])::part(head) {
+  display: none;
+}
+
+.side-panel oas-sidebar[collapsed]::part(avatar) {
+  display: none;
+}
+
+.side-panel:has(oas-sidebar[collapsed]) {
+  width: 72px;
+}
+
+.side-panel:has(oas-sidebar[collapsed]) .side-view-seg {
+  display: none;
 }
 
 .content {

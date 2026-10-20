@@ -188,6 +188,16 @@ async function captureSidebar(page: Page, suffix: string) {
   await page.getByTestId('side-panel').screenshot({ path: `shots/pm-sidebar${suffix}.png` })
 }
 
+async function captureSidebarCollapsed(page: Page, suffix: string) {
+  const sidebar = page.getByTestId('side-list')
+  await sidebar.locator('[part="toggle"]').click()
+  await expect(sidebar).toHaveAttribute('collapsed', '')
+  await page.waitForTimeout(800)
+  await page
+    .getByTestId('side-panel')
+    .screenshot({ path: `shots/pm-sidebar-collapsed${suffix}.png` })
+}
+
 test('shots', async ({ page }) => {
   test.setTimeout(180_000)
   await openApp(page)
@@ -201,6 +211,7 @@ test('shots sidebar', async ({ page }) => {
   test.setTimeout(120_000)
   await openApp(page)
   await captureSidebar(page, '')
+  await captureSidebarCollapsed(page, '')
 
   console.log('shots sidebar done')
 })
@@ -211,6 +222,7 @@ test('shots sidebar dark', async ({ page }) => {
   await openApp(page)
   await expectDarkTheme(page)
   await captureSidebar(page, '-dark')
+  await captureSidebarCollapsed(page, '-dark')
 
   console.log('shots sidebar dark done')
 })
