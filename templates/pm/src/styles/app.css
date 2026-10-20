@@ -935,6 +935,49 @@ body {
   letter-spacing: 0.5px;
 }
 
+/* 数据源徽标：胶囊贴标签，等宽字（技术标识），明暗都走 token */
+.tb-source {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  border: 1px solid var(--oas-color-border, #e2e8f0);
+  border-radius: 999px;
+  background: var(--oas-color-bg-hover, #f1f5f9);
+  color: var(--oas-color-text-secondary, #64748b);
+  font-family: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.tb-source-api {
+  border-color: var(--oas-color-primary, #0b6cff);
+  color: var(--oas-color-primary, #0b6cff);
+}
+
+.tb-source-btn {
+  cursor: pointer;
+}
+
+.tb-source-btn:hover {
+  border-color: var(--oas-color-border-strong, #cbd5e1);
+  background: var(--oas-color-bg, #fff);
+  color: var(--oas-color-text-primary, #1f2329);
+}
+
+.tb-source-btn:hover.tb-source-api {
+  border-color: var(--oas-color-primary, #0b6cff);
+  color: var(--oas-color-primary, #0b6cff);
+}
+
+.tb-source-btn:focus-visible {
+  outline: 2px solid var(--oas-color-primary);
+  outline-offset: 1px;
+}
+
 /* ── 视图切换（侧栏顶部，垂直 oas-tabs） ── */
 .side-view-seg {
   padding: 8px 10px 0;

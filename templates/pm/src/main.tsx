@@ -48,6 +48,9 @@ import './styles/app.css'
 
 import { App } from './App'
 import { seedDatabase } from './seed-db'
+import { apiRepositories } from './data/api/client'
+import { dexieRepositories } from './data/dexie'
+import { loadDataSource } from './data/source'
 import { RepositoriesProvider } from './data/context'
 import { initTheme } from './lib/theme'
 import { bindKeys } from './lib/keyboard'
@@ -56,15 +59,19 @@ import { bindKeys } from './lib/keyboard'
 import { resultPage, bootText } from './boot-fallback'
 import { loadLang, setLang } from './i18n'
 setLang(loadLang())
-try {
-  // seed 后台跑（不阻塞首屏渲染）；Dexie liveQuery 数据到了自动推送
-  seedDatabase().catch((e) => {
+
+const dataSource = loadDataSource()
+if (dataSource === 'dexie') {
+  try {
+    // seed 后台跑（不阻塞首屏渲染）；Dexie liveQuery 数据到了自动推送
+    seedDatabase().catch((e) => {
+      console.error(e)
+      resultPage(bootText().title, String(e?.message ?? e))
+    })
+  } catch (e) {
     console.error(e)
-    resultPage(bootText().title, String(e?.message ?? e))
-  })
-} catch (e) {
-  console.error(e)
-  resultPage(bootText().title, String((e as Error)?.message ?? e))
+    resultPage(bootText().title, String((e as Error)?.message ?? e))
+  }
 }
 
 initTheme()
@@ -72,7 +79,7 @@ bindKeys()
 
 createRoot(document.querySelector<HTMLDivElement>('#app')!).render(
   <StrictMode>
-    <RepositoriesProvider>
+    <RepositoriesProvider value={dataSource === 'api' ? apiRepositories : dexieRepositories}>
       <App />
     </RepositoriesProvider>
   </StrictMode>,

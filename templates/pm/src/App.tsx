@@ -18,6 +18,7 @@ import { applyTheme } from './lib/theme'
 import { isOverlayOpen, registerKey } from './lib/keyboard'
 import { useRepositories } from './data/context'
 import { useObservable } from './data/use-observable'
+import { loadDataSource, storeDataSource } from './data/source'
 import { can as policyCan, type Action, type Ctx } from './permission/policy'
 import { Avatar } from './components/Avatar'
 import { SideList, type SideRow } from './components/SideList'
@@ -177,6 +178,35 @@ function NotificationList({
         </div>
       ))}
     </div>
+  )
+}
+
+/** 数据源徽标：DEV 下可点切换（写 localStorage + reload）；构建产物只读，
+ *  公开 demo 永远本地模式，避免点到不存在的 /api */
+function DataSourceBadge() {
+  const source = loadDataSource()
+  const label = source === 'api' ? t('dataApi') : t('dataLocal')
+  const className = `tb-source${source === 'api' ? ' tb-source-api' : ''}`
+  if (!import.meta.env.DEV) {
+    return (
+      <span className={className} data-testid="data-source-badge" title={t('dataSourceHint')}>
+        {label}
+      </span>
+    )
+  }
+  return (
+    <button
+      type="button"
+      className={`${className} tb-source-btn`}
+      data-testid="data-source-badge"
+      title={t('dataSourceHint')}
+      onClick={() => {
+        storeDataSource(source === 'api' ? 'dexie' : 'api')
+        location.reload()
+      }}
+    >
+      {label}
+    </button>
   )
 }
 
@@ -537,6 +567,7 @@ export function App() {
         <span className="tb-brand">
           <span className="tb-logo">OAS</span> PM
         </span>
+        <DataSourceBadge />
         <button
           className="tb-user"
           type="button"
