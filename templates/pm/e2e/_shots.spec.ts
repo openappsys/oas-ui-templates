@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 
 async function openApp(page: Page) {
   await page.goto('/')
-  await page.waitForFunction(() => localStorage.getItem('oas-pm-seed-v6') === '1', {
+  await page.waitForFunction(() => localStorage.getItem('oas-pm-seed-v7') === '1', {
     timeout: 45_000,
   })
   await page.waitForSelector('.issue-row', { timeout: 20_000 })

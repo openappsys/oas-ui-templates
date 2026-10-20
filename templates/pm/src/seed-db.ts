@@ -40,7 +40,7 @@ function mulberry32(seed: number): () => number {
 export async function seedDatabase(): Promise<void> {
   // seed 版本标记：调整 seed 逻辑后 bump。标记 + 数据双验证——
   // 单看标记会在「上次 seed 中断」时永久跳过，留下空库
-  const SEED_VER = 'oas-pm-seed-v6'
+  const SEED_VER = 'oas-pm-seed-v7'
   const marked = localStorage.getItem(SEED_VER)
   const issueCount = await db.issues.count()
   if (marked && issueCount > 0) return
@@ -132,9 +132,23 @@ export async function seedDatabase(): Promise<void> {
         // j%5===4 → 逾期样本（未完成 + dueAt 已过 1–5 天，供逾期前缀验收）；
         // 其余铺未来 14 天，6 条一行 → 每天每桶约 2 条（week 同桶 +30min 偏移可验收）
         const overdueRow = schedJ % 5 === 4
-        const hour = [0, 9, 14][schedJ % 3]
         const dayOffset = overdueRow ? -(1 + (schedJ % 5)) : 1 + (Math.floor(schedJ / 6) % 14)
-        dueAt = dayAt(dayOffset, hour)
+        // v7：非逾期行约 1/3 改精确非桶时刻（j%9 ∈ {1,5,6}——三个余数类分别覆盖 j%3 的
+        // 0/1/2，上午/下午/全天各档仍留足桶时刻样本供前缀与平铺验收）；时刻按 j%3 轮换
+        // [10:30/15:45/16:20]（全在 week/day 8–19 轴内），从 j 派生、不抽 rand——
+        // 散耗 rand 会平移随机流，撞飞 e2e 锚定的 issue id（v6 教训）
+        const preciseRow = !overdueRow && [1, 5, 6].includes(schedJ % 9)
+        if (preciseRow) {
+          const [h, m] = [
+            [10, 30],
+            [15, 45],
+            [16, 20],
+          ][schedJ % 3]
+          dueAt = dayAt(dayOffset, h) + m * 60000
+        } else {
+          const hour = [0, 9, 14][schedJ % 3]
+          dueAt = dayAt(dayOffset, hour)
+        }
         // 1/4 带 startAt 紧凑区间（1–3 天，恒 ≤ dueAt）：pm 桶 k=1 样本供 e2e 倒挂钳制（回移一天触发收敛）
         startAt = schedJ % 4 === 1 ? dueAt - (1 + (schedJ % 3)) * day : null
         // 散量群体有 ~1800 行 updatedAt 被 clamp 到恰好 now（createdAt=今天 的行），
