@@ -463,6 +463,34 @@ body {
   margin-bottom: 10px;
 }
 
+/* ── 日程视图（oas-scheduler） ── */
+.schedule-page {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 14px 16px;
+}
+
+.schedule-page oas-scheduler {
+  display: block;
+  flex: 1;
+  min-height: 420px;
+}
+
+.schedule-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.schedule-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--oas-color-text-primary, #1e293b);
+}
+
 /* ── 关于弹窗 ── */
 .about-body {
   display: flex;
