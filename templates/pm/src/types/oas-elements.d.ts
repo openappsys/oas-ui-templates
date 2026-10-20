@@ -164,6 +164,18 @@ declare module 'react' {
         'hide-toggle'?: boolean | string
         'active-by-group'?: string
       }
+      'oas-scheduler': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        view?: string
+        locale?: string
+        'start-hour'?: number | string
+        'end-hour'?: number | string
+        'first-day-of-week'?: number | string
+      }
+      'oas-date-picker': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        type?: string
+        clearable?: boolean | string
+        placeholder?: string
+      }
     }
   }
 }
