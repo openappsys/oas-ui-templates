@@ -66,6 +66,76 @@ function ensureRowStyles(root: ShadowRoot | null): void {
   root.appendChild(st)
 }
 
+/** oas-virtual-list 宿主：items/scrollToIndex 是组件公共契约（property + 方法） */
+type IssueListElement = HTMLElement & {
+  items?: unknown[]
+  scrollToIndex?: (i: number, o?: { align?: string }) => void
+}
+
+/** 行内焦点快照：testid 定位控件种类（行间重名，如每行都有 row-check），行 key 锁定是哪一行 */
+interface RowFocusSnapshot {
+  key: string
+  testid: string
+}
+
+/** 行重建前的焦点落点：焦点不在行内（视口/外部控件）时返回 null，调用方据此跳过恢复 */
+function captureRowFocus(el: IssueListElement): RowFocusSnapshot | null {
+  const root = el.shadowRoot
+  const active = root?.activeElement
+  if (!root || !(active instanceof HTMLElement)) return null
+  // 焦点在行内控件自己的 shadow 里（如 oas-checkbox 的内部 input）时，activeElement 已 retarget 到宿主
+  const row = active.closest<HTMLElement>('.issue-row')
+  const key = row?.dataset.key ?? ''
+  if (!row || !key) return null
+  // 带 testid 的最近祖先；closest 不跨 shadow 边界，不会误命中列表宿主的 testid
+  const target = active.closest<HTMLElement>('[data-testid]')
+  return { key, testid: target?.dataset.testid ?? '' }
+}
+
+/** 聚焦元素本体；宿主自定义元素自身不可聚焦时（oas-checkbox 的焦点在内部 input）钻进 shadow 找控件 */
+function focusDeep(el: HTMLElement): void {
+  el.focus({ preventScroll: true })
+  const root = el.getRootNode()
+  if (root instanceof ShadowRoot && root.activeElement === el) return
+  el.shadowRoot
+    ?.querySelector<HTMLElement>(
+      'input:not([disabled]):not([type="hidden"]), button:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    )
+    ?.focus({ preventScroll: true })
+}
+
+/** 按行 key + 控件 testid 找回新节点并聚焦；行不在窗内（已筛选掉/滚出窗口）或无该控件时返回 false */
+function restoreRowFocus(el: IssueListElement, snap: RowFocusSnapshot): boolean {
+  const root = el.shadowRoot
+  if (!root) return false
+  // 行按下标复用的窗口会随数据漂移，只有 key 稳定（同 SideList 按 data-value 恢复）
+  const row = root.querySelector<HTMLElement>(`.issue-row[data-key="${CSS.escape(snap.key)}"]`)
+  if (!row) return false
+  // 无 testid 的落点退回行本体（tabindex=0 可聚焦）
+  const target = snap.testid
+    ? row.querySelector<HTMLElement>(`[data-testid="${CSS.escape(snap.testid)}"]`)
+    : row
+  if (!target) return false
+  focusDeep(target)
+  return root.activeElement === target
+}
+
+/**
+ * 重建后恢复焦点：scrollToIndex 改 scrollTop 还会触发一次 rAF 驱动的窗口重排（第二次整树重建），
+ * 故不在重建的同一调用栈内落焦，而是下一帧尝试；首次未命中再补一帧，成功即停（最多两次）。
+ * 行已不在窗内时静默放弃——不把焦点丢给列表容器，避免焦点从行内跳走。
+ */
+function scheduleRowFocusRestore(el: IssueListElement, snap: RowFocusSnapshot | null): void {
+  if (!snap) return
+  let tries = 2
+  const tick = () => {
+    if (restoreRowFocus(el, snap)) return
+    tries -= 1
+    if (tries > 0) requestAnimationFrame(tick)
+  }
+  requestAnimationFrame(tick)
+}
+
 function renderIssueRow(
   element: HTMLElement,
   issue: Issue,
@@ -82,6 +152,8 @@ function renderIssueRow(
   ensureRowStyles(element.getRootNode() as ShadowRoot)
   const row = document.createElement('div')
   row.className = isCursor ? 'issue-row is-cursor' : 'issue-row'
+  // 行身份锚点：焦点恢复只能按 key 找回（窗口下标随数据漂移，DOM 每次重建都是新节点）
+  row.dataset.key = issue.key
   if (!showCheckbox) row.classList.add('no-check')
   row.setAttribute('role', 'button')
   row.setAttribute('tabindex', '0')
@@ -236,25 +308,24 @@ export function VirtualIssueList({
   // items 落库后 scrollToIndex 重算窗口强制重渲染，oas-scroll 记录的视口位置得以保持
   // biome-ignore lint/correctness/useExhaustiveDependencies: lang 变化需重推 items 触发行按新语言重渲染（行内 t()/statusLabel 读模块级语言态）
   useEffect(() => {
-    const el = listRef.current as
-      | (HTMLElement & {
-          items?: unknown[]
-          scrollToIndex?: (i: number, o?: { align?: string }) => void
-        })
-      | null
+    const el = listRef.current as IssueListElement | null
     if (!el) return
+    // 重建会替换行 DOM：先记账再推数据（他处改状态触发 liveQuery 时键盘/鼠标焦点不丢）
+    const snap = captureRowFocus(el)
     el.items = issues
     el.scrollToIndex?.(Math.round(lastTopRef.current / 44), { align: 'start' })
+    scheduleRowFocusRestore(el, snap)
   }, [issues, lang])
 
   // 成员/多选权限晚于首个渲染窗口就绪（API 模式异步取成员）：行只在 oas-item 时取当前
   // props，props 后续变化不会自动重派——补一次强制重渲染，修「整列灰色 ? + 勾选列缺失」
   // biome-ignore lint/correctness/useExhaustiveDependencies: memberMap/showCheckbox 只作重渲染触发器（effect 体不引用它们）
   useEffect(() => {
-    const el = listRef.current as
-      | (HTMLElement & { scrollToIndex?: (i: number, o?: { align?: string }) => void })
-      | null
-    el?.scrollToIndex?.(Math.round(lastTopRef.current / 44), { align: 'start' })
+    const el = listRef.current as IssueListElement | null
+    if (!el) return
+    const snap = captureRowFocus(el)
+    el.scrollToIndex?.(Math.round(lastTopRef.current / 44), { align: 'start' })
+    scheduleRowFocusRestore(el, snap)
   }, [memberMap, showCheckbox])
 
   // 渲染窗高 = height 属性（缺省 320，不测宿主布局）——ResizeObserver 把宿主实际
@@ -274,9 +345,7 @@ export function VirtualIssueList({
 
   useEffect(() => {
     if (cursorIndex < 0) return
-    const el = listRef.current as
-      | (HTMLElement & { scrollToIndex?: (i: number, o?: { align?: string }) => void })
-      | null
+    const el = listRef.current as IssueListElement | null
     el?.scrollToIndex?.(cursorIndex, { align: 'auto' })
   }, [cursorIndex])
 
