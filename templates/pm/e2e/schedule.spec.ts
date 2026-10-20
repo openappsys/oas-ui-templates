@@ -34,7 +34,7 @@ async function switchUser(page: Page, id: string) {
 }
 
 /** oas-scheduler 的 events property 读回（宿主注入通道） */
-function sched(page: Page) {
+function sched(page: Page): Promise<Ev[]> {
   return page
     .getByTestId('schedule-gantt')
     .evaluate((el) => JSON.parse(JSON.stringify((el as unknown as { events?: Ev[] }).events ?? [])))

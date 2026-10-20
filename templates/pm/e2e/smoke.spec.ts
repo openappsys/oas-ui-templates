@@ -69,13 +69,19 @@ test('M1 架构：100K seed + 虚拟列表渲染 + 真实计数', async ({ page 
 test('M2 状态筛选：compound index 直取 + 计数联动', async ({ page }) => {
   await waitForSeed(page)
   await sideRow(page, 'In Progress').click()
-  // 窗口行全部是 In Progress（行内显示状态标签）
-  await expect(page.locator('.issue-row .issue-status').first()).toHaveText('In Progress', {
-    timeout: 10_000,
-  })
+  // 等筛选窗口落定：全部渲染行都是 In Progress（点击瞬间仍是未过滤窗口，
+  // 其首行可能恰为 In Progress 造成假通过，随后快照混入其他状态）
+  await expect
+    .poll(
+      async () => {
+        const st = await page.locator('.issue-row .issue-status').allTextContents()
+        return st.length > 0 && st.every((s) => s === 'In Progress')
+      },
+      { timeout: 10_000 },
+    )
+    .toBe(true)
   const statuses = await page.locator('.issue-row .issue-status').allTextContents()
   expect(statuses.length).toBeGreaterThan(0)
-  for (const s of statuses) expect(s).toBe('In Progress')
   // 筛选计数 < 全量计数
   const filtered = await page.getByTestId('issue-total').textContent()
   expect(filtered).not.toBeNull()
@@ -808,8 +814,17 @@ test('M20 看板：卡片点击打开详情抽屉', async ({ page }) => {
     .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-seed-v6')), { timeout: 30_000 })
     .toBe('1')
   await expect(page.locator('.issue-row').first()).toBeVisible({ timeout: 45_000 })
-  // 「我的」视图首张卡（张伟负责），记 key
+  // 「我的」视图首张卡（张伟负责），记 key——先等首行负责人落定为张伟
+  // （点击瞬间仍是未过滤窗口，其首行可能不是张伟的，取到的 key 在看板上不存在）
   await sideRow(page, '我的（张伟）').click()
+  await expect
+    .poll(
+      async () =>
+        (await page.locator('.issue-row').first().locator('oas-avatar').getAttribute('title')) ??
+        '',
+      { timeout: 10_000 },
+    )
+    .toBe('张伟')
   const myKey = await page.locator('.issue-row .issue-key').first().textContent()
   expect(myKey).toBeTruthy()
   await page.keyboard.press('Escape')

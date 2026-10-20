@@ -142,8 +142,10 @@ export async function seedDatabase(): Promise<void> {
         updatedAt = now + schedJ
       } else {
         dueAt = rand() > 0.6 ? createdAt + Math.floor(rand() * 14 + 3) * day : null
-        startAt =
-          dueAt !== null && rand() < 0.25 ? dueAt - (1 + Math.floor(rand() * 3)) * day : null
+        // 1/4 带 startAt 紧凑区间（1–3 天，恒 ≤ dueAt）：从 dueAt 的日序号派生、不消耗 rand——
+        // 多抽一次 rand 会平移整条随机流，既有 e2e 锚定的 issue id（如 issue-project-1-1001）会漂移消失
+        const dayIdx = dueAt === null ? -1 : Math.floor(dueAt / day)
+        startAt = dueAt !== null && dayIdx % 4 === 0 ? dueAt - (1 + (dayIdx % 3)) * day : null
         // 更新时间 clamp 到 now——seed 走未来时间戳会把真实新建/拖拽的数据压出窗口头部
         updatedAt = Math.min(createdAt + Math.floor(rand() * 3) * day, now)
       }
