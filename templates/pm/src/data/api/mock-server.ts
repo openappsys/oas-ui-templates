@@ -1,6 +1,6 @@
-import { LIST_WINDOW } from '../../lib/filters'
-import { PRIORITY_WEIGHT } from '../../lib/order'
-import { mulberry32 } from '../../lib/prng'
+import { LIST_WINDOW } from '../../lib/filters.ts'
+import { PRIORITY_WEIGHT } from '../../lib/order.ts'
+import { mulberry32 } from '../../lib/prng.ts'
 import {
   ISSUE_STATUSES,
   type Activity,
@@ -12,7 +12,7 @@ import {
   type MemberRole,
   type Project,
   type SavedView,
-} from '../../types'
+} from '../../types/index.ts'
 
 export interface SettingRow {
   key: string
@@ -156,9 +156,11 @@ function buildSeed(seed: number, now: number): SeedTables {
     const labels: string[] = []
     const labelCount = Math.floor(rand() * 3)
     for (let j = 0; j < labelCount; j++) labels.push(LABELS[Math.floor(rand() * LABELS.length)])
-    // updatedAt/createdAt 逐条错开，排序窗口里不留并列键（并列键的先后取决于主键序，跨实现易漂移）
-    const updatedAt = now - (i + 1) * 60_000
-    const createdAt = now - (i + 1) * 3_600_000 - Math.floor(rand() * 59) * 60_000
+    // updatedAt 逐条错开 30 分钟，排序窗口里不留并列键（并列键先后取决于主键序，跨实现易漂移）；
+    // 铺满约 41 天，管理页「停滞」列才有非零样本
+    const updatedAt = now - (i + 1) * 30 * 60_000
+    // createdAt 由 updatedAt 回推 1~60 天：恒早于 updatedAt，且日粒度的分布不均，趋势图才有起伏
+    const createdAt = updatedAt - (1 + Math.floor(rand() * 60)) * DAY
     const dueAt = rand() > 0.35 ? now + (Math.floor(rand() * 28) - 7) * DAY : null
     issues.push({
       id: `issue-${project.id}-${i + 1}`,
@@ -170,7 +172,7 @@ function buildSeed(seed: number, now: number): SeedTables {
       priority,
       assigneeId: assignee?.id ?? null,
       reporterId: members[0].id,
-      labels,
+      labels: [...new Set(labels)],
       startAt: dueAt !== null && i % 4 === 0 ? dueAt - (1 + (i % 3)) * DAY : null,
       dueAt,
       createdAt,
