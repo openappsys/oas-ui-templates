@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useRepositories } from '@/data/context'
 import { t, getLang } from '@/i18n'
 import {
@@ -123,7 +123,8 @@ export function ScheduleView({
   }, [issuesRepo, events])
 
   const inject = useMemo(() => ({ events, reinject }), [events, reinject])
-  useEffect(() => {
+  // useLayoutEffect：shadow 样式裁剪 + 事件注入须先于绘制，消首帧未裁剪/空数据闪现
+  useLayoutEffect(() => {
     const el = calRef.current
     if (!el) return
     ensureViewTrim(el.shadowRoot)

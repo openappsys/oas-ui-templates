@@ -50,8 +50,8 @@ const fmtMin = (min: number) =>
   `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`
 
 /** Issue → scheduler 事件：cancelled/无 dueAt 剔除（1:1 复用 issue.id）；done 灰化、
- *  未完成过期加逾期前缀（不抢优先级色）；同日同桶按序 +30min 展示偏移缓解 week 重叠
- *  （纯展示——写回恒为桶起点；偏移封顶 23:30，非法 HH:mm 会被组件 sanitize 静默丢事件） */
+ *  未完成过期加逾期前缀（不抢优先级色）；同日同桶按 30min 窄条竖排平铺（第 6 块起封顶桶尾
+ *  最后 30min 槽位，永不越桶；纯展示——写回恒为桶起点；全天档无 start/end 不参与平铺） */
 export function deriveScheduleEvents(
   issues: Issue[],
   labels: { am: string; pm: string; overdue: string },
@@ -70,10 +70,12 @@ export function deriveScheduleEvents(
       const key = `${date}|${b}`
       const n = laneOffset.get(key) ?? 0
       laneOffset.set(key, n + 1)
+      // 桶内竖排平铺：第 k 块（0 基）占 30min 窄条 桶起点+30k ~ +30(k+1)；
+      // 第 6 块起（k≥5）封顶在最后 30min 槽位（am 11:30–12:00 / pm 17:30–18:00）——永不越桶
       const base = BASE_START[b]
-      const off = Math.min(n * 30, 23 * 60 + 30 - base)
-      start = fmtMin(base + off)
-      end = fmtMin(BASE_END[b])
+      const s = n >= 5 ? BASE_END[b] - 30 : base + n * 30
+      start = fmtMin(s)
+      end = fmtMin(s + 30)
       title = `${b === 'am' ? labels.am : labels.pm}${title}`
     }
     if (i.status !== 'done' && i.dueAt < now) title = `${labels.overdue}${title}`
@@ -89,11 +91,12 @@ export function deriveScheduleEvents(
   return events
 }
 
-/** 注入回声对拍签名：按 id 排序后 id|date|start 串联。scheduler 的 set events 也派发
- *  oas-events-change，宿主注入前对拍此签名可识别「组件把同一批事件念回来」避免回环 */
+/** 注入回声对拍签名：按 id 排序后 id|date|start|end|title|color 完整体串联。scheduler 的
+ *  set events 也派发 oas-events-change，宿主注入前对拍此签名可识别「组件把同一批事件念回来」
+ *  避免回环；完整体口径保证标题/配色变化（抽屉改标题/转 done/改优先级）不被守卫挡成陈旧 chip */
 export function scheduleSignature(events: ScheduleEvent[]): string {
   return [...events]
     .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
-    .map((e) => `${e.id}|${e.date}|${e.start ?? ''}`)
+    .map((e) => `${e.id}|${e.date}|${e.start ?? ''}|${e.end ?? ''}|${e.title}|${e.color ?? ''}`)
     .join(';')
 }

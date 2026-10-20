@@ -91,7 +91,8 @@ export function OCheckbox({
 }
 
 /** oas-date-picker 包装（type=date）：value 走 property 受控写（'YYYY-MM-DD'，空串=已清），
- *  oas-change detail {value}；clearable 清空额外派发 oas-clear → onChange('') */
+ *  oas-change detail {value}；clearable 清空组件内部 clearValue 已连发 oas-clear + oas-change
+ *  （空值）——只监听 oas-change，挂 oas-clear 会双发 onChange('') */
 export function ODatePicker({
   testid,
   value,
@@ -123,12 +124,9 @@ export function ODatePicker({
       const v = (e as CustomEvent<{ value?: string }>).detail?.value
       if (typeof v === 'string') onChangeRef.current(v)
     }
-    const clear = () => onChangeRef.current('')
     el.addEventListener('oas-change', h)
-    el.addEventListener('oas-clear', clear)
     return () => {
       el.removeEventListener('oas-change', h)
-      el.removeEventListener('oas-clear', clear)
     }
   }, [])
   return <oas-date-picker ref={ref} type="date" clearable="" data-testid={testid} />

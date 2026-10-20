@@ -127,7 +127,7 @@ describe('deriveScheduleEvents 映射', () => {
     expect(by('f')?.title).toBe('上午 OAS-6 过期已完成')
   })
 
-  it('date = UTC 日；am/pm 展示块 09:00–12:00 / 14:00–18:00；allday 无 start/end', () => {
+  it('date = UTC 日；单事件占桶首 30min 窄条 09:00–09:30 / 14:00–14:30；allday 无 start/end', () => {
     const events = deriveScheduleEvents(
       [
         issue({ id: 'a', dueAt: Date.UTC(2026, 3, 10, 9) }),
@@ -138,13 +138,13 @@ describe('deriveScheduleEvents 映射', () => {
     )
     const by = (id: string) => events.find((x) => x.id === id)
     expect(by('a')?.date).toBe('2026-04-10')
-    expect(by('a')).toMatchObject({ start: '09:00', end: '12:00' })
-    expect(by('d')).toMatchObject({ start: '14:00', end: '18:00' })
+    expect(by('a')).toMatchObject({ start: '09:00', end: '09:30' })
+    expect(by('d')).toMatchObject({ start: '14:00', end: '14:30' })
     expect(by('e')?.start).toBeUndefined()
     expect(by('e')?.end).toBeUndefined()
   })
 
-  it('同日同桶第 2/3 个 start 递增 30min（09:00→09:30→10:00）；不同桶独立计数', () => {
+  it('同桶平铺：第 1/2/3 块 30min 窄条递增（09:00–09:30→09:30–10:00→10:00–10:30）；不同桶独立计数', () => {
     const events = deriveScheduleEvents(
       [
         issue({ id: 'a', dueAt: Date.UTC(2026, 3, 10, 9) }),
@@ -156,11 +156,60 @@ describe('deriveScheduleEvents 映射', () => {
       labels,
     )
     const by = (id: string) => events.find((x) => x.id === id)
-    expect(by('a')?.start).toBe('09:00')
-    expect(by('b')?.start).toBe('09:30')
-    expect(by('c')?.start).toBe('10:00')
-    expect(by('d')?.start).toBe('14:00')
-    expect(by('e')?.start).toBe('09:00')
+    expect(by('a')).toMatchObject({ start: '09:00', end: '09:30' })
+    expect(by('b')).toMatchObject({ start: '09:30', end: '10:00' })
+    expect(by('c')).toMatchObject({ start: '10:00', end: '10:30' })
+    expect(by('d')).toMatchObject({ start: '14:00', end: '14:30' })
+    expect(by('e')).toMatchObject({ start: '09:00', end: '09:30' })
+  })
+
+  it('平铺封顶：同桶 6 块时第 6 块占桶尾槽 11:30–12:00；8 块时第 6/7/8 块同为 11:30–12:00', () => {
+    const mk = (n: number) =>
+      Array.from({ length: n }, (_, i) => issue({ id: `x${i}`, dueAt: Date.UTC(2026, 3, 10, 9) }))
+    const seq = (n: number) => deriveScheduleEvents(mk(n), labels).map((e) => `${e.start}-${e.end}`)
+    expect(seq(1)).toEqual(['09:00-09:30'])
+    expect(seq(2)).toEqual(['09:00-09:30', '09:30-10:00'])
+    expect(seq(6)).toEqual([
+      '09:00-09:30',
+      '09:30-10:00',
+      '10:00-10:30',
+      '10:30-11:00',
+      '11:00-11:30',
+      '11:30-12:00',
+    ])
+    expect(seq(8)).toEqual([
+      '09:00-09:30',
+      '09:30-10:00',
+      '10:00-10:30',
+      '10:30-11:00',
+      '11:00-11:30',
+      '11:30-12:00',
+      '11:30-12:00',
+      '11:30-12:00',
+    ])
+  })
+
+  it('封顶不越桶：am/pm 桶任意数量事件 start/end 均不越过桶尾（pm 第 6 块起同为 17:30–18:00）', () => {
+    for (const [hour, bucketEnd] of [
+      [9, '12:00'],
+      [14, '18:00'],
+    ] as const) {
+      const events = deriveScheduleEvents(
+        Array.from({ length: 10 }, (_, i) =>
+          issue({ id: `y${i}`, dueAt: Date.UTC(2026, 3, 10, hour) }),
+        ),
+        labels,
+      )
+      for (const e of events) {
+        expect(e.start! < e.end!).toBe(true)
+        expect(e.end! <= bucketEnd).toBe(true)
+      }
+    }
+    const pm = deriveScheduleEvents(
+      Array.from({ length: 6 }, (_, i) => issue({ id: `z${i}`, dueAt: Date.UTC(2026, 3, 10, 14) })),
+      labels,
+    )
+    expect(pm[5]).toMatchObject({ start: '17:30', end: '18:00' })
   })
 
   it('配色：done → 灰 token；其余按优先级 token', () => {
@@ -203,15 +252,37 @@ describe('scheduleSignature 回声对拍签名', () => {
     expect(scheduleSignature(a)).toBe(scheduleSignature([...a].reverse()))
   })
 
-  it('date 或 start 变化 → 签名变化；title/color 变化不影响', () => {
+  it('date/start/end 变化 → 签名变化', () => {
     const base = [ev('a', '2026-01-02', '09:00')]
     expect(scheduleSignature([ev('a', '2026-01-03', '09:00')])).not.toBe(scheduleSignature(base))
     expect(scheduleSignature([ev('a', '2026-01-02', '09:30')])).not.toBe(scheduleSignature(base))
     expect(scheduleSignature([ev('a', '2026-01-02')])).not.toBe(scheduleSignature(base))
     expect(
       scheduleSignature([
-        { id: 'a', date: '2026-01-02', title: '改名', start: '09:00', color: '#fff' },
+        { id: 'a', date: '2026-01-02', title: 'T-a', start: '09:00', end: '10:00' },
       ]),
-    ).toBe(scheduleSignature(base))
+    ).not.toBe(scheduleSignature(base))
+  })
+
+  it('title 变化 → 签名变化（防陈旧 chip 文案）', () => {
+    const base = [ev('a', '2026-01-02', '09:00')]
+    expect(
+      scheduleSignature([{ id: 'a', date: '2026-01-02', title: '改名', start: '09:00' }]),
+    ).not.toBe(scheduleSignature(base))
+  })
+
+  it('color 变化 → 签名变化（转 done/改优先级后 chip 配色跟进）', () => {
+    const base = [ev('a', '2026-01-02', '09:00')]
+    expect(
+      scheduleSignature([
+        {
+          id: 'a',
+          date: '2026-01-02',
+          title: 'T-a',
+          start: '09:00',
+          color: 'var(--pm-status-done)',
+        },
+      ]),
+    ).not.toBe(scheduleSignature(base))
   })
 })

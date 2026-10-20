@@ -432,9 +432,10 @@ export function IssueDetailDrawer({
               value={issue.dueAt === null ? '' : utcDay(issue.dueAt)}
               disabled={!canEdit}
               onChange={(v) => {
-                // 清日期 → dueAt 置空（档位回落全天）；选日期保留当前档位，倒挂 startAt 钳制
+                // 清日期 → dueAt/startAt 一并置空（不留悬挂 startAt；档位回落全天）；
+                // 选日期保留当前档位，倒挂 startAt 钳制
                 if (v === '') {
-                  save({ dueAt: null })
+                  save({ dueAt: null, startAt: null })
                   return
                 }
                 const bucket: ScheduleBucket =

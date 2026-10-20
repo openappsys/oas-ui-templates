@@ -86,7 +86,7 @@ test('S1 映射渲染：events.date 与 dueAt 的 getUTC* 派生一致；桶展�
   await expect(page.getByTestId('schedule-gantt')).toBeAttached({ timeout: 10_000 })
   await expect.poll(async () => (await sched(page)).length, { timeout: 15_000 }).toBeGreaterThan(0)
 
-  // 逐事件对拍 DB：date === utcDay(dueAt)；allday 无 start、am/pm start 桶基点 +30min 偏移
+  // 逐事件对拍 DB：date === utcDay(dueAt)；allday 无 start、am/pm start 桶内 30min 平铺槽位
   const audit = await page.evaluate(async () => {
     const el = document.querySelector('[data-testid=schedule-gantt]') as unknown as {
       events?: Ev[]
@@ -424,6 +424,9 @@ test('S6 视图裁剪：resource 两入口隐藏；agenda 可达且列表渲染'
   await expect.poll(async () => (await sched(page)).length, { timeout: 15_000 }).toBeGreaterThan(0)
 
   // shadow stylesheet 裁剪：按钮仍在 DOM 但 display:none（::part 后代选择器不可用，探针已证）
+  // 先确保 agenda 按钮真实挂载（Playwright 可穿 shadow），再对拍 display——防查询落空误判
+  const gantt = page.getByTestId('schedule-gantt')
+  await expect(gantt.locator("button[data-view='agenda']")).toBeAttached()
   const vis = await page.evaluate(() => {
     const el = document.querySelector('[data-testid=schedule-gantt]')
     const disp = (v: string) => {
@@ -435,10 +438,11 @@ test('S6 视图裁剪：resource 两入口隐藏；agenda 可达且列表渲染'
   expect(vis.res).toBe('none')
   expect(vis.resWeek).toBe('none')
   expect(vis.agenda).not.toBe('none')
+  expect(vis.agenda).not.toBe('missing')
 
   // agenda 点击 → view attribute 变化 + 28 天清单渲染（seed 演示组在窗口内必有行）
-  const gantt = page.getByTestId('schedule-gantt')
   await gantt.locator("button[data-view='agenda']").click()
+
   await expect(gantt).toHaveAttribute('view', 'agenda')
   await expect
     .poll(() => gantt.locator('[part="agenda"] .ag-row').count(), { timeout: 10_000 })
