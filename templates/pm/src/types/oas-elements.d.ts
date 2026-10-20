@@ -178,6 +178,11 @@ declare module 'react' {
         clearable?: boolean | string
         placeholder?: string
       }
+      'oas-time-picker': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        value?: string
+        placeholder?: string
+        disabled?: boolean | string
+      }
     }
   }
 }

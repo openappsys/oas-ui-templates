@@ -132,6 +132,54 @@ export function ODatePicker({
   return <oas-date-picker ref={ref} type="date" clearable="" data-testid={testid} />
 }
 
+/** oas-time-picker 包装（单值 'HH:mm'）：value 走 property 受控写（dist 契约：set value 强制
+ *  应用且不派发事件）；presets 走 property（d.ts 明示 @apiProperty，快捷时刻 {label,value}[]）；
+ *  oas-change detail {value}——clear 路径组件内部连发 oas-clear + oas-change（空值），
+ *  只挂 oas-change 防双发（同 ODatePicker 先例） */
+export function OTimePicker({
+  testid,
+  value,
+  presets,
+  disabled,
+  onChange,
+}: {
+  testid: string
+  value: string
+  presets?: Array<{ label: string; value: string }>
+  disabled?: boolean
+  onChange: (v: string) => void
+}) {
+  const ref = useRef<HTMLElement>(null)
+  const onChangeRef = useRef(onChange)
+  onChangeRef.current = onChange
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    el.toggleAttribute('disabled', disabled ?? false)
+  }, [disabled])
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    ;(el as unknown as { value: string }).value = value
+  }, [value])
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    ;(el as unknown as { presets: unknown }).presets = presets ?? null
+  }, [presets])
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const h = (e: Event) => {
+      const v = (e as CustomEvent<{ value?: unknown }>).detail?.value
+      if (typeof v === 'string') onChangeRef.current(v)
+    }
+    el.addEventListener('oas-change', h)
+    return () => el.removeEventListener('oas-change', h)
+  }, [])
+  return <oas-time-picker ref={ref} data-testid={testid} />
+}
+
 /** oas-segmented 包装：options 与 value 都走 setAttribute（渲染签名只认 attribute，
  *  property setter 不触发重建——AGENTS 已知坑）；oas-change detail {value} */
 export function OSegmented({
