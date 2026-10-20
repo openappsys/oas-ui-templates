@@ -14,6 +14,9 @@
 | `templates/admin-pro/svelte` | Vite + Svelte 5 | 完整后台（自研双模式路由 · onoas-* 模板直绑 · 与 vanilla 同等功能集，独立实现） | ✅ | ✅ | 可用 |
 | `templates/admin-pro/cdn` | 零构建（unpkg CDN + 原生 JS） | 完整后台（与 vanilla 同等功能集 · 登录 / 路由 / CRUD / 系统管理 / 中英切换） | — | ✅ | 可用 |
 | `templates/admin-pro/cdn-mpa` | 零构建（unpkg CDN + 原生 JS） | 完整后台 MPA（一页一 HTML · 与 vanilla 同等功能集 · 登录 / CRUD / 系统管理 / 中英切换） | — | ✅ | 可用 |
+| `templates/desktop` | Vite + TypeScript | 桌面应用骨架（窗口壳 / 对话框 / 菜单栏 / 活动栏 / 状态栏 · 参照 VS Code / PC 应用骨架） | ✅ | ✅ | 试点 |
+| `templates/mobile-h5` | Vite + TypeScript | 移动端 H5（hash 路由 + PWA 基线 · 移动专属组件） | ✅ | ✅ | 试点 |
+| `templates/pm` | Vite + React 19 + Dexie | 项目管理系统（10W+ Issue 虚拟列表 / 看板 / 甘特 / 资源负载与一键均载 / 日程三档 / 管理控制台 · 三级权限 · 中英双语 · 双主题） | ✅ | ✅ | 可用 |
 
 ## 开发
 
@@ -88,6 +91,9 @@ A collection of project templates built on [oas-ui](https://oas-ui.dev), a frame
 | `templates/admin-pro/svelte` | Vite + Svelte 5 | Full admin framework (self-built dual-mode router · direct onoas-* template binding · feature parity with vanilla, independently implemented) | ✅ | ✅ | Stable |
 | `templates/admin-pro/cdn` | Zero-build (unpkg CDN + plain JS) | Lightweight admin (login / router / CRUD / form / zh-en) | — | ✅ | Stable |
 | `templates/admin-pro/cdn-mpa` | Zero-build (unpkg CDN + plain JS) | Lightweight MPA admin (one HTML per page · login / CRUD / form / zh-en) | — | ✅ | Stable |
+| `templates/desktop` | Vite + TypeScript | Desktop app skeleton (window shell / dialogs / menu bar / activity bar / status bar · VS Code-style PC app frame) | ✅ | ✅ | Pilot |
+| `templates/mobile-h5` | Vite + TypeScript | Mobile H5 (hash routing + PWA baseline · mobile-specific components) | ✅ | ✅ | Pilot |
+| `templates/pm` | Vite + React 19 + Dexie | Project management system (100K+ issue virtual list / board / gantt / resource workload with one-click leveling / three-tier schedule calendar / admin console · 3-level permissions · zh-en i18n · dual theme) | ✅ | ✅ | Stable |
 
 ## Development
 
