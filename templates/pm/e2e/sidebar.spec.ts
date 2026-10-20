@@ -24,14 +24,14 @@ test('S1 多组独立高亮：项目/视图/状态各组 active 互不干扰', a
   await expect(sideRow(page, '全部 Issues')).toHaveAttribute('aria-pressed', 'true')
   await expect(sideRow(page, '我的（张伟）')).toHaveAttribute('aria-pressed', 'false')
   await expect(sideRow(page, '全部')).toHaveAttribute('aria-pressed', 'true')
-  await expect(sideRow(page, 'Backlog')).toHaveAttribute('aria-pressed', 'false')
+  await expect(sideRow(page, '待规划')).toHaveAttribute('aria-pressed', 'false')
 
-  await sideRow(page, 'Done').click()
-  await expect(sideRow(page, 'Done')).toHaveAttribute('aria-pressed', 'true')
+  await sideRow(page, '已完成').click()
+  await expect(sideRow(page, '已完成')).toHaveAttribute('aria-pressed', 'true')
   await expect(sideRow(page, '全部')).toHaveAttribute('aria-pressed', 'false')
   await expect(sideRow(page, 'OAS 平台')).toHaveAttribute('aria-pressed', 'true')
   await expect(sideRow(page, '全部 Issues')).toHaveAttribute('aria-pressed', 'true')
-  await expect(page.locator('.issue-row .issue-status').first()).toHaveText('Done', {
+  await expect(page.locator('.issue-row .issue-status').first()).toHaveText('已完成', {
     timeout: 10_000,
   })
 })
@@ -57,8 +57,8 @@ test('S2 成员 toggle：点击设置负责人筛选，再点清除', async ({ p
 
 test('S3 保存的视图：点击行应用筛选，删除动作不触发行选择', async ({ page }) => {
   await waitForSeed(page)
-  await sideRow(page, 'Backlog').click()
-  await expect(page.locator('.issue-row .issue-status').first()).toHaveText('Backlog', {
+  await sideRow(page, '待规划').click()
+  await expect(page.locator('.issue-row .issue-status').first()).toHaveText('待规划', {
     timeout: 10_000,
   })
 
@@ -77,8 +77,8 @@ test('S3 保存的视图：点击行应用筛选，删除动作不触发行选�
   await expect(sideRow(page, '全部')).toHaveAttribute('aria-pressed', 'true')
 
   await sideRow(page, 'S3 视图').click()
-  await expect(sideRow(page, 'Backlog')).toHaveAttribute('aria-pressed', 'true')
-  await expect(page.locator('.issue-row .issue-status').first()).toHaveText('Backlog', {
+  await expect(sideRow(page, '待规划')).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.locator('.issue-row .issue-status').first()).toHaveText('待规划', {
     timeout: 10_000,
   })
 

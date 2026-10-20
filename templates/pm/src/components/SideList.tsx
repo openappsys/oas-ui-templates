@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { registerIcon } from '@oas-ui/icons/runtime'
+import { t } from '@/i18n'
 
 export interface SideRow {
   group: string
@@ -87,7 +88,9 @@ export function SideList({
         item.avatarColor = row.avatarColor
       }
       if (row.deletable && row.id) {
-        item.actions = [{ icon: 'close', value: 'del', label: `删除视图 ${row.label}` }]
+        item.actions = [
+          { icon: 'close', value: 'del', label: t('deleteView').replace('{name}', row.label) },
+        ]
       }
       return item
     })

@@ -1,8 +1,8 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import type { Issue, IssuePriority, IssueStatus, Member } from '@/types'
-import { ISSUE_PRIORITIES, ISSUE_STATUSES, STATUS_LABEL } from '@/types'
+import { ISSUE_PRIORITIES, ISSUE_STATUSES } from '@/types'
 import { OSelect, OCheckbox, ODatePicker, OSegmented, TagChip } from '@/components/oas-wrappers'
-import { t } from '@/i18n'
+import { activityTypeLabel, dateLocale, relationLabel, statusLabel, t } from '@/i18n'
 import { useRepositories } from '@/data/context'
 import { useObservable } from '@/data/use-observable'
 import { useLabelSet } from '@/lib/labels'
@@ -25,18 +25,6 @@ function DrawerActivities({
 }) {
   const { activities: activitiesRepo } = useRepositories()
   const acts = useObservable(() => activitiesRepo.liveByIssue(issueId), [issueId, activitiesRepo])
-  const TYPE_LABEL: Record<string, string> = {
-    create: '创建了 Issue',
-    status: '变更了状态',
-    priority: '变更了优先级',
-    assignee: '变更了负责人',
-    labels: '更新了标签',
-    description: '更新了描述',
-    title: '更新了标题',
-    dates: '调整了排期',
-    dueAt: '调整了排期',
-    startAt: '调整了排期',
-  }
   return (
     <div className="activities-block" data-testid="activities-block">
       <span>
@@ -45,13 +33,17 @@ function DrawerActivities({
       <div className="activities-list">
         {(acts ?? []).map((a) => (
           <div key={a.id} className="activity-item" data-testid="activity-item">
-            <span className="activity-actor">{memberMap.get(a.actorId)?.name ?? '某人'}</span>
+            <span className="activity-actor">
+              {memberMap.get(a.actorId)?.name ?? t('actorUnknown')}
+            </span>
             <span className="activity-text">
-              {TYPE_LABEL[a.type] ?? a.type}
-              {a.field === '状态' && a.to ? ` → ${STATUS_LABEL[a.to as IssueStatus] ?? a.to}` : ''}
+              {activityTypeLabel(a.type)}
+              {a.field === '状态' && a.to ? ` → ${statusLabel(a.to)}` : ''}
               {a.field && a.type !== 'status' && a.to ? ` → ${a.to}` : ''}
             </span>
-            <span className="activity-time">{new Date(a.createdAt).toLocaleString()}</span>
+            <span className="activity-time">
+              {new Date(a.createdAt).toLocaleString(dateLocale())}
+            </span>
           </div>
         ))}
       </div>
@@ -122,7 +114,7 @@ function CommentsBlock({
                     data-testid="comment-cancel"
                     onClick={() => setEditingId(null)}
                   >
-                    取消
+                    {t('cancel')}
                   </oas-button>
                   <oas-button
                     size="small"
@@ -141,14 +133,14 @@ function CommentsBlock({
                       setEditingId(null)
                     }}
                   >
-                    保存
+                    {t('save')}
                   </oas-button>
                 </div>
               </div>
             ) : (
               <oas-comment
-                author={memberMap.get(cm.authorId)?.name ?? '匿名'}
-                datetime={new Date(cm.createdAt).toLocaleString()}
+                author={memberMap.get(cm.authorId)?.name ?? t('commentAnonymous')}
+                datetime={new Date(cm.createdAt).toLocaleString(dateLocale())}
               >
                 <span slot="content">{renderMentions(cm.body)}</span>
                 {cm.authorId === currentUser && (
@@ -165,7 +157,7 @@ function CommentsBlock({
                           }, 50)
                         }}
                       >
-                        编辑
+                        {t('adminEdit')}
                       </button>
                     )}
                     {can('comment:delete', { comment: cm }) && (
@@ -175,7 +167,7 @@ function CommentsBlock({
                         data-testid="comment-del"
                         onClick={() => void commentsRepo.delete(cm.id)}
                       >
-                        删除
+                        {t('delete')}
                       </button>
                     )}
                   </span>
@@ -213,12 +205,6 @@ function CommentsBlock({
 }
 
 /* ── Issue 详情抽屉（oas-drawer + OSelect + oas-textarea + oas-tag + popconfirm，即时保存） ── */
-const RELATION_LABEL: Record<string, string> = {
-  blocks: '阻塞',
-  'blocked-by': '被阻塞',
-  relates: '相关',
-}
-
 export function IssueDetailDrawer({
   issueId,
   memberMap,
@@ -386,7 +372,7 @@ export function IssueDetailDrawer({
       .catch((e) => console.error('[save acts]', (e as Error)?.message ?? e))
   }
   const memberOptions = [
-    { label: '未分配', value: '__none__' },
+    { label: t('resourceUnassigned'), value: '__none__' },
     ...[...memberMap.values()].map((m) => ({ label: m.name, value: m.id })),
   ]
 
@@ -396,17 +382,17 @@ export function IssueDetailDrawer({
         <h2 className="detail-title">{issue.title}</h2>
         <div className="detail-meta">
           <div className="detail-field">
-            <span>状态</span>
+            <span>{t('status')}</span>
             <OSelect
               testid="detail-status"
               value={issue.status}
-              options={ISSUE_STATUSES.map((s) => ({ label: STATUS_LABEL[s], value: s }))}
+              options={ISSUE_STATUSES.map((s) => ({ label: statusLabel(s), value: s }))}
               onChange={(v) => save({ status: v as IssueStatus })}
               disabled={!canEdit}
             />
           </div>
           <div className="detail-field">
-            <span>优先级</span>
+            <span>{t('priority')}</span>
             <OSelect
               testid="detail-priority"
               value={issue.priority}
@@ -416,7 +402,7 @@ export function IssueDetailDrawer({
             />
           </div>
           <div className="detail-field">
-            <span>负责人</span>
+            <span>{t('assignee')}</span>
             <OSelect
               testid="detail-assignee"
               value={issue.assigneeId ?? '__none__'}
@@ -499,7 +485,7 @@ export function IssueDetailDrawer({
                   {s.key} {s.title}
                 </span>
                 <oas-tag size="small" type={s.status === 'done' ? 'success' : 'info'}>
-                  {STATUS_LABEL[s.status]}
+                  {statusLabel(s.status)}
                 </oas-tag>
               </div>
             ))}
@@ -510,13 +496,13 @@ export function IssueDetailDrawer({
                 ref={subInputRef}
                 className="comment-input"
                 data-testid="sub-add-input"
-                placeholder="新子任务标题…"
+                placeholder={t('subPlaceholder')}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') void addSub()
                 }}
               />
               <oas-button size="small" data-testid="sub-add" onClick={() => void addSub()}>
-                添加
+                {t('addSub')}
               </oas-button>
             </div>
           )}
@@ -526,7 +512,7 @@ export function IssueDetailDrawer({
           <oas-textarea
             ref={descRefValue}
             data-testid="detail-desc"
-            placeholder="Description…"
+            placeholder={t('descPlaceholder')}
             className="detail-textarea"
           />
           {descDirty && canEdit && (
@@ -539,7 +525,7 @@ export function IssueDetailDrawer({
                 setDescDirty(false)
               }}
             >
-              保存描述
+              {t('descSave')}
             </button>
           )}
         </div>
@@ -548,7 +534,7 @@ export function IssueDetailDrawer({
           <div className="detail-labels">
             {(issue.relations ?? []).map((r, i) => {
               const target = relationTarget(r.targetId)
-              const relLabel = `${RELATION_LABEL[r.type] ?? r.type} ${target?.key ?? r.targetId.slice(0, 10)}`
+              const relLabel = `${relationLabel(r.type)} ${target?.key ?? r.targetId.slice(0, 10)}`
               return canEdit ? (
                 <TagChip
                   key={`${r.type}-${r.targetId}`}
@@ -575,10 +561,10 @@ export function IssueDetailDrawer({
                 testid="relation-add-type"
                 value={relType}
                 options={[
-                  { label: '关联…', value: '__none__' },
-                  { label: 'blocks（阻塞）', value: 'blocks' },
-                  { label: 'blocked-by（被阻塞）', value: 'blocked-by' },
-                  { label: 'relates（相关）', value: 'relates' },
+                  { label: t('relAdd'), value: '__none__' },
+                  { label: t('relOptBlocks'), value: 'blocks' },
+                  { label: t('relOptBlockedBy'), value: 'blocked-by' },
+                  { label: t('relOptRelates'), value: 'relates' },
                 ]}
                 onChange={setRelType}
               />
@@ -588,7 +574,7 @@ export function IssueDetailDrawer({
                 testid="relation-add-target"
                 value="__none__"
                 options={[
-                  { label: '选择 Issue…', value: '__none__' },
+                  { label: t('relPickIssue'), value: '__none__' },
                   ...(relCandidates ?? []).map((x) => ({
                     label: `${x.key} ${x.title.slice(0, 14)}`,
                     value: x.id,
@@ -636,7 +622,7 @@ export function IssueDetailDrawer({
                 <oas-dynamic-tags
                   data-testid="label-add"
                   ref={labelsTagsRef}
-                  placeholder="＋ 输入标签后回车"
+                  placeholder={t('adminCfgLabelsPlaceholder')}
                   style={{ width: '100%' }}
                 />
                 <div className="label-quick" data-testid="label-quick">
@@ -670,13 +656,14 @@ export function IssueDetailDrawer({
         <DrawerActivities issueId={issue.id} memberMap={memberMap} />
         <div className="detail-foot">
           <span className="detail-dates">
-            创建 {new Date(issue.createdAt).toLocaleDateString()} · 更新{' '}
-            {new Date(issue.updatedAt).toLocaleString()}
+            {t('detailDates')
+              .replace('{created}', new Date(issue.createdAt).toLocaleDateString(dateLocale()))
+              .replace('{updated}', new Date(issue.updatedAt).toLocaleString(dateLocale()))}
           </span>
-          <oas-popconfirm ref={popRef} title="删除后不可恢复，确认？" data-testid="detail-delete">
+          <oas-popconfirm ref={popRef} title={t('adminDeleteConfirm')} data-testid="detail-delete">
             {canDelete && (
               <oas-button type="danger" data-testid="detail-delete-btn">
-                删除
+                {t('delete')}
               </oas-button>
             )}
           </oas-popconfirm>

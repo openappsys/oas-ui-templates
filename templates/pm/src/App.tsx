@@ -1,8 +1,8 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import type { Issue, IssuePriority, IssueStatus, Member, Project } from './types'
-import { ISSUE_PRIORITIES, ISSUE_STATUSES, STATUS_LABEL } from './types'
+import { ISSUE_PRIORITIES, ISSUE_STATUSES } from './types'
 import { OSelect, OTabs } from './components/oas-wrappers'
-import { t, loadLang, setLang, type Lang } from './i18n'
+import { t, loadLang, setLang, statusLabel, dateLocale, type Lang } from './i18n'
 import { useSavedViews } from './components/BulkBar'
 import { STATUS_COLOR } from './lib/colors'
 import {
@@ -154,7 +154,7 @@ function NotificationList({
 }) {
   const list = useMyNotifications(currentUser)
   if (!list || list.length === 0) {
-    return <oas-empty description="暂无与我相关的动态" />
+    return <oas-empty description={t('notifyEmpty')} />
   }
   return (
     <div className="notify-list" data-testid="notify-list">
@@ -167,7 +167,7 @@ function NotificationList({
           onClick={() => onOpen(n.issueId)}
         >
           <p className="notify-text">{n.text}</p>
-          <p className="notify-time">{new Date(n.createdAt).toLocaleString()}</p>
+          <p className="notify-time">{new Date(n.createdAt).toLocaleString(dateLocale())}</p>
         </div>
       ))}
     </div>
@@ -287,10 +287,10 @@ export function App() {
   canCreateRef.current = canCreateIssue
   const memberOptions = useMemo(
     () => [
-      { label: '未分配', value: '__none__' },
+      { label: t('resourceUnassigned'), value: '__none__' },
       ...[...(members ?? [])].map((m) => ({ label: m.name, value: m.id })),
     ],
-    [members],
+    [members, lang],
   )
 
   const setF = useCallback(<K extends keyof Filters>(k: K, v: Filters[K]) => {
@@ -321,7 +321,7 @@ export function App() {
       kind: 'view',
       value: 'view:my',
       id: 'my',
-      label: `我的（${memberMap.get(currentUser)?.name ?? ''}）`,
+      label: t('myView').replace('{name}', memberMap.get(currentUser)?.name ?? ''),
     },
     {
       group: t('status'),
@@ -338,7 +338,7 @@ export function App() {
       kind: 'status',
       value: `status:${s}`,
       id: s,
-      label: STATUS_LABEL[s],
+      label: statusLabel(s),
       statusColor: STATUS_COLOR[s],
       count: counts?.byStatus[s]?.toLocaleString() ?? '…',
     })
@@ -413,7 +413,7 @@ export function App() {
     if (!issues?.length) return
     const esc = (s: string) => `"${s.replace(/"/g, '""')}"`
     const lines = [
-      'Key,标题,状态,优先级,负责人,创建日期',
+      [t('key'), t('title'), t('status'), t('priority'), t('assignee'), t('createdAt')].join(','),
       ...issues.map((i) =>
         [
           i.key,
@@ -534,7 +534,7 @@ export function App() {
           className="tb-user"
           type="button"
           data-testid="tb-user"
-          title="切换身份"
+          title={t('paletteSwitchUser')}
           onClick={() => userPickRef.current?.setAttribute('visible', '')}
         >
           <Avatar member={memberMap.get(currentUser)} size={22} />
@@ -557,11 +557,11 @@ export function App() {
             data-testid="toolbar-new"
             onClick={() => createRef.current?.setAttribute('visible', '')}
           >
-            ＋ 新建 Issue
+            {t('newIssue')}
           </oas-button>
         )}
         <oas-button type="text" size="small" data-testid="toolbar-export" onClick={exportCsv}>
-          导出 CSV（当前窗口）
+          {t('exportCsv')}
         </oas-button>
         <oas-button
           type="text"
@@ -576,7 +576,7 @@ export function App() {
           ref={searchRef}
           className="toolbar-search"
           data-testid="toolbar-search"
-          placeholder="搜索 Key 或标题…（/）"
+          placeholder={t('search')}
         />
         <span className="tb-spacer" />
         <oas-button
@@ -595,10 +595,10 @@ export function App() {
           type="text"
           size="small"
           data-testid="toolbar-notify"
-          title="与我相关的最近动态"
+          title={t('notifyTitle')}
           onClick={() => notifyRef.current?.setAttribute('visible', '')}
         >
-          动态
+          {t('notify')}
           <NotificationBadge currentUser={currentUser} />
         </oas-button>
         <oas-button
@@ -607,7 +607,7 @@ export function App() {
           data-testid="toolbar-about"
           onClick={() => aboutRef.current?.setAttribute('visible', '')}
         >
-          关于
+          {t('about')}
         </oas-button>
       </header>
       <div className="main">
@@ -713,24 +713,24 @@ export function App() {
       <oas-modal ref={createRef} no-footer data-testid="modal-create">
         <div className="create-body">
           <div className="create-field">
-            <label htmlFor="create-title">标题</label>
-            <oas-input data-testid="create-title" placeholder="Issue 标题" />
+            <label htmlFor="create-title">{t('title')}</label>
+            <oas-input data-testid="create-title" placeholder={t('createTitlePlaceholder')} />
             <p className="create-error" data-testid="create-error" hidden>
-              标题不能为空
+              {t('titleRequired')}
             </p>
           </div>
           <div className="create-row">
             <div className="create-field">
-              <label htmlFor="create-status">状态</label>
+              <label htmlFor="create-status">{t('status')}</label>
               <OSelect
                 testid="create-status"
                 value={createStatus}
-                options={ISSUE_STATUSES.map((s) => ({ label: STATUS_LABEL[s], value: s }))}
+                options={ISSUE_STATUSES.map((s) => ({ label: statusLabel(s), value: s }))}
                 onChange={(v) => setCreateStatus(v as IssueStatus)}
               />
             </div>
             <div className="create-field">
-              <label htmlFor="create-priority">优先级</label>
+              <label htmlFor="create-priority">{t('priority')}</label>
               <OSelect
                 testid="create-priority"
                 value={createPriority}
@@ -739,7 +739,7 @@ export function App() {
               />
             </div>
             <div className="create-field">
-              <label htmlFor="create-assignee">负责人</label>
+              <label htmlFor="create-assignee">{t('assignee')}</label>
               <OSelect
                 testid="create-assignee"
                 value={createAssignee}
@@ -762,14 +762,14 @@ export function App() {
                 modal.removeAttribute('visible')
               }}
             >
-              取消
+              {t('cancel')}
             </oas-button>
             <oas-button
               type="primary"
               data-testid="create-submit"
               onClick={() => void createIssue()}
             >
-              创建
+              {t('create')}
             </oas-button>
           </div>
         </div>
@@ -790,11 +790,11 @@ export function App() {
       <oas-modal ref={saveViewRef} no-footer data-testid="modal-save-view">
         <div className="create-body">
           <div className="create-field">
-            <label htmlFor="save-view-name">视图名称</label>
+            <label htmlFor="save-view-name">{t('viewName')}</label>
             <oas-input
               ref={saveViewNameRef}
               data-testid="save-view-name"
-              placeholder="如：我的进行中"
+              placeholder={t('saveViewPlaceholder')}
             />
           </div>
           <div className="quit-actions">
@@ -802,17 +802,17 @@ export function App() {
               data-testid="save-view-cancel"
               onClick={() => saveViewRef.current?.removeAttribute('visible')}
             >
-              取消
+              {t('cancel')}
             </oas-button>
             <oas-button type="primary" data-testid="save-view-ok" onClick={() => void doSaveView()}>
-              保存
+              {t('save')}
             </oas-button>
           </div>
         </div>
       </oas-modal>
 
       {/* 通知（与我相关的最近动态） */}
-      <oas-modal ref={notifyRef} title="与我相关的最近动态" no-footer data-testid="modal-notify">
+      <oas-modal ref={notifyRef} title={t('notifyTitle')} no-footer data-testid="modal-notify">
         <NotificationList
           currentUser={currentUser}
           onOpen={(issueId) => {
@@ -823,7 +823,12 @@ export function App() {
       </oas-modal>
 
       {/* 身份切换 */}
-      <oas-modal ref={userPickRef} title="切换身份" no-footer data-testid="modal-user">
+      <oas-modal
+        ref={userPickRef}
+        title={t('paletteSwitchUser')}
+        no-footer
+        data-testid="modal-user"
+      >
         <div className="user-picker">
           {(members ?? []).map((m) => (
             <button
@@ -870,17 +875,14 @@ export function App() {
           <span className="about-logo">OAS</span>
           <p className="about-name">OAS PM</p>
           <p className="about-ver">v0.2.0 · oas-ui 2.6.1</p>
-          <p className="about-desc">
-            项目管理模板——React 19 + Dexie.js IndexedDB 本地优先，支持 10W~100W 级 Issue
-            的仪表盘、列表、看板与甘特图。
-          </p>
+          <p className="about-desc">{t('aboutDesc')}</p>
           <div className="quit-actions">
             <oas-button
               type="primary"
               data-testid="about-close"
               onClick={() => aboutRef.current?.removeAttribute('visible')}
             >
-              知道了
+              {t('know')}
             </oas-button>
           </div>
         </div>

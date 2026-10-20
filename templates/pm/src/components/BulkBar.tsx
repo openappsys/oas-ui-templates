@@ -3,7 +3,8 @@ import { useRepositories } from '@/data/context'
 import { useObservable } from '@/data/use-observable'
 import type { Action, Ctx } from '@/permission/policy'
 import type { IssuePriority, IssueStatus } from '../types'
-import { ISSUE_PRIORITIES, ISSUE_STATUSES, STATUS_LABEL } from '../types'
+import { ISSUE_PRIORITIES, ISSUE_STATUSES } from '../types'
+import { statusLabel, t } from '@/i18n'
 import { OSelect } from './oas-wrappers'
 
 /** 批量操作浮条：选中集 → 批量改状态/优先级/负责人/删除（写活动历史） */
@@ -45,13 +46,15 @@ export function BulkBar({
 
   return (
     <div className="bulk-bar" data-testid="bulk-bar">
-      <span className="bulk-count">已选 {selectedIds.size}</span>
+      <span className="bulk-count">
+        {t('bulkSelected').replace('{n}', String(selectedIds.size))}
+      </span>
       <OSelect
         testid="bulk-status"
         value={status}
         options={[
-          { label: '改状态…', value: '' },
-          ...ISSUE_STATUSES.map((s) => ({ label: STATUS_LABEL[s], value: s })),
+          { label: t('bulkSetStatus'), value: '' },
+          ...ISSUE_STATUSES.map((s) => ({ label: statusLabel(s), value: s })),
         ]}
         onChange={setStatus}
       />
@@ -59,7 +62,7 @@ export function BulkBar({
         testid="bulk-priority"
         value={priority}
         options={[
-          { label: '改优先级…', value: '' },
+          { label: t('bulkSetPriority'), value: '' },
           ...ISSUE_PRIORITIES.map((p) => ({ label: p, value: p })),
         ]}
         onChange={setPriority}
@@ -68,8 +71,8 @@ export function BulkBar({
         testid="bulk-assignee"
         value={assignee}
         options={[
-          { label: '改负责人…', value: '' },
-          { label: '未分配', value: '__none__' },
+          { label: t('bulkSetAssignee'), value: '' },
+          { label: t('resourceUnassigned'), value: '__none__' },
           ...(members ?? []).map((m) => ({ label: m.name, value: m.id })),
         ]}
         onChange={setAssignee}
@@ -80,7 +83,7 @@ export function BulkBar({
         data-testid="bulk-apply"
         onClick={() => void apply()}
       >
-        应用
+        {t('apply')}
       </button>
       <button
         className="bulk-delete"
@@ -88,10 +91,10 @@ export function BulkBar({
         data-testid="bulk-delete"
         onClick={() => void remove()}
       >
-        删除
+        {t('delete')}
       </button>
       <button className="bulk-cancel" type="button" data-testid="bulk-cancel" onClick={onDone}>
-        取消
+        {t('cancel')}
       </button>
     </div>
   )

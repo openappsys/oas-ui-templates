@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useRepositories } from '@/data/context'
 import type { Issue, IssueStatus, Member } from '@/types'
-import { ISSUE_STATUSES, STATUS_LABEL } from '@/types'
+import { ISSUE_STATUSES } from '@/types'
+import { getLang, statusLabel, t } from '@/i18n'
 import { betweenOrder } from '@/lib/order'
 import type { Action, Ctx } from '@/permission/policy'
 
@@ -28,7 +29,11 @@ export function KanbanBoard({
   const onOpenIssueRef = useRef(onOpenIssue)
   onOpenIssueRef.current = onOpenIssue
 
-  const columns = useMemo(() => ISSUE_STATUSES.map((s) => ({ key: s, title: STATUS_LABEL[s] })), [])
+  const lang = getLang()
+  const columns = useMemo(
+    () => ISSUE_STATUSES.map((s) => ({ key: s, title: statusLabel(s) })),
+    [lang],
+  )
 
   // 列内显示顺序 = cards 数组序：按 order 升序铺入
   const cards = useMemo(
@@ -92,16 +97,16 @@ export function KanbanBoard({
         av.textContent = m.name[0]
       } else {
         av.setAttribute('color', 'var(--oas-color-border-strong)')
-        av.title = '未分配'
+        av.title = t('resourceUnassigned')
       }
       top.appendChild(av)
-      const t = document.createElement('p')
-      t.className = 'board-card-title'
-      t.textContent = String(card.title ?? '')
+      const title = document.createElement('p')
+      title.className = 'board-card-title'
+      title.textContent = String(card.title ?? '')
       const pr = document.createElement('span')
       pr.className = `issue-priority pri-${String(card.priority ?? '')}`
       pr.textContent = String(card.priority ?? '')
-      wrap.append(top, t, pr)
+      wrap.append(top, title, pr)
       return wrap
     }
   }, [columns, cards, memberMap, canDragCard])

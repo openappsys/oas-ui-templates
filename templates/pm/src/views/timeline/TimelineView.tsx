@@ -3,6 +3,7 @@ import { useRepositories } from '@/data/context'
 import { useObservable } from '@/data/use-observable'
 import type { Issue } from '@/types'
 import { PRIORITY_TEXT } from '@/lib/colors'
+import { t } from '@/i18n'
 import type { Action, Ctx } from '@/permission/policy'
 
 /* ── 时间线（oas-gantt） ── */
@@ -118,7 +119,7 @@ export function TimelineView({
 
   // 空态：既无带截止日期的任务、也无 urgent 里程碑
   if (tasks.length === 0) {
-    return <div className="timeline-empty">暂无带截止日期的 Issue</div>
+    return <div className="timeline-empty">{t('timelineEmpty')}</div>
   }
 
   return (

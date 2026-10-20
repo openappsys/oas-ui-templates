@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import type { Issue, IssuePriority, Member } from '@/types'
 import { ISSUE_PRIORITIES } from '@/types'
 import { OSelect, OCheckbox } from '@/components/oas-wrappers'
-import { t } from '@/i18n'
+import { t, getLang, statusLabel } from '@/i18n'
 import { BulkBar } from '@/components/BulkBar'
 import { Avatar } from '@/components/Avatar'
 import { ListSkeleton } from '@/components/skeletons/ListSkeleton'
@@ -128,17 +128,18 @@ export function IssueListView({
     }
   }, [])
 
+  const unassignedLabel = t('resourceUnassigned')
   const groups = useMemo(() => {
     if (grouping === 'none') return null
     const map = new Map<string, Issue[]>()
     for (const i of list) {
-      const k = grouping === 'priority' ? i.priority : (i.assigneeId ?? '未分配')
+      const k = grouping === 'priority' ? i.priority : (i.assigneeId ?? unassignedLabel)
       const arr = map.get(k) ?? []
       arr.push(i)
       map.set(k, arr)
     }
     return [...map.entries()]
-  }, [list, grouping])
+  }, [list, grouping, unassignedLabel])
 
   const cursorId = cursorIndex >= 0 && cursorIndex < list.length ? list[cursorIndex].id : null
 
@@ -173,7 +174,7 @@ export function IssueListView({
       <span className="issue-title">{i.title}</span>
       <Avatar member={memberMap.get(i.assigneeId ?? '')} size={18} />
       <span className={`issue-priority pri-${i.priority}`}>{i.priority}</span>
-      <span className={`issue-status st-${i.status}`}>{i.status}</span>
+      <span className={`issue-status st-${i.status}`}>{statusLabel(i.status)}</span>
     </div>
   )
 
@@ -185,8 +186,10 @@ export function IssueListView({
           {loading
             ? '…'
             : total > list.length
-              ? `${total.toLocaleString()} 条 · 已加载 ${list.length.toLocaleString()} 条（滚动加载）`
-              : `${total.toLocaleString()} 条`}
+              ? t('issueTotalMore')
+                  .replace('{total}', total.toLocaleString())
+                  .replace('{n}', list.length.toLocaleString())
+              : t('issueTotal').replace('{total}', total.toLocaleString())}
         </span>
       </div>
       <div className="issue-toolbar" data-testid="issue-toolbar">
@@ -195,9 +198,9 @@ export function IssueListView({
           testid="sort-by"
           value={filters.sortBy}
           options={[
-            { label: '最近更新', value: 'updatedAt' },
-            { label: '优先级', value: 'priority' },
-            { label: '创建时间', value: 'createdAt' },
+            { label: t('recentUpdate'), value: 'updatedAt' },
+            { label: t('priority'), value: 'priority' },
+            { label: t('createdAt'), value: 'createdAt' },
           ]}
           onChange={(v) => setFilters((prev) => ({ ...prev, sortBy: v as SortBy }))}
         />
@@ -206,9 +209,9 @@ export function IssueListView({
           testid="group-by"
           value={grouping}
           options={[
-            { label: '不分组', value: 'none' },
-            { label: '按优先级', value: 'priority' },
-            { label: '按负责人', value: 'assignee' },
+            { label: t('none'), value: 'none' },
+            { label: t('byPriority'), value: 'priority' },
+            { label: t('byAssignee'), value: 'assignee' },
           ]}
           onChange={(v) => setGrouping(v as Grouping)}
         />
@@ -217,7 +220,7 @@ export function IssueListView({
           testid="filter-priority"
           value={filters.priorityFilter ?? 'all'}
           options={[
-            { label: '全部', value: 'all' },
+            { label: t('all'), value: 'all' },
             ...ISSUE_PRIORITIES.map((p) => ({ label: p, value: p })),
           ]}
           onChange={(v) =>
@@ -274,7 +277,9 @@ export function IssueListView({
               </p>
               {arr.slice(0, GROUP_PREVIEW).map(rowEl)}
               {arr.length > GROUP_PREVIEW && (
-                <p className="board-col-more">组内还有 {arr.length - GROUP_PREVIEW} 条未显示</p>
+                <p className="board-col-more">
+                  {t('groupMore').replace('{n}', String(arr.length - GROUP_PREVIEW))}
+                </p>
               )}
             </div>
           ))}
@@ -294,6 +299,7 @@ export function IssueListView({
           showCheckbox={canBulk}
           cursorIndex={cursorIndex}
           onNearBottom={onNearBottom}
+          lang={getLang()}
         />
       )}
       <BulkBar

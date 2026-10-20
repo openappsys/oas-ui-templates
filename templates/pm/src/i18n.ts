@@ -182,6 +182,63 @@ const dict = {
     adminWipeAll: '清空数据',
     adminWipeAllConfirm: '将清空全部本地数据且不可恢复，确认？',
     adminWipeDone: '已清空全部数据',
+    bulkSelected: '已选 {n}',
+    bulkSetStatus: '改状态…',
+    bulkSetPriority: '改优先级…',
+    bulkSetAssignee: '改负责人…',
+    apply: '应用',
+    deleteView: '删除视图 {name}',
+    dashNote: '{name} 的工作台 · 数据实时来自 IndexedDB',
+    dashStatAll: '全部 Issue',
+    chartStatus: '状态分布',
+    chartStatusAria: '状态分布图',
+    chartAssignee: '成员 Issue 数 Top 6',
+    chartAssigneeAria: '成员 Issue 分布图',
+    chartTrend: '近 30 天创建趋势',
+    chartTrendAria: '创建与完成趋势图',
+    timelineEmpty: '暂无带截止日期的 Issue',
+    issueTotal: '{total} 条',
+    issueTotalMore: '{total} 条 · 已加载 {n} 条（滚动加载）',
+    groupMore: '组内还有 {n} 条未显示',
+    actCreate: '创建了 Issue',
+    actStatus: '变更了状态',
+    actPriority: '变更了优先级',
+    actAssignee: '变更了负责人',
+    actLabels: '更新了标签',
+    actDescription: '更新了描述',
+    actTitle: '更新了标题',
+    actDates: '调整了排期',
+    actorUnknown: '某人',
+    commentAnonymous: '匿名',
+    relBlocks: '阻塞',
+    relBlockedBy: '被阻塞',
+    relRelates: '相关',
+    relAdd: '关联…',
+    relOptBlocks: 'blocks（阻塞）',
+    relOptBlockedBy: 'blocked-by（被阻塞）',
+    relOptRelates: 'relates（相关）',
+    relPickIssue: '选择 Issue…',
+    subPlaceholder: '新子任务标题…',
+    descPlaceholder: '描述你的问题…',
+    detailDates: '创建 {created} · 更新 {updated}',
+    statusBacklog: '待规划',
+    statusTodo: '待办',
+    statusInProgress: '进行中',
+    statusDone: '已完成',
+    statusCancelled: '已取消',
+    priorityUrgent: '紧急',
+    priorityHigh: '高',
+    priorityMedium: '中',
+    priorityLow: '低',
+    notifyEmpty: '暂无与我相关的动态',
+    notifyTitle: '与我相关的最近动态',
+    myView: '我的（{name}）',
+    createTitlePlaceholder: 'Issue 标题',
+    titleRequired: '标题不能为空',
+    viewName: '视图名称',
+    saveViewPlaceholder: '如：我的进行中',
+    aboutDesc:
+      '项目管理模板——React 19 + Dexie.js IndexedDB 本地优先，支持 10W~100W 级 Issue 的仪表盘、列表、看板与甘特图。',
   },
   en: {
     newIssue: '＋ New Issue',
@@ -363,6 +420,63 @@ const dict = {
     adminWipeAll: 'Wipe all data',
     adminWipeAllConfirm: 'This wipes ALL local data permanently. Continue?',
     adminWipeDone: 'All local data wiped',
+    bulkSelected: '{n} selected',
+    bulkSetStatus: 'Set status…',
+    bulkSetPriority: 'Set priority…',
+    bulkSetAssignee: 'Set assignee…',
+    apply: 'Apply',
+    deleteView: 'Delete view {name}',
+    dashNote: "{name}'s workspace · live data from IndexedDB",
+    dashStatAll: 'All issues',
+    chartStatus: 'Status distribution',
+    chartStatusAria: 'Status distribution chart',
+    chartAssignee: 'Top 6 members by issue count',
+    chartAssigneeAria: 'Issues by member chart',
+    chartTrend: 'Issues created in the last 30 days',
+    chartTrendAria: 'Creation trend chart',
+    timelineEmpty: 'No issues with a due date yet',
+    issueTotal: '{total} items',
+    issueTotalMore: '{total} items · {n} loaded (scroll for more)',
+    groupMore: '{n} more not shown in this group',
+    actCreate: 'created the issue',
+    actStatus: 'changed the status',
+    actPriority: 'changed the priority',
+    actAssignee: 'changed the assignee',
+    actLabels: 'updated labels',
+    actDescription: 'updated the description',
+    actTitle: 'updated the title',
+    actDates: 'adjusted the schedule',
+    actorUnknown: 'Someone',
+    commentAnonymous: 'Anonymous',
+    relBlocks: 'Blocks',
+    relBlockedBy: 'Blocked by',
+    relRelates: 'Related',
+    relAdd: 'Add relation…',
+    relOptBlocks: 'blocks',
+    relOptBlockedBy: 'blocked-by',
+    relOptRelates: 'relates',
+    relPickIssue: 'Select an issue…',
+    subPlaceholder: 'New subtask title…',
+    descPlaceholder: 'Description…',
+    detailDates: 'Created {created} · Updated {updated}',
+    statusBacklog: 'Backlog',
+    statusTodo: 'Todo',
+    statusInProgress: 'In Progress',
+    statusDone: 'Done',
+    statusCancelled: 'Cancelled',
+    priorityUrgent: 'Urgent',
+    priorityHigh: 'High',
+    priorityMedium: 'Medium',
+    priorityLow: 'Low',
+    notifyEmpty: 'No recent activity related to you',
+    notifyTitle: 'Recent activity related to you',
+    myView: 'My issues ({name})',
+    createTitlePlaceholder: 'Issue title',
+    titleRequired: 'Title is required',
+    viewName: 'View name',
+    saveViewPlaceholder: 'e.g. My in-progress',
+    aboutDesc:
+      'A project management template — React 19 + Dexie.js IndexedDB, local-first, with dashboard, list, board and Gantt views for 100K-scale issues.',
   },
 } as const
 
@@ -389,4 +503,62 @@ export function loadLang(): Lang {
 
 export function storeLang(l: Lang): void {
   localStorage.setItem('oas-pm-lang', l)
+}
+
+export function dateLocale(): string {
+  return currentLang === 'zh' ? 'zh-CN' : 'en-US'
+}
+
+const STATUS_KEY: Record<string, DictKey> = {
+  backlog: 'statusBacklog',
+  todo: 'statusTodo',
+  in_progress: 'statusInProgress',
+  done: 'statusDone',
+  cancelled: 'statusCancelled',
+}
+
+export function statusLabel(s: string): string {
+  const k = STATUS_KEY[s]
+  return k ? t(k) : s
+}
+
+const PRIORITY_KEY: Record<string, DictKey> = {
+  urgent: 'priorityUrgent',
+  high: 'priorityHigh',
+  medium: 'priorityMedium',
+  low: 'priorityLow',
+}
+
+export function priorityLabel(p: string): string {
+  const k = PRIORITY_KEY[p]
+  return k ? t(k) : p
+}
+
+const RELATION_KEY: Record<string, DictKey> = {
+  blocks: 'relBlocks',
+  'blocked-by': 'relBlockedBy',
+  relates: 'relRelates',
+}
+
+export function relationLabel(r: string): string {
+  const k = RELATION_KEY[r]
+  return k ? t(k) : r
+}
+
+const ACTIVITY_TYPE_KEY: Record<string, DictKey> = {
+  create: 'actCreate',
+  status: 'actStatus',
+  priority: 'actPriority',
+  assignee: 'actAssignee',
+  labels: 'actLabels',
+  description: 'actDescription',
+  title: 'actTitle',
+  dates: 'actDates',
+  dueAt: 'actDates',
+  startAt: 'actDates',
+}
+
+export function activityTypeLabel(type: string): string {
+  const k = ACTIVITY_TYPE_KEY[type]
+  return k ? t(k) : type
 }

@@ -2,7 +2,8 @@ import { useMemo } from 'react'
 import { useRepositories } from '@/data/context'
 import { useObservable } from '@/data/use-observable'
 import type { IssueStatus, Member } from '@/types'
-import { ISSUE_STATUSES, STATUS_LABEL } from '@/types'
+import { ISSUE_STATUSES } from '@/types'
+import { statusLabel, t } from '@/i18n'
 import { STATUS_COLOR } from '@/lib/colors'
 import { useProjectCounts } from '@/lib/hooks'
 import { Chart } from '@/components/Chart'
@@ -36,7 +37,7 @@ export function DashboardView({
   }, [members, workload])
 
   const statusData = ISSUE_STATUSES.map((s) => ({
-    label: STATUS_LABEL[s],
+    label: statusLabel(s),
     value: counts?.byStatus[s] ?? 0,
   }))
 
@@ -63,10 +64,10 @@ export function DashboardView({
   if (counts === undefined) {
     return (
       <div className="dash-page" data-testid="dashboard">
-        <h1 className="page-h1">仪表盘</h1>
+        <h1 className="page-h1">{t('dashboard')}</h1>
         <DashSkeleton />
         <p className="dash-note" data-testid="dashboard-member-note">
-          {memberMap.get(currentUser)?.name ?? ''} 的工作台 · 数据实时来自 IndexedDB
+          {t('dashNote').replace('{name}', memberMap.get(currentUser)?.name ?? '')}
         </p>
       </div>
     )
@@ -74,9 +75,9 @@ export function DashboardView({
 
   return (
     <div className="dash-page" data-testid="dashboard">
-      <h1 className="page-h1">仪表盘</h1>
+      <h1 className="page-h1">{t('dashboard')}</h1>
       <div className="dash-cards">
-        <oas-statistic className="dash-card" data-testid="stat-total" title="全部 Issue">
+        <oas-statistic className="dash-card" data-testid="stat-total" title={t('dashStatAll')}>
           <span slot="value">{counts?.total.toLocaleString() ?? '…'}</span>
         </oas-statistic>
         {(['todo', 'in_progress', 'done'] as IssueStatus[]).map((s) => (
@@ -84,7 +85,7 @@ export function DashboardView({
             key={s}
             className="dash-card"
             data-testid={`stat-${s}`}
-            title={STATUS_LABEL[s]}
+            title={statusLabel(s)}
           >
             <span slot="value" style={{ color: STATUS_COLOR[s] }}>
               {(counts?.byStatus[s] ?? 0).toLocaleString()}
@@ -94,35 +95,35 @@ export function DashboardView({
       </div>
       <div className="dash-charts">
         <div className="dash-chart-box">
-          <p className="dash-chart-title">状态分布</p>
+          <p className="dash-chart-title">{t('chartStatus')}</p>
           <Chart
             type="donut"
-            data={toChartData('状态分布', statusData)}
+            data={toChartData(t('chartStatus'), statusData)}
             testid="chart-status"
-            label="状态分布图"
+            label={t('chartStatusAria')}
           />
         </div>
         <div className="dash-chart-box">
-          <p className="dash-chart-title">成员 Issue 数 Top 6</p>
+          <p className="dash-chart-title">{t('chartAssignee')}</p>
           <Chart
             type="bar"
-            data={toChartData('成员 Issue 数 Top 6', topAssignees ?? [])}
+            data={toChartData(t('chartAssignee'), topAssignees ?? [])}
             testid="chart-assignee"
-            label="成员 Issue 分布图"
+            label={t('chartAssigneeAria')}
           />
         </div>
       </div>
       <div className="dash-chart-box" data-testid="trend-box">
-        <p className="dash-chart-title">近 30 天创建趋势</p>
+        <p className="dash-chart-title">{t('chartTrend')}</p>
         <Chart
           type="area"
-          data={toChartData('近 30 天创建趋势', trend ?? [])}
+          data={toChartData(t('chartTrend'), trend ?? [])}
           testid="chart-trend"
-          label="创建与完成趋势图"
+          label={t('chartTrendAria')}
         />
       </div>
       <p className="dash-note" data-testid="dashboard-member-note">
-        {memberMap.get(currentUser)?.name ?? ''} 的工作台 · 数据实时来自 IndexedDB
+        {t('dashNote').replace('{name}', memberMap.get(currentUser)?.name ?? '')}
       </p>
     </div>
   )

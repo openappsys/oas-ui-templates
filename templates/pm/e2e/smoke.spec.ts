@@ -68,14 +68,14 @@ test('M1 架构：100K seed + 虚拟列表渲染 + 真实计数', async ({ page 
 
 test('M2 状态筛选：compound index 直取 + 计数联动', async ({ page }) => {
   await waitForSeed(page)
-  await sideRow(page, 'In Progress').click()
-  // 等筛选窗口落定：全部渲染行都是 In Progress（点击瞬间仍是未过滤窗口，
-  // 其首行可能恰为 In Progress 造成假通过，随后快照混入其他状态）
+  await sideRow(page, '进行中').click()
+  // 等筛选窗口落定：全部渲染行都是 进行中（点击瞬间仍是未过滤窗口，
+  // 其首行可能恰为 进行中 造成假通过，随后快照混入其他状态）
   await expect
     .poll(
       async () => {
         const st = await page.locator('.issue-row .issue-status').allTextContents()
-        return st.length > 0 && st.every((s) => s === 'In Progress')
+        return st.length > 0 && st.every((s) => s === '进行中')
       },
       { timeout: 10_000 },
     )

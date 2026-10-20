@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import type { Issue, Member } from '@/types'
-import { STATUS_LABEL } from '@/types'
+import { statusLabel, t } from '@/i18n'
 import { PRIORITY_TEXT, STATUS_TEXT } from '@/lib/colors'
 
 /** 行样式注入所在 shadow root（每次渲染幂等）：light CSS 不穿透，inline grid 在该容器不稳 */
@@ -109,13 +109,13 @@ function renderIssueRow(
     av.textContent = m.name[0]
   } else {
     av.setAttribute('color', 'var(--oas-color-border-strong)')
-    av.title = '未分配'
+    av.title = t('resourceUnassigned')
   }
   row.appendChild(av)
   add(`issue-priority pri-${issue.priority}`, issue.priority, {
     color: PRIORITY_TEXT[issue.priority],
   })
-  add(`issue-status st-${issue.status}`, STATUS_LABEL[issue.status], {
+  add(`issue-status st-${issue.status}`, statusLabel(issue.status), {
     color: STATUS_TEXT[issue.status],
   })
   row.addEventListener('click', () => onSelect(issue.id))
@@ -149,6 +149,7 @@ export function VirtualIssueList({
   showCheckbox,
   cursorIndex,
   onNearBottom,
+  lang,
 }: {
   issues: Issue[]
   onSelect: (id: string) => void
@@ -158,6 +159,7 @@ export function VirtualIssueList({
   showCheckbox: boolean
   cursorIndex: number
   onNearBottom: () => void
+  lang: string
 }) {
   const listRef = useRef<HTMLElement>(null)
   const lastTopRef = useRef(0)
@@ -242,7 +244,7 @@ export function VirtualIssueList({
     if (!el) return
     el.items = issues
     el.scrollToIndex?.(Math.round(lastTopRef.current / 44), { align: 'start' })
-  }, [issues])
+  }, [issues, lang])
 
   // 渲染窗高 = height 属性（缺省 320，不测宿主布局）——ResizeObserver 把宿主实际
   // 高度实时写入，虚拟窗口随视口伸缩（修「只渲染 9 行后大片空白」）

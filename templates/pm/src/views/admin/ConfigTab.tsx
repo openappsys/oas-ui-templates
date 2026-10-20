@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react'
 import { useRepositories } from '@/data/context'
 import { useObservable } from '@/data/use-observable'
-import { t } from '@/i18n'
-import { ISSUE_PRIORITIES, ISSUE_STATUSES, PRIORITY_LABEL, STATUS_LABEL } from '@/types'
+import { t, priorityLabel, statusLabel } from '@/i18n'
+import { ISSUE_PRIORITIES, ISSUE_STATUSES } from '@/types'
 import { DEFAULT_LABELS } from '@/lib/labels'
 
 const PRIORITY_TAG_TYPE: Record<string, string> = {
@@ -66,7 +66,7 @@ export function ConfigTab() {
         <div className="admin-tag-row">
           {ISSUE_PRIORITIES.map((p) => (
             <oas-tag key={p} size="small" type={PRIORITY_TAG_TYPE[p]}>
-              {PRIORITY_LABEL[p]}
+              {priorityLabel(p)}
             </oas-tag>
           ))}
         </div>
@@ -79,7 +79,7 @@ export function ConfigTab() {
         <div className="admin-tag-row">
           {ISSUE_STATUSES.map((s) => (
             <oas-tag key={s} size="small">
-              {STATUS_LABEL[s]}
+              {statusLabel(s)}
             </oas-tag>
           ))}
         </div>
