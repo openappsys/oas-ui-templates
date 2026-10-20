@@ -119,9 +119,17 @@ test('S1 映射渲染：events.date 与 dueAt 的 getUTC* 派生一致；桶展�
       const iso = `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`
       if (iso === e.date) dateOk++
       const h = d.getUTCHours()
-      if (h === 0) {
+      const m = d.getUTCMinutes()
+      const hhmm = `${pad(h)}:${pad(m)}`
+      const bucketMoment = m === 0 && (h === 0 || h === 9 || h === 14)
+      if (bucketMoment && h === 0) {
         alldaySeen++
         if (e.start === undefined) bucketOk++
+      } else if (!bucketMoment) {
+        // v7 精确时刻：start 即真实 HH:mm（seed 分布不触发同刻错开）
+        if (h < 12) amSeen++
+        else pmSeen++
+        if (e.start === hhmm) bucketOk++
       } else if (h < 12) {
         amSeen++
         if (/^(09|1[0-2]):(00|30)$/.test(e.start ?? '')) bucketOk++
@@ -153,9 +161,15 @@ test('S1 映射渲染：events.date 与 dueAt 的 getUTC* 派生一致；桶展�
   await expect
     .poll(() => gantt.locator('.chip', { hasText: '下午 ' }).count(), { timeout: 10_000 })
     .toBeGreaterThan(0)
+  // v7 精确时刻 chip：HH:mm 前缀入镜（seed 演示组 10:30/15:45/16:20）
+  await expect
+    .poll(() => gantt.locator('.chip', { hasText: /\d{2}:\d{2} / }).count(), { timeout: 10_000 })
+    .toBeGreaterThan(0)
 })
 
-test('S2 契约重放写回（12:30 落下午 + startAt 钳制）；viewer 拒绝落库且回弹', async ({ page }) => {
+test('S2 契约重放写回（12:30 吸附直写不归桶 + startAt 钳制）；viewer 拒绝落库且回弹', async ({
+  page,
+}) => {
   await waitForSeed(page)
   await setView(page, 'schedule')
   await expect(page.getByTestId('schedule-gantt')).toBeAttached({ timeout: 10_000 })
@@ -208,7 +222,8 @@ test('S2 契约重放写回（12:30 落下午 + startAt 钳制）；viewer 拒�
     twoBack.getUTCFullYear(),
     twoBack.getUTCMonth(),
     twoBack.getUTCDate(),
-    14,
+    12,
+    30,
   )
   await replay(page, target!.id, { date: targetDate, start: '12:30' })
   await expect
@@ -449,4 +464,148 @@ test('S6 视图裁剪：resource 两入口隐藏；agenda 可达且列表渲染'
   await expect
     .poll(() => gantt.locator('[part="agenda"] .ag-row').count(), { timeout: 10_000 })
     .toBeGreaterThan(0)
+})
+
+test('S7 抽屉自定义时刻：换档 custom 不写库；picker 落库精确到分；重开回显 f(dueAt)', async ({
+  page,
+}) => {
+  await waitForSeed(page)
+  await setView(page, 'schedule')
+  await expect(page.getByTestId('schedule-gantt')).toBeAttached({ timeout: 10_000 })
+  await expect.poll(async () => (await sched(page)).length, { timeout: 15_000 }).toBeGreaterThan(0)
+
+  // 选一个桶时刻 issue（UTC 00/09/14 整点）作基线
+  const target = await page.evaluate(async () => {
+    const el = document.querySelector('[data-testid=schedule-gantt]') as unknown as {
+      events?: Ev[]
+    }
+    const evs = (el.events ?? []).filter((e) => !e.id.startsWith('__more__'))
+    const db = await new Promise<IDBDatabase>((res, rej) => {
+      const req = indexedDB.open('oas-pm')
+      req.onsuccess = () => res(req.result)
+      req.onerror = () => rej(req.error)
+    })
+    const tx = db.transaction('issues', 'readonly')
+    return await new Promise<{ id: string; dueAt: number } | null>((resolve) => {
+      let pending = evs.length
+      let found: { id: string; dueAt: number } | null = null
+      for (const e of evs) {
+        const g = tx.objectStore('issues').get(e.id)
+        g.onsuccess = () => {
+          const row = g.result as { id: string; dueAt: number | null } | undefined
+          if (!found && row?.dueAt != null) {
+            const d = new Date(row.dueAt)
+            const h = d.getUTCHours()
+            const m = d.getUTCMinutes()
+            if (m === 0 && (h === 0 || h === 9 || h === 14))
+              found = { id: row.id, dueAt: row.dueAt }
+          }
+          if (--pending === 0) resolve(found)
+        }
+        g.onerror = () => {
+          if (--pending === 0) resolve(found)
+        }
+      }
+    })
+  })
+  expect(target).toBeTruthy()
+  const bd = new Date(target!.dueAt)
+  const expected = Date.UTC(bd.getUTCFullYear(), bd.getUTCMonth(), bd.getUTCDate(), 10, 30)
+
+  const openDrawer = () =>
+    page.evaluate((id) => {
+      document
+        .querySelector('[data-testid=schedule-gantt]')
+        ?.dispatchEvent(
+          new CustomEvent('oas-event-click', { bubbles: true, composed: true, detail: { id } }),
+        )
+    }, target!.id)
+  const drawerOpened = () =>
+    page.evaluate(
+      () =>
+        (document.querySelector('[data-testid=detail-drawer]') as { opened?: boolean })?.opened ??
+        false,
+    )
+
+  await openDrawer()
+  await expect.poll(drawerOpened, { timeout: 15_000 }).toBe(true)
+
+  // 换档 custom → 不写库（§3.1-1），picker 带当前时刻出现
+  await page.evaluate(() => {
+    document
+      .querySelector('[data-testid=detail-due-bucket]')
+      ?.dispatchEvent(new CustomEvent('oas-change', { bubbles: true, detail: { value: 'custom' } }))
+  })
+  await expect(page.getByTestId('detail-due-time')).toBeAttached({ timeout: 10_000 })
+  await page.waitForTimeout(800)
+  expect((await readIssue(page, target!.id))?.dueAt).toBe(target!.dueAt)
+
+  // picker 赋值 '10:30' 并派发 oas-change → 落库精确到分（Date.UTC 手拆口径）
+  await page.evaluate(() => {
+    const el = document.querySelector('[data-testid=detail-due-time]') as HTMLElement & {
+      value: string
+    }
+    el.value = '10:30'
+    el.dispatchEvent(new CustomEvent('oas-change', { bubbles: true, detail: { value: '10:30' } }))
+  })
+  await expect
+    .poll(async () => (await readIssue(page, target!.id))?.dueAt, { timeout: 15_000 })
+    .toBe(expected)
+
+  // 重开抽屉：回显 = f(dueAt) → segmented=custom 且 picker='10:30'
+  await page.keyboard.press('Escape')
+  await expect.poll(drawerOpened, { timeout: 10_000 }).toBe(false)
+  await openDrawer()
+  await expect.poll(drawerOpened, { timeout: 15_000 }).toBe(true)
+  await expect(page.getByTestId('detail-due-bucket')).toHaveAttribute('value', 'custom', {
+    timeout: 10_000,
+  })
+  await expect(page.getByTestId('detail-due-time')).toBeAttached()
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          () =>
+            (
+              document.querySelector('[data-testid=detail-due-time]') as unknown as {
+                value?: string
+              }
+            )?.value ?? '',
+        ),
+      { timeout: 10_000 },
+    )
+    .toBe('10:30')
+  await page.keyboard.press('Escape')
+})
+
+test('S8 拖拽 15min 吸附直写：start=10:45 落库精确到分（不归桶）', async ({ page }) => {
+  await waitForSeed(page)
+  await setView(page, 'schedule')
+  await expect(page.getByTestId('schedule-gantt')).toBeAttached({ timeout: 10_000 })
+  await expect.poll(async () => (await sched(page)).length, { timeout: 15_000 }).toBeGreaterThan(0)
+  const ev = (await sched(page)).find((e) => !e.id.startsWith('__more__') && e.start !== undefined)!
+  const [y, mo, da] = ev.date.split('-').map(Number)
+  const expected = Date.UTC(y!, mo! - 1, da!, 10, 45)
+  await replay(page, ev.id, { start: '10:45' })
+  await expect
+    .poll(async () => (await readIssue(page, ev.id))?.dueAt, { timeout: 15_000 })
+    .toBe(expected)
+})
+
+test('S9 day 视图：内部按钮切换 + 精确时刻事件在轴', async ({ page }) => {
+  await waitForSeed(page)
+  await setView(page, 'schedule')
+  const gantt = page.getByTestId('schedule-gantt')
+  await expect(gantt).toBeAttached({ timeout: 10_000 })
+  await expect.poll(async () => (await sched(page)).length, { timeout: 15_000 }).toBeGreaterThan(0)
+  await gantt.locator("button[data-view='day']").click()
+  await expect(gantt).toHaveAttribute('view', 'day')
+  // 派生 events 含非整点 start（v7 精确时刻 10:30/15:45/16:20，全在 8–19 轴内）
+  const hasPrecise = await page.evaluate(() => {
+    const el = document.querySelector('[data-testid=schedule-gantt]') as unknown as {
+      events?: Ev[]
+    }
+    return (el.events ?? []).some((e) => /^\d{2}:(?!00)\d{2}$/.test(e.start ?? ''))
+  })
+  expect(hasPrecise).toBe(true)
 })

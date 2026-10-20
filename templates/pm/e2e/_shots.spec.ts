@@ -75,6 +75,13 @@ async function captureViews(page: Page, suffix: string) {
   await page.waitForTimeout(1500)
   await page.screenshot({ path: `shots/pm-schedule-week${suffix}.png` })
 
+  // day 视图：导航到次日（seed 演示组 day+1 含精确时刻 15:45/16:20 与 pm 桶块混排）
+  await page.getByTestId('schedule-gantt').locator("button[data-view='day']").click()
+  await page.waitForTimeout(800)
+  await page.getByTestId('schedule-gantt').locator('[part="next"]').click()
+  await page.waitForTimeout(1200)
+  await page.screenshot({ path: `shots/pm-schedule-day${suffix}.png` })
+
   // 回列表验证切换往返不丢行
   await setView(page, 'issues')
   await page.waitForSelector('.issue-row', { timeout: 15_000 })
