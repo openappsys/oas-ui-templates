@@ -182,6 +182,8 @@ declare module 'react' {
         value?: string
         placeholder?: string
         disabled?: boolean | string
+        /** 24h token（缺省 HH:mm:ss），dist 契约支持 */
+        format?: string
       }
     }
   }
