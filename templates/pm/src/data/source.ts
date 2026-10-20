@@ -19,3 +19,8 @@ export function storeDataSource(source: DataSource): void {
     // 隐私模式下写不进去：只影响下次启动的选择，不阻断当前会话
   }
 }
+
+/** 生效数据源：构建产物硬锁本地——公开 demo 不因手改 localStorage 切到不存在的 /api */
+export function activeDataSource(): DataSource {
+  return import.meta.env.DEV ? loadDataSource() : 'dexie'
+}

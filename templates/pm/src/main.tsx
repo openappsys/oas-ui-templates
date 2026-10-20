@@ -50,7 +50,7 @@ import { App } from './App'
 import { seedDatabase } from './seed-db'
 import { apiRepositories } from './data/api/client'
 import { dexieRepositories } from './data/dexie'
-import { loadDataSource } from './data/source'
+import { activeDataSource } from './data/source'
 import { RepositoriesProvider } from './data/context'
 import { initTheme } from './lib/theme'
 import { bindKeys } from './lib/keyboard'
@@ -60,7 +60,7 @@ import { resultPage, bootText } from './boot-fallback'
 import { loadLang, setLang } from './i18n'
 setLang(loadLang())
 
-const dataSource = loadDataSource()
+const dataSource = activeDataSource()
 if (dataSource === 'dexie') {
   try {
     // seed 后台跑（不阻塞首屏渲染）；Dexie liveQuery 数据到了自动推送

@@ -1,6 +1,6 @@
 # OAS PM（pm）项目管理系统模板
 
-> 状态：**可用（2026-10-20）**——76 单测 + 79 e2e 全绿
+> 状态：**可用（2026-10-21）**——140 单测 + 88 e2e 全绿
 
 基于 oas-ui 的项目管理系统模板：**React 19 + Dexie（IndexedDB）+ @oas-ui/ui**。
 演示「生产级前端基线」：Repository 数据层（可换 REST 适配器）、三级权限模型、六大视图、中英双语、明暗双主题。
@@ -49,7 +49,7 @@ src/
 
 # OAS PM (pm) — Project Management Template
 
-> Status: **Stable (2026-10-20)** — 76 unit + 79 e2e tests green
+> Status: **Stable (2026-10-21)** — 140 unit + 88 e2e tests green
 
 A project-management template built on oas-ui: **React 19 + Dexie (IndexedDB) + @oas-ui/ui**.
 A production-grade frontend baseline: Repository data layer (REST-adapter ready), 3-level permission model, six views, zh-en i18n, dual theme.
