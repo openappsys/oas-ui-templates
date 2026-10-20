@@ -1,7 +1,14 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import type { Issue, IssuePriority, IssueStatus, Member } from '@/types'
 import { ISSUE_PRIORITIES, ISSUE_STATUSES } from '@/types'
-import { OSelect, OCheckbox, ODatePicker, OSegmented, TagChip } from '@/components/oas-wrappers'
+import {
+  OSelect,
+  OCheckbox,
+  ODatePicker,
+  OSegmented,
+  OTimePicker,
+  TagChip,
+} from '@/components/oas-wrappers'
 import { activityTypeLabel, dateLocale, relationLabel, statusLabel, t } from '@/i18n'
 import { useRepositories } from '@/data/context'
 import { useObservable } from '@/data/use-observable'
@@ -10,6 +17,9 @@ import {
   bucketOf,
   bucketToDueAt,
   clampStartAt,
+  dueAtWithTime,
+  hhmmOf,
+  isBucketMoment,
   utcDay,
   type ScheduleBucket,
 } from '@/lib/schedule-data'
@@ -322,6 +332,13 @@ export function IssueDetailDrawer({
 
   // 关联选择 state：必须在早退之前（hooks 顺序恒定）
   const [relType, setRelType] = useState('__none__')
+  // 「自定义」档瞬态：换档 custom 不写库（§3.1-1），仅靠此标记让 picker 先出现；
+  // dueAt/切换 issue 变化即复位，稳态回显永远 = f(issue.dueAt)（无交互记忆）
+  const [customSel, setCustomSel] = useState(false)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 复位以 issueId/dueAt 变化为触发（effect 体不引用它们），同 descDirty 复位先例
+  useEffect(() => {
+    setCustomSel(false)
+  }, [issueId, issue?.dueAt])
   const relCandidates = useObservable(
     () => issuesRepo.liveRelationCandidates(issue?.projectId ?? '', 100),
     [issueId, issuesRepo, issue?.projectId],
@@ -380,6 +397,12 @@ export function IssueDetailDrawer({
     { label: t('resourceUnassigned'), value: '__none__' },
     ...[...memberMap.values()].map((m) => ({ label: m.name, value: m.id })),
   ]
+  // 回显 = f(issue.dueAt)：恰为桶时刻（UTC 00/09/14）亮对应档，否则亮自定义（§3.1-1，
+  // 精度必须可见）；customSel 仅覆盖「点了自定义尚未写库」的瞬态窗口
+  const derivedBucket: ScheduleBucket | 'custom' =
+    issue.dueAt === null ? 'allday' : isBucketMoment(issue.dueAt) ? bucketOf(issue.dueAt) : 'custom'
+  const dueBucket = customSel && derivedBucket !== 'custom' ? 'custom' : derivedBucket
+  const showTimePicker = issue.dueAt !== null && dueBucket === 'custom'
 
   return (
     <oas-drawer ref={drawerRef} no-footer data-testid="detail-drawer">
@@ -424,34 +447,67 @@ export function IssueDetailDrawer({
               disabled={!canEdit}
               onChange={(v) => {
                 // 清日期 → dueAt/startAt 一并置空（不留悬挂 startAt；档位回落全天）；
-                // 选日期保留当前档位，倒挂 startAt 钳制
+                // 选日期保留原时刻（§3.1-3：桶时刻与精确时刻一视同仁），倒挂 startAt 钳制
                 if (v === '') {
                   save({ dueAt: null, startAt: null })
                   return
                 }
-                const bucket: ScheduleBucket =
-                  issue.dueAt === null ? 'allday' : bucketOf(issue.dueAt)
-                const dueAt = bucketToDueAt(v, bucket)
+                const dueAt =
+                  issue.dueAt === null
+                    ? dueAtWithTime(v, 0, 0)
+                    : dueAtWithTime(
+                        v,
+                        new Date(issue.dueAt).getUTCHours(),
+                        new Date(issue.dueAt).getUTCMinutes(),
+                      )
                 const startAt = clampStartAt(issue.startAt, dueAt)
                 save(startAt !== issue.startAt ? { dueAt, startAt } : { dueAt })
               }}
             />
             <OSegmented
               testid="detail-due-bucket"
-              value={issue.dueAt === null ? 'allday' : bucketOf(issue.dueAt)}
+              value={dueBucket}
               options={[
                 { label: t('bucketAllday'), value: 'allday' },
                 { label: t('bucketAm'), value: 'am' },
                 { label: t('bucketPm'), value: 'pm' },
+                { label: t('bucketCustom'), value: 'custom' },
               ]}
               disabled={!canEdit || issue.dueAt === null}
               onChange={(b) => {
                 if (issue.dueAt === null) return
+                // 换档 custom 不写库（§3.1-1）：picker 带当前时刻出现，oas-change 才落库；
+                // customSel 只覆盖「已点 custom 尚未写库」窗口，写库后由回显推导接管
+                if (b === 'custom') {
+                  setCustomSel(true)
+                  return
+                }
+                setCustomSel(false)
                 const dueAt = bucketToDueAt(utcDay(issue.dueAt), b as ScheduleBucket)
                 const startAt = clampStartAt(issue.startAt, dueAt)
                 save(startAt !== issue.startAt ? { dueAt, startAt } : { dueAt })
               }}
             />
+            {showTimePicker && (
+              <OTimePicker
+                testid="detail-due-time"
+                value={issue.dueAt === null ? '' : hhmmOf(issue.dueAt)}
+                presets={[
+                  { label: t('bucketAm'), value: '09:00' },
+                  { label: t('bucketPm'), value: '14:00' },
+                ]}
+                disabled={!canEdit}
+                onChange={(v) => {
+                  if (issue.dueAt === null || v === '') return
+                  // 手拆 'HH:mm'（禁隐式解析）；点 preset 09:00/14:00 → 写桶时刻 →
+                  // 回显规则使 segmented 跳回对应桶、picker 收起（§3.1-1 有意接受）
+                  const [hh, mm] = v.split(':').map(Number)
+                  const dueAt = dueAtWithTime(utcDay(issue.dueAt), hh ?? 0, mm ?? 0)
+                  const startAt = clampStartAt(issue.startAt, dueAt)
+                  save(startAt !== issue.startAt ? { dueAt, startAt } : { dueAt })
+                }}
+              />
+            )}
           </div>
         </div>
         <div className="detail-subs-block">
