@@ -66,6 +66,15 @@ async function captureViews(page: Page, suffix: string) {
   await page.waitForTimeout(2000)
   await page.screenshot({ path: `shots/pm-resource${suffix}.png` })
 
+  // 日程视图：月历 + 周（seed 演示组每天每桶约 2 条 → week 同桶 +30min 偏移入镜）
+  await setView(page, 'schedule')
+  await page.waitForTimeout(2000)
+  await page.screenshot({ path: `shots/pm-schedule-month${suffix}.png` })
+
+  await page.getByTestId('schedule-gantt').locator("button[data-view='week']").click()
+  await page.waitForTimeout(1500)
+  await page.screenshot({ path: `shots/pm-schedule-week${suffix}.png` })
+
   // 回列表验证切换往返不丢行
   await setView(page, 'issues')
   await page.waitForSelector('.issue-row', { timeout: 15_000 })
