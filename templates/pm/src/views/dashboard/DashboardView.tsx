@@ -40,6 +40,13 @@ export function DashboardView({
     label: statusLabel(s),
     value: counts?.byStatus[s] ?? 0,
   }))
+  // 环形图 4 色调色板循环会让「已完成/已取消」错色：按 series 顺序显式给 5 段状态色
+  const statusChartOptions = useMemo(
+    () => ({ colors: ISSUE_STATUSES.map((s) => STATUS_COLOR[s]) }),
+    [],
+  )
+  // 趋势轴：31 个日标签在 1:1 宽度下最后一个标签半宽越出 viewBox 右边界被裁，斜排后右边界留白
+  const trendChartOptions = useMemo(() => ({ xLabelRotate: 25 }), [])
 
   // 近 30 天创建趋势（createdAt 索引范围取数，按天聚合）
   const trendFrom = useMemo(() => Date.now() - 30 * 86400000, [])
@@ -99,6 +106,7 @@ export function DashboardView({
           <Chart
             type="donut"
             data={toChartData(t('chartStatus'), statusData)}
+            options={statusChartOptions}
             testid="chart-status"
             label={t('chartStatusAria')}
           />
@@ -113,11 +121,12 @@ export function DashboardView({
           />
         </div>
       </div>
-      <div className="dash-chart-box" data-testid="trend-box">
+      <div className="dash-chart-box dash-chart-wide" data-testid="trend-box">
         <p className="dash-chart-title">{t('chartTrend')}</p>
         <Chart
           type="area"
           data={toChartData(t('chartTrend'), trend ?? [])}
+          options={trendChartOptions}
           testid="chart-trend"
           label={t('chartTrendAria')}
         />

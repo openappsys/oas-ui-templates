@@ -12,8 +12,6 @@ export function Avatar({ member, size = 20 }: { member?: Member; size?: number }
     )
   }
   return (
-    <oas-avatar size={size} color={member.avatarColor} title={member.name}>
-      {member.name[0]}
-    </oas-avatar>
+    <oas-avatar size={size} color={member.avatarColor} title={member.name} text={member.name[0]} />
   )
 }

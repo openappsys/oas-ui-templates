@@ -95,7 +95,7 @@ export function KanbanBoard({
       if (m) {
         av.setAttribute('color', m.avatarColor)
         av.title = m.name
-        av.textContent = m.name[0]
+        av.setAttribute('text', m.name[0])
       } else {
         av.setAttribute('color', 'var(--oas-color-border-strong)')
         av.title = t('resourceUnassigned')

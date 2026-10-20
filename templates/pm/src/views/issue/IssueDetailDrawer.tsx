@@ -670,21 +670,7 @@ export function IssueDetailDrawer({
         <div className="detail-labels-block">
           <span>{t('labels')}</span>
           <div className="detail-labels">
-            {issue.labels
-              .filter((l) => l !== '__none__')
-              .map((l) =>
-                canEdit ? (
-                  <TagChip
-                    key={l}
-                    label={l}
-                    testid={`label-chip-${l}`}
-                    onRemove={() => save({ labels: issue.labels.filter((x) => x !== l) })}
-                  />
-                ) : (
-                  <oas-tag key={l}>{l}</oas-tag>
-                ),
-              )}
-            {canEdit && (
+            {canEdit ? (
               <>
                 <oas-dynamic-tags
                   data-testid="label-add"
@@ -711,6 +697,10 @@ export function IssueDetailDrawer({
                     ))}
                 </div>
               </>
+            ) : (
+              issue.labels
+                .filter((l) => l !== '__none__')
+                .map((l) => <oas-tag key={l}>{l}</oas-tag>)
             )}
           </div>
         </div>

@@ -106,6 +106,38 @@ async function expectDarkTheme(page: Page) {
     .toBe('dark')
 }
 
+/** API 模式（DEV 决断 localStorage oas-pm-data=api）：不跑 Dexie seed，数据来自 mock 端点 */
+async function openApiApp(page: Page, theme: 'light' | 'dark' = 'light') {
+  await page.addInitScript(
+    ([mode]) => {
+      localStorage.setItem('oas-pm-data', 'api')
+      localStorage.setItem('oas-pm-theme', mode)
+    },
+    [theme],
+  )
+  const reset = await page.request.post('/api/admin/reset')
+  expect(reset.ok()).toBe(true)
+  await page.goto('/')
+  await expect(page.getByTestId('data-source-badge')).toHaveText('API', { timeout: 20_000 })
+  await page.waitForSelector('.issue-row', { timeout: 20_000 })
+  if (theme === 'dark') await expectDarkTheme(page)
+  // 行渲染早于成员/权限就绪时勾选列缺失、头像退化成灰色 ?——断言两者可见后再截图
+  await expect(page.locator('.issue-row .row-check').first()).toBeVisible({ timeout: 20_000 })
+  await expect
+    .poll(
+      () =>
+        page.locator('.issue-row oas-avatar').evaluateAll(
+          (els) =>
+            els.filter((el) => {
+              const text = (el.shadowRoot?.querySelector('[part=text]')?.textContent ?? '').trim()
+              return text !== '' && text !== '?'
+            }).length,
+        ),
+      { timeout: 20_000 },
+    )
+    .toBeGreaterThan(0)
+}
+
 async function openAdmin(page: Page) {
   await page.getByTestId('admin-entry').click()
   await expect(page.getByTestId('admin-view')).toBeVisible({ timeout: 10_000 })
@@ -272,6 +304,45 @@ test('shots readonly drawer dark', async ({ page }) => {
   await openApp(page)
   await expectDarkTheme(page)
   await captureReadonlyDrawer(page, '-dark')
+})
+
+test('shots api', async ({ page }) => {
+  test.setTimeout(180_000)
+  await openApiApp(page)
+  await page.waitForTimeout(1200)
+  await page.screenshot({ path: 'shots/pm-api-list.png' })
+
+  await openAdmin(page)
+  const table = page.getByTestId('admin-table-health')
+  await expect
+    .poll(() => tableDataLength(page, 'admin-table-health'), { timeout: 60_000 })
+    .toBeGreaterThan(0)
+  await expect(table.locator('tbody tr').first()).toBeVisible({ timeout: 10_000 })
+  // 健康度：至少一个项目的 stale 非零（截图要能看清「久未更新」这一列）
+  await expect
+    .poll(
+      () =>
+        table.evaluate((el) =>
+          ((el as { data?: Array<{ stale?: string }> }).data ?? []).some(
+            (r) => Number(String(r.stale ?? '0').replace(/,/g, '')) > 0,
+          ),
+        ),
+      { timeout: 60_000 },
+    )
+    .toBe(true)
+  await page.waitForTimeout(1500)
+  await page.screenshot({ path: 'shots/pm-api-admin-overview.png' })
+
+  console.log('shots api done')
+})
+
+test('shots api dark', async ({ page }) => {
+  test.setTimeout(180_000)
+  await openApiApp(page, 'dark')
+  await page.waitForTimeout(1200)
+  await page.screenshot({ path: 'shots/pm-api-list-dark.png' })
+
+  console.log('shots api dark done')
 })
 
 test('shots admin', async ({ page }) => {

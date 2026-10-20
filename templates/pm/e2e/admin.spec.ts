@@ -303,7 +303,12 @@ test('A9 标签集：工作项配置新增标签 → 抽屉快捷按钮可见并
     .toBe(true)
   await expect(page.getByTestId('label-quick-p3-label')).toBeVisible()
   await page.getByTestId('label-quick-p3-label').click()
-  await expect(page.getByTestId('label-chip-p3-label')).toBeVisible({ timeout: 10_000 })
+  await expect(
+    page
+      .getByTestId('label-add')
+      .locator('.tag-label')
+      .filter({ hasText: /^p3-label$/ }),
+  ).toBeVisible({ timeout: 10_000 })
   await page.keyboard.press('Escape')
   await expect(page.getByTestId('detail-drawer')).toHaveCount(0, { timeout: 5000 })
 

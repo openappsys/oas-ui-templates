@@ -106,7 +106,7 @@ function renderIssueRow(
   if (m) {
     av.setAttribute('color', m.avatarColor)
     av.title = m.name
-    av.textContent = m.name[0]
+    av.setAttribute('text', m.name[0])
   } else {
     av.setAttribute('color', 'var(--oas-color-border-strong)')
     av.title = t('resourceUnassigned')
@@ -246,6 +246,16 @@ export function VirtualIssueList({
     el.items = issues
     el.scrollToIndex?.(Math.round(lastTopRef.current / 44), { align: 'start' })
   }, [issues, lang])
+
+  // 成员/多选权限晚于首个渲染窗口就绪（API 模式异步取成员）：行只在 oas-item 时取当前
+  // props，props 后续变化不会自动重派——补一次强制重渲染，修「整列灰色 ? + 勾选列缺失」
+  // biome-ignore lint/correctness/useExhaustiveDependencies: memberMap/showCheckbox 只作重渲染触发器（effect 体不引用它们）
+  useEffect(() => {
+    const el = listRef.current as
+      | (HTMLElement & { scrollToIndex?: (i: number, o?: { align?: string }) => void })
+      | null
+    el?.scrollToIndex?.(Math.round(lastTopRef.current / 44), { align: 'start' })
+  }, [memberMap, showCheckbox])
 
   // 渲染窗高 = height 属性（缺省 320，不测宿主布局）——ResizeObserver 把宿主实际
   // 高度实时写入，虚拟窗口随视口伸缩（修「只渲染 9 行后大片空白」）

@@ -513,12 +513,18 @@ test('M12 标签与评论：添加标签 chip + 发送评论', async ({ page }) 
     )
     .toBe(true)
   // 加标签：dynamic-tags 聚焦内部输入框输入回车（自由标签）+ 快捷按钮
+  // 标签只由 dynamic-tags 展示（chips 在 shadow 内，Playwright CSS 可穿透）
+  const tagChip = (label: string) =>
+    page
+      .getByTestId('label-add')
+      .locator('.tag-label')
+      .filter({ hasText: new RegExp(`^${label}$`) })
   await page.locator('[data-testid=label-add]').locator('input').first().click()
   await page.keyboard.type('frontend')
   await page.keyboard.press('Enter')
-  await expect(page.getByTestId('label-chip-frontend')).toBeVisible({ timeout: 10_000 })
+  await expect(tagChip('frontend')).toBeVisible({ timeout: 10_000 })
   await page.getByTestId('label-quick-bug').click()
-  await expect(page.getByTestId('label-chip-bug')).toBeVisible({ timeout: 10_000 })
+  await expect(tagChip('bug')).toBeVisible({ timeout: 10_000 })
   // 发评论（回车）
   await fillOInput(page, 'comment-input', 'E2E 评论内容')
   await page.getByTestId('comment-send').click()

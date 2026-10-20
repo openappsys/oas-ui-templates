@@ -10,6 +10,7 @@
   --pm-priority-low: #64748b;
 }
 [data-theme="dark"] {
+  color-scheme: dark;
   --pm-status-backlog: var(--oas-color-text-secondary);
   --pm-status-todo: var(--oas-preset-blue);
   --pm-status-in-progress: var(--oas-preset-gold);
@@ -741,10 +742,10 @@ body {
 .dash-page {
   flex: 1;
   overflow-y: auto;
-  padding: 20px 24px;
+  padding: 14px 20px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 14px;
 }
 
 .page-h1 {
@@ -802,6 +803,14 @@ body {
   width: 100%;
   aspect-ratio: 520 / 280;
   display: block;
+}
+
+/* 趋势卡：oas-chart 按宽度等比缩放（viewBox 520×280），通栏会把刻度字号放大 2 倍以上并把
+   x 轴标签挤出卡片下沿——限宽到设计尺寸（1:1），31 个日标签按 autoSkip 稀疏可读，
+   卡片高度同时落回视口内 */
+.dash-chart-wide .pm-chart {
+  max-width: 520px;
+  margin: 0 auto;
 }
 
 .dash-note {
@@ -1395,6 +1404,14 @@ body {
   color: var(--oas-color-text-disabled, #94a3b8);
 }
 
+/* 抽屉关闭按钮：打开时组件把焦点落在关闭键上，UA 默认环（粗深框）与全站焦点样式不一致——
+   统一成细环 + 主题色 + offset 2px（保留可访问焦点，不移除） */
+oas-drawer::part(close):focus-visible {
+  outline: 2px solid var(--oas-color-primary, #0b6cff);
+  outline-offset: 2px;
+  border-radius: var(--oas-radius-sm, 4px);
+}
+
 /* ── 移动端适配（≤900px） ── */
 @media (max-width: 900px) {
   .side-panel {
@@ -1749,8 +1766,9 @@ body {
   width: 100%;
 }
 .detail-meta > div > span {
-  width: 44px;
+  width: 56px;
   flex-shrink: 0;
+  white-space: nowrap;
   font-size: 12px;
   color: var(--oas-color-text-disabled, #94a3b8);
 }
@@ -1760,13 +1778,13 @@ body {
   flex: 1;
   min-width: 0;
 }
-/* 截止日期行的分段档与时刻编辑器：换行独占整宽，缩进 54px（44 label + 10 gap）对齐输入列，
+/* 截止日期行的分段档与时刻编辑器：换行独占整宽，缩进 66px（56 label + 10 gap）对齐输入列，
    不与日期框同行争抢（同行会把日期框挤塌、时刻框压成 0 宽不可见） */
 .detail-meta > div > oas-segmented,
 .detail-meta > div > oas-time-picker {
-  flex: 1 1 calc(100% - 54px);
+  flex: 1 1 calc(100% - 66px);
   min-width: 0;
-  margin-left: 54px;
+  margin-left: 66px;
 }
 
 /* ── 标签快捷添加 ── */
