@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import type { ResourceTask } from '@oas-ui/ui/data/resource'
 import type { Issue, Member } from '@/types'
-import { diffResourceAssignments, UNASSIGNED_ID, toResourceData } from './resource-data'
+import {
+  diffResourceAssignments,
+  UNASSIGNED_ID,
+  toLevelingResources,
+  toResourceData,
+} from './resource-data'
 
 const member = (id: string, name: string): Member => ({
   id,
@@ -126,6 +131,16 @@ describe('toResourceData 资源映射', () => {
     const snapshot = JSON.stringify(src)
     toResourceData(members, src, '未分配')
     expect(JSON.stringify(src)).toBe(snapshot)
+  })
+})
+
+describe('toLevelingResources 均载求解输入', () => {
+  it('含全部成员（空闲成员也承接）+ 未分配虚拟行，不做展示过滤', () => {
+    expect(toLevelingResources([member('m-1', '张伟'), member('m-3', '王强')], '未分配')).toEqual([
+      { id: 'm-1', name: '张伟', capacity: 1 },
+      { id: 'm-3', name: '王强', capacity: 1 },
+      { id: UNASSIGNED_ID, name: '未分配', capacity: 1 },
+    ])
   })
 })
 

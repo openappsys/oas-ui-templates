@@ -43,6 +43,15 @@ export function toResourceData(
   return { resources, tasks }
 }
 
+/** 均载求解输入的资源行：全量成员（含无任务的空闲成员——求解器看不到的行不会承接任务）
+ *  + 未分配虚拟行；与 toResourceData 的展示过滤（空泳道不产出）解耦 */
+export function toLevelingResources(members: Member[], unassignedLabel: string): ResourceItem[] {
+  return [
+    ...members.map((m) => ({ id: m.id, name: m.name, capacity: 1 })),
+    { id: UNASSIGNED_ID, name: unassignedLabel, capacity: 1 },
+  ]
+}
+
 /** 均载前后改派 diff：按 id 对齐两批任务，只比 resources[0]（有效分配），
  *  __unassigned__ ↔ null 互转；仅产出实际改派的条目，缺 id 或只在一侧出现跳过不抛 */
 export function diffResourceAssignments(

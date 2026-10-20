@@ -3,7 +3,12 @@ import { levelResources, type ResourceTask } from '@oas-ui/ui/data/resource'
 import { useRepositories } from '@/data/context'
 import { useObservable } from '@/data/use-observable'
 import { t } from '@/i18n'
-import { diffResourceAssignments, UNASSIGNED_ID, toResourceData } from '@/lib/resource-data'
+import {
+  diffResourceAssignments,
+  UNASSIGNED_ID,
+  toLevelingResources,
+  toResourceData,
+} from '@/lib/resource-data'
 import type { Action, Ctx } from '@/permission/policy'
 import type { Issue } from '@/types'
 
@@ -14,7 +19,7 @@ interface ResourceElement extends HTMLElement {
   tasks?: ResourceTask[]
 }
 
-type LevelNotice = { kind: 'success' | 'info' | 'error'; text: string }
+type LevelNotice = { kind: 'success' | 'info' | 'error'; text: string; epoch: number }
 
 export function ResourceView({
   issues,
@@ -37,9 +42,15 @@ export function ResourceView({
     () => toResourceData(members ?? [], issues, unassignedLabel),
     [members, issues, unassignedLabel],
   )
+  // 均载求解输入与展示数据解耦：展示过滤空泳道，但求解必须看到全部成员
+  // （含空闲成员，否则空闲行不在 resources 里、求解器不会把任务搬过去）+ 未分配行
+  const levelInput = useMemo(
+    () => toLevelingResources(members ?? [], unassignedLabel),
+    [members, unassignedLabel],
+  )
 
-  const gateRef = useRef({ can, issues, data })
-  gateRef.current = { can, issues, data }
+  const gateRef = useRef({ can, issues, data, levelInput })
+  gateRef.current = { can, issues, data, levelInput }
   const openRef = useRef(onOpenIssue)
   openRef.current = onOpenIssue
 
@@ -107,30 +118,34 @@ export function ResourceView({
     el.tasks = inject.data.tasks
   }, [inject])
 
-  // 一键均载反馈（成功 N / 已均衡 / 失败三态，4s 自动隐藏，同 SettingsTab alert 模式）
+  // 一键均载反馈（成功 N / 部分失败 / 已均衡 / 失败，4s 自动隐藏，同 SettingsTab alert 模式）；
+  // epoch 作 oas-alert 的 key：4s 窗口内二次均载强制重挂，否则同 type 复用元素不重放开场
   const [notice, setNotice] = useState<LevelNotice | null>(null)
   const noticeTimer = useRef<number | undefined>(undefined)
+  const noticeEpoch = useRef(0)
   const levelingRef = useRef(false)
-  const showNotice = useCallback((n: LevelNotice) => {
-    setNotice(n)
+  const showNotice = useCallback((n: Omit<LevelNotice, 'epoch'>) => {
+    noticeEpoch.current += 1
+    setNotice({ ...n, epoch: noticeEpoch.current })
     window.clearTimeout(noticeTimer.current)
     noticeTimer.current = window.setTimeout(() => setNotice(null), 4000)
   }, [])
   useEffect(() => () => window.clearTimeout(noticeTimer.current), [])
 
-  // reassign 求解：把任务从最忙资源搬到较空闲资源（时长不动、尊重 capacity）；
-  // 写回 diff 走 diffResourceAssignments（只比 resources[0]，__unassigned__ → null），逐条过 issue:edit 门禁
+  // reassign 求解：把任务从最忙资源搬到较空闲资源（时长不动、尊重 capacity），
+  // 求解输入用全量成员（levelInput，含空闲成员）；写回 diff 走 diffResourceAssignments
+  // （只比 resources[0]，__unassigned__ → null），逐条过 issue:edit 门禁（deny 计入 skipped 不进批）
   const runLevel = useCallback(async () => {
     if (levelingRef.current) return
     levelingRef.current = true
     try {
       const cur = gateRef.current.data.tasks
-      const leveled = levelResources(gateRef.current.data.resources, cur, {
+      const leveled = levelResources(gateRef.current.levelInput, cur, {
         mode: 'reassign',
         scale: 'day',
         capacity: 1,
       })
-      const updates: Array<Promise<unknown>> = []
+      const batch: Array<{ id: string; changes: Partial<Issue> }> = []
       let skipped = 0
       for (const diff of diffResourceAssignments(cur, leveled)) {
         const it = gateRef.current.issues.find((i) => i.id === diff.id)
@@ -138,15 +153,39 @@ export function ResourceView({
           skipped += 1
           continue
         }
-        updates.push(issuesRepo.update(diff.id, { assigneeId: diff.assigneeId }))
+        batch.push({ id: diff.id, changes: { assigneeId: diff.assigneeId } })
       }
-      await Promise.all(updates)
-      let text =
-        updates.length > 0
-          ? t('resourceLevelDone').replace('{n}', String(updates.length))
-          : t('resourceLevelNone')
-      if (skipped > 0) text += t('resourceLevelSkipped').replace('{k}', String(skipped))
-      showNotice(updates.length > 0 ? { kind: 'success', text } : { kind: 'info', text })
+      // updateMany 单事务写回：共享 updatedAt、liveQuery 只发一次；
+      // allSettled 口径报成功/失败（单批时失败即全败，结构留多批部分失败的上报通道）
+      let succeeded = 0
+      let failed = 0
+      let failReason = ''
+      if (batch.length > 0) {
+        const results = await Promise.allSettled([issuesRepo.updateMany(batch)])
+        for (const r of results) {
+          if (r.status === 'fulfilled') {
+            succeeded += batch.length
+          } else {
+            failed += batch.length
+            failReason = r.reason instanceof Error ? r.reason.message : String(r.reason)
+          }
+        }
+      }
+      const skippedSuffix =
+        skipped > 0 ? t('resourceLevelSkipped').replace('{k}', String(skipped)) : ''
+      if (failed > 0 && succeeded > 0) {
+        const text = t('resourceLevelPartial')
+          .replace('{n}', String(succeeded))
+          .replace('{k}', String(failed))
+        showNotice({ kind: 'error', text: text + skippedSuffix })
+      } else if (failed > 0) {
+        showNotice({ kind: 'error', text: `${t('resourceLevelFailed')} ${failReason}` })
+      } else if (succeeded > 0) {
+        const text = t('resourceLevelDone').replace('{n}', String(succeeded))
+        showNotice({ kind: 'success', text: text + skippedSuffix })
+      } else {
+        showNotice({ kind: 'info', text: t('resourceLevelNone') + skippedSuffix })
+      }
     } catch (e) {
       showNotice({
         kind: 'error',
@@ -209,6 +248,7 @@ export function ResourceView({
       </div>
       {notice && (
         <oas-alert
+          key={notice.epoch}
           type={notice.kind}
           className="resource-level-alert"
           data-testid="resource-level-alert"
