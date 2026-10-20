@@ -137,7 +137,9 @@ export async function seedDatabase(): Promise<void> {
         dueAt = dayAt(dayOffset, hour)
         // 1/4 带 startAt 紧凑区间（1–3 天，恒 ≤ dueAt）：pm 桶 k=1 样本供 e2e 倒挂钳制（回移一天触发收敛）
         startAt = schedJ % 4 === 1 ? dueAt - (1 + (schedJ % 3)) * day : null
-        updatedAt = now - rand() * 2 * day
+        // 散量群体有 ~1800 行 updatedAt 被 clamp 到恰好 now（createdAt=今天 的行），
+        // now-2d 内的 updatedAt 排不进默认 500 窗口——取 now+j 毫秒严格最新（真编辑发生在秒级之后，仍压头部）
+        updatedAt = now + schedJ
       } else {
         dueAt = rand() > 0.6 ? createdAt + Math.floor(rand() * 14 + 3) * day : null
         startAt =
