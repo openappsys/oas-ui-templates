@@ -229,7 +229,7 @@ body {
 /* ── Issue 详情面板 ── */
 .issue-thead {
   display: grid;
-  grid-template-columns: 110px 1fr 24px 70px 90px;
+  grid-template-columns: 110px minmax(0, 1fr) 24px 70px 90px;
   gap: 12px;
   padding: 6px 16px;
   font-size: 11px;

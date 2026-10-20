@@ -151,7 +151,9 @@ export function IssueListView({
       tabIndex={0}
       style={{
         display: 'grid',
-        gridTemplateColumns: canBulk ? '18px 110px 1fr 24px 70px 90px' : '110px 1fr 24px 70px 90px',
+        gridTemplateColumns: canBulk
+          ? '22px 110px minmax(0, 1fr) 24px 70px 90px'
+          : '110px minmax(0, 1fr) 24px 70px 90px',
         alignItems: 'center',
         gap: 12,
         height: 44,
