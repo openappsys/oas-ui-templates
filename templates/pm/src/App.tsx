@@ -29,10 +29,11 @@ import { IssueListView } from './views/list/IssueListView'
 import { KanbanBoard } from './views/board/KanbanBoard'
 import { TimelineView } from './views/timeline/TimelineView'
 import { ResourceView } from './views/resource/ResourceView'
+import { ScheduleView } from './views/schedule/ScheduleView'
 import { IssueDetailDrawer } from './views/issue/IssueDetailDrawer'
 import { AdminView, type AdminTab } from './views/admin/AdminView'
 
-type View = 'dashboard' | 'issues' | 'board' | 'timeline' | 'resource' | 'admin'
+type View = 'dashboard' | 'issues' | 'board' | 'timeline' | 'resource' | 'schedule' | 'admin'
 
 /** 数据窗口：compound index 取项目/状态维度最近 listLimit 条，再内存细筛；
  *  触底续载：滚动近底时 listLimit 递增（每批 LIST_WINDOW_STEP 条） */
@@ -637,6 +638,7 @@ export function App() {
                     { label: t('board'), value: 'board' },
                     { label: t('timeline'), value: 'timeline' },
                     { label: t('resource'), value: 'resource' },
+                    { label: t('schedule'), value: 'schedule' },
                   ]}
                   onChange={(v) => setView(v as View)}
                 />
@@ -695,6 +697,11 @@ export function App() {
               {view === 'resource' && (
                 <ErrorBoundary key={view}>
                   <ResourceView issues={issues ?? []} can={can} onOpenIssue={setSelectedId} />
+                </ErrorBoundary>
+              )}
+              {view === 'schedule' && (
+                <ErrorBoundary key={view}>
+                  <ScheduleView issues={issues ?? []} can={can} onOpenIssue={setSelectedId} />
                 </ErrorBoundary>
               )}
             </main>

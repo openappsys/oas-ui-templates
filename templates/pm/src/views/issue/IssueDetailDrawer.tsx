@@ -1,11 +1,18 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import type { Issue, IssuePriority, IssueStatus, Member } from '@/types'
 import { ISSUE_PRIORITIES, ISSUE_STATUSES, STATUS_LABEL } from '@/types'
-import { OSelect, OCheckbox, TagChip } from '@/components/oas-wrappers'
+import { OSelect, OCheckbox, ODatePicker, OSegmented, TagChip } from '@/components/oas-wrappers'
 import { t } from '@/i18n'
 import { useRepositories } from '@/data/context'
 import { useObservable } from '@/data/use-observable'
 import { useLabelSet } from '@/lib/labels'
+import {
+  bucketOf,
+  bucketToDueAt,
+  clampStartAt,
+  utcDay,
+  type ScheduleBucket,
+} from '@/lib/schedule-data'
 import type { Action, Ctx } from '@/permission/policy'
 
 /* ── 活动历史（详情抽屉） ── */
@@ -27,6 +34,8 @@ function DrawerActivities({
     description: '更新了描述',
     title: '更新了标题',
     dates: '调整了排期',
+    dueAt: '调整了排期',
+    startAt: '调整了排期',
   }
   return (
     <div className="activities-block" data-testid="activities-block">
@@ -351,6 +360,8 @@ export function IssueDetailDrawer({
       assigneeId: '负责人',
       description: '描述',
       title: '标题',
+      dueAt: '截止日期',
+      startAt: '开始日期',
     }
     const acts: Promise<unknown>[] = []
     for (const k of Object.keys(changes) as Array<keyof Issue>) {
@@ -412,6 +423,42 @@ export function IssueDetailDrawer({
               options={memberOptions}
               onChange={(v) => save({ assigneeId: v === '__none__' ? null : v })}
               disabled={!canEdit}
+            />
+          </div>
+          <div className="detail-field">
+            <span>{t('dueDate')}</span>
+            <ODatePicker
+              testid="detail-due-date"
+              value={issue.dueAt === null ? '' : utcDay(issue.dueAt)}
+              disabled={!canEdit}
+              onChange={(v) => {
+                // 清日期 → dueAt 置空（档位回落全天）；选日期保留当前档位，倒挂 startAt 钳制
+                if (v === '') {
+                  save({ dueAt: null })
+                  return
+                }
+                const bucket: ScheduleBucket =
+                  issue.dueAt === null ? 'allday' : bucketOf(issue.dueAt)
+                const dueAt = bucketToDueAt(v, bucket)
+                const startAt = clampStartAt(issue.startAt, dueAt)
+                save(startAt !== issue.startAt ? { dueAt, startAt } : { dueAt })
+              }}
+            />
+            <OSegmented
+              testid="detail-due-bucket"
+              value={issue.dueAt === null ? 'allday' : bucketOf(issue.dueAt)}
+              options={[
+                { label: t('bucketAllday'), value: 'allday' },
+                { label: t('bucketAm'), value: 'am' },
+                { label: t('bucketPm'), value: 'pm' },
+              ]}
+              disabled={!canEdit || issue.dueAt === null}
+              onChange={(b) => {
+                if (issue.dueAt === null) return
+                const dueAt = bucketToDueAt(utcDay(issue.dueAt), b as ScheduleBucket)
+                const startAt = clampStartAt(issue.startAt, dueAt)
+                save(startAt !== issue.startAt ? { dueAt, startAt } : { dueAt })
+              }}
             />
           </div>
         </div>

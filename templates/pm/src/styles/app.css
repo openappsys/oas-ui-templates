@@ -1694,7 +1694,8 @@ body {
   color: var(--oas-color-text-disabled, #94a3b8);
 }
 .detail-meta > div > oas-select,
-.detail-meta > div > select {
+.detail-meta > div > select,
+.detail-meta > div > oas-date-picker {
   flex: 1;
   min-width: 0;
 }

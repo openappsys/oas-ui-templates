@@ -5,7 +5,7 @@ import { useObservable } from '@/data/use-observable'
 import type { Action, Ctx } from '@/permission/policy'
 import type { Issue } from '@/types'
 
-export type PaletteView = 'dashboard' | 'issues' | 'board' | 'timeline'
+export type PaletteView = 'dashboard' | 'issues' | 'board' | 'timeline' | 'resource' | 'schedule'
 
 interface CommandItem {
   label: string
@@ -83,6 +83,18 @@ export function CommandPalette({
         value: 'nav:timeline',
         group: t('paletteNav'),
         keywords: ['timeline', 'gantt'],
+      },
+      {
+        label: t('resource'),
+        value: 'nav:resource',
+        group: t('paletteNav'),
+        keywords: ['resource', '资源'],
+      },
+      {
+        label: t('schedule'),
+        value: 'nav:schedule',
+        group: t('paletteNav'),
+        keywords: ['calendar', 'schedule', '日程'],
       },
     ]
     const actions: CommandItem[] = []
