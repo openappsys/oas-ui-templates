@@ -1564,6 +1564,12 @@ oas-drawer::part(close):focus-visible {
 
 .admin-chart-box {
   max-width: 720px;
+  margin-inline: auto;
+}
+
+.admin-chart-box .pm-chart {
+  max-width: 520px;
+  margin: 0 auto;
 }
 
 .admin-panel-title {
