@@ -31,6 +31,17 @@ async function sortLabels(page: Page): Promise<string[]> {
   })
 }
 
+/** view-seg 渲染态标签（shadow .tab 文本）——items attribute 更新 ≠ 组件重渲染，需单独断言 */
+async function viewSegTabLabels(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const el = document.querySelector('[data-testid=view-seg]')
+    const root = (el as HTMLElement & { shadowRoot?: ShadowRoot }).shadowRoot
+    return root
+      ? Array.from(root.querySelectorAll('.tab')).map((t) => (t.textContent ?? '').trim())
+      : []
+  })
+}
+
 test('L1 默认中文：关键文案为中文', async ({ page }) => {
   test.setTimeout(60_000)
   await page.goto('/')
@@ -52,6 +63,7 @@ test('L2 切换英文：文案变英文 + localStorage 持久化 + reload 保持
   await page.getByTestId('lang-toggle').click()
   await expect(page.getByTestId('lang-toggle')).toHaveText('中')
   await expect(page.getByTestId('view-seg')).toHaveAttribute('items', /List/)
+  await expect.poll(() => viewSegTabLabels(page)).toContain('List')
   await expect(page.getByTestId('toolbar-new')).toContainText('New Issue')
   await expect.poll(() => sortLabels(page)).toContain('Last updated')
   await expect.poll(() => page.evaluate(() => localStorage.getItem('oas-pm-lang'))).toBe('en')
@@ -97,6 +109,7 @@ test('L3 切回中文：文案恢复且结束时 lang=zh', async ({ page }) => {
   await expect(page.getByTestId('lang-toggle')).toHaveText('EN')
   await expect.poll(() => page.evaluate(() => localStorage.getItem('oas-pm-lang'))).toBe('zh')
   await expect(page.getByTestId('view-seg')).toHaveAttribute('items', /列表/)
+  await expect.poll(() => viewSegTabLabels(page)).toContain('列表')
   await expect(page.getByTestId('toolbar-new')).toContainText('新建 Issue')
   await setView(page, 'dashboard')
   await expect(page.locator('.dash-page .page-h1')).toHaveText('仪表盘', { timeout: 10_000 })

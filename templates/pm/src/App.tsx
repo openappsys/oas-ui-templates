@@ -630,6 +630,7 @@ export function App() {
             <aside className="side-panel" data-testid="side-panel">
               <div className="side-view-seg">
                 <OTabs
+                  key={lang}
                   testid="view-seg"
                   value={view}
                   options={[
