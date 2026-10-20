@@ -63,9 +63,16 @@ export function ScheduleView({
   const amLabel = t('am')
   const pmLabel = t('pm')
   const overdueLabel = t('overdue')
+  const moreTmpl = t('scheduleMore')
   const events = useMemo(
-    () => deriveScheduleEvents(issues, { am: amLabel, pm: pmLabel, overdue: overdueLabel }),
-    [issues, amLabel, pmLabel, overdueLabel],
+    () =>
+      deriveScheduleEvents(issues, {
+        am: amLabel,
+        pm: pmLabel,
+        overdue: overdueLabel,
+        more: (n) => moreTmpl.replace('{n}', String(n)),
+      }),
+    [issues, amLabel, pmLabel, overdueLabel, moreTmpl],
   )
   const locale = getLang() === 'zh' ? 'zh-CN' : 'en-US'
 
@@ -80,7 +87,8 @@ export function ScheduleView({
     if (!el || events.length === 0) return
     const onClick = (e: Event) => {
       const d = (e as CustomEvent<{ id?: string }>).detail
-      if (d?.id) openRef.current(d.id)
+      // 合成 +N 封顶块是纯展示聚合、无对应 issue——点击不开抽屉
+      if (d?.id && !d.id.startsWith('__more__')) openRef.current(d.id)
     }
     // events-change（拖拽改期 = 改 date/档位）写回：与派生映射逐条 diff，date 或落点桶变化者
     // 过 issue:edit 门禁 → dueAt = 桶起点 + startAt 倒挂钳制；deny 或零 diff（resize 只改 end）

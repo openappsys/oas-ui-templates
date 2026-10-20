@@ -29,7 +29,7 @@ const issue = (over: Partial<Issue>): Issue => ({
   ...over,
 })
 
-const labels = { am: '上午 ', pm: '下午 ', overdue: '逾期 ' }
+const labels = { am: '上午 ', pm: '下午 ', overdue: '逾期 ', more: (n: number) => `+${n} 项` }
 
 /** 相对当前时刻的 UTC 日（负数=过去），桶时刻由调用方给 */
 const relDay = (addDays: number, hour: number) => {
@@ -127,7 +127,7 @@ describe('deriveScheduleEvents 映射', () => {
     expect(by('f')?.title).toBe('上午 OAS-6 过期已完成')
   })
 
-  it('date = UTC 日；单事件占桶首 30min 窄条 09:00–09:30 / 14:00–14:30；allday 无 start/end', () => {
+  it('date = UTC 日；单事件占桶首 60min 块 09:00–10:00 / 14:00–15:00；allday 无 start/end', () => {
     const events = deriveScheduleEvents(
       [
         issue({ id: 'a', dueAt: Date.UTC(2026, 3, 10, 9) }),
@@ -138,13 +138,13 @@ describe('deriveScheduleEvents 映射', () => {
     )
     const by = (id: string) => events.find((x) => x.id === id)
     expect(by('a')?.date).toBe('2026-04-10')
-    expect(by('a')).toMatchObject({ start: '09:00', end: '09:30' })
-    expect(by('d')).toMatchObject({ start: '14:00', end: '14:30' })
+    expect(by('a')).toMatchObject({ start: '09:00', end: '10:00' })
+    expect(by('d')).toMatchObject({ start: '14:00', end: '15:00' })
     expect(by('e')?.start).toBeUndefined()
     expect(by('e')?.end).toBeUndefined()
   })
 
-  it('同桶平铺：第 1/2/3 块 30min 窄条递增（09:00–09:30→09:30–10:00→10:00–10:30）；不同桶独立计数', () => {
+  it('同桶平铺：第 1/2/3 块 60min 递增（09:00–10:00→10:00–11:00→11:00–12:00）；不同桶独立计数', () => {
     const events = deriveScheduleEvents(
       [
         issue({ id: 'a', dueAt: Date.UTC(2026, 3, 10, 9) }),
@@ -156,40 +156,83 @@ describe('deriveScheduleEvents 映射', () => {
       labels,
     )
     const by = (id: string) => events.find((x) => x.id === id)
-    expect(by('a')).toMatchObject({ start: '09:00', end: '09:30' })
-    expect(by('b')).toMatchObject({ start: '09:30', end: '10:00' })
-    expect(by('c')).toMatchObject({ start: '10:00', end: '10:30' })
-    expect(by('d')).toMatchObject({ start: '14:00', end: '14:30' })
-    expect(by('e')).toMatchObject({ start: '09:00', end: '09:30' })
+    expect(by('a')).toMatchObject({ start: '09:00', end: '10:00' })
+    expect(by('b')).toMatchObject({ start: '10:00', end: '11:00' })
+    expect(by('c')).toMatchObject({ start: '11:00', end: '12:00' })
+    expect(by('d')).toMatchObject({ start: '14:00', end: '15:00' })
+    expect(by('e')).toMatchObject({ start: '09:00', end: '10:00' })
   })
 
-  it('平铺封顶：同桶 6 块时第 6 块占桶尾槽 11:30–12:00；8 块时第 6/7/8 块同为 11:30–12:00', () => {
+  it('组内 3 块无封顶块：全为真实 issue id 且占满 3 槽', () => {
+    const events = deriveScheduleEvents(
+      Array.from({ length: 3 }, (_, i) => issue({ id: `t${i}`, dueAt: Date.UTC(2026, 3, 10, 14) })),
+      labels,
+    )
+    expect(events.map((e) => `${e.id}:${e.start}-${e.end}`)).toEqual([
+      't0:14:00-15:00',
+      't1:15:00-16:00',
+      't2:16:00-17:00',
+    ])
+    expect(events.some((e) => e.id.startsWith('__more__'))).toBe(false)
+  })
+
+  it('组内 4/8 块（pm 桶）：前 3 块平铺 + 第 4 槽合成封顶块（17:00–18:00，+1 项 / +5 项）', () => {
+    const day = utcDay(relDay(5, 14))
     const mk = (n: number) =>
-      Array.from({ length: n }, (_, i) => issue({ id: `x${i}`, dueAt: Date.UTC(2026, 3, 10, 9) }))
-    const seq = (n: number) => deriveScheduleEvents(mk(n), labels).map((e) => `${e.start}-${e.end}`)
-    expect(seq(1)).toEqual(['09:00-09:30'])
-    expect(seq(2)).toEqual(['09:00-09:30', '09:30-10:00'])
-    expect(seq(6)).toEqual([
-      '09:00-09:30',
-      '09:30-10:00',
-      '10:00-10:30',
-      '10:30-11:00',
-      '11:00-11:30',
-      '11:30-12:00',
+      Array.from({ length: n }, (_, i) => issue({ id: `x${i}`, dueAt: relDay(5, 14) }))
+    const seq = (n: number) =>
+      deriveScheduleEvents(mk(n), labels).map((e) => `${e.id}|${e.start}-${e.end}|${e.title}`)
+    expect(seq(1)).toEqual(['x0|14:00-15:00|下午 OAS-1 标题'])
+    expect(seq(3).map((s) => s.split('|')[1])).toEqual([
+      '14:00-15:00',
+      '15:00-16:00',
+      '16:00-17:00',
     ])
-    expect(seq(8)).toEqual([
-      '09:00-09:30',
-      '09:30-10:00',
-      '10:00-10:30',
-      '10:30-11:00',
-      '11:00-11:30',
-      '11:30-12:00',
-      '11:30-12:00',
-      '11:30-12:00',
+    expect(seq(4)).toEqual([
+      'x0|14:00-15:00|下午 OAS-1 标题',
+      'x1|15:00-16:00|下午 OAS-1 标题',
+      'x2|16:00-17:00|下午 OAS-1 标题',
+      `__more__${day}__pm|17:00-18:00|+1 项`,
+    ])
+    const eight = seq(8)
+    expect(eight).toHaveLength(4)
+    expect(eight[3]).toBe(`__more__${day}__pm|17:00-18:00|+5 项`)
+  })
+
+  it('am 桶仅 3 槽：组内超 3 块时真实块让位 2 块（09/10 槽），封顶块独占 11:00–12:00 不叠印', () => {
+    const day = utcDay(relDay(6, 9))
+    const events = deriveScheduleEvents(
+      Array.from({ length: 5 }, (_, i) => issue({ id: `a${i}`, dueAt: relDay(6, 9) })),
+      labels,
+    )
+    expect(events.map((e) => `${e.id}|${e.start}-${e.end}|${e.title}`)).toEqual([
+      'a0|09:00-10:00|上午 OAS-1 标题',
+      'a1|10:00-11:00|上午 OAS-1 标题',
+      `__more__${day}__am|11:00-12:00|+3 项`,
     ])
   })
 
-  it('封顶不越桶：am/pm 桶任意数量事件 start/end 均不越过桶尾（pm 第 6 块起同为 17:30–18:00）', () => {
+  it('labels.more 回调生效：N 透传且同组确定性 id（date+bucket）', () => {
+    const seen: number[] = []
+    const custom = { ...labels, more: (n: number) => (seen.push(n), `更多 ${n}`) }
+    const pmDay = utcDay(relDay(5, 14))
+    const amDay = utcDay(relDay(8, 9))
+    const events = deriveScheduleEvents(
+      [
+        ...Array.from({ length: 6 }, (_, i) => issue({ id: `m${i}`, dueAt: relDay(5, 14) })),
+        ...Array.from({ length: 4 }, (_, i) => issue({ id: `n${i}`, dueAt: relDay(8, 9) })),
+      ],
+      custom,
+    )
+    const mores = events.filter((e) => e.id.startsWith('__more__'))
+    expect(mores.map((e) => `${e.id}=${e.title}`)).toEqual([
+      `__more__${pmDay}__pm=更多 3`,
+      `__more__${amDay}__am=更多 2`,
+    ])
+    expect(seen).toEqual([3, 2])
+  })
+
+  it('封顶不越桶不叠印：am/pm 桶各 10 块，start/end 均在桶内且任意两块区间不重叠', () => {
     for (const [hour, bucketEnd] of [
       [9, '12:00'],
       [14, '18:00'],
@@ -200,16 +243,16 @@ describe('deriveScheduleEvents 映射', () => {
         ),
         labels,
       )
-      for (const e of events) {
-        expect(e.start! < e.end!).toBe(true)
-        expect(e.end! <= bucketEnd).toBe(true)
+      const spans = events.map((e) => [e.start!, e.end!] as const).sort()
+      for (const [s, e] of spans) {
+        expect(s < e).toBe(true)
+        expect(e <= bucketEnd).toBe(true)
       }
+      for (let i = 1; i < spans.length; i++) {
+        expect(spans[i]![0] >= spans[i - 1]![1]).toBe(true)
+      }
+      expect(events.filter((e) => e.id.startsWith('__more__'))).toHaveLength(1)
     }
-    const pm = deriveScheduleEvents(
-      Array.from({ length: 6 }, (_, i) => issue({ id: `z${i}`, dueAt: Date.UTC(2026, 3, 10, 14) })),
-      labels,
-    )
-    expect(pm[5]).toMatchObject({ start: '17:30', end: '18:00' })
   })
 
   it('配色：done → 灰 token；其余按优先级 token', () => {

@@ -219,7 +219,7 @@ test('S2 契约重放写回（12:30 落下午 + startAt 钳制）；viewer 拒�
   await switchUser(page, 'member-4')
   const derived = await sched(page)
   await expect.poll(async () => (await sched(page)).length, { timeout: 15_000 }).toBeGreaterThan(0)
-  const viewerEv = derived.find((e) => e.id !== target!.id) ?? null
+  const viewerEv = derived.find((e) => e.id !== target!.id && !e.id.startsWith('__more__')) ?? null
   expect(viewerEv).toBeTruthy()
   const before = await readIssue(page, viewerEv!.id)
   const beforeEvent = derived.find((e) => e.id === viewerEv!.id) ?? null
@@ -260,7 +260,7 @@ test('S4 抽屉日期编辑器：切档落库/清空置 null；viewer 控件禁�
   await expect(page.getByTestId('schedule-gantt')).toBeAttached({ timeout: 10_000 })
   await expect.poll(async () => (await sched(page)).length, { timeout: 15_000 }).toBeGreaterThan(0)
   const evs = await sched(page)
-  const timed = evs.find((e) => e.start !== undefined) ?? evs[0]!
+  const timed = evs.find((e) => e.start !== undefined && !e.id.startsWith('__more__')) ?? evs[0]!
 
   // event-click → 详情抽屉打开且回显当前档位
   await page.evaluate((ev) => {
@@ -334,7 +334,9 @@ test('S4 抽屉日期编辑器：切档落库/清空置 null；viewer 控件禁�
   // viewer：控件 disabled，契约重放不落库
   await switchUser(page, 'member-4')
   const evs2 = await sched(page)
-  const other = evs2.find((e) => e.id !== timed.id && e.start !== undefined) ?? evs2[0]!
+  const other =
+    evs2.find((e) => e.id !== timed.id && e.start !== undefined && !e.id.startsWith('__more__')) ??
+    evs2[0]!
   await page.evaluate((ev) => {
     document.querySelector('[data-testid=schedule-gantt]')?.dispatchEvent(
       new CustomEvent('oas-event-click', {
