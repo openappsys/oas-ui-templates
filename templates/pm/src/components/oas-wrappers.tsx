@@ -177,7 +177,7 @@ export function OTimePicker({
     el.addEventListener('oas-change', h)
     return () => el.removeEventListener('oas-change', h)
   }, [])
-  return <oas-time-picker ref={ref} data-testid={testid} />
+  return <oas-time-picker ref={ref} format="HH:mm" data-testid={testid} />
 }
 
 /** oas-segmented 包装：options 与 value 都走 setAttribute（渲染签名只认 attribute，
