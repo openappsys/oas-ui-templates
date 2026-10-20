@@ -1701,6 +1701,7 @@ body {
 .detail-meta > div {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
   width: 100%;
 }
@@ -1715,6 +1716,14 @@ body {
 .detail-meta > div > oas-date-picker {
   flex: 1;
   min-width: 0;
+}
+/* 截止日期行的分段档与时刻编辑器：换行独占整宽，缩进 54px（44 label + 10 gap）对齐输入列，
+   不与日期框同行争抢（同行会把日期框挤塌、时刻框压成 0 宽不可见） */
+.detail-meta > div > oas-segmented,
+.detail-meta > div > oas-time-picker {
+  flex: 1 1 calc(100% - 54px);
+  min-width: 0;
+  margin-left: 54px;
 }
 
 /* ── 标签快捷添加 ── */

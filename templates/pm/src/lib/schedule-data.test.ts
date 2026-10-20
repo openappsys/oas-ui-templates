@@ -401,6 +401,128 @@ describe('deriveScheduleEvents 精确时刻（非桶时刻）', () => {
   })
 })
 
+describe('deriveScheduleEvents 精确同刻组封顶与跨午夜守卫', () => {
+  it('同刻 1/3/4/8 块完整序列：k∈{0,1,2} 30min 平铺；第 4 槽合成 __more__ 封顶块（8 块 → +5 项）', () => {
+    const base = relDay(7, 16) + 18 * 60000
+    const day = utcDay(base)
+    const mk = (n: number) =>
+      Array.from({ length: n }, (_, i) => issue({ id: `p${i}`, dueAt: base }))
+    const seq = (n: number) =>
+      deriveScheduleEvents(mk(n), labels).map(
+        (e) => `${e.id}|${e.start ?? '全天'}-${e.end ?? ''}|${e.title}`,
+      )
+    expect(seq(1)).toEqual(['p0|16:18-16:48|16:18 OAS-1 标题'])
+    expect(seq(3).map((s) => s.split('|')[1])).toEqual([
+      '16:18-16:48',
+      '16:48-17:18',
+      '17:18-17:48',
+    ])
+    expect(seq(4)).toEqual([
+      'p0|16:18-16:48|16:18 OAS-1 标题',
+      'p1|16:48-17:18|16:18 OAS-1 标题',
+      'p2|17:18-17:48|16:18 OAS-1 标题',
+      `__more__${day}__x:16:18|17:48-18:18|+1 项`,
+    ])
+    const eight = seq(8)
+    expect(eight).toHaveLength(4)
+    expect(eight[3]).toBe(`__more__${day}__x:16:18|17:48-18:18|+5 项`)
+  })
+
+  it('封顶块配色沿用 muted token；组内恰好 3 块不出封顶块', () => {
+    const base = relDay(7, 15) + 45 * 60000
+    const four = deriveScheduleEvents(
+      Array.from({ length: 4 }, (_, i) => issue({ id: `c${i}`, dueAt: base })),
+      labels,
+    )
+    const cap = four.find((e) => e.id.startsWith('__more__'))
+    expect(cap?.color).toBe('var(--pm-status-backlog)')
+    const three = deriveScheduleEvents(
+      Array.from({ length: 3 }, (_, i) => issue({ id: `c${i}`, dueAt: base })),
+      labels,
+    )
+    expect(three.some((e) => e.id.startsWith('__more__'))).toBe(false)
+  })
+
+  it("同刻 start='23:45'：第 1 块 tile end 钳 24:00；第 2/3 块与第 4 槽封顶块 start 越 24:00 → 落全天带（无 start/end）", () => {
+    const base = relDay(8, 23) + 45 * 60000
+    const day = utcDay(base)
+    const events = deriveScheduleEvents(
+      Array.from({ length: 5 }, (_, i) => issue({ id: `m${i}`, dueAt: base })),
+      labels,
+    )
+    const by = (id: string) => events.find((e) => e.id === id)
+    expect(by('m0')).toMatchObject({ start: '23:45', end: '24:00' })
+    expect(by('m1')?.start).toBeUndefined()
+    expect(by('m1')?.end).toBeUndefined()
+    expect(by('m1')?.title).toBe('23:45 OAS-1 标题')
+    expect(by('m2')?.start).toBeUndefined()
+    const cap = by(`__more__${day}__x:23:45`)
+    expect(cap?.title).toBe('+2 项')
+    expect(cap?.start).toBeUndefined()
+    expect(cap?.end).toBeUndefined()
+  })
+
+  it("start='16:18' × 10 块：无墙无越界——3 tile + 1 封顶块（+7 项），区间不重叠且均不越 24:00", () => {
+    const base = relDay(9, 16) + 18 * 60000
+    const events = deriveScheduleEvents(
+      Array.from({ length: 10 }, (_, i) => issue({ id: `w${i}`, dueAt: base })),
+      labels,
+    )
+    expect(events).toHaveLength(4)
+    expect(events.filter((e) => e.id.startsWith('__more__'))).toHaveLength(1)
+    expect(events[3]?.title).toBe('+7 项')
+    const spans = events.map((e) => [e.start!, e.end!] as const).sort()
+    for (const [s, e] of spans) {
+      expect(s < e).toBe(true)
+      expect(e <= '24:00').toBe(true)
+    }
+    for (let i = 1; i < spans.length; i++) {
+      expect(spans[i]![0] >= spans[i - 1]![1]).toBe(true)
+    }
+  })
+
+  it('混合组：4 个精确同刻事件触发精确封顶，同日同桶 2 事件平铺不变且桶组不出封顶（口径不变）', () => {
+    const day0 = relDay(10, 0)
+    const date = utcDay(day0)
+    const at = day0 + 9 * 3600000 + 30 * 60000
+    const events = deriveScheduleEvents(
+      [
+        issue({ id: 'b0', dueAt: day0 + 9 * 3600000 }),
+        issue({ id: 'b1', dueAt: day0 + 9 * 3600000 }),
+        ...Array.from({ length: 4 }, (_, i) => issue({ id: `p${i}`, dueAt: at })),
+      ],
+      labels,
+    )
+    const by = (id: string) => events.find((e) => e.id === id)
+    expect(by('b0')).toMatchObject({ start: '09:00', end: '10:00' })
+    expect(by('b1')).toMatchObject({ start: '10:00', end: '11:00' })
+    expect(by(`__more__${date}__am`)).toBeUndefined()
+    expect(by(`__more__${date}__x:09:30`)?.title).toBe('+1 项')
+    expect(by('p2')).toMatchObject({ start: '10:30', end: '11:00' })
+    expect(by('p3')).toBeUndefined()
+  })
+
+  it('labels.more 回调透传：精确封顶块 N = 总数−3，同组确定性 id（date+HH:mm）', () => {
+    const seen: number[] = []
+    const custom = {
+      ...labels,
+      more: (n: number) => {
+        seen.push(n)
+        return `更多 ${n}`
+      },
+    }
+    const base = relDay(11, 10) + 30 * 60000
+    const day = utcDay(base)
+    const events = deriveScheduleEvents(
+      Array.from({ length: 6 }, (_, i) => issue({ id: `q${i}`, dueAt: base })),
+      custom,
+    )
+    const mores = events.filter((e) => e.id.startsWith('__more__'))
+    expect(mores.map((e) => `${e.id}=${e.title}`)).toEqual([`__more__${day}__x:10:30=更多 3`])
+    expect(seen).toEqual([3])
+  })
+})
+
 describe('scheduleSignature 回声对拍签名', () => {
   const ev = (id: string, date: string, start?: string): ScheduleEvent => ({
     id,

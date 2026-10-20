@@ -28,7 +28,7 @@ pnpm build      # tsc6 类型检查 + vite 产物
 
 ## 数据
 
-IndexedDB（Dexie）本地持久化；首启自动 seed 演示数据（10 万 Issue、8 成员、3 项目，清 localStorage `oas-pm-seed-v6` 重播）。数据层为 Repository 接口 + React Context 注入，默认 Dexie 实现，可替换为 REST 适配器。
+IndexedDB（Dexie）本地持久化；首启自动 seed 演示数据（10 万 Issue、8 成员、3 项目，清 localStorage `oas-pm-seed-v7` 重播）。数据层为 Repository 接口 + React Context 注入，默认 Dexie 实现，可替换为 REST 适配器。
 
 ## 结构
 
@@ -75,7 +75,7 @@ pnpm build      # tsc6 typecheck + vite build
 
 ## Data
 
-Local persistence in IndexedDB (Dexie); demo data is seeded on first launch (100K issues, 8 members, 3 projects — clear the `oas-pm-seed-v6` localStorage key to reseed). The data layer is a Repository interface injected via React Context, with Dexie as the default implementation — swap in a REST adapter to go remote.
+Local persistence in IndexedDB (Dexie); demo data is seeded on first launch (100K issues, 8 members, 3 projects — clear the `oas-pm-seed-v7` localStorage key to reseed). The data layer is a Repository interface injected via React Context, with Dexie as the default implementation — swap in a REST adapter to go remote.
 
 ## Structure
 

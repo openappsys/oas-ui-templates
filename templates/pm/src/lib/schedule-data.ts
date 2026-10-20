@@ -70,7 +70,8 @@ const fmtMin = (min: number) =>
 
 const TILE_MIN = 60
 const MAX_TILE = 3
-/** 精确时刻同刻错开步长（同（日, 时刻）第 N 个 start +30N min，end 恒 +30） */
+const DAY_MIN = 24 * 60
+/** 精确时刻同刻错开步长（同（日, 时刻）组内第 k∈{0,1,2} 个 start +30k min，end 恒 +30 且钳 24:00） */
 const PRECISE_STAGGER_MIN = 30
 /** 桶内容纳的 60min 槽数（am 09–12=3 / pm 14–18=4） */
 const BUCKET_SLOTS: Record<'am' | 'pm', number> = {
@@ -85,8 +86,11 @@ const MORE_COLOR = 'var(--pm-status-backlog)'
  *    合成一个 +N 封顶块（id __more__date__bucket，muted 色，占桶尾 60min——am 桶仅 3 槽故
  *    真实块让位到 2 块，永不叠印永不越桶；纯展示——写回恒为桶起点）；全天档无 start/end；
  *  - 精确时刻（非桶时刻）：start=真实时刻、end=+30min（due 是时点，块高纯展示）、标题
- *    HH:mm 前缀替代桶前缀；不平铺不计桶 groupSize（不触发 __more__），仅同（日, 时刻）
- *    第 N 个 +30N min 错开；轴外时刻（如 21:00/00:30）week/day 不渲染为已知语义，
+ *    HH:mm 前缀替代桶前缀；不计桶 groupSize（不触发桶 __more__）。同（日, 时刻）组内
+ *    k∈{0,1,2} 按 start+30k 平铺，超 3 块时第 4 槽合成一个 +N 封顶块（id
+ *    __more__date__x:HH:mm，muted 色，start+90…start+120——散量同刻组不再拉竖墙）；
+ *    跨午夜守卫：tile/封顶块 start 分钟数 ≥ 24*60 → 该块按全天渲染（无 start/end，
+ *    时刻前缀仍在标题里保精度）；轴外时刻（如 21:00/00:30）week/day 不渲染为已知语义，
  *    月历/议程仍以前缀可见 */
 export function deriveScheduleEvents(
   issues: Issue[],
@@ -95,10 +99,17 @@ export function deriveScheduleEvents(
   const now = Date.now()
   const events: ScheduleEvent[] = []
   const groupSize = new Map<string, number>()
+  const preciseSize = new Map<string, number>()
   for (const i of issues) {
     if (i.dueAt === null || i.status === 'cancelled') continue
     const b = bucketOf(i.dueAt)
-    if (b === 'allday' || !isBucketMoment(i.dueAt)) continue
+    if (b === 'allday') continue
+    if (!isBucketMoment(i.dueAt)) {
+      const d = new Date(i.dueAt)
+      const key = `${utcDay(i.dueAt)}|x:${d.getUTCHours() * 60 + d.getUTCMinutes()}`
+      preciseSize.set(key, (preciseSize.get(key) ?? 0) + 1)
+      continue
+    }
     const key = `${utcDay(i.dueAt)}|${b}`
     groupSize.set(key, (groupSize.get(key) ?? 0) + 1)
   }
@@ -116,9 +127,27 @@ export function deriveScheduleEvents(
       const key = `${date}|x:${base}`
       const n = laneOffset.get(key) ?? 0
       laneOffset.set(key, n + 1)
+      const total = preciseSize.get(key) ?? 0
+      if (total > MAX_TILE && n >= MAX_TILE) {
+        if (n === MAX_TILE) {
+          const s = base + MAX_TILE * PRECISE_STAGGER_MIN
+          events.push({
+            id: `__more__${date}__x:${hhmmOf(i.dueAt)}`,
+            date,
+            title: labels.more(total - MAX_TILE),
+            color: MORE_COLOR,
+            ...(s >= DAY_MIN
+              ? {}
+              : { start: fmtMin(s), end: fmtMin(Math.min(s + PRECISE_STAGGER_MIN, DAY_MIN)) }),
+          })
+        }
+        continue
+      }
       const s = base + n * PRECISE_STAGGER_MIN
-      start = fmtMin(s)
-      end = fmtMin(s + PRECISE_STAGGER_MIN)
+      if (s < DAY_MIN) {
+        start = fmtMin(s)
+        end = fmtMin(Math.min(s + PRECISE_STAGGER_MIN, DAY_MIN))
+      }
       title = `${hhmmOf(i.dueAt)} ${title}`
     } else if (b !== 'allday') {
       const key = `${date}|${b}`

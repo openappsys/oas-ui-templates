@@ -214,6 +214,21 @@ test('shots', async ({ page }) => {
   console.log('shots done')
 })
 
+test('shots drawer custom time', async ({ page }) => {
+  test.setTimeout(120_000)
+  await openApp(page)
+  await openFirstDrawer(page)
+  // segmented 切「自定义」（不写库）：time-picker 带当前时刻出现
+  await page.evaluate(() => {
+    document
+      .querySelector('[data-testid=detail-due-bucket]')
+      ?.dispatchEvent(new CustomEvent('oas-change', { bubbles: true, detail: { value: 'custom' } }))
+  })
+  await expect(page.getByTestId('detail-due-time')).toBeAttached({ timeout: 10_000 })
+  await page.waitForTimeout(800)
+  await page.screenshot({ path: 'shots/pm-drawer-custom-time.png' })
+})
+
 test('shots sidebar', async ({ page }) => {
   test.setTimeout(120_000)
   await openApp(page)
