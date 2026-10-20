@@ -119,7 +119,7 @@ function useMyNotifications(currentUser: string) {
           out.push({
             id: mine[i].id,
             actorId: mine[i].actorId,
-            text: issue.key + ' ' + (issue.title ?? ''),
+            text: `${issue.key} ${issue.title ?? ''}`,
             issueId: issue.id,
             createdAt: mine[i].createdAt,
           })
@@ -159,12 +159,18 @@ function NotificationList({
   return (
     <div className="notify-list" data-testid="notify-list">
       {list.map((n) => (
+        // biome-ignore lint/a11y/useSemanticElements: 通知项内含块级段落、走自定义布局，不换 <button>
         <div
           key={n.id}
           className="notify-item"
           data-testid="notify-item"
           style={{ cursor: 'pointer' }}
+          role="button"
+          tabIndex={0}
           onClick={() => onOpen(n.issueId)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') onOpen(n.issueId)
+          }}
         >
           <p className="notify-text">{n.text}</p>
           <p className="notify-time">{new Date(n.createdAt).toLocaleString(dateLocale())}</p>
@@ -285,6 +291,7 @@ export function App() {
   )
   const canCreateRef = useRef(canCreateIssue)
   canCreateRef.current = canCreateIssue
+  // biome-ignore lint/correctness/useExhaustiveDependencies: t() 读模块级语言态，lang 是语言切换时的重算触发器
   const memberOptions = useMemo(
     () => [
       { label: t('resourceUnassigned'), value: '__none__' },

@@ -115,7 +115,7 @@ export function TimelineView({
     }
     el.addEventListener('task-change', onChange)
     return () => el.removeEventListener('task-change', onChange)
-  }, [])
+  }, [issuesRepo.update])
 
   // 空态：既无带截止日期的任务、也无 urgent 里程碑
   if (tasks.length === 0) {

@@ -214,7 +214,13 @@ describe('deriveScheduleEvents 映射', () => {
 
   it('labels.more 回调生效：N 透传且同组确定性 id（date+bucket）', () => {
     const seen: number[] = []
-    const custom = { ...labels, more: (n: number) => (seen.push(n), `更多 ${n}`) }
+    const custom = {
+      ...labels,
+      more: (n: number) => {
+        seen.push(n)
+        return `更多 ${n}`
+      },
+    }
     const pmDay = utcDay(relDay(5, 14))
     const amDay = utcDay(relDay(8, 9))
     const events = deriveScheduleEvents(

@@ -234,6 +234,7 @@ export function VirtualIssueList({
 
   // 组件对「同长度 items 引用更新」不自动重派 oas-item（筛选/切换项目场景列表空白）：
   // items 落库后 scrollToIndex 重算窗口强制重渲染，oas-scroll 记录的视口位置得以保持
+  // biome-ignore lint/correctness/useExhaustiveDependencies: lang 变化需重推 items 触发行按新语言重渲染（行内 t()/statusLabel 读模块级语言态）
   useEffect(() => {
     const el = listRef.current as
       | (HTMLElement & {

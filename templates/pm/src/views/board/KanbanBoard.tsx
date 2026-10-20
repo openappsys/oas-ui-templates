@@ -30,6 +30,7 @@ export function KanbanBoard({
   onOpenIssueRef.current = onOpenIssue
 
   const lang = getLang()
+  // biome-ignore lint/correctness/useExhaustiveDependencies: statusLabel() 读模块级语言态，lang 是语言切换时的重算触发器
   const columns = useMemo(
     () => ISSUE_STATUSES.map((s) => ({ key: s, title: statusLabel(s) })),
     [lang],
@@ -145,7 +146,7 @@ export function KanbanBoard({
     }
     el.addEventListener('oas-change', onChange)
     return () => el.removeEventListener('oas-change', onChange)
-  }, [])
+  }, [canDragCard, issuesRepo.updateMany])
 
   return (
     <div className="board">

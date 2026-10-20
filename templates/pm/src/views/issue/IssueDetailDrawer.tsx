@@ -83,10 +83,12 @@ function CommentsBlock({
     const parts = body.split(/(@[\u4e00-\u9fa5a-zA-Z0-9]+)/g)
     return parts.map((seg, i) =>
       seg.startsWith('@') ? (
+        // biome-ignore lint/suspicious/noArrayIndexKey: split 段与 body 一一对应、纯展示无重排增删，index key 稳定
         <span key={i} style={{ color: 'var(--oas-color-primary, #0b6cff)', fontWeight: 600 }}>
           {seg}
         </span>
       ) : (
+        // biome-ignore lint/suspicious/noArrayIndexKey: split 段与 body 一一对应、纯展示无重排增删，index key 稳定
         <span key={i}>{seg}</span>
       ),
     )
@@ -228,16 +230,15 @@ export function IssueDetailDrawer({
   const popRef = useRef<HTMLElement>(null)
   const [descDirty, setDescDirty] = useState(false)
 
+  // 挂载即开（visible 属性；title 是 HTMLElement 全局 property，React 分派落不到 attribute）：
+  // oas-drawer 会吸收 title attribute（titleCache 后 removeAttribute），issueKey 变化即重设
+  const issueKey = issue?.key ?? ''
   useEffect(() => {
     const el = drawerRef.current
     if (!el) return
-    // 挂载即开（visible 属性；title 是 HTMLElement 全局 property，React 分派落不到 attribute）
     el.setAttribute('visible', '')
-    el.setAttribute('title', issue ? issue.key : '')
-  }, [issue?.id])
-  useEffect(() => {
-    drawerRef.current?.setAttribute('title', issue ? issue.key : '')
-  }, [issue?.key])
+    el.setAttribute('title', issueKey)
+  }, [issueKey])
 
   const addSub = useCallback(async () => {
     const title = (subInputRef.current?.value ?? '').trim()
@@ -258,11 +259,13 @@ export function IssueDetailDrawer({
 
   // 标签编辑（oas-dynamic-tags）：modelValue 双向同步 issue.labels
   const labelsTagsRef = useRef<HTMLElement & { modelValue?: string[]; value?: string[] }>(null)
+  // save 每次渲染重建（闭包捕获最新 issue/can），ref 承载避免轮询 timer 随渲染重挂
+  const saveRef = useRef<(changes: Partial<Issue>) => void>(() => {})
   useEffect(() => {
     const el = labelsTagsRef.current
     if (!el) return
     el.modelValue = issue?.labels ?? []
-  }, [issue?.labels, issueId])
+  }, [issue?.labels])
   useEffect(() => {
     const el = labelsTagsRef.current
     if (!el) return
@@ -273,11 +276,11 @@ export function IssueDetailDrawer({
       const cur = issue?.labels ?? []
       const cleaned = v.filter((x) => x && x !== '__none__')
       if (cleaned.length !== cur.length || cleaned.some((x, i) => x !== cur[i])) {
-        save({ labels: cleaned })
+        saveRef.current({ labels: cleaned })
       }
     }, 400)
     return () => clearInterval(timer)
-  }, [issueId, issue?.labels])
+  }, [issue?.labels])
 
   // 描述编辑态在切换 issue 时重置；textarea value 跟随 issue.description
   const descRefValue = useRef<HTMLElement & { value?: string }>(null)
@@ -290,6 +293,7 @@ export function IssueDetailDrawer({
     }
   }, [issue?.id, issue?.labels, issuesRepo])
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 切 issue 时即便 description 相同也必须重置脏态/textarea，防 A 的未保存编辑带进 B
   useEffect(() => {
     setDescDirty(false)
     if (descRefValue.current) descRefValue.current.value = issue?.description ?? ''
@@ -303,7 +307,7 @@ export function IssueDetailDrawer({
       setDescDirty(cur !== (issue?.description ?? ''))
     }, 500)
     return () => clearInterval(t)
-  }, [issueId, issue?.description])
+  }, [issue?.description])
   // popconfirm 确认（reason='ok'）→ 删除并关抽屉
   useEffect(() => {
     const el = popRef.current
@@ -371,6 +375,7 @@ export function IssueDetailDrawer({
       .then(() => issuesRepo.update(issue.id, changes))
       .catch((e) => console.error('[save acts]', (e as Error)?.message ?? e))
   }
+  saveRef.current = save
   const memberOptions = [
     { label: t('resourceUnassigned'), value: '__none__' },
     ...[...memberMap.values()].map((m) => ({ label: m.name, value: m.id })),
@@ -477,10 +482,16 @@ export function IssueDetailDrawer({
                     })
                   }}
                 />
+                {/* biome-ignore lint/a11y/useSemanticElements: 行内项与多选框/标签并列、样式契约为 span，不换 <button> */}
                 <span
                   className={`issue-title${s.status === 'done' ? ' sub-done' : ''}`}
                   style={{ cursor: 'pointer' }}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => setSelectedId(s.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') setSelectedId(s.id)
+                  }}
                 >
                   {s.key} {s.title}
                 </span>

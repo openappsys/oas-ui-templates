@@ -144,6 +144,7 @@ export function IssueListView({
   const cursorId = cursorIndex >= 0 && cursorIndex < list.length ? list[cursorIndex].id : null
 
   const rowEl = (i: Issue) => (
+    // biome-ignore lint/a11y/useSemanticElements: 行内嵌多选框等交互子元素，不能换 <button>（button 不可嵌套交互控件）
     <div
       key={i.id}
       className={`issue-row${i.id === cursorId ? ' is-cursor' : ''}`}

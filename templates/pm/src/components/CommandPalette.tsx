@@ -58,6 +58,7 @@ export function CommandPalette({
   const [issueCache, setIssueCache] = useState<Issue[] | null>(null)
   const depthRef = useRef(0)
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: t() 读模块级语言态，lang 是语言切换时的重算触发器
   const rootItems = useMemo<CommandItem[]>(() => {
     const nav: CommandItem[] = [
       {
@@ -211,7 +212,7 @@ export function CommandPalette({
     el.items = next
     const search = el.shadowRoot?.querySelector<HTMLInputElement>('.search')
     if (search) search.placeholder = t('palettePlaceholder')
-  }, [query, rootItems, issueCache, lang])
+  }, [query, rootItems, issueCache])
 
   useEffect(() => {
     const el = hostRef.current

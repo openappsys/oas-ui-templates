@@ -9,6 +9,7 @@ export function useObservable<T>(factory: () => Observable<T>, deps: unknown[]):
       error: (e) => console.error('[useObservable]', e),
     })
     return unsub
+    // biome-ignore lint/correctness/useExhaustiveDependencies: 通用订阅封装，依赖由调用方按 factory 闭包内容显式声明
   }, deps)
   return value
 }
