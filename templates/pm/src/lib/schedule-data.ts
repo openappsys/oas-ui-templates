@@ -31,6 +31,25 @@ export function utcDay(ms: number): string {
 
 const BUCKET_HOUR: Record<ScheduleBucket, number> = { allday: 0, am: 9, pm: 14 }
 
+/** UTC 时刻恰为桶起点（00:00/09:00/14:00）→ 三档的合法特例；否则是精确时刻（编辑器亮自定义） */
+export function isBucketMoment(dueAt: number): boolean {
+  const d = new Date(dueAt)
+  const mins = d.getUTCHours() * 60 + d.getUTCMinutes()
+  return mins === 0 || mins === 9 * 60 || mins === 14 * 60
+}
+
+/** epoch → 'HH:mm'（getUTC* 补零；UTC+8 本地零点附近不漂一天/一小时） */
+export function hhmmOf(ms: number): string {
+  const d = new Date(ms)
+  return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`
+}
+
+/** 'YYYY-MM-DD' + h:m → epoch。日期手拆 + Date.UTC（禁 new Date('YYYY-MM-DDTHH:mm') 隐式解析） */
+export function dueAtWithTime(date: string, h: number, m: number): number {
+  const [y, mo, d] = date.split('-').map(Number)
+  return Date.UTC(y ?? 0, (mo ?? 1) - 1, d ?? 1, h, m)
+}
+
 /** 'YYYY-MM-DD' + 档位 → 桶起点 epoch。日期手拆（禁 new Date('YYYY-MM-DD') 隐式解析——
  *  ES 规范按 UTC 零点，但显式 Date.UTC 让契约自证且不依赖实现行为） */
 export function bucketToDueAt(date: string, b: ScheduleBucket): number {
@@ -51,6 +70,8 @@ const fmtMin = (min: number) =>
 
 const TILE_MIN = 60
 const MAX_TILE = 3
+/** 精确时刻同刻错开步长（同（日, 时刻）第 N 个 start +30N min，end 恒 +30） */
+const PRECISE_STAGGER_MIN = 30
 /** 桶内容纳的 60min 槽数（am 09–12=3 / pm 14–18=4） */
 const BUCKET_SLOTS: Record<'am' | 'pm', number> = {
   am: (BASE_END.am - BASE_START.am) / TILE_MIN,
@@ -59,10 +80,14 @@ const BUCKET_SLOTS: Record<'am' | 'pm', number> = {
 const MORE_COLOR = 'var(--pm-status-backlog)'
 
 /** Issue → scheduler 事件：cancelled/无 dueAt 剔除（1:1 复用 issue.id）；done 灰化、
- *  未完成过期加逾期前缀（不抢优先级色）；同日同桶按 60min 块竖排平铺，组内超 3 块时
- *  尾部槽位合成一个 +N 封顶块（id __more__date__bucket，muted 色，占桶尾 60min——
- *  am 桶仅 3 槽故真实块让位到 2 块，永不叠印永不越桶；纯展示——写回恒为桶起点；
- *  全天档无 start/end 不参与平铺） */
+ *  未完成过期加逾期前缀（不抢优先级色）。渲染分两类：
+ *  - 桶时刻（UTC 0/9/14 点）：am/pm 同日同桶按 60min 块竖排平铺，组内超 3 块时尾部槽位
+ *    合成一个 +N 封顶块（id __more__date__bucket，muted 色，占桶尾 60min——am 桶仅 3 槽故
+ *    真实块让位到 2 块，永不叠印永不越桶；纯展示——写回恒为桶起点）；全天档无 start/end；
+ *  - 精确时刻（非桶时刻）：start=真实时刻、end=+30min（due 是时点，块高纯展示）、标题
+ *    HH:mm 前缀替代桶前缀；不平铺不计桶 groupSize（不触发 __more__），仅同（日, 时刻）
+ *    第 N 个 +30N min 错开；轴外时刻（如 21:00/00:30）week/day 不渲染为已知语义，
+ *    月历/议程仍以前缀可见 */
 export function deriveScheduleEvents(
   issues: Issue[],
   labels: { am: string; pm: string; overdue: string; more: (n: number) => string },
@@ -73,7 +98,7 @@ export function deriveScheduleEvents(
   for (const i of issues) {
     if (i.dueAt === null || i.status === 'cancelled') continue
     const b = bucketOf(i.dueAt)
-    if (b === 'allday') continue
+    if (b === 'allday' || !isBucketMoment(i.dueAt)) continue
     const key = `${utcDay(i.dueAt)}|${b}`
     groupSize.set(key, (groupSize.get(key) ?? 0) + 1)
   }
@@ -85,7 +110,17 @@ export function deriveScheduleEvents(
     let title = `${i.key} ${i.title}`
     let start: string | undefined
     let end: string | undefined
-    if (b !== 'allday') {
+    if (!isBucketMoment(i.dueAt)) {
+      const d = new Date(i.dueAt)
+      const base = d.getUTCHours() * 60 + d.getUTCMinutes()
+      const key = `${date}|x:${base}`
+      const n = laneOffset.get(key) ?? 0
+      laneOffset.set(key, n + 1)
+      const s = base + n * PRECISE_STAGGER_MIN
+      start = fmtMin(s)
+      end = fmtMin(s + PRECISE_STAGGER_MIN)
+      title = `${hhmmOf(i.dueAt)} ${title}`
+    } else if (b !== 'allday') {
       const key = `${date}|${b}`
       const n = laneOffset.get(key) ?? 0
       laneOffset.set(key, n + 1)

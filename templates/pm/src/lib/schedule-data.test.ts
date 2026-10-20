@@ -5,6 +5,9 @@ import {
   bucketToDueAt,
   clampStartAt,
   deriveScheduleEvents,
+  dueAtWithTime,
+  hhmmOf,
+  isBucketMoment,
   scheduleSignature,
   utcDay,
   type ScheduleEvent,
@@ -113,7 +116,7 @@ describe('deriveScheduleEvents 映射', () => {
           key: 'OAS-6',
           title: '过期已完成',
           status: 'done',
-          dueAt: relDay(-3, 10),
+          dueAt: relDay(-3, 9),
         }),
       ],
       labels,
@@ -149,7 +152,7 @@ describe('deriveScheduleEvents 映射', () => {
       [
         issue({ id: 'a', dueAt: Date.UTC(2026, 3, 10, 9) }),
         issue({ id: 'b', dueAt: Date.UTC(2026, 3, 10, 9) }),
-        issue({ id: 'c', dueAt: Date.UTC(2026, 3, 10, 11) }),
+        issue({ id: 'c', dueAt: Date.UTC(2026, 3, 10, 9) }),
         issue({ id: 'd', dueAt: Date.UTC(2026, 3, 10, 14) }),
         issue({ id: 'e', dueAt: Date.UTC(2026, 3, 11, 9) }),
       ],
@@ -281,6 +284,120 @@ describe('deriveScheduleEvents 映射', () => {
     const snapshot = JSON.stringify(src)
     deriveScheduleEvents(src, labels)
     expect(JSON.stringify(src)).toBe(snapshot)
+  })
+})
+
+describe('isBucketMoment / hhmmOf / dueAtWithTime（UTC 全链）', () => {
+  it('isBucketMoment 六态：UTC 0:00/9:00/14:00 为真；0:30/10:30/23:59 为假', () => {
+    expect(isBucketMoment(Date.UTC(2026, 0, 15, 0, 0))).toBe(true)
+    expect(isBucketMoment(Date.UTC(2026, 0, 15, 9, 0))).toBe(true)
+    expect(isBucketMoment(Date.UTC(2026, 0, 15, 14, 0))).toBe(true)
+    expect(isBucketMoment(Date.UTC(2026, 0, 15, 0, 30))).toBe(false)
+    expect(isBucketMoment(Date.UTC(2026, 0, 15, 10, 30))).toBe(false)
+    expect(isBucketMoment(Date.UTC(2026, 0, 15, 23, 59))).toBe(false)
+  })
+
+  it('hhmmOf 补零与 UTC 口径：0:30→00:30、9:05→09:05、23:59→23:59（UTC+8 零点不漂）', () => {
+    expect(hhmmOf(Date.UTC(2026, 0, 16, 0, 30))).toBe('00:30')
+    expect(hhmmOf(Date.UTC(2026, 0, 16, 9, 5))).toBe('09:05')
+    expect(hhmmOf(Date.UTC(2026, 0, 16, 23, 59))).toBe('23:59')
+  })
+
+  it('dueAtWithTime 手拆 Date.UTC 往返：utcDay/hhmmOf 复原，月界不漂', () => {
+    const ms = dueAtWithTime('2026-03-07', 10, 30)
+    expect(ms).toBe(Date.UTC(2026, 2, 7, 10, 30))
+    expect(utcDay(ms)).toBe('2026-03-07')
+    expect(hhmmOf(ms)).toBe('10:30')
+    expect(isBucketMoment(ms)).toBe(false)
+    expect(isBucketMoment(dueAtWithTime('2026-03-07', 9, 0))).toBe(true)
+    expect(utcDay(dueAtWithTime('2026-12-31', 23, 45))).toBe('2026-12-31')
+  })
+})
+
+describe('deriveScheduleEvents 精确时刻（非桶时刻）', () => {
+  it('精确时刻事件：start=HH:mm、end=+30min，标题 HH:mm 前缀替代桶前缀', () => {
+    const events = deriveScheduleEvents(
+      [issue({ id: 'a', key: 'OAS-1', title: '上线窗口', dueAt: relDay(3, 10) + 30 * 60000 })],
+      labels,
+    )
+    expect(events).toHaveLength(1)
+    expect(events[0]).toMatchObject({ start: '10:30', end: '11:00' })
+    expect(events[0]!.title).toBe('10:30 OAS-1 上线窗口')
+  })
+
+  it('同刻错开：同（日, 时刻）第 1/2/3 个 start +30N，end 恒 +30', () => {
+    const at = relDay(4, 15) + 45 * 60000
+    const events = deriveScheduleEvents(
+      [issue({ id: 'a', dueAt: at }), issue({ id: 'b', dueAt: at }), issue({ id: 'c', dueAt: at })],
+      labels,
+    )
+    const by = (id: string) => events.find((e) => e.id === id)
+    expect(by('a')).toMatchObject({ start: '15:45', end: '16:15' })
+    expect(by('b')).toMatchObject({ start: '16:15', end: '16:45' })
+    expect(by('c')).toMatchObject({ start: '16:45', end: '17:15' })
+  })
+
+  it('不同刻不错开：同日 10:30 与 15:45 各占真实时刻', () => {
+    const day = relDay(4, 0)
+    const events = deriveScheduleEvents(
+      [
+        issue({ id: 'a', dueAt: day + 10 * 3600000 + 30 * 60000 }),
+        issue({ id: 'b', dueAt: day + 15 * 3600000 + 45 * 60000 }),
+      ],
+      labels,
+    )
+    const by = (id: string) => events.find((e) => e.id === id)
+    expect(by('a')).toMatchObject({ start: '10:30', end: '11:00' })
+    expect(by('b')).toMatchObject({ start: '15:45', end: '16:15' })
+  })
+
+  it('混合组：2 桶事件 + 3 精确事件不出 __more__（精确事件不计桶 groupSize）', () => {
+    const day = relDay(5, 0)
+    const events = deriveScheduleEvents(
+      [
+        issue({ id: 'b0', dueAt: day + 9 * 3600000 }),
+        issue({ id: 'b1', dueAt: day + 9 * 3600000 }),
+        issue({ id: 'p0', dueAt: day + 10 * 3600000 + 30 * 60000 }),
+        issue({ id: 'p1', dueAt: day + 15 * 3600000 + 45 * 60000 }),
+        issue({ id: 'p2', dueAt: day + 16 * 3600000 + 20 * 60000 }),
+      ],
+      labels,
+    )
+    expect(events.some((e) => e.id.startsWith('__more__'))).toBe(false)
+    expect(events).toHaveLength(5)
+    const by = (id: string) => events.find((e) => e.id === id)
+    // 桶事件维持 60min 平铺与桶前缀；精确事件占真实时刻且带 HH:mm 前缀
+    expect(by('b0')).toMatchObject({ start: '09:00', end: '10:00' })
+    expect(by('b1')).toMatchObject({ start: '10:00', end: '11:00' })
+    expect(by('p2')).toMatchObject({ start: '16:20', end: '16:50' })
+  })
+
+  it('前缀互斥：精确事件无桶前缀、桶事件无时刻前缀；全天无前缀不变', () => {
+    const day = relDay(6, 0)
+    const events = deriveScheduleEvents(
+      [
+        issue({ id: 'p', key: 'OAS-1', title: '精确', dueAt: day + 10 * 3600000 + 30 * 60000 }),
+        issue({ id: 'b', key: 'OAS-2', title: '桶', dueAt: day + 9 * 3600000 }),
+        issue({ id: 'a', key: 'OAS-3', title: '全天', dueAt: day }),
+      ],
+      labels,
+    )
+    const by = (id: string) => events.find((e) => e.id === id)
+    expect(by('p')?.title).toBe('10:30 OAS-1 精确')
+    expect(by('p')?.title.startsWith('上午 ')).toBe(false)
+    expect(by('b')?.title).toBe('上午 OAS-2 桶')
+    expect(/^\d{2}:\d{2} /.test(by('b')?.title ?? '')).toBe(false)
+    expect(by('a')?.title).toBe('OAS-3 全天')
+    expect(by('a')?.start).toBeUndefined()
+  })
+
+  it('逾期前缀仍在最前：逾期 10:30 OAS-1 …', () => {
+    const past = relDay(-3, 0) + 10 * 3600000 + 30 * 60000
+    const events = deriveScheduleEvents(
+      [issue({ id: 'a', key: 'OAS-1', title: '迟', dueAt: past })],
+      labels,
+    )
+    expect(events[0]?.title).toBe('逾期 10:30 OAS-1 迟')
   })
 })
 
