@@ -67,6 +67,12 @@ test('A1 引导：reset 端点 + mock 2K 数据渲染 + 徽标 API + 不跑 Dexi
 
   // API 模式不碰 IndexedDB：Dexie seed 标记不应出现
   expect(await page.evaluate(() => localStorage.getItem('oas-pm-seed-v7'))).toBeNull()
+
+  // 管理 → 设置：数据源只读展示为 REST API，破坏性操作文案不再误称本地数据
+  await page.getByTestId('admin-entry').click()
+  await page.getByTestId('admin-nav-settings').click()
+  await expect(page.getByTestId('admin-data-source')).toHaveText('REST API')
+  await expect(page.getByTestId('admin-wipe-all')).toContainText('当前数据源')
 })
 
 test('A2 编辑推送：UI 改状态即时生效 + 外部 PATCH 经 revision 轮询推送到表内', async ({

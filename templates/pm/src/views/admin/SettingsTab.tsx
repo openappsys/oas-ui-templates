@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRepositories } from '@/data/context'
+import { activeDataSource } from '@/data/source'
 import { t, type Lang } from '@/i18n'
 import { OSelect } from '@/components/oas-wrappers'
 import type { ThemePreference } from '@/lib/preferences'
@@ -16,6 +17,8 @@ export function SettingsTab({
   onSetLang: (lang: Lang) => void
 }) {
   const { admin } = useRepositories()
+  // 启动时决断、不热切换：这里只取展示文案，不构成实现分支
+  const dataSource = activeDataSource()
   const [error, setError] = useState('')
   const [ok, setOk] = useState('')
   const [busy, setBusy] = useState(false)
@@ -171,6 +174,12 @@ export function SettingsTab({
       </div>
       <div className="admin-panel" data-testid="admin-data-actions">
         <p className="admin-panel-title">{t('adminData')}</p>
+        <div className="admin-field-row admin-source-row">
+          <span>{t('adminDataSource')}</span>
+          <strong className="admin-source-value" data-testid="admin-data-source">
+            {t(dataSource === 'api' ? 'adminDataSourceApi' : 'adminDataSourceLocal')}
+          </strong>
+        </div>
         <div className="admin-data-row">
           <oas-button
             data-testid="admin-export-json"

@@ -1657,6 +1657,20 @@ oas-drawer::part(close):focus-visible {
   width: 220px;
 }
 
+/* 数据源只读展示：标签宽度随文案（英文更长），并与下方按钮行留间距 */
+.admin-source-row {
+  margin-bottom: 12px;
+}
+
+.admin-source-row > span {
+  width: auto;
+}
+
+.admin-source-value {
+  font-size: 13px;
+  font-weight: 600;
+}
+
 .admin-data-row {
   display: flex;
   flex-wrap: wrap;
