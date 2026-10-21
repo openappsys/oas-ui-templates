@@ -424,6 +424,26 @@ test('shots dark', async ({ page }) => {
   console.log('shots dark done')
 })
 
+test('shots all projects', async ({ page }) => {
+  test.setTimeout(240_000)
+  await openApp(page)
+  // 全部项目作用域：窗口跨项目（key 前缀 ≥2 种），侧栏 Projects 组「全部项目」高亮
+  await sideItem(page, 'project:__all__').click()
+  await expect
+    .poll(
+      async () => {
+        const keys = await page.locator('.issue-row .issue-key').allTextContents()
+        return new Set(keys.map((k) => k.slice(0, k.indexOf('-')))).size
+      },
+      { timeout: 20_000 },
+    )
+    .toBe(2)
+  await page.waitForTimeout(1500)
+  await page.screenshot({ path: 'shots/pm-list-all-projects.png' })
+
+  console.log('shots all projects done')
+})
+
 test('shots readonly drawer', async ({ page }) => {
   test.setTimeout(240_000)
   await openApp(page)

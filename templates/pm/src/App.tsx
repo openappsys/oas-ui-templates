@@ -6,6 +6,7 @@ import { t, loadLang, setLang, statusLabel, priorityLabel, dateLocale, type Lang
 import { useSavedViews } from './components/BulkBar'
 import { PRIORITY_TEXT, STATUS_COLOR } from './lib/colors'
 import {
+  ALL_PROJECTS,
   DEFAULT_FILTERS,
   LIST_WINDOW,
   LIST_WINDOW_STEP,
@@ -311,6 +312,22 @@ export function App() {
     setFilters((prev) => ({ ...prev, projectId, statusFilter: [] }))
     setView('issues')
   }, [])
+  // 全部项目作用域下新建 Issue 必须落到一个真实项目（key 前缀来自项目）：
+  // 记住「上次选中的真实项目」，缺省回退第一个项目；全部项目本身不是可写入的作用域
+  const [lastProjectId, setLastProjectId] = useState('project-1')
+  const [createProjectId, setCreateProjectId] = useState('project-1')
+  const resolveCreateProject = useCallback(() => {
+    if (filters.projectId !== ALL_PROJECTS) return filters.projectId
+    const ids = (projects ?? []).map((p) => p.id)
+    if (ids.length === 0) return lastProjectId
+    return ids.includes(lastProjectId) ? lastProjectId : ids[0]
+  }, [filters.projectId, lastProjectId, projects])
+  const openCreate = useCallback(() => {
+    setCreateProjectId(resolveCreateProject())
+    createRef.current?.setAttribute('visible', '')
+  }, [resolveCreateProject])
+  const openCreateRef = useRef(openCreate)
+  openCreateRef.current = openCreate
   const handleMemberDeleted = useCallback(
     (id: string) => {
       if (id !== currentUser) return
@@ -329,13 +346,27 @@ export function App() {
     ],
     [members, lang],
   )
+  // 新建 Issue 的项目下拉：只列真实项目（「全部项目」不是可写入作用域）
+  const projectOptions = useMemo(
+    () => (projects ?? []).map((p) => ({ label: p.name, value: p.id })),
+    [projects],
+  )
 
   const setF = useCallback(<K extends keyof Filters>(k: K, v: Filters[K]) => {
     setFilters((prev) => ({ ...prev, [k]: v }))
   }, [])
 
   const canDeleteView = can('view:delete')
-  const sideRows: SideRow[] = []
+  const sideRows: SideRow[] = [
+    // Projects 组保持单选（项目 = 作用域）：首行「全部项目」是 workspace 级作用域
+    {
+      group: t('projects'),
+      kind: 'project',
+      value: `project:${ALL_PROJECTS}`,
+      id: ALL_PROJECTS,
+      label: t('allProjects'),
+    },
+  ]
   for (const p of projects ?? []) {
     sideRows.push({
       group: t('projects'),
@@ -436,6 +467,8 @@ export function App() {
     (row: SideRow) => {
       switch (row.kind) {
         case 'project':
+          // 点项目行 = 离开「全部项目」；点「全部项目」= 跨项目作用域（记住上次真实项目供新建 Issue）
+          if (row.id && row.id !== ALL_PROJECTS) setLastProjectId(row.id)
           setFilters((prev) => ({ ...prev, projectId: row.id ?? '', statusFilter: [] }))
           break
         case 'view':
@@ -522,7 +555,7 @@ export function App() {
     const status = createStatus
     const priority = createPriority
     const assigneeId = createAssignee === '__none__' ? '' : createAssignee
-    const projectId = filters.projectId
+    const projectId = createProjectId
     const created = await issuesRepo.create({
       projectId,
       title,
@@ -532,10 +565,12 @@ export function App() {
       reporterId: currentUser,
     })
     await activitiesRepo.log({ issueId: created.id, actorId: currentUser, type: 'create' })
+    // 记下真实项目：全部项目作用域下下次新建默认落到同一个项目
+    setLastProjectId(projectId)
     if (input) input.value = ''
     createRef.current?.removeAttribute('visible')
   }, [
-    filters.projectId,
+    createProjectId,
     currentUser,
     createStatus,
     createPriority,
@@ -567,7 +602,7 @@ export function App() {
     // Esc 无论焦点在哪都关抽屉（含评论输入框内）
     const openCreate = (e: KeyboardEvent) => {
       e.preventDefault()
-      createRef.current?.setAttribute('visible', '')
+      openCreateRef.current()
     }
     const whenCreate = () => canCreateRef.current
     const whenNoOverlay = () => !isOverlayOpen()
@@ -624,11 +659,7 @@ export function App() {
           </oas-button>
         )}
         {canCreateIssue && (
-          <oas-button
-            type="primary"
-            data-testid="toolbar-new"
-            onClick={() => createRef.current?.setAttribute('visible', '')}
-          >
+          <oas-button type="primary" data-testid="toolbar-new" onClick={openCreate}>
             {t('newIssue')}
           </oas-button>
         )}
@@ -793,6 +824,16 @@ export function App() {
           </div>
           <div className="create-row">
             <div className="create-field">
+              <label htmlFor="create-project">{t('project')}</label>
+              {/* 全部项目作用域下必须选一个真实项目：key 前缀与项目计数器都来自项目 */}
+              <OSelect
+                testid="create-project"
+                value={createProjectId}
+                options={projectOptions}
+                onChange={setCreateProjectId}
+              />
+            </div>
+            <div className="create-field">
               <label htmlFor="create-status">{t('status')}</label>
               <OSelect
                 testid="create-status"
@@ -927,7 +968,7 @@ export function App() {
         onClose={() => setPaletteOpen(false)}
         can={can}
         onView={(v) => setView(v)}
-        onNewIssue={() => createRef.current?.setAttribute('visible', '')}
+        onNewIssue={openCreate}
         onExportCsv={exportCsv}
         onSaveView={() => saveViewRef.current?.setAttribute('visible', '')}
         onToggleTheme={cycleTheme}
