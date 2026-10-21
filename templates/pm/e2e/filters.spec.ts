@@ -14,7 +14,7 @@ async function waitForSeed(page: Page) {
   await expect(page.locator('.issue-row').first()).toBeVisible({ timeout: 60_000 })
 }
 
-/** 侧栏行（按分组 data-value 定位，避开「全部」在状态/优先级组同名） */
+/** 侧栏行（按分组 data-value 定位，不依赖行文案） */
 const sideItem = (page: Page, value: string) =>
   page.getByTestId('side-list').locator(`[part="item"][data-value="${value}"]`)
 

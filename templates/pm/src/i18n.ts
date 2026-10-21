@@ -41,6 +41,9 @@ const dict = {
     myIssues: '我的',
     status: '状态',
     all: '全部',
+    // 侧栏状态/优先级两组的「全部」行同名会让读屏听到两个「全部」——按组语义各自命名
+    allStatuses: '全部状态',
+    allPriorities: '全部优先级',
     members: '成员',
     savedViews: '保存的视图',
     window: '窗口',
@@ -288,6 +291,8 @@ const dict = {
     myIssues: 'My issues',
     status: 'Status',
     all: 'All',
+    allStatuses: 'All statuses',
+    allPriorities: 'All priorities',
     members: 'Members',
     savedViews: 'Saved views',
     window: 'Window',

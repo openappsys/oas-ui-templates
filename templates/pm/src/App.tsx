@@ -365,7 +365,7 @@ export function App() {
       kind: 'status',
       value: 'status:all',
       id: 'all',
-      label: t('all'),
+      label: t('allStatuses'),
       count: counts?.total.toLocaleString() ?? '…',
     },
   )
@@ -385,7 +385,7 @@ export function App() {
     kind: 'priority',
     value: 'priority:all',
     id: 'all',
-    label: t('all'),
+    label: t('allPriorities'),
   })
   for (const p of ISSUE_PRIORITIES) {
     sideRows.push({

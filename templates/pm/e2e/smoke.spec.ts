@@ -40,7 +40,7 @@ async function fillOInput(page: Page, testid: string, text: string) {
 const sideRow = (page: Page, name: string) =>
   page.getByTestId('side-panel').getByRole('button', { name, exact: true })
 
-/** 按分组 data-value 精确定位行（「全部」在状态组与优先级组同名） */
+/** 按分组 data-value 精确定位行（不依赖行文案：文案随语言/分组语义变化） */
 const sideItem = (page: Page, value: string) =>
   page.getByTestId('side-list').locator(`[part="item"][data-value="${value}"]`)
 
@@ -455,23 +455,53 @@ test('M10 仪表盘：统计卡 + 图表数据', async ({ page }) => {
       { timeout: 10_000 },
     )
     .toBe(1)
-  // 趋势轴标签水平（宿主不再斜排）：首/末标签由 chart 自动 start/end 内对齐，不越 viewBox
+  // 趋势轴几何断言：上游 92bdce4b 起端点仅在**真正越出 viewBox** 时内对齐（text-anchor:start/end），
+  // 未越界则无 inline style——方向不再可预知，改按真实包围盒断言「不越界 + 不叠字」
   const readTrendLabels = () =>
     page.getByTestId('chart-trend').evaluate((el) => {
-      const texts = [...(el.shadowRoot?.querySelectorAll('text.axis-label') ?? [])]
-      return texts.map((t) => ({
-        text: t.textContent ?? '',
-        transform: t.getAttribute('transform'),
-        style: t.getAttribute('style') ?? '',
-      }))
+      const svg = el.shadowRoot?.querySelector('svg')
+      const texts = [
+        ...(el.shadowRoot?.querySelectorAll('text.axis-label') ?? []),
+      ] as SVGTextElement[]
+      const svgBox = svg?.getBoundingClientRect()
+      const rects = texts.map((t) => t.getBoundingClientRect())
+      // 相邻标签水平交叠（同一基线上，纵向必交，只需判横向）
+      let overlaps = 0
+      for (let i = 1; i < rects.length; i++) {
+        const a = rects[i - 1]!
+        const b = rects[i]!
+        if (a.left < b.right - 0.5 && b.left < a.right - 0.5) overlaps++
+      }
+      // 容差 2px：文字外框含 1px 抗锯齿余量，且末标签内对齐可能恰好贴 viewBox 边缘
+      const inside =
+        !!svgBox &&
+        rects.every(
+          (r) =>
+            r.left >= svgBox.left - 2 &&
+            r.right <= svgBox.right + 2 &&
+            r.top >= svgBox.top - 2 &&
+            r.bottom <= svgBox.bottom + 2,
+        )
+      return {
+        count: texts.length,
+        lastText: texts[texts.length - 1]?.textContent ?? '',
+        transforms: texts.map((t) => t.getAttribute('transform')),
+        anchors: texts.map((t) => t.getAttribute('style') ?? ''),
+        overlaps,
+        inside,
+      }
     })
   await expect
-    .poll(async () => (await readTrendLabels()).length, { timeout: 15_000 })
+    .poll(async () => (await readTrendLabels()).count, { timeout: 15_000 })
     .toBeGreaterThan(1)
   const labels = await readTrendLabels()
-  expect(labels.every((l) => l.transform === null)).toBe(true)
-  expect(labels[0]?.style).toContain('text-anchor:start')
-  expect(labels[labels.length - 1]?.style).toContain('text-anchor:end')
+  // 水平排布（不旋转）；锚点 inline style 只允许缺省或端点内对齐
+  expect(labels.transforms.every((t) => t === null)).toBe(true)
+  expect(labels.anchors.every((s) => s === '' || /text-anchor:(start|end)/.test(s))).toBe(true)
+  expect(labels.inside, '所有 x 轴标签都在图表 svg 视口内（不越界、不被裁切）').toBe(true)
+  expect(labels.overlaps, '相邻 x 轴标签不叠字').toBe(0)
+  // 末位标签是日期（MM-DD），证明抽稀未把最新一天丢掉
+  expect(labels.lastText).toMatch(/^\d{2}-\d{2}$/)
 })
 
 test('M11 快捷键：C 打开新建 + / 聚焦搜索 + Esc 关抽屉', async ({ page }) => {

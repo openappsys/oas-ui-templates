@@ -18,7 +18,7 @@ async function waitForSeed(page: Page) {
 const sideRow = (page: Page, name: string) =>
   page.getByTestId('side-panel').getByRole('button', { name, exact: true })
 
-/** 按分组 data-value 精确定位行：「全部」在状态组与优先级组同名，role/name 会撞车 */
+/** 按分组 data-value 精确定位行（不依赖 role/name：行文案随语言与分组语义变化） */
 const sideItem = (page: Page, value: string) =>
   page.getByTestId('side-list').locator(`[part="item"][data-value="${value}"]`)
 
