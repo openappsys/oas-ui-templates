@@ -48,39 +48,67 @@ import './styles/app.css'
 
 import { App } from './App'
 import { seedDatabase } from './seed-db'
-import { apiRepositories } from './data/api/client'
 import { dexieRepositories } from './data/dexie'
-import { activeDataSource } from './data/source'
+import { activeDataSource, type DataSource } from './data/source'
 import { RepositoriesProvider } from './data/context'
+import type { Repositories } from './data/types'
 import { initTheme } from './lib/theme'
 import { bindKeys } from './lib/keyboard'
 
 // 启动兜底：IndexedDB 不可用/配额满/隐私模式 → 错误页而非白屏
 import { resultPage, bootText } from './boot-fallback'
 import { loadLang, setLang } from './i18n'
-setLang(loadLang())
 
-const dataSource = activeDataSource()
-if (dataSource === 'dexie') {
-  try {
-    // seed 后台跑（不阻塞首屏渲染）；Dexie liveQuery 数据到了自动推送
-    seedDatabase().catch((e) => {
+/**
+ * API 适配器只在 DEV 可被选中（activeDataSource() 在生产硬锁 dexie）。
+ * 静态引入会让整套 HTTP 实现在生产入口包里常驻，故按 DEV 条件动态导入：
+ * 生产构建里 `import.meta.env.DEV` 变 false，分支连同 import 一起被 DCE 掉。
+ */
+async function resolveRepositories(dataSource: DataSource): Promise<Repositories> {
+  if (dataSource === 'api' && import.meta.env.DEV) {
+    const { createApiRepositories } = await import('./data/api/client')
+    return createApiRepositories()
+  }
+  return dexieRepositories
+}
+
+async function boot(): Promise<void> {
+  setLang(loadLang())
+
+  const dataSource = activeDataSource()
+  if (dataSource === 'dexie') {
+    try {
+      // seed 后台跑（不阻塞首屏渲染）；Dexie liveQuery 数据到了自动推送
+      seedDatabase().catch((e) => {
+        console.error(e)
+        resultPage(bootText().title, String(e?.message ?? e))
+      })
+    } catch (e) {
       console.error(e)
-      resultPage(bootText().title, String(e?.message ?? e))
-    })
+      resultPage(bootText().title, String((e as Error)?.message ?? e))
+    }
+  }
+
+  initTheme()
+  bindKeys()
+
+  // API 模式需要等适配器模块到位再挂载，否则 Provider 会退回默认的 dexie 仓库
+  let repositories: Repositories
+  try {
+    repositories = await resolveRepositories(dataSource)
   } catch (e) {
     console.error(e)
     resultPage(bootText().title, String((e as Error)?.message ?? e))
+    return
   }
+
+  createRoot(document.querySelector<HTMLDivElement>('#app')!).render(
+    <StrictMode>
+      <RepositoriesProvider value={repositories}>
+        <App />
+      </RepositoriesProvider>
+    </StrictMode>,
+  )
 }
 
-initTheme()
-bindKeys()
-
-createRoot(document.querySelector<HTMLDivElement>('#app')!).render(
-  <StrictMode>
-    <RepositoriesProvider value={dataSource === 'api' ? apiRepositories : dexieRepositories}>
-      <App />
-    </RepositoriesProvider>
-  </StrictMode>,
-)
+void boot()

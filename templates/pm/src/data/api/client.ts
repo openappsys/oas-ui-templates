@@ -462,5 +462,3 @@ function createRevisionPoller(
     },
   }
 }
-
-export const apiRepositories: Repositories = createApiRepositories()
