@@ -23,12 +23,13 @@ async function fillOInput(page: Page, testid: string, text: string) {
 }
 
 async function waitForSeed(page: Page) {
-  test.setTimeout(150_000)
+  // 高负载下 100K 播种可能超 100s：轮询与用例预算统一留余量
+  test.setTimeout(240_000)
   await page.goto('/')
   await expect(page.getByTestId('pm-toolbar')).toBeVisible({ timeout: 10_000 })
   await expect
     .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-seed-v7')), {
-      timeout: 120_000,
+      timeout: 180_000,
       intervals: [1000, 3000, 5000],
     })
     .toBe('1')

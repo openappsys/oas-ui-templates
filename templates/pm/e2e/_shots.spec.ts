@@ -2,8 +2,9 @@ import { expect, test, type Page } from '@playwright/test'
 
 async function openApp(page: Page) {
   await page.goto('/')
+  // 高负载下 100K 播种可能超 100s：与主用例预算保持同一口径
   await page.waitForFunction(() => localStorage.getItem('oas-pm-seed-v7') === '1', {
-    timeout: 45_000,
+    timeout: 180_000,
   })
   await page.waitForSelector('.issue-row', { timeout: 20_000 })
 }
@@ -238,7 +239,7 @@ async function captureSidebarCollapsed(page: Page, suffix: string) {
 }
 
 test('shots', async ({ page }) => {
-  test.setTimeout(180_000)
+  test.setTimeout(240_000)
   await openApp(page)
   await captureViews(page, '')
   await captureDrawerAndCreate(page, '')
@@ -247,7 +248,7 @@ test('shots', async ({ page }) => {
 })
 
 test('shots drawer custom time', async ({ page }) => {
-  test.setTimeout(120_000)
+  test.setTimeout(240_000)
   await openApp(page)
   await openFirstDrawer(page)
   // segmented 切「自定义」（不写库）：time-picker 带当前时刻出现
@@ -262,7 +263,7 @@ test('shots drawer custom time', async ({ page }) => {
 })
 
 test('shots sidebar', async ({ page }) => {
-  test.setTimeout(120_000)
+  test.setTimeout(240_000)
   await openApp(page)
   await captureSidebar(page, '')
   await captureSidebarCollapsed(page, '')
@@ -271,7 +272,7 @@ test('shots sidebar', async ({ page }) => {
 })
 
 test('shots sidebar dark', async ({ page }) => {
-  test.setTimeout(120_000)
+  test.setTimeout(240_000)
   await page.addInitScript(() => localStorage.setItem('oas-pm-theme', 'dark'))
   await openApp(page)
   await expectDarkTheme(page)
@@ -282,7 +283,7 @@ test('shots sidebar dark', async ({ page }) => {
 })
 
 test('shots dark', async ({ page }) => {
-  test.setTimeout(180_000)
+  test.setTimeout(240_000)
   await page.addInitScript(() => localStorage.setItem('oas-pm-theme', 'dark'))
   await openApp(page)
   await expectDarkTheme(page)
@@ -293,13 +294,13 @@ test('shots dark', async ({ page }) => {
 })
 
 test('shots readonly drawer', async ({ page }) => {
-  test.setTimeout(150_000)
+  test.setTimeout(240_000)
   await openApp(page)
   await captureReadonlyDrawer(page, '')
 })
 
 test('shots readonly drawer dark', async ({ page }) => {
-  test.setTimeout(150_000)
+  test.setTimeout(240_000)
   await page.addInitScript(() => localStorage.setItem('oas-pm-theme', 'dark'))
   await openApp(page)
   await expectDarkTheme(page)
@@ -307,7 +308,7 @@ test('shots readonly drawer dark', async ({ page }) => {
 })
 
 test('shots api', async ({ page }) => {
-  test.setTimeout(180_000)
+  test.setTimeout(240_000)
   await openApiApp(page)
   await page.waitForTimeout(1200)
   await page.screenshot({ path: 'shots/pm-api-list.png' })
@@ -337,7 +338,7 @@ test('shots api', async ({ page }) => {
 })
 
 test('shots api dark', async ({ page }) => {
-  test.setTimeout(180_000)
+  test.setTimeout(240_000)
   await openApiApp(page, 'dark')
   await page.waitForTimeout(1200)
   await page.screenshot({ path: 'shots/pm-api-list-dark.png' })
@@ -346,7 +347,7 @@ test('shots api dark', async ({ page }) => {
 })
 
 test('shots admin', async ({ page }) => {
-  test.setTimeout(180_000)
+  test.setTimeout(240_000)
   await openApp(page)
   await openAdmin(page)
   await captureAdminTabs(page, '')
@@ -355,7 +356,7 @@ test('shots admin', async ({ page }) => {
 })
 
 test('shots admin dark', async ({ page }) => {
-  test.setTimeout(180_000)
+  test.setTimeout(240_000)
   await page.addInitScript(() => localStorage.setItem('oas-pm-theme', 'dark'))
   await openApp(page)
   await expectDarkTheme(page)

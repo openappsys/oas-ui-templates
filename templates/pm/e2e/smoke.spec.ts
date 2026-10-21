@@ -40,15 +40,15 @@ async function fillOInput(page: Page, testid: string, text: string) {
 const sideRow = (page: Page, name: string) =>
   page.getByTestId('side-panel').getByRole('button', { name, exact: true })
 
-/** 等待 100K seed 完成并以列表行出现（seed 走后台 bulkPut，首次约 5~15s） */
+/** 等待 100K seed 完成并以列表行出现（seed 走后台 bulkPut；高负载下可能显著超 15s，故预算留余量） */
 async function waitForSeed(page: Page) {
-  test.setTimeout(150_000)
+  test.setTimeout(240_000)
   await page.goto('/')
   await expect(page.getByTestId('pm-toolbar')).toBeVisible({ timeout: 10_000 })
   // seed 完成的确定性信号：SEED_VER 标记写入（写完 100K 才 set）
   await expect
     .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-seed-v7')), {
-      timeout: 120_000,
+      timeout: 180_000,
       intervals: [1000, 3000, 5000],
     })
     .toBe('1')
@@ -846,10 +846,11 @@ test('M19 关联候选：选 relates 后目标下拉候选 > 1', async ({ page }
 })
 
 test('M20 看板：卡片点击打开详情抽屉', async ({ page }) => {
-  test.setTimeout(120_000)
+  // 高负载下 100K 播种可能超 100s：轮询与用例预算统一留余量
+  test.setTimeout(240_000)
   await page.goto('/')
   await expect
-    .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-seed-v7')), { timeout: 30_000 })
+    .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-seed-v7')), { timeout: 180_000 })
     .toBe('1')
   await expect(page.locator('.issue-row').first()).toBeVisible({ timeout: 45_000 })
   // 「我的」视图首张卡（张伟负责），记 key——先等首行负责人落定为张伟

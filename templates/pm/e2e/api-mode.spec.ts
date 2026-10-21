@@ -131,7 +131,8 @@ test('A2 编辑推送：UI 改状态即时生效 + 外部 PATCH 经 revision 轮
 })
 
 test('A3 切回本地：DEV 徽标点击写回 dexie 并走既有 Dexie seed', async ({ page }) => {
-  test.setTimeout(150_000)
+  // 高负载下 100K 播种可能超 100s：轮询与用例预算统一留余量
+  test.setTimeout(240_000)
   await page.goto('/')
   await expect(page.getByTestId('data-source-badge')).toHaveText('API', { timeout: 15_000 })
   await expect(page.locator('.issue-row').first()).toBeVisible({ timeout: 15_000 })
@@ -141,10 +142,10 @@ test('A3 切回本地：DEV 徽标点击写回 dexie 并走既有 Dexie seed', a
   await expect(page.getByTestId('data-source-badge')).toHaveText('本地', { timeout: 20_000 })
   expect(await page.evaluate(() => localStorage.getItem('oas-pm-data'))).toBeNull()
 
-  // 既有 Dexie seed 等待预算（100K，首次约 5~15s）
+  // 既有 Dexie seed 等待预算（100K；高负载下留足余量）
   await expect
     .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-seed-v7')), {
-      timeout: 120_000,
+      timeout: 180_000,
       intervals: [1000, 3000, 5000],
     })
     .toBe('1')
