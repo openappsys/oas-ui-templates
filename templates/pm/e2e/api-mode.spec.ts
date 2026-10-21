@@ -1,16 +1,14 @@
 import { expect, test, type Page } from '@playwright/test'
 
-// API 模式由 localStorage 决断；用 storageState 预置（addInitScript 会在每次 reload 重新写回，切不回本地）
-test.use({
-  storageState: {
-    cookies: [],
-    origins: [
-      {
-        origin: 'http://localhost:5878',
-        localStorage: [{ name: 'oas-pm-data', value: 'api' }],
-      },
-    ],
-  },
+// API 模式由 localStorage 决断；一次性 init script（sessionStorage 标记防 reload 重写，A3「切回本地」
+// 依赖点击移除后 reload 不再注入）；origin 无关，端口可配置
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    if (!sessionStorage.getItem('oas-pm-api-init')) {
+      localStorage.setItem('oas-pm-data', 'api')
+      sessionStorage.setItem('oas-pm-api-init', '1')
+    }
+  })
 })
 
 /** oas-select 设值（property + 契约事件，宿主 OSelect 监听同元素） */
