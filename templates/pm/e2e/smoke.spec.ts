@@ -40,6 +40,10 @@ async function fillOInput(page: Page, testid: string, text: string) {
 const sideRow = (page: Page, name: string) =>
   page.getByTestId('side-panel').getByRole('button', { name, exact: true })
 
+/** 按分组 data-value 精确定位行（「全部」在状态组与优先级组同名） */
+const sideItem = (page: Page, value: string) =>
+  page.getByTestId('side-list').locator(`[part="item"][data-value="${value}"]`)
+
 /** 等待 100K seed 完成并以列表行出现（seed 走后台 bulkPut；高负载下可能显著超 15s，故预算留余量） */
 async function waitForSeed(page: Page) {
   test.setTimeout(240_000)
@@ -86,7 +90,7 @@ test('M2 状态筛选：compound index 直取 + 计数联动', async ({ page }) 
   const filtered = await page.getByTestId('issue-total').textContent()
   expect(filtered).not.toBeNull()
   // 切回全部
-  await sideRow(page, '全部').click()
+  await sideItem(page, 'status:all').click()
   await expect(page.locator('.issue-row').first()).toBeVisible({ timeout: 10_000 })
 })
 

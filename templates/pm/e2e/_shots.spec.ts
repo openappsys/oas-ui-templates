@@ -239,6 +239,38 @@ async function captureSidebarCollapsed(page: Page, suffix: string) {
     .screenshot({ path: `shots/pm-sidebar-collapsed${suffix}.png` })
 }
 
+/** 侧栏行（按分组 data-value 定位，避开「全部」在状态/优先级组同名） */
+const sideItem = (page: Page, value: string) =>
+  page.getByTestId('side-list').locator(`[part="item"][data-value="${value}"]`)
+
+/** 多选筛选态：两状态并集 + 成员 + 两优先级（组内 OR / 组间 AND）。
+ *  侧栏内容超出视口：分「顶部（状态组）」与「底部（优先级组 + 成员）」两张，供目检多高亮 */
+async function captureFilterSelection(page: Page, suffix: string) {
+  await sideItem(page, 'status:todo').click()
+  await sideItem(page, 'status:in_progress').click()
+  await sideItem(page, 'member:member-2').click()
+  await sideItem(page, 'priority:urgent').click()
+  await sideItem(page, 'priority:high').click()
+  await page.waitForTimeout(1500)
+  await page.screenshot({ path: `shots/pm-filters-list${suffix}.png` })
+
+  const scrollPanel = (top: boolean) =>
+    page.getByTestId('side-list').evaluate((el, toTop) => {
+      const panel = el.shadowRoot?.querySelector<HTMLElement>('.panel')
+      if (panel) panel.scrollTop = toTop ? 0 : panel.scrollHeight
+    }, top)
+
+  await scrollPanel(true)
+  await page.waitForTimeout(400)
+  await page.getByTestId('side-panel').screenshot({ path: `shots/pm-filters-sidebar${suffix}.png` })
+
+  await scrollPanel(false)
+  await page.waitForTimeout(400)
+  await page
+    .getByTestId('side-panel')
+    .screenshot({ path: `shots/pm-filters-sidebar-bottom${suffix}.png` })
+}
+
 test('shots', async ({ page }) => {
   test.setTimeout(240_000)
   await openApp(page)
@@ -363,6 +395,22 @@ test('shots sidebar dark', async ({ page }) => {
   await captureSidebarCollapsed(page, '-dark')
 
   console.log('shots sidebar dark done')
+})
+
+test('shots filters multi', async ({ page }) => {
+  test.setTimeout(240_000)
+  await openApp(page)
+  await captureFilterSelection(page, '')
+  console.log('shots filters multi done')
+})
+
+test('shots filters multi dark', async ({ page }) => {
+  test.setTimeout(240_000)
+  await page.addInitScript(() => localStorage.setItem('oas-pm-theme', 'dark'))
+  await openApp(page)
+  await expectDarkTheme(page)
+  await captureFilterSelection(page, '-dark')
+  console.log('shots filters multi dark done')
 })
 
 test('shots dark', async ({ page }) => {
