@@ -61,6 +61,11 @@ function buildQuery(params: Record<string, string | number | boolean | null | un
   return query
 }
 
+/** 多值筛选 → 逗号分隔的单值 query 参数（status=todo,done）；空数组不发参数 */
+function joinFilter(values: readonly string[]): string | null {
+  return values.length ? values.join(',') : null
+}
+
 const errorMessage = (body: unknown): string | undefined =>
   body !== null && typeof body === 'object' ? (body as { error?: string }).error : undefined
 
@@ -174,9 +179,9 @@ export function createApiRepositories(options: ApiClientOptions = {}): Repositor
             '/api/issues',
             buildQuery({
               projectId: filters.projectId,
-              status: filters.statusFilter,
-              assignee: filters.assigneeFilter,
-              priority: filters.priorityFilter,
+              status: joinFilter(filters.statusFilter),
+              assignee: joinFilter(filters.assigneeFilter),
+              priority: joinFilter(filters.priorityFilter),
               search: filters.search,
               myOnly: filters.myOnly ? '1' : null,
               currentUser,

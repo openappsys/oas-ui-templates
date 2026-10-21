@@ -4,7 +4,7 @@ import type { PMDatabase } from '@/db/schema'
 import type { Issue, IssuePriority, IssueStatus } from '@/types'
 import { ISSUE_STATUSES } from '@/types'
 import { fromLiveQuery, type Observable } from '@/data/observable'
-import { LIST_WINDOW } from '@/lib/filters'
+import { LIST_WINDOW, UNASSIGNED } from '@/lib/filters'
 import { PRIORITY_WEIGHT } from '@/lib/order'
 import type {
   CreateIssueInput,
@@ -13,6 +13,13 @@ import type {
   ProjectCounts,
 } from '@/data/types'
 import { allocateProjectKey } from './project-repo'
+
+/** updatedAt 倒序，并列时按 id 倒序——与 API 实现（mock-server 的 byUpdatedDesc）同一条并列规则，
+ *  否则多状态归并后并列键的先后会在两种数据源间漂移 */
+function byUpdatedDesc(a: Issue, b: Issue): number {
+  if (b.updatedAt !== a.updatedAt) return b.updatedAt - a.updatedAt
+  return a.id < b.id ? 1 : a.id > b.id ? -1 : 0
+}
 
 export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
   return {
@@ -60,22 +67,33 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
       limit: number = LIST_WINDOW,
     ): Observable<Issue[]> {
       return fromLiveQuery(async () => {
-        const items = filters.statusFilter
-          ? await db.issues
-              .where('[projectId+status+updatedAt]')
-              .between(
-                [filters.projectId, filters.statusFilter, Dexie.minKey],
-                [filters.projectId, filters.statusFilter, Dexie.maxKey],
-              )
-              .reverse()
-              .limit(limit)
-              .toArray()
-          : await db.issues
-              .where('[projectId+updatedAt]')
-              .between([filters.projectId, Dexie.minKey], [filters.projectId, Dexie.maxKey])
-              .reverse()
-              .limit(limit)
-              .toArray()
+        const pid = filters.projectId
+        const statuses = filters.statusFilter
+        let items: Issue[]
+        if (statuses.length === 0) {
+          items = await db.issues
+            .where('[projectId+updatedAt]')
+            .between([pid, Dexie.minKey], [pid, Dexie.maxKey])
+            .reverse()
+            .limit(limit)
+            .toArray()
+        } else {
+          // 复合索引单次只能表达一个状态：逐状态各取最近 limit 条再归并。
+          // 并集按 updatedAt 的前 limit 条必然落在这 n 份分片内（每片已按该索引倒序）。
+          const chunks = await Promise.all(
+            statuses.map((s) =>
+              db.issues
+                .where('[projectId+status+updatedAt]')
+                .between([pid, s, Dexie.minKey], [pid, s, Dexie.maxKey])
+                .reverse()
+                .limit(limit)
+                .toArray(),
+            ),
+          )
+          const merged = new Map<string, Issue>()
+          for (const i of chunks.flat()) merged.set(i.id, i)
+          items = [...merged.values()].sort(byUpdatedDesc).slice(0, limit)
+        }
         let out = items
         if (filters.search.trim()) {
           const kw = filters.search.trim().toLowerCase()
@@ -84,9 +102,15 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
             .limit(2000)
             .toArray()
         }
-        if (filters.assigneeFilter) out = out.filter((i) => i.assigneeId === filters.assigneeFilter)
+        if (filters.assigneeFilter.length) {
+          const want = new Set(filters.assigneeFilter)
+          out = out.filter((i) => want.has(i.assigneeId ?? UNASSIGNED))
+        }
         if (filters.myOnly) out = out.filter((i) => i.assigneeId === currentUser)
-        if (filters.priorityFilter) out = out.filter((i) => i.priority === filters.priorityFilter)
+        if (filters.priorityFilter.length) {
+          const want = new Set(filters.priorityFilter)
+          out = out.filter((i) => want.has(i.priority))
+        }
         if (filters.sortBy === 'priority') {
           out = [...out].sort((a, b) => PRIORITY_WEIGHT[a.priority] - PRIORITY_WEIGHT[b.priority])
         } else if (filters.sortBy === 'createdAt') {

@@ -184,6 +184,62 @@ describe('issue window 查询语义（对齐 Dexie）', () => {
     expect(mine.every((i) => i.assigneeId === 'member-2')).toBe(true)
   })
 
+  it('多值 query（逗号分隔）：组内 OR、组间 AND、__none__ 匹配未分配', () => {
+    const store = createMockStore({ now: FIXED })
+    const base = { projectId: 'project-2', limit: '50' }
+    const two = items<Issue>(
+      call(store, 'GET', '/api/issues', { query: { ...base, status: 'todo,in_progress' } }),
+    )
+    expect(two.length).toBeGreaterThan(0)
+    expect(two.every((i) => i.status === 'todo' || i.status === 'in_progress')).toBe(true)
+    // 窗口语义：先按 updatedAt 在「项目 ∩ 状态集合」上截断到 limit，再套其他维度
+    const expected = store.issues
+      .filter(
+        (i) => i.projectId === 'project-2' && (i.status === 'todo' || i.status === 'in_progress'),
+      )
+      .sort((a, b) => b.updatedAt - a.updatedAt || (a.id < b.id ? 1 : -1))
+      .slice(0, 50)
+      .map((i) => i.id)
+    expect(two.map((i) => i.id)).toEqual(expected)
+
+    const andRows = items<Issue>(
+      call(store, 'GET', '/api/issues', {
+        query: { ...base, status: 'todo,in_progress', priority: 'urgent,high' },
+      }),
+    )
+    expect(andRows.length).toBeGreaterThan(0)
+    expect(
+      andRows.every(
+        (i) =>
+          (i.status === 'todo' || i.status === 'in_progress') &&
+          (i.priority === 'urgent' || i.priority === 'high'),
+      ),
+    ).toBe(true)
+
+    const unassigned = items<Issue>(
+      call(store, 'GET', '/api/issues', {
+        query: { ...base, assignee: '__none__,member-2' },
+      }),
+    )
+    expect(unassigned.length).toBeGreaterThan(0)
+    expect(unassigned.every((i) => i.assigneeId === null || i.assigneeId === 'member-2')).toBe(true)
+  })
+
+  it('多值 status 保持「先把项目窗口截断到 limit」的语义', () => {
+    const store = createMockStore({ now: FIXED })
+    const windowIds = store.issues
+      .filter((i) => i.projectId === 'project-1' && (i.status === 'todo' || i.status === 'done'))
+      .sort((a, b) => b.updatedAt - a.updatedAt || (a.id < b.id ? 1 : -1))
+      .slice(0, 20)
+      .map((i) => i.id)
+    const rows = items<Issue>(
+      call(store, 'GET', '/api/issues', {
+        query: { projectId: 'project-1', status: 'todo,done', limit: '20' },
+      }),
+    )
+    expect(rows.map((i) => i.id)).toEqual(windowIds)
+  })
+
   it('sortBy 三态在同一窗口内重排', () => {
     const store = createMockStore({ now: FIXED })
     const query = { projectId: 'project-1', limit: '200' }

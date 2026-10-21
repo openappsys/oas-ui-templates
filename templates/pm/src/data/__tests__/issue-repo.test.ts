@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import 'fake-indexeddb/auto'
 import { PMDatabase } from '@/db/schema'
 import { createDexieIssueRepository } from '@/data/dexie/issue-repo'
+import type { IssueWindowFilters } from '@/data/types'
 import type { Issue } from '@/types'
 
 function seedIssue(_db: PMDatabase, over: Partial<Issue> = {}): Issue {
@@ -31,6 +32,37 @@ describe('dexie issue repository', () => {
     db = new PMDatabase(`test-${crypto.randomUUID()}`)
     await db.open()
   })
+
+  /** 取 liveWindow 首个快照 */
+  const windowRows = (
+    repo: ReturnType<typeof createDexieIssueRepository>,
+    filters: Partial<IssueWindowFilters> = {},
+    currentUser = 'm1',
+    limit?: number,
+  ): Promise<Issue[]> =>
+    new Promise<Issue[]>((resolve) => {
+      const unsub = repo
+        .liveWindow(
+          {
+            projectId: 'p1',
+            statusFilter: [],
+            assigneeFilter: [],
+            priorityFilter: [],
+            search: '',
+            myOnly: false,
+            sortBy: 'updatedAt',
+            ...filters,
+          },
+          currentUser,
+          limit,
+        )
+        .subscribe({
+          next: (v) => {
+            resolve(v)
+            unsub()
+          },
+        })
+    })
 
   it('create 分配严格递增 key 并落库', async () => {
     await db.projects.add({
@@ -128,9 +160,9 @@ describe('dexie issue repository', () => {
         .liveWindow(
           {
             projectId: 'p1',
-            statusFilter: null,
-            assigneeFilter: 'm1',
-            priorityFilter: null,
+            statusFilter: [],
+            assigneeFilter: ['m1'],
+            priorityFilter: [],
             search: '',
             myOnly: false,
             sortBy: 'updatedAt',
@@ -160,9 +192,9 @@ describe('dexie issue repository', () => {
         .liveWindow(
           {
             projectId: 'p1',
-            statusFilter: null,
-            assigneeFilter: null,
-            priorityFilter: null,
+            statusFilter: [],
+            assigneeFilter: [],
+            priorityFilter: [],
             search: '',
             myOnly: false,
             sortBy: 'priority',
@@ -193,9 +225,9 @@ describe('dexie issue repository', () => {
         .liveWindow(
           {
             projectId: 'p1',
-            statusFilter: 'todo',
-            assigneeFilter: null,
-            priorityFilter: null,
+            statusFilter: ['todo'],
+            assigneeFilter: [],
+            priorityFilter: [],
             search: '',
             myOnly: false,
             sortBy: 'updatedAt',
@@ -212,6 +244,147 @@ describe('dexie issue repository', () => {
     expect(rows.map((r) => r.id)).toEqual(['t2', 't1'])
   })
 
+  it('liveWindow 状态多选：组内 OR、updatedAt 倒序、跨项目隔离、limit 截断', async () => {
+    const now = 1_000_000
+    await db.issues.bulkAdd([
+      seedIssue(db, { id: 'm1', status: 'todo', updatedAt: now - 500 }),
+      seedIssue(db, { id: 'm2', status: 'done', updatedAt: now - 400 }),
+      seedIssue(db, { id: 'm3', status: 'backlog', updatedAt: now - 300 }),
+      seedIssue(db, { id: 'm4', status: 'in_progress', updatedAt: now - 200 }),
+      seedIssue(db, { id: 'm5', status: 'done', updatedAt: now - 100 }),
+      seedIssue(db, { id: 'm6', status: 'todo', updatedAt: now - 10, projectId: 'p2' }),
+    ])
+    const repo = createDexieIssueRepository(db)
+    const rows = await windowRows(repo, { statusFilter: ['todo', 'done'] })
+    expect(rows.map((r) => r.id)).toEqual(['m5', 'm2', 'm1'])
+    // 索引分片按状态各取 limit 条，归并后仍按 updatedAt 截断
+    const limited = await windowRows(repo, { statusFilter: ['todo', 'done'] }, 'm1', 2)
+    expect(limited.map((r) => r.id)).toEqual(['m5', 'm2'])
+  })
+
+  it('liveWindow 组间 AND：状态集合 × 负责人集合', async () => {
+    const now = 1_000_000
+    await db.issues.bulkAdd([
+      seedIssue(db, { id: 'a1', status: 'todo', assigneeId: 'm1', updatedAt: now - 400 }),
+      seedIssue(db, { id: 'a2', status: 'todo', assigneeId: 'm2', updatedAt: now - 300 }),
+      seedIssue(db, { id: 'a3', status: 'done', assigneeId: 'm2', updatedAt: now - 200 }),
+      seedIssue(db, { id: 'a4', status: 'done', assigneeId: 'm3', updatedAt: now - 100 }),
+      seedIssue(db, { id: 'a5', status: 'cancelled', assigneeId: 'm1', updatedAt: now - 50 }),
+    ])
+    const repo = createDexieIssueRepository(db)
+    expect((await windowRows(repo, { statusFilter: ['todo', 'done'] })).map((r) => r.id)).toEqual([
+      'a4',
+      'a3',
+      'a2',
+      'a1',
+    ])
+    expect(
+      (
+        await windowRows(repo, {
+          statusFilter: ['todo', 'done'],
+          assigneeFilter: ['m1', 'm2'],
+        })
+      ).map((r) => r.id),
+    ).toEqual(['a3', 'a2', 'a1'])
+    // 负责人维度的「全部」＝空数组，不参与 AND
+    expect((await windowRows(repo, { assigneeFilter: [] })).map((r) => r.id)).toEqual([
+      'a5',
+      'a4',
+      'a3',
+      'a2',
+      'a1',
+    ])
+  })
+
+  it('liveWindow 负责人多选支持 __none__（未分配）', async () => {
+    const now = 1_000_000
+    await db.issues.bulkAdd([
+      seedIssue(db, { id: 'n1', assigneeId: null, updatedAt: now - 300 }),
+      seedIssue(db, { id: 'n2', assigneeId: 'm1', updatedAt: now - 200 }),
+      seedIssue(db, { id: 'n3', assigneeId: 'm2', updatedAt: now - 100 }),
+    ])
+    const repo = createDexieIssueRepository(db)
+    expect((await windowRows(repo, { assigneeFilter: ['__none__'] })).map((r) => r.id)).toEqual([
+      'n1',
+    ])
+    expect(
+      (await windowRows(repo, { assigneeFilter: ['__none__', 'm2'] })).map((r) => r.id),
+    ).toEqual(['n3', 'n1'])
+  })
+
+  it('liveWindow 优先级多选：组内 OR 且与状态/负责人 AND', async () => {
+    const now = 1_000_000
+    await db.issues.bulkAdd([
+      seedIssue(db, {
+        id: 'p1a',
+        status: 'todo',
+        priority: 'urgent',
+        assigneeId: 'm1',
+        updatedAt: now - 500,
+      }),
+      seedIssue(db, {
+        id: 'p1b',
+        status: 'todo',
+        priority: 'high',
+        assigneeId: 'm1',
+        updatedAt: now - 400,
+      }),
+      seedIssue(db, {
+        id: 'p1c',
+        status: 'todo',
+        priority: 'low',
+        assigneeId: 'm1',
+        updatedAt: now - 300,
+      }),
+      seedIssue(db, {
+        id: 'p1d',
+        status: 'done',
+        priority: 'urgent',
+        assigneeId: 'm1',
+        updatedAt: now - 200,
+      }),
+      seedIssue(db, {
+        id: 'p1e',
+        status: 'todo',
+        priority: 'urgent',
+        assigneeId: 'm2',
+        updatedAt: now - 100,
+      }),
+    ])
+    const repo = createDexieIssueRepository(db)
+    expect(
+      (await windowRows(repo, { priorityFilter: ['urgent', 'high'] })).map((r) => r.id),
+    ).toEqual(['p1e', 'p1d', 'p1b', 'p1a'])
+    expect(
+      (
+        await windowRows(repo, {
+          statusFilter: ['todo'],
+          assigneeFilter: ['m1'],
+          priorityFilter: ['urgent', 'low'],
+          sortBy: 'priority',
+        })
+      ).map((r) => r.id),
+    ).toEqual(['p1a', 'p1c'])
+  })
+
+  it('liveWindow 窗口先截断再过滤（多选维度同样适用）', async () => {
+    const now = 1_000_000
+    await db.issues.bulkAdd([
+      seedIssue(db, { id: 'w1', status: 'todo', assigneeId: 'm1', updatedAt: now - 300 }),
+      seedIssue(db, { id: 'w2', status: 'done', assigneeId: 'm2', updatedAt: now - 200 }),
+      seedIssue(db, { id: 'w3', status: 'todo', assigneeId: 'm1', updatedAt: now - 100 }),
+    ])
+    const repo = createDexieIssueRepository(db)
+    // 窗口取最近 2 条（w3/w2），再套 m1 → 只剩 w3
+    const rows = await windowRows(
+      repo,
+      { statusFilter: ['todo', 'done'], assigneeFilter: ['m1'] },
+      'm1',
+      2,
+    )
+    expect(rows.map((r) => r.id)).toEqual(['w3'])
+  })
+
   it('liveWindow search 跨项目全表匹配（沿用 App 语义）', async () => {
     await db.issues.bulkAdd([
       seedIssue(db, { id: 'q1', title: '修复登录白屏' }),
@@ -224,9 +397,9 @@ describe('dexie issue repository', () => {
         .liveWindow(
           {
             projectId: 'p1',
-            statusFilter: null,
-            assigneeFilter: null,
-            priorityFilter: null,
+            statusFilter: [],
+            assigneeFilter: [],
+            priorityFilter: [],
             search: '登录',
             myOnly: false,
             sortBy: 'updatedAt',
@@ -241,6 +414,12 @@ describe('dexie issue repository', () => {
         })
     })
     expect(new Set(rows.map((r) => r.id))).toEqual(new Set(['q1', 'q2']))
+    // 搜索仍是全局动作：多选状态不参与（与单值时代一致）
+    const withStatus = await windowRows(repo, {
+      search: '登录',
+      statusFilter: ['done', 'cancelled'],
+    })
+    expect(new Set(withStatus.map((r) => r.id))).toEqual(new Set(['q1', 'q2']))
   })
 
   it('bulkGet 返回与入参对齐的数组（含 undefined 洞）', async () => {

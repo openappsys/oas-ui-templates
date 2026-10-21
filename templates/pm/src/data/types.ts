@@ -10,11 +10,13 @@ import type {
 } from '@/types'
 import type { Observable } from './observable'
 
+/** 窗口查询条件：每个维度多值（组内 OR），维度之间 AND；空数组 = 该维度不限。
+ *  assigneeFilter 中的 '__none__'（lib/filters 的 UNASSIGNED）匹配未分配。 */
 export interface IssueWindowFilters {
   projectId: string
-  statusFilter: IssueStatus | null
-  assigneeFilter: string | null
-  priorityFilter: IssuePriority | null
+  statusFilter: IssueStatus[]
+  assigneeFilter: string[]
+  priorityFilter: IssuePriority[]
   search: string
   myOnly: boolean
   sortBy: 'updatedAt' | 'priority' | 'createdAt'

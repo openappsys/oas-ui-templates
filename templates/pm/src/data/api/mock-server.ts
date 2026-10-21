@@ -1,4 +1,4 @@
-import { LIST_WINDOW } from '../../lib/filters.ts'
+import { LIST_WINDOW, UNASSIGNED } from '../../lib/filters.ts'
 import { PRIORITY_WEIGHT } from '../../lib/order.ts'
 import { mulberry32 } from '../../lib/prng.ts'
 import {
@@ -272,6 +272,20 @@ function numQuery(q: URLSearchParams, key: string, fallback: number): number {
   return Number.isFinite(raw) && raw > 0 ? raw : fallback
 }
 
+/** 多值 query：逗号分隔（status=todo,done），去重后返回；空值 = 该维度不限 */
+function csvQuery(q: URLSearchParams, key: string): string[] {
+  const raw = q.get(key)
+  if (!raw) return []
+  return [
+    ...new Set(
+      raw
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean),
+    ),
+  ]
+}
+
 function segments(path: string): string[] {
   return path
     .replace(/^\/api(?=\/|$)/, '')
@@ -281,14 +295,16 @@ function segments(path: string): string[] {
 }
 
 /** Dexie 语义复刻：search 走全表（无视 project/status、按主键序、上限 2000）；
- *  否则按索引窗口先截断，再套 assignee/myOnly/priority 过滤，最后在窗口内重排 */
+ *  否则按索引窗口先截断，再套 assignee/myOnly/priority 过滤，最后在窗口内重排。
+ *  多值维度走逗号分隔 query（status/assignee/priority），组内 OR；assignee 的 `__none__` 匹配未分配 */
 function windowIssues(store: MockStore, q: URLSearchParams): Issue[] {
   const projectId = q.get('projectId') ?? ''
-  const statusFilter = (q.get('status') as IssueStatus | null) || null
+  const statuses = csvQuery(q, 'status')
   const limit = numQuery(q, 'limit', LIST_WINDOW)
-  const rows = statusFilter
-    ? store.issues.filter((i) => i.projectId === projectId && i.status === statusFilter)
-    : store.issues.filter((i) => i.projectId === projectId)
+  const statusSet = new Set(statuses)
+  const rows = store.issues.filter(
+    (i) => i.projectId === projectId && (statusSet.size === 0 || statusSet.has(i.status)),
+  )
   let out = rows.sort(byUpdatedDesc).slice(0, limit)
 
   const search = (q.get('search') ?? '').trim()
@@ -299,14 +315,20 @@ function windowIssues(store: MockStore, q: URLSearchParams): Issue[] {
       .filter((i) => i.title.toLowerCase().includes(kw) || i.key.toLowerCase().includes(kw))
       .slice(0, SEARCH_LIMIT)
   }
-  const assignee = q.get('assignee')
-  if (assignee) out = out.filter((i) => i.assigneeId === assignee)
+  const assignees = csvQuery(q, 'assignee')
+  if (assignees.length) {
+    const want = new Set(assignees)
+    out = out.filter((i) => want.has(i.assigneeId ?? UNASSIGNED))
+  }
   if (q.get('myOnly') === '1') {
     const me = q.get('currentUser') ?? ''
     out = out.filter((i) => i.assigneeId === me)
   }
-  const priority = (q.get('priority') as IssuePriority | null) || null
-  if (priority) out = out.filter((i) => i.priority === priority)
+  const priorities = csvQuery(q, 'priority')
+  if (priorities.length) {
+    const want = new Set(priorities)
+    out = out.filter((i) => want.has(i.priority))
+  }
 
   const sortBy = q.get('sortBy') ?? 'updatedAt'
   if (sortBy === 'priority') {

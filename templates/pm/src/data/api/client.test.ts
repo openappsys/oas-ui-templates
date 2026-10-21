@@ -17,9 +17,9 @@ const directTransport =
 
 const filters = (over: Partial<IssueWindowFilters> = {}): IssueWindowFilters => ({
   projectId,
-  statusFilter: null,
-  assigneeFilter: null,
-  priorityFilter: null,
+  statusFilter: [],
+  assigneeFilter: [],
+  priorityFilter: [],
   search: '',
   myOnly: false,
   sortBy: 'updatedAt',
@@ -87,7 +87,8 @@ describe('契约：同一份 seed 下 Dexie 与 API 输出相同', () => {
     const kw = store.issues[0].title.replace(/ #\d+$/, '')
     for (const f of [
       filters({ search: kw }),
-      filters({ search: kw, statusFilter: 'done', projectId: 'project-2' }),
+      filters({ search: kw, statusFilter: ['done'], projectId: 'project-2' }),
+      filters({ search: kw, statusFilter: ['done', 'todo'] }),
       filters({ search: 'APP-' }),
     ]) {
       const a = await first(api.issues.liveWindow(f, 'member-1', 100))
@@ -99,16 +100,47 @@ describe('契约：同一份 seed 下 Dexie 与 API 输出相同', () => {
 
   it('liveWindow：status/assignee/priority/myOnly 过滤一致', async () => {
     const cases = [
-      filters({ statusFilter: 'in_progress' }),
-      filters({ assigneeFilter: 'member-3' }),
-      filters({ priorityFilter: 'urgent' }),
+      filters({ statusFilter: ['in_progress'] }),
+      filters({ assigneeFilter: ['member-3'] }),
+      filters({ priorityFilter: ['urgent'] }),
       filters({ myOnly: true }),
-      filters({ statusFilter: 'done', priorityFilter: 'high', assigneeFilter: 'member-2' }),
+      filters({ statusFilter: ['done'], priorityFilter: ['high'], assigneeFilter: ['member-2'] }),
     ]
     for (const f of cases) {
       const a = await first(api.issues.liveWindow(f, 'member-1', 60))
       const d = await first(dexie.issues.liveWindow(f, 'member-1', 60))
       expect(a).toEqual(d)
+    }
+  })
+
+  it('liveWindow：多选（组内 OR / 组间 AND）与 __none__ 一致', async () => {
+    const cases = [
+      filters({ statusFilter: ['todo', 'in_progress'] }),
+      filters({ statusFilter: ['backlog', 'done', 'cancelled'] }),
+      filters({ assigneeFilter: ['member-2', 'member-4'] }),
+      filters({ priorityFilter: ['urgent', 'low'] }),
+      filters({
+        statusFilter: ['todo', 'done'],
+        assigneeFilter: ['member-1', 'member-2'],
+        priorityFilter: ['high', 'medium'],
+      }),
+      filters({ statusFilter: ['todo', 'done'], sortBy: 'priority' }),
+    ]
+    for (const f of cases) {
+      const a = await first(api.issues.liveWindow(f, 'member-1', 60))
+      const d = await first(dexie.issues.liveWindow(f, 'member-1', 60))
+      expect(a).toEqual(d)
+      expect(a.length).toBeGreaterThan(0)
+    }
+    // __none__ = 未分配：种子窗口内必有未分配行，但数量不保证 → 只断言语义与两实现一致
+    for (const assigneeFilter of [['__none__'], ['__none__', 'member-1']]) {
+      const f = filters({ assigneeFilter })
+      const a = await first(api.issues.liveWindow(f, 'member-1', 60))
+      const d = await first(dexie.issues.liveWindow(f, 'member-1', 60))
+      expect(a).toEqual(d)
+      expect(a.every((i) => i.assigneeId === null || assigneeFilter.includes(i.assigneeId))).toBe(
+        true,
+      )
     }
   })
 
