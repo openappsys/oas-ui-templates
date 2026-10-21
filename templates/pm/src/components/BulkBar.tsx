@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { useRepositories } from '@/data/context'
+import type { Observer } from '@/data/observable'
 import { useObservable } from '@/data/use-observable'
+import { parseFilters } from '@/lib/filters'
 import type { Action, Ctx } from '@/permission/policy'
-import type { IssuePriority, IssueStatus } from '../types'
+import type { IssuePriority, IssueStatus, SavedView } from '../types'
 import { ISSUE_PRIORITIES, ISSUE_STATUSES } from '../types'
 import { statusLabel, t } from '@/i18n'
 import { OSelect } from './oas-wrappers'
@@ -100,10 +102,27 @@ export function BulkBar({
   )
 }
 
-/** 保存的视图（schema v4 savedViews 表）：侧栏列表 + 保存/应用/删除 */
+/** 保存的视图（schema v4 savedViews 表）：侧栏列表 + 保存/应用/删除。
+ *  旧视图存的是单值/null 结构：读取处统一归一为多选结构，写库仍只写新结构（不做数据迁移） */
 export function useSavedViews() {
   const { savedViews } = useRepositories()
-  return useObservable(() => savedViews.liveAll(), [savedViews])
+  return useObservable(() => {
+    const source = savedViews.liveAll()
+    return {
+      subscribe(observer: Observer<SavedView[]>) {
+        return source.subscribe({
+          next: (rows) =>
+            observer.next(
+              rows.map((v) => {
+                const normalized = parseFilters(v.filters)
+                return normalized ? { ...v, filters: JSON.stringify(normalized) } : v
+              }),
+            ),
+          error: (e) => observer.error?.(e),
+        })
+      },
+    }
+  }, [savedViews])
 }
 
 export function filtersKey(f: Record<string, unknown>): string {

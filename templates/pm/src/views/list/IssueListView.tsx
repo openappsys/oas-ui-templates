@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import type { Issue, IssuePriority, Member } from '@/types'
 import { ISSUE_PRIORITIES } from '@/types'
 import { OSelect, OCheckbox } from '@/components/oas-wrappers'
-import { t, getLang, statusLabel } from '@/i18n'
+import { t, getLang, priorityLabel, statusLabel } from '@/i18n'
 import { BulkBar } from '@/components/BulkBar'
 import { Avatar } from '@/components/Avatar'
 import { ListSkeleton } from '@/components/skeletons/ListSkeleton'
@@ -46,12 +46,24 @@ export function IssueListView({
   const list = issues ?? []
   const loading = issues === undefined
   const hasActiveFilter =
-    filters.statusFilter !== null ||
-    filters.assigneeFilter !== null ||
-    filters.priorityFilter !== null ||
+    filters.statusFilter.length > 0 ||
+    filters.assigneeFilter.length > 0 ||
+    filters.priorityFilter.length > 0 ||
     filters.search !== '' ||
     filters.myOnly
   const emptyText = hasActiveFilter ? t('emptyNoMatch') : t('emptyNoData')
+  // 工具条优先级下拉是单值入口（多选主入口在侧栏）：多选时显示「已选 N 项」，
+  // 一旦在此改动即收敛为单值/全部
+  const priorityCount = filters.priorityFilter.length
+  const priorityValue =
+    priorityCount === 1 ? filters.priorityFilter[0] : priorityCount > 1 ? 'multi' : 'all'
+  const priorityOptions = [
+    { label: t('all'), value: 'all' },
+    ...ISSUE_PRIORITIES.map((p) => ({ label: priorityLabel(p), value: p })),
+    ...(priorityCount > 1
+      ? [{ label: t('multiSelected').replace('{n}', String(priorityCount)), value: 'multi' }]
+      : []),
+  ]
   const canBulk = can('bulk:apply')
   const toggleSelect = useCallback((id: string) => {
     setSelectedIds((prev) => {
@@ -221,19 +233,20 @@ export function IssueListView({
         <span className="issue-toolbar-label">{t('priority')}</span>
         <OSelect
           testid="filter-priority"
-          value={filters.priorityFilter ?? 'all'}
-          options={[
-            { label: t('all'), value: 'all' },
-            ...ISSUE_PRIORITIES.map((p) => ({ label: p, value: p })),
-          ]}
-          onChange={(v) =>
+          value={priorityValue}
+          options={priorityOptions}
+          onChange={(v) => {
+            if (v === 'multi') return
             setFilters((prev) => ({
               ...prev,
-              priorityFilter: (v === 'all' ? null : v) as IssuePriority | null,
+              priorityFilter: v === 'all' ? [] : [v as IssuePriority],
             }))
-          }
+          }}
         />
-        {(filters.search || filters.assigneeFilter || filters.priorityFilter || filters.myOnly) && (
+        {(filters.search ||
+          filters.assigneeFilter.length > 0 ||
+          filters.priorityFilter.length > 0 ||
+          filters.myOnly) && (
           <button
             className="issue-toolbar-clear"
             type="button"
@@ -242,8 +255,8 @@ export function IssueListView({
               setFilters((prev) => ({
                 ...prev,
                 search: '',
-                assigneeFilter: null,
-                priorityFilter: null,
+                assigneeFilter: [],
+                priorityFilter: [],
                 myOnly: false,
               }))
             }

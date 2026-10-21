@@ -5,11 +5,13 @@ import { t } from '@/i18n'
 export interface SideRow {
   group: string
   value: string
-  kind: 'project' | 'view' | 'status' | 'savedview' | 'member'
+  kind: 'project' | 'view' | 'status' | 'priority' | 'savedview' | 'member'
   id?: string
   label: string
   count?: string
   statusColor?: string
+  /** 非状态行的图标颜色（优先级行用优先级色） */
+  iconColor?: string
   deletable?: boolean
   savedFilters?: string
   avatarColor?: string
@@ -39,6 +41,10 @@ registerIcon(
 registerIcon(
   'pm-inbox',
   '<path d="M4 3 H12 L13.5 9 V11.5 A1.5 1.5 0 0 1 12 13 H4 A1.5 1.5 0 0 1 2.5 11.5 V9 Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M2.5 9 H5.2 L6.4 11 H9.6 L10.8 9 H13.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
+)
+registerIcon(
+  'pm-priority-flag',
+  '<path d="M4 2.5 V13.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M4 3.2 H11.6 L10.1 5.9 L11.6 8.6 H4" fill="currentColor"/>',
 )
 
 export function SideList({
@@ -90,6 +96,9 @@ export function SideList({
       if (row.statusColor) {
         item.icon = 'pm-status-dot'
         item.iconColor = row.statusColor
+      } else if (row.kind === 'priority') {
+        item.icon = 'pm-priority-flag'
+        item.iconColor = row.iconColor
       } else if (row.kind === 'project') {
         item.icon = 'pm-project'
       } else if (row.kind === 'view') {

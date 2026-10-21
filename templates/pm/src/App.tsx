@@ -2,13 +2,15 @@ import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import type { Issue, IssuePriority, IssueStatus, Member, Project } from './types'
 import { ISSUE_PRIORITIES, ISSUE_STATUSES } from './types'
 import { OSelect, OTabs } from './components/oas-wrappers'
-import { t, loadLang, setLang, statusLabel, dateLocale, type Lang } from './i18n'
+import { t, loadLang, setLang, statusLabel, priorityLabel, dateLocale, type Lang } from './i18n'
 import { useSavedViews } from './components/BulkBar'
-import { STATUS_COLOR } from './lib/colors'
+import { PRIORITY_TEXT, STATUS_COLOR } from './lib/colors'
 import {
   DEFAULT_FILTERS,
   LIST_WINDOW,
   LIST_WINDOW_STEP,
+  parseFilters,
+  toggleIn,
   type Filters,
   type Grouping,
 } from './lib/filters'
@@ -250,12 +252,10 @@ export function App() {
   const savedViews = useSavedViews()
   const saveViewNameRef = useRef<HTMLElement & { value?: string }>(null)
   const applySavedView = useCallback((filtersJson: string) => {
-    try {
-      const f = JSON.parse(filtersJson)
-      setFilters((prev) => ({ ...prev, ...f, search: '' }))
-    } catch {
-      // 忽略损坏的视图数据
-    }
+    // 旧视图存的是单值/null：读取处归一为多选结构，不迁移存量数据
+    const next = parseFilters(filtersJson)
+    if (!next) return
+    setFilters((prev) => ({ ...prev, ...next, search: '' }))
   }, [])
   const switchUser = useCallback((id: string) => {
     setCurrentUser(id)
@@ -308,7 +308,7 @@ export function App() {
     if (view === 'admin' && !canManage) setView('issues')
   }, [view, canManage])
   const openProject = useCallback((projectId: string) => {
-    setFilters((prev) => ({ ...prev, projectId, statusFilter: null }))
+    setFilters((prev) => ({ ...prev, projectId, statusFilter: [] }))
     setView('issues')
   }, [])
   const handleMemberDeleted = useCallback(
@@ -380,6 +380,23 @@ export function App() {
       count: counts?.byStatus[s]?.toLocaleString() ?? '…',
     })
   }
+  sideRows.push({
+    group: t('priority'),
+    kind: 'priority',
+    value: 'priority:all',
+    id: 'all',
+    label: t('all'),
+  })
+  for (const p of ISSUE_PRIORITIES) {
+    sideRows.push({
+      group: t('priority'),
+      kind: 'priority',
+      value: `priority:${p}`,
+      id: p,
+      label: priorityLabel(p),
+      iconColor: PRIORITY_TEXT[p],
+    })
+  }
   for (const v of savedViews ?? []) {
     sideRows.push({
       group: t('savedViews'),
@@ -406,21 +423,38 @@ export function App() {
   const sideActive: Record<string, string | string[]> = {
     [t('projects')]: `project:${filters.projectId}`,
     [t('views')]: filters.myOnly ? 'view:my' : 'view:all',
-    [t('status')]: filters.statusFilter ? `status:${filters.statusFilter}` : 'status:all',
-    [t('members')]: filters.assigneeFilter ? [`member:${filters.assigneeFilter}`] : [],
+    [t('status')]: filters.statusFilter.length
+      ? filters.statusFilter.map((s) => `status:${s}`)
+      : ['status:all'],
+    [t('priority')]: filters.priorityFilter.length
+      ? filters.priorityFilter.map((p) => `priority:${p}`)
+      : ['priority:all'],
+    [t('members')]: filters.assigneeFilter.map((a) => `member:${a}`),
   }
 
   const handleSideRowClick = useCallback(
     (row: SideRow) => {
       switch (row.kind) {
         case 'project':
-          setFilters((prev) => ({ ...prev, projectId: row.id ?? '', statusFilter: null }))
+          setFilters((prev) => ({ ...prev, projectId: row.id ?? '', statusFilter: [] }))
           break
         case 'view':
           setF('myOnly', row.id === 'my')
           break
         case 'status':
-          setF('statusFilter', row.id === 'all' ? null : (row.id as IssueStatus))
+          // 组内 OR：点击行即 toggle；「全部」行清空该组
+          setFilters((prev) => ({
+            ...prev,
+            statusFilter:
+              row.id === 'all' ? [] : toggleIn(prev.statusFilter, row.id as IssueStatus),
+          }))
+          break
+        case 'priority':
+          setFilters((prev) => ({
+            ...prev,
+            priorityFilter:
+              row.id === 'all' ? [] : toggleIn(prev.priorityFilter, row.id as IssuePriority),
+          }))
           break
         case 'savedview':
           if (row.savedFilters) applySavedView(row.savedFilters)
@@ -430,7 +464,7 @@ export function App() {
           if (!memberId) break
           setFilters((prev) => ({
             ...prev,
-            assigneeFilter: prev.assigneeFilter === memberId ? null : memberId,
+            assigneeFilter: toggleIn(prev.assigneeFilter, memberId),
           }))
           break
         }
