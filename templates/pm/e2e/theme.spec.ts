@@ -21,6 +21,11 @@ test('T2 切换到深色并持久化', async ({ page }) => {
   await toggle.click()
   await expect(toggle).toHaveText('深色')
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+  // 原生控件（勾选框/滚动条）配色跟随主题：由 upstream theme 的 [data-theme=dark] 提供，
+  // 宿主不再补 color-scheme（摘除回归守卫）
+  await expect
+    .poll(() => page.evaluate(() => getComputedStyle(document.documentElement).colorScheme))
+    .toBe('dark')
   await page.reload()
   await expect(page.getByTestId('theme-toggle')).toBeVisible({ timeout: 10_000 })
   await expect(page.getByTestId('theme-toggle')).toHaveText('深色')

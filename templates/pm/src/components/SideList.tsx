@@ -98,9 +98,6 @@ export function SideList({
         item.icon = 'menu'
       } else if (row.kind === 'savedview') {
         item.icon = 'star'
-      } else if (row.kind === 'member') {
-        item.icon = 'user'
-        if (row.avatarColor) item.iconColor = row.avatarColor
       }
       if (row.avatarColor) {
         item.avatarText = row.avatarText ?? ''
@@ -128,16 +125,6 @@ export function SideList({
         ?.focus({ preventScroll: true })
     }
   }, [rows, activeByGroup])
-
-  useEffect(() => {
-    const root = barRef.current?.shadowRoot
-    if (!root || root.querySelector('style[data-pm-sidebar]')) return
-    const style = document.createElement('style')
-    style.setAttribute('data-pm-sidebar', '')
-    style.textContent =
-      ':host(:not([collapsed])) .item[data-value^="member:"] > .icon{display:none}'
-    root.appendChild(style)
-  }, [])
 
   return <oas-sidebar ref={barRef} data-testid="side-list" shortcut="" />
 }

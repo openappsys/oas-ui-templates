@@ -127,7 +127,7 @@ test('S1 映射渲染：events.date 与 dueAt 的 getUTC* 派生一致；桶展�
         alldaySeen++
         if (e.start === undefined) bucketOk++
       } else if (!bucketMoment) {
-        // v7 精确时刻：start 即真实 HH:mm（seed 分布不触发同刻错开）
+        // v7 精确时刻：start 即真实 HH:mm（同刻多块由组件车道并排，宿主不再错位）
         if (h < 12) amSeen++
         else pmSeen++
         if (e.start === hhmm) bucketOk++

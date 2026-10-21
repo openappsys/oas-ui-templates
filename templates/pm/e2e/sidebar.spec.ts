@@ -98,6 +98,13 @@ test('S4 折叠 rail：56px 收窄、项目/成员行存活、badge 角标，再
   const panel = page.getByTestId('side-panel')
   const toggle = sidebar.locator('[part="toggle"]')
   await expect(toggle).toBeVisible()
+  // 成员行头像：展开态可见；折叠态行仍存活且头像不被宿主样式藏掉（上游折叠保留 avatar 项）
+  const memberAvatar = sidebar.locator(
+    '[part="item"][data-value="member:member-2"] [part="avatar"]',
+  )
+  await expect(memberAvatar).toBeVisible()
+  // 成员行只有头像、不再挂 user icon（宿主 workaround 已摘除；上游给无 icon 行留 hidden 占位）
+  await expect(sidebar.locator('[part="item"][data-value="member:member-2"] .icon')).toBeHidden()
   const barWidth = () => sidebar.evaluate((el) => Math.round(el.getBoundingClientRect().width))
   const panelWidth = () => panel.evaluate((el) => Math.round(el.getBoundingClientRect().width))
   await expect.poll(barWidth).toBe(220)
@@ -111,6 +118,7 @@ test('S4 折叠 rail：56px 收窄、项目/成员行存活、badge 角标，再
   await expect(sideRow(page, '全部 Issues')).toBeVisible()
   await expect(sideRow(page, '全部')).toBeVisible()
   await expect(sideRow(page, '李娜')).toBeVisible()
+  await expect(memberAvatar).toBeVisible()
   await expect(sidebar.locator('[part="badge"]').first()).toBeVisible()
 
   await toggle.click()

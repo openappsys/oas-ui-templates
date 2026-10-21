@@ -10,7 +10,6 @@
   --pm-priority-low: #64748b;
 }
 [data-theme="dark"] {
-  color-scheme: dark;
   --pm-status-backlog: var(--oas-color-text-secondary);
   --pm-status-todo: var(--oas-preset-blue);
   --pm-status-in-progress: var(--oas-preset-gold);
@@ -112,10 +111,6 @@ body {
 }
 
 .side-panel oas-sidebar:not([drawer-open])::part(head) {
-  display: none;
-}
-
-.side-panel oas-sidebar[collapsed]::part(avatar) {
   display: none;
 }
 

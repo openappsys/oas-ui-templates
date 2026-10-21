@@ -67,7 +67,8 @@ async function captureViews(page: Page, suffix: string) {
   await page.waitForTimeout(2000)
   await page.screenshot({ path: `shots/pm-resource${suffix}.png` })
 
-  // 日程视图：月历 + 周（seed 演示组每天每桶约 2 条 → week 同桶 +30min 偏移入镜）
+  // 日程视图：月历 + 周（seed 演示组每天每桶约 2 条 → week 桶块 60min 平铺；
+  // 精确同刻的并排见 schedule same moment 用例）
   await setView(page, 'schedule')
   await page.waitForTimeout(2000)
   await page.screenshot({ path: `shots/pm-schedule-month${suffix}.png` })
@@ -260,6 +261,88 @@ test('shots drawer custom time', async ({ page }) => {
   await expect(page.getByTestId('detail-due-time')).toBeAttached({ timeout: 10_000 })
   await page.waitForTimeout(800)
   await page.screenshot({ path: 'shots/pm-drawer-custom-time.png' })
+})
+
+test('shots schedule same moment', async ({ page }) => {
+  test.setTimeout(240_000)
+  await openApp(page)
+  await setView(page, 'schedule')
+  await expect(page.getByTestId('schedule-gantt')).toBeAttached({ timeout: 10_000 })
+  await page.getByTestId('schedule-gantt').locator("button[data-view='week']").click()
+  await page.waitForTimeout(1000)
+
+  // 造精确同刻组：取当前周可见列里事件最多的一天，把该日 3 条事件对应的 issue 的 dueAt
+  // 改写成同一天 11:00（非桶时刻）。宿主派生出的 3 块 start 相同 → 验收组件贪心车道并排
+  //（宿主已不再自行 +30k 错位）。改写走 raw IDB + reload：只动当前载入窗口内的行，
+  // 否则改到窗口外的行不会进派生。
+  const pick = await page.getByTestId('schedule-gantt').evaluate((el) => {
+    const evs = (
+      (el as unknown as { events?: { id: string; date: string }[] }).events ?? []
+    ).filter((e) => !!e.date && !e.id.startsWith('__more__'))
+    const cols = [...(el.shadowRoot?.querySelectorAll<HTMLElement>('.col') ?? [])].map(
+      (c) => c.dataset.date ?? '',
+    )
+    const byDate = new Map<string, string[]>()
+    for (const e of evs) {
+      if (!cols.includes(e.date)) continue
+      byDate.set(e.date, [...(byDate.get(e.date) ?? []), e.id])
+    }
+    const best = [...byDate.entries()].sort((a, b) => b[1].length - a[1].length)[0]
+    return { date: best?.[0] ?? '', ids: (best?.[1] ?? []).slice(0, 3) }
+  })
+  expect(pick.date).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+  expect(pick.ids).toHaveLength(3)
+  const target = pick.date
+  const [y, mo, d] = target.split('-').map(Number)
+  const at = Date.UTC(y ?? 0, (mo ?? 1) - 1, d ?? 1, 11, 0)
+  await page.evaluate(
+    async ({ dueAt, ids }) => {
+      const db = await new Promise<IDBDatabase>((res, rej) => {
+        const req = indexedDB.open('oas-pm')
+        req.onsuccess = () => res(req.result)
+        req.onerror = () => rej(req.error)
+      })
+      await new Promise<void>((resolve, reject) => {
+        const tx = db.transaction('issues', 'readwrite')
+        const store = tx.objectStore('issues')
+        for (const id of ids) {
+          const get = store.get(id)
+          get.onsuccess = () => {
+            const row = get.result as Record<string, unknown> | undefined
+            if (row) store.put({ ...row, dueAt })
+          }
+        }
+        tx.oncomplete = () => resolve()
+        tx.onerror = () => reject(tx.error)
+      })
+    },
+    { dueAt: at, ids: pick.ids },
+  )
+  // 重载让 Dexie 读到改写后的同刻数据（raw IDB 写不推 liveQuery）
+  await openApp(page)
+  await setView(page, 'schedule')
+  await expect(page.getByTestId('schedule-gantt')).toBeAttached({ timeout: 10_000 })
+  await page.getByTestId('schedule-gantt').locator("button[data-view='week']").click()
+  await page.waitForTimeout(1200)
+
+  const lanes = page
+    .getByTestId('schedule-gantt')
+    .locator(`.col[data-date="${target}"] .event`)
+    .filter({ hasText: '11:00 ' })
+  await expect.poll(() => lanes.count(), { timeout: 15_000 }).toBeGreaterThanOrEqual(3)
+  const geom = await lanes.evaluateAll((els) =>
+    els.map((el) => ({
+      left: (el as HTMLElement).style.insetInlineStart,
+      width: Math.round(el.getBoundingClientRect().width),
+      top: (el as HTMLElement).style.top,
+    })),
+  )
+  // 同刻并排：三块 left 各异、宽约 1/3 列宽、top 相同
+  expect(new Set(geom.map((g) => g.top)).size).toBe(1)
+  expect(new Set(geom.map((g) => g.left)).size).toBeGreaterThanOrEqual(3)
+  await page.getByTestId('schedule-gantt').screenshot({ path: 'shots/pm-schedule-week-lanes.png' })
+
+  console.log('shots schedule same moment done')
 })
 
 test('shots sidebar', async ({ page }) => {

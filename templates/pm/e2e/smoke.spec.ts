@@ -451,6 +451,23 @@ test('M10 仪表盘：统计卡 + 图表数据', async ({ page }) => {
       { timeout: 10_000 },
     )
     .toBe(1)
+  // 趋势轴标签水平（宿主不再斜排）：首/末标签由 chart 自动 start/end 内对齐，不越 viewBox
+  const readTrendLabels = () =>
+    page.getByTestId('chart-trend').evaluate((el) => {
+      const texts = [...(el.shadowRoot?.querySelectorAll('text.axis-label') ?? [])]
+      return texts.map((t) => ({
+        text: t.textContent ?? '',
+        transform: t.getAttribute('transform'),
+        style: t.getAttribute('style') ?? '',
+      }))
+    })
+  await expect
+    .poll(async () => (await readTrendLabels()).length, { timeout: 15_000 })
+    .toBeGreaterThan(1)
+  const labels = await readTrendLabels()
+  expect(labels.every((l) => l.transform === null)).toBe(true)
+  expect(labels[0]?.style).toContain('text-anchor:start')
+  expect(labels[labels.length - 1]?.style).toContain('text-anchor:end')
 })
 
 test('M11 快捷键：C 打开新建 + / 聚焦搜索 + Esc 关抽屉', async ({ page }) => {

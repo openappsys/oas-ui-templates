@@ -325,16 +325,17 @@ describe('deriveScheduleEvents 精确时刻（非桶时刻）', () => {
     expect(events[0]!.title).toBe('10:30 OAS-1 上线窗口')
   })
 
-  it('同刻错开：同（日, 时刻）第 1/2/3 个 start +30N，end 恒 +30', () => {
+  it('同刻不再错位：同（日, 时刻）第 1/2/3 块全部落在真实 start，区间相同（并排交给组件车道）', () => {
     const at = relDay(4, 15) + 45 * 60000
     const events = deriveScheduleEvents(
       [issue({ id: 'a', dueAt: at }), issue({ id: 'b', dueAt: at }), issue({ id: 'c', dueAt: at })],
       labels,
     )
     const by = (id: string) => events.find((e) => e.id === id)
-    expect(by('a')).toMatchObject({ start: '15:45', end: '16:15' })
-    expect(by('b')).toMatchObject({ start: '16:15', end: '16:45' })
-    expect(by('c')).toMatchObject({ start: '16:45', end: '17:15' })
+    for (const id of ['a', 'b', 'c']) {
+      expect(by(id)).toMatchObject({ start: '15:45', end: '16:15' })
+    }
+    expect(by('a')?.title).toBe('15:45 OAS-1 标题')
   })
 
   it('不同刻不错开：同日 10:30 与 15:45 各占真实时刻', () => {
@@ -402,7 +403,7 @@ describe('deriveScheduleEvents 精确时刻（非桶时刻）', () => {
 })
 
 describe('deriveScheduleEvents 精确同刻组封顶与跨午夜守卫', () => {
-  it('同刻 1/3/4/8 块完整序列：k∈{0,1,2} 30min 平铺；第 4 槽合成 __more__ 封顶块（8 块 → +5 项）', () => {
+  it('同刻 1/3/4/8 块完整序列：前 3 块同一真实区间；第 4 块合成 __more__ 封顶块（8 块 → +5 项）', () => {
     const base = relDay(7, 16) + 18 * 60000
     const day = utcDay(base)
     const mk = (n: number) =>
@@ -414,13 +415,13 @@ describe('deriveScheduleEvents 精确同刻组封顶与跨午夜守卫', () => {
     expect(seq(1)).toEqual(['p0|16:18-16:48|16:18 OAS-1 标题'])
     expect(seq(3).map((s) => s.split('|')[1])).toEqual([
       '16:18-16:48',
-      '16:48-17:18',
-      '17:18-17:48',
+      '16:18-16:48',
+      '16:18-16:48',
     ])
     expect(seq(4)).toEqual([
       'p0|16:18-16:48|16:18 OAS-1 标题',
-      'p1|16:48-17:18|16:18 OAS-1 标题',
-      'p2|17:18-17:48|16:18 OAS-1 标题',
+      'p1|16:18-16:48|16:18 OAS-1 标题',
+      'p2|16:18-16:48|16:18 OAS-1 标题',
       `__more__${day}__x:16:18|17:48-18:18|+1 项`,
     ])
     const eight = seq(8)
@@ -443,7 +444,7 @@ describe('deriveScheduleEvents 精确同刻组封顶与跨午夜守卫', () => {
     expect(three.some((e) => e.id.startsWith('__more__'))).toBe(false)
   })
 
-  it("同刻 start='23:45'：第 1 块 tile end 钳 24:00；第 2/3 块与第 4 槽封顶块 start 越 24:00 → 落全天带（无 start/end）", () => {
+  it("同刻 start='23:45'：3 块同区间且 end 钳 24:00；第 4 块封顶位置越 24:00 → 落全天带（无 start/end）", () => {
     const base = relDay(8, 23) + 45 * 60000
     const day = utcDay(base)
     const events = deriveScheduleEvents(
@@ -451,18 +452,17 @@ describe('deriveScheduleEvents 精确同刻组封顶与跨午夜守卫', () => {
       labels,
     )
     const by = (id: string) => events.find((e) => e.id === id)
-    expect(by('m0')).toMatchObject({ start: '23:45', end: '24:00' })
-    expect(by('m1')?.start).toBeUndefined()
-    expect(by('m1')?.end).toBeUndefined()
-    expect(by('m1')?.title).toBe('23:45 OAS-1 标题')
-    expect(by('m2')?.start).toBeUndefined()
+    for (const id of ['m0', 'm1', 'm2']) {
+      expect(by(id)).toMatchObject({ start: '23:45', end: '24:00' })
+    }
+    expect(by('m0')?.title).toBe('23:45 OAS-1 标题')
     const cap = by(`__more__${day}__x:23:45`)
     expect(cap?.title).toBe('+2 项')
     expect(cap?.start).toBeUndefined()
     expect(cap?.end).toBeUndefined()
   })
 
-  it("start='16:18' × 10 块：无墙无越界——3 tile + 1 封顶块（+7 项），区间不重叠且均不越 24:00", () => {
+  it("start='16:18' × 10 块：无墙无越界——3 块同区间 + 1 封顶块（+7 项），封顶块不越 24:00", () => {
     const base = relDay(9, 16) + 18 * 60000
     const events = deriveScheduleEvents(
       Array.from({ length: 10 }, (_, i) => issue({ id: `w${i}`, dueAt: base })),
@@ -471,13 +471,17 @@ describe('deriveScheduleEvents 精确同刻组封顶与跨午夜守卫', () => {
     expect(events).toHaveLength(4)
     expect(events.filter((e) => e.id.startsWith('__more__'))).toHaveLength(1)
     expect(events[3]?.title).toBe('+7 项')
-    const spans = events.map((e) => [e.start!, e.end!] as const).sort()
+    const spans = events.map((e) => [e.start!, e.end!] as const)
+    // 前 3 块同刻（组件并排），封顶块排在它们下方且不越 24:00
+    expect(spans.slice(0, 3)).toEqual([
+      ['16:18', '16:48'],
+      ['16:18', '16:48'],
+      ['16:18', '16:48'],
+    ])
+    expect(spans[3]![0] >= spans[2]![1]).toBe(true)
     for (const [s, e] of spans) {
       expect(s < e).toBe(true)
       expect(e <= '24:00').toBe(true)
-    }
-    for (let i = 1; i < spans.length; i++) {
-      expect(spans[i]![0] >= spans[i - 1]![1]).toBe(true)
     }
   })
 
@@ -498,7 +502,10 @@ describe('deriveScheduleEvents 精确同刻组封顶与跨午夜守卫', () => {
     expect(by('b1')).toMatchObject({ start: '10:00', end: '11:00' })
     expect(by(`__more__${date}__am`)).toBeUndefined()
     expect(by(`__more__${date}__x:09:30`)?.title).toBe('+1 项')
-    expect(by('p2')).toMatchObject({ start: '10:30', end: '11:00' })
+    // 同刻前 3 块共享真实区间（并排由组件承担）
+    expect(by('p0')).toMatchObject({ start: '09:30', end: '10:00' })
+    expect(by('p1')).toMatchObject({ start: '09:30', end: '10:00' })
+    expect(by('p2')).toMatchObject({ start: '09:30', end: '10:00' })
     expect(by('p3')).toBeUndefined()
   })
 

@@ -45,9 +45,6 @@ export function DashboardView({
     () => ({ colors: ISSUE_STATUSES.map((s) => STATUS_COLOR[s]) }),
     [],
   )
-  // 趋势轴：31 个日标签在 1:1 宽度下最后一个标签半宽越出 viewBox 右边界被裁，斜排后右边界留白
-  const trendChartOptions = useMemo(() => ({ xLabelRotate: 25 }), [])
-
   // 近 30 天创建趋势（createdAt 索引范围取数，按天聚合）
   const trendFrom = useMemo(() => Date.now() - 30 * 86400000, [])
   const trendRows = useObservable(
@@ -126,7 +123,6 @@ export function DashboardView({
         <Chart
           type="area"
           data={toChartData(t('chartTrend'), trend ?? [])}
-          options={trendChartOptions}
           testid="chart-trend"
           label={t('chartTrendAria')}
         />
