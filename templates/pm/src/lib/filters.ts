@@ -13,6 +13,10 @@ export type Grouping = 'none' | 'priority' | 'assignee'
 /** 负责人筛选中「未分配」的哨兵值：成员 id 不会取此值 */
 export const UNASSIGNED = '__none__'
 
+/** 项目作用域的「全部项目」哨兵：项目 id 不会取此值。
+ *  projectId 仍是单值单选（不是多选维度）——交叉项目工作台只需要一个 workspace 级作用域 */
+export const ALL_PROJECTS = '__all__'
+
 /** 逻辑筛选：每个维度可多选（组内 OR），维度之间 AND；空数组 = 该维度不限 */
 export interface Filters {
   projectId: string
@@ -79,6 +83,7 @@ function toAssigneeList(raw: unknown): string[] {
 export function normalizeFilters(raw: unknown): Filters {
   const rec = isRecord(raw) ? raw : {}
   return {
+    // 任意非空字符串原样保留（含全部项目哨兵）——项目 id 无法穷举校验
     projectId:
       typeof rec.projectId === 'string' && rec.projectId !== ''
         ? rec.projectId

@@ -4,7 +4,7 @@ import type { PMDatabase } from '@/db/schema'
 import type { Issue, IssuePriority, IssueStatus } from '@/types'
 import { ISSUE_STATUSES } from '@/types'
 import { fromLiveQuery, type Observable } from '@/data/observable'
-import { LIST_WINDOW, UNASSIGNED } from '@/lib/filters'
+import { ALL_PROJECTS, LIST_WINDOW, UNASSIGNED } from '@/lib/filters'
 import { PRIORITY_WEIGHT } from '@/lib/order'
 import type {
   CreateIssueInput,
@@ -68,26 +68,36 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
     ): Observable<Issue[]> {
       return fromLiveQuery(async () => {
         const pid = filters.projectId
+        // 全部项目作用域：跨项目窗口。无状态筛选走全局 updatedAt 索引；
+        // 有状态筛选走 [status+updatedAt]，逐状态各取 limit 条再归并（同项目内语义）
+        const allProjects = pid === ALL_PROJECTS
         const statuses = filters.statusFilter
         let items: Issue[]
         if (statuses.length === 0) {
-          items = await db.issues
-            .where('[projectId+updatedAt]')
-            .between([pid, Dexie.minKey], [pid, Dexie.maxKey])
-            .reverse()
-            .limit(limit)
-            .toArray()
+          const source = allProjects
+            ? db.issues.orderBy('updatedAt')
+            : db.issues
+                .where('[projectId+updatedAt]')
+                .between([pid, Dexie.minKey], [pid, Dexie.maxKey])
+          items = await source.reverse().limit(limit).toArray()
         } else {
           // 复合索引单次只能表达一个状态：逐状态各取最近 limit 条再归并。
           // 并集按 updatedAt 的前 limit 条必然落在这 n 份分片内（每片已按该索引倒序）。
           const chunks = await Promise.all(
             statuses.map((s) =>
-              db.issues
-                .where('[projectId+status+updatedAt]')
-                .between([pid, s, Dexie.minKey], [pid, s, Dexie.maxKey])
-                .reverse()
-                .limit(limit)
-                .toArray(),
+              allProjects
+                ? db.issues
+                    .where('[status+updatedAt]')
+                    .between([s, Dexie.minKey], [s, Dexie.maxKey])
+                    .reverse()
+                    .limit(limit)
+                    .toArray()
+                : db.issues
+                    .where('[projectId+status+updatedAt]')
+                    .between([pid, s, Dexie.minKey], [pid, s, Dexie.maxKey])
+                    .reverse()
+                    .limit(limit)
+                    .toArray(),
             ),
           )
           const merged = new Map<string, Issue>()
@@ -122,10 +132,14 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
 
     liveCounts(projectId: string): Observable<ProjectCounts> {
       return fromLiveQuery(async () => {
+        // 全部项目：全局计数（单列 status 索引）；否则项目内计数（复合索引）
+        const allProjects = projectId === ALL_PROJECTS
         const [total, ...byStatus] = await Promise.all([
-          db.issues.where('projectId').equals(projectId).count(),
+          allProjects ? db.issues.count() : db.issues.where('projectId').equals(projectId).count(),
           ...ISSUE_STATUSES.map((s: IssueStatus) =>
-            db.issues.where('[projectId+status]').equals([projectId, s]).count(),
+            allProjects
+              ? db.issues.where('status').equals(s).count()
+              : db.issues.where('[projectId+status]').equals([projectId, s]).count(),
           ),
         ])
         return {
@@ -160,7 +174,10 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
 
     liveAssigneeWorkload(projectId: string) {
       return fromLiveQuery(async () => {
-        const rows = await db.issues.where('projectId').equals(projectId).toArray()
+        const rows =
+          projectId === ALL_PROJECTS
+            ? await db.issues.toArray()
+            : await db.issues.where('projectId').equals(projectId).toArray()
         const map = new Map<string, number>()
         for (const i of rows) {
           if (!i.assigneeId) continue

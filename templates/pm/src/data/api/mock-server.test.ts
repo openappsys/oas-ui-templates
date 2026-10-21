@@ -240,6 +240,56 @@ describe('issue window 查询语义（对齐 Dexie）', () => {
     expect(rows.map((i) => i.id)).toEqual(windowIds)
   })
 
+  it('projectId=__all__：跨项目窗口（无状态/多状态）与全局计数聚合', () => {
+    const store = createMockStore({ now: FIXED })
+    const byUpdated = (rows: Issue[]) =>
+      [...rows].sort((a, b) => b.updatedAt - a.updatedAt || (a.id < b.id ? 1 : -1)).map((i) => i.id)
+
+    const rows = items<Issue>(
+      call(store, 'GET', '/api/issues', { query: { projectId: '__all__', limit: '120' } }),
+    )
+    expect(rows).toHaveLength(120)
+    expect(new Set(rows.map((i) => i.projectId)).size).toBe(3)
+    expect(rows.map((i) => i.id)).toEqual(byUpdated(store.issues).slice(0, 120))
+
+    const statuses = ['todo', 'done'] as const
+    const multi = items<Issue>(
+      call(store, 'GET', '/api/issues', {
+        query: { projectId: '__all__', status: 'todo,done', limit: '60' },
+      }),
+    )
+    expect(multi).toHaveLength(60)
+    expect(multi.every((i) => statuses.includes(i.status as (typeof statuses)[number]))).toBe(true)
+    expect(multi.map((i) => i.id)).toEqual(
+      byUpdated(store.issues.filter((i) => statuses.includes(i.status as 'todo' | 'done'))).slice(
+        0,
+        60,
+      ),
+    )
+
+    const mine = items<Issue>(
+      call(store, 'GET', '/api/issues', {
+        query: { projectId: '__all__', myOnly: '1', currentUser: 'member-2', limit: '80' },
+      }),
+    )
+    expect(mine.every((i) => i.assigneeId === 'member-2')).toBe(true)
+    expect(new Set(mine.map((i) => i.projectId)).size).toBeGreaterThan(1)
+
+    const counts = call(store, 'GET', '/api/issues/counts', {
+      query: { projectId: '__all__' },
+    }).body as { total: number; byStatus: Record<string, number> }
+    expect(counts.total).toBe(MOCK_ISSUE_COUNT)
+    expect(Object.values(counts.byStatus).reduce((a, b) => a + b, 0)).toBe(MOCK_ISSUE_COUNT)
+
+    // workload 同样聚合全项目
+    const workload = items<{ memberId: string; count: number }>(
+      call(store, 'GET', '/api/issues/workload', { query: { projectId: '__all__' } }),
+    )
+    expect(workload.reduce((sum, r) => sum + r.count, 0)).toBe(
+      store.issues.filter((i) => i.assigneeId).length,
+    )
+  })
+
   it('sortBy 三态在同一窗口内重排', () => {
     const store = createMockStore({ now: FIXED })
     const query = { projectId: 'project-1', limit: '200' }

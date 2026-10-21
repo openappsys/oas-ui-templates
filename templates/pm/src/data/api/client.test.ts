@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { PMDatabase } from '@/db/schema'
 import { createDexieRepositories } from '@/data/dexie'
 import type { IssueWindowFilters, Repositories } from '@/data/types'
+import { ALL_PROJECTS } from '@/lib/filters'
 import type { Activity, Comment, Issue } from '@/types'
 import { createApiRepositories, type ApiTransport } from './client'
 import { createMockStore, handleApi, type MockStore } from './mock-server'
@@ -158,6 +159,44 @@ describe('契约：同一份 seed 下 Dexie 与 API 输出相同', () => {
     )
     expect(await first(api.issues.liveAssigneeWorkload(projectId))).toEqual(
       await first(dexie.issues.liveAssigneeWorkload(projectId)),
+    )
+  })
+
+  it('全部项目哨兵：窗口/计数/工作量跨项目聚合一致', async () => {
+    const cases = [
+      filters({ projectId: ALL_PROJECTS }),
+      filters({ projectId: ALL_PROJECTS, statusFilter: ['todo', 'done'] }),
+      filters({ projectId: ALL_PROJECTS, statusFilter: ['backlog', 'in_progress', 'cancelled'] }),
+      filters({ projectId: ALL_PROJECTS, myOnly: true }),
+      filters({ projectId: ALL_PROJECTS, statusFilter: ['in_progress'], sortBy: 'priority' }),
+      filters({
+        projectId: ALL_PROJECTS,
+        priorityFilter: ['urgent', 'low'],
+        assigneeFilter: ['member-2', 'member-4'],
+      }),
+    ]
+    for (const f of cases) {
+      const a = await first(api.issues.liveWindow(f, 'member-1', 60))
+      const d = await first(dexie.issues.liveWindow(f, 'member-1', 60))
+      expect(a).toEqual(d)
+      expect(a.length).toBeGreaterThan(0)
+    }
+    // 全项目窗口铺满 500 条：两实现同序、且必含多个项目（跨项目并集）
+    const apiAll = await first(
+      api.issues.liveWindow(filters({ projectId: ALL_PROJECTS }), 'member-1'),
+    )
+    const dexieAll = await first(
+      dexie.issues.liveWindow(filters({ projectId: ALL_PROJECTS }), 'member-1'),
+    )
+    expect(apiAll).toEqual(dexieAll)
+    expect(apiAll.length).toBe(500)
+    expect(new Set(apiAll.map((i) => i.projectId)).size).toBeGreaterThan(1)
+
+    const counts = await first(dexie.issues.liveCounts(ALL_PROJECTS))
+    expect(await first(api.issues.liveCounts(ALL_PROJECTS))).toEqual(counts)
+    expect(counts.total).toBe(store.issues.length)
+    expect(await first(api.issues.liveAssigneeWorkload(ALL_PROJECTS))).toEqual(
+      await first(dexie.issues.liveAssigneeWorkload(ALL_PROJECTS)),
     )
   })
 

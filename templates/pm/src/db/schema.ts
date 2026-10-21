@@ -80,6 +80,18 @@ export class PMDatabase extends Dexie {
       activities: 'id, issueId, [issueId+createdAt], createdAt',
       settings: 'key',
     })
+    // v8：全部项目作用域（跨项目窗口）——[status+updatedAt] 支撑「跨项目 + 状态筛选」
+    // 按索引直取；无状态时走既有的 updatedAt 索引。只增索引，不重建数据。
+    this.version(8).stores({
+      issues:
+        'id, projectId, key, status, priority, assigneeId, parentId, createdAt, updatedAt, [projectId+status], [projectId+priority], [projectId+assigneeId], [projectId+updatedAt], [projectId+status+updatedAt], [assigneeId+status], [status+updatedAt]',
+      projects: 'id, key',
+      members: 'id, role',
+      comments: 'id, issueId, [issueId+createdAt]',
+      savedViews: 'id, name',
+      activities: 'id, issueId, [issueId+createdAt], createdAt',
+      settings: 'key',
+    })
   }
 }
 

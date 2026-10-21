@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_FILTERS, normalizeFilters, parseFilters, toggleIn, UNASSIGNED } from './filters'
+import {
+  ALL_PROJECTS,
+  DEFAULT_FILTERS,
+  normalizeFilters,
+  parseFilters,
+  toggleIn,
+  UNASSIGNED,
+} from './filters'
 
 describe('normalizeFilters', () => {
   it('旧单值结构归一为单元素数组', () => {
@@ -69,6 +76,14 @@ describe('normalizeFilters', () => {
     for (const raw of [null, undefined, 'x', 42, ['todo'], true]) {
       expect(normalizeFilters(raw)).toEqual(DEFAULT_FILTERS)
     }
+  })
+
+  it('全部项目哨兵合法保留（保存视图可存读）', () => {
+    const f = normalizeFilters({ projectId: ALL_PROJECTS, statusFilter: ['todo'] })
+    expect(f.projectId).toBe('__all__')
+    expect(normalizeFilters(JSON.parse(JSON.stringify(f)))).toEqual(f)
+    // 空串仍回退默认项目，不会被当成「全部项目」
+    expect(normalizeFilters({ projectId: '' }).projectId).toBe(DEFAULT_FILTERS.projectId)
   })
 })
 

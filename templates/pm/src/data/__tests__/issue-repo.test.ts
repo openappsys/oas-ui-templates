@@ -3,6 +3,7 @@ import 'fake-indexeddb/auto'
 import { PMDatabase } from '@/db/schema'
 import { createDexieIssueRepository } from '@/data/dexie/issue-repo'
 import type { IssueWindowFilters } from '@/data/types'
+import { ALL_PROJECTS } from '@/lib/filters'
 import type { Issue } from '@/types'
 
 function seedIssue(_db: PMDatabase, over: Partial<Issue> = {}): Issue {
@@ -571,5 +572,168 @@ describe('dexie issue repository', () => {
     await second
     unsub?.()
     expect(emissions[1]?.status).toBe('done')
+  })
+})
+
+describe('dexie issue repository — 全部项目作用域', () => {
+  let db: PMDatabase
+  beforeEach(async () => {
+    db = new PMDatabase(`test-${crypto.randomUUID()}`)
+    await db.open()
+  })
+
+  /** 取 liveWindow 首个快照（默认全部项目作用域） */
+  const windowRows = (
+    repo: ReturnType<typeof createDexieIssueRepository>,
+    filters: Partial<IssueWindowFilters> = {},
+    currentUser = 'm1',
+    limit?: number,
+  ): Promise<Issue[]> =>
+    new Promise<Issue[]>((resolve) => {
+      const unsub = repo
+        .liveWindow(
+          {
+            projectId: ALL_PROJECTS,
+            statusFilter: [],
+            assigneeFilter: [],
+            priorityFilter: [],
+            search: '',
+            myOnly: false,
+            sortBy: 'updatedAt',
+            ...filters,
+          },
+          currentUser,
+          limit,
+        )
+        .subscribe({
+          next: (v) => {
+            resolve(v)
+            unsub()
+          },
+        })
+    })
+
+  it('无状态筛选：跨项目并集按 updatedAt 倒序，limit 截断', async () => {
+    const now = 1_000_000
+    await db.issues.bulkAdd([
+      seedIssue(db, { id: 'x1', projectId: 'p1', updatedAt: now - 500 }),
+      seedIssue(db, { id: 'x2', projectId: 'p2', updatedAt: now - 400 }),
+      seedIssue(db, { id: 'x3', projectId: 'p3', updatedAt: now - 300 }),
+      seedIssue(db, { id: 'x4', projectId: 'p2', updatedAt: now - 200 }),
+    ])
+    const repo = createDexieIssueRepository(db)
+    expect((await windowRows(repo)).map((r) => r.id)).toEqual(['x4', 'x3', 'x2', 'x1'])
+    expect((await windowRows(repo, {}, 'm1', 2)).map((r) => r.id)).toEqual(['x4', 'x3'])
+  })
+
+  it('状态多选：组内 OR 跨项目归并后按 updatedAt 截断', async () => {
+    const now = 1_000_000
+    await db.issues.bulkAdd([
+      seedIssue(db, { id: 's1', projectId: 'p1', status: 'todo', updatedAt: now - 500 }),
+      seedIssue(db, { id: 's2', projectId: 'p2', status: 'done', updatedAt: now - 400 }),
+      seedIssue(db, { id: 's3', projectId: 'p3', status: 'in_progress', updatedAt: now - 300 }),
+      seedIssue(db, { id: 's4', projectId: 'p2', status: 'todo', updatedAt: now - 200 }),
+      seedIssue(db, { id: 's5', projectId: 'p1', status: 'done', updatedAt: now - 100 }),
+    ])
+    const repo = createDexieIssueRepository(db)
+    expect((await windowRows(repo, { statusFilter: ['todo', 'done'] })).map((r) => r.id)).toEqual([
+      's5',
+      's4',
+      's2',
+      's1',
+    ])
+    // 分片各取 limit 条再归并：窗口外（in_progress）的行不得混入
+    const limited = await windowRows(repo, { statusFilter: ['todo', 'done'] }, 'm1', 3)
+    expect(limited.map((r) => r.id)).toEqual(['s5', 's4', 's2'])
+    expect(limited.every((r) => r.status !== 'in_progress')).toBe(true)
+  })
+
+  it('myOnly 跨项目生效（跨项目个人工作台）', async () => {
+    const now = 1_000_000
+    await db.issues.bulkAdd([
+      seedIssue(db, { id: 'y1', projectId: 'p1', assigneeId: 'm1', updatedAt: now - 400 }),
+      seedIssue(db, { id: 'y2', projectId: 'p2', assigneeId: 'm1', updatedAt: now - 300 }),
+      seedIssue(db, { id: 'y3', projectId: 'p3', assigneeId: 'm2', updatedAt: now - 200 }),
+      seedIssue(db, { id: 'y4', projectId: 'p2', assigneeId: 'm1', updatedAt: now - 100 }),
+    ])
+    const repo = createDexieIssueRepository(db)
+    const rows = await windowRows(repo, { myOnly: true }, 'm1')
+    expect(rows.map((r) => r.id)).toEqual(['y4', 'y2', 'y1'])
+    expect(new Set(rows.map((r) => r.projectId)).size).toBe(2)
+  })
+
+  it('窗口先截断再过滤（全部项目同样适用）+ 排序在窗口内重排', async () => {
+    const now = 1_000_000
+    await db.issues.bulkAdd([
+      seedIssue(db, { id: 'w1', projectId: 'p1', priority: 'low', updatedAt: now - 500 }),
+      seedIssue(db, { id: 'w2', projectId: 'p2', priority: 'urgent', updatedAt: now - 200 }),
+      seedIssue(db, { id: 'w3', projectId: 'p1', priority: 'high', updatedAt: now - 100 }),
+    ])
+    const repo = createDexieIssueRepository(db)
+    // 窗口取最近 2 条（w3/w2），再套 low → 空集
+    expect(await windowRows(repo, { priorityFilter: ['low'] }, 'm1', 2)).toEqual([])
+    expect((await windowRows(repo, { sortBy: 'priority' })).map((r) => r.id)).toEqual([
+      'w2',
+      'w3',
+      'w1',
+    ])
+  })
+
+  it('search 仍是全表匹配（全部项目下等同全局）', async () => {
+    await db.issues.bulkAdd([
+      seedIssue(db, { id: 'q1', projectId: 'p1', title: '修复登录白屏' }),
+      seedIssue(db, { id: 'q2', projectId: 'p2', title: '修复登录白屏' }),
+      seedIssue(db, { id: 'q3', projectId: 'p3', title: '无关标题' }),
+    ])
+    const repo = createDexieIssueRepository(db)
+    const rows = await windowRows(repo, { search: '登录' })
+    expect(new Set(rows.map((r) => r.id))).toEqual(new Set(['q1', 'q2']))
+  })
+
+  it('liveCounts 聚合全项目计数', async () => {
+    await db.issues.bulkAdd([
+      seedIssue(db, { id: 'c1', projectId: 'p1', status: 'todo' }),
+      seedIssue(db, { id: 'c2', projectId: 'p2', status: 'todo' }),
+      seedIssue(db, { id: 'c3', projectId: 'p3', status: 'done' }),
+      seedIssue(db, { id: 'c4', projectId: 'p2', status: 'cancelled' }),
+    ])
+    const repo = createDexieIssueRepository(db)
+    const counts = await new Promise<{ total: number; byStatus: Record<string, number> }>(
+      (resolve) => {
+        const unsub = repo.liveCounts(ALL_PROJECTS).subscribe({
+          next: (v) => {
+            resolve(v)
+            unsub()
+          },
+        })
+      },
+    )
+    expect(counts.total).toBe(4)
+    expect(counts.byStatus.todo).toBe(2)
+    expect(counts.byStatus.done).toBe(1)
+    expect(counts.byStatus.cancelled).toBe(1)
+    expect(counts.byStatus.in_progress).toBe(0)
+  })
+
+  it('liveAssigneeWorkload 聚合全项目（仪表盘不因全部项目而空图）', async () => {
+    await db.issues.bulkAdd([
+      seedIssue(db, { id: 'k1', projectId: 'p1', assigneeId: 'm1' }),
+      seedIssue(db, { id: 'k2', projectId: 'p2', assigneeId: 'm1' }),
+      seedIssue(db, { id: 'k3', projectId: 'p3', assigneeId: 'm2' }),
+      seedIssue(db, { id: 'k4', projectId: 'p2', assigneeId: null }),
+    ])
+    const repo = createDexieIssueRepository(db)
+    const rows = await new Promise<Array<{ memberId: string; count: number }>>((resolve) => {
+      const unsub = repo.liveAssigneeWorkload(ALL_PROJECTS).subscribe({
+        next: (v) => {
+          resolve(v)
+          unsub()
+        },
+      })
+    })
+    const map = new Map(rows.map((r) => [r.memberId, r.count]))
+    expect(map.get('m1')).toBe(2)
+    expect(map.get('m2')).toBe(1)
+    expect(map.size).toBe(2)
   })
 })

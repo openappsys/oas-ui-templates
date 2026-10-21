@@ -1,4 +1,4 @@
-import { LIST_WINDOW, UNASSIGNED } from '../../lib/filters.ts'
+import { ALL_PROJECTS, LIST_WINDOW, UNASSIGNED } from '../../lib/filters.ts'
 import { PRIORITY_WEIGHT } from '../../lib/order.ts'
 import { mulberry32 } from '../../lib/prng.ts'
 import {
@@ -296,14 +296,18 @@ function segments(path: string): string[] {
 
 /** Dexie 语义复刻：search 走全表（无视 project/status、按主键序、上限 2000）；
  *  否则按索引窗口先截断，再套 assignee/myOnly/priority 过滤，最后在窗口内重排。
- *  多值维度走逗号分隔 query（status/assignee/priority），组内 OR；assignee 的 `__none__` 匹配未分配 */
+ *  多值维度走逗号分隔 query（status/assignee/priority），组内 OR；assignee 的 `__none__` 匹配未分配。
+ *  projectId=__all__ 为全部项目作用域：窗口不设项目谓词（跨项目并集） */
 function windowIssues(store: MockStore, q: URLSearchParams): Issue[] {
   const projectId = q.get('projectId') ?? ''
+  const allProjects = projectId === ALL_PROJECTS
   const statuses = csvQuery(q, 'status')
   const limit = numQuery(q, 'limit', LIST_WINDOW)
   const statusSet = new Set(statuses)
   const rows = store.issues.filter(
-    (i) => i.projectId === projectId && (statusSet.size === 0 || statusSet.has(i.status)),
+    (i) =>
+      (allProjects || i.projectId === projectId) &&
+      (statusSet.size === 0 || statusSet.has(i.status)),
   )
   let out = rows.sort(byUpdatedDesc).slice(0, limit)
 
@@ -340,13 +344,14 @@ function windowIssues(store: MockStore, q: URLSearchParams): Issue[] {
 }
 
 function issueCounts(store: MockStore, projectId: string) {
+  const allProjects = projectId === ALL_PROJECTS
   const byStatus = Object.fromEntries(ISSUE_STATUSES.map((s) => [s, 0])) as Record<
     IssueStatus,
     number
   >
   let total = 0
   for (const issue of store.issues) {
-    if (issue.projectId !== projectId) continue
+    if (!allProjects && issue.projectId !== projectId) continue
     total += 1
     byStatus[issue.status] += 1
   }
@@ -631,8 +636,11 @@ function routeIssues(
   }
   if (second === 'workload' && method === 'GET') {
     const projectId = q.get('projectId') ?? ''
+    const allProjects = projectId === ALL_PROJECTS
     const counts = new Map<string, number>()
-    for (const issue of [...store.issues].filter((i) => i.projectId === projectId).sort(byIdAsc)) {
+    for (const issue of [...store.issues]
+      .filter((i) => allProjects || i.projectId === projectId)
+      .sort(byIdAsc)) {
       if (!issue.assigneeId) continue
       counts.set(issue.assigneeId, (counts.get(issue.assigneeId) ?? 0) + 1)
     }
