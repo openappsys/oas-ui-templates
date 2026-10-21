@@ -14,6 +14,8 @@ export default defineConfig({
   webServer: {
     command: 'pnpm exec vite --port 5878 --strictPort',
     url: 'http://localhost:5878',
-    reuseExistingServer: !process.env.CI,
+    // 不复用已有 server：复用的 server 可能持有重建前的模块缓存（上游 dist 重建后应用无法启动，
+    // 表现为 pm-toolbar 缺失 + seed 等待超时）。端口被占时快速失败优于静默跑到超时。
+    reuseExistingServer: false,
   },
 })
