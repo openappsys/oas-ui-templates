@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import type { Cycle, Issue, IssuePriority, IssueStatus, Member, Project } from './types'
 import { ISSUE_PRIORITIES, ISSUE_STATUSES } from './types'
 import { OSelect, OTabs } from './components/oas-wrappers'
-import { t, loadLang, setLang, statusLabel, priorityLabel, dateLocale, type Lang } from './i18n'
+import { t, loadLang, setLang, statusLabel, priorityLabel, type Lang } from './i18n'
 import { useSavedViews } from './components/BulkBar'
 import { PRIORITY_TEXT, STATUS_COLOR } from './lib/colors'
 import { CYCLE_SIDEBAR_LIMIT, CURRENT_CYCLE, currentCycleIds } from './lib/cycles'
@@ -40,6 +40,7 @@ import { ScheduleView } from './views/schedule/ScheduleView'
 import { IssueDetailDrawer } from './views/issue/IssueDetailDrawer'
 import { AdminView, type AdminTab } from './views/admin/AdminView'
 import { LoginView } from './views/auth/LoginView'
+import { NotificationBell, NotificationPanel } from './components/NotificationCenter'
 
 type View = 'dashboard' | 'issues' | 'board' | 'timeline' | 'resource' | 'schedule' | 'admin'
 
@@ -117,97 +118,6 @@ function useWindowAssigneeCounts(issues: Issue[] | undefined) {
     }
     return map
   }, [issues])
-}
-
-/** 与我相关的最近动态：他人对我负责 Issue 的变更（近 7 天，最多 20 条） */
-function useMyNotifications(currentUser: string) {
-  const { issues: issuesRepo, activities: activitiesRepo } = useRepositories()
-  const acts = useObservable(() => activitiesRepo.liveRecent(300), [activitiesRepo])
-  const [list, setList] =
-    useState<
-      Array<{ id: string; actorId: string; text: string; issueId: string; createdAt: number }>
-    >()
-  useEffect(() => {
-    if (!acts) return
-    let alive = true
-    const mine = acts.filter((a) => a.actorId !== currentUser)
-    // bulkGet 一次取齐（逐条 get 300 次会拖慢首屏渲染）
-    issuesRepo
-      .bulkGet(mine.map((a) => a.issueId))
-      .then((issues) => {
-        if (!alive) return
-        const out: Array<{
-          id: string
-          actorId: string
-          text: string
-          issueId: string
-          createdAt: number
-        }> = []
-        issues.forEach((issue, i) => {
-          if (!issue || issue.assigneeId !== currentUser) return
-          if (out.length >= 20) return
-          out.push({
-            id: mine[i].id,
-            actorId: mine[i].actorId,
-            text: `${issue.key} ${issue.title ?? ''}`,
-            issueId: issue.id,
-            createdAt: mine[i].createdAt,
-          })
-        })
-        setList(out)
-      })
-      .catch((e) => console.error('[useMyNotifications]', (e as Error)?.message ?? e))
-    return () => {
-      alive = false
-    }
-  }, [acts, currentUser, issuesRepo])
-  return list
-}
-
-function NotificationBadge({ currentUser }: { currentUser: string }) {
-  const list = useMyNotifications(currentUser)
-  const count = list?.length ?? 0
-  if (count === 0) return null
-  return (
-    <oas-badge type="danger" data-testid="notify-badge">
-      {String(count)}
-    </oas-badge>
-  )
-}
-
-function NotificationList({
-  currentUser,
-  onOpen,
-}: {
-  currentUser: string
-  onOpen: (issueId: string) => void
-}) {
-  const list = useMyNotifications(currentUser)
-  if (!list || list.length === 0) {
-    return <oas-empty description={t('notifyEmpty')} />
-  }
-  return (
-    <div className="notify-list" data-testid="notify-list">
-      {list.map((n) => (
-        // biome-ignore lint/a11y/useSemanticElements: 通知项内含块级段落、走自定义布局，不换 <button>
-        <div
-          key={n.id}
-          className="notify-item"
-          data-testid="notify-item"
-          style={{ cursor: 'pointer' }}
-          role="button"
-          tabIndex={0}
-          onClick={() => onOpen(n.issueId)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') onOpen(n.issueId)
-          }}
-        >
-          <p className="notify-text">{n.text}</p>
-          <p className="notify-time">{new Date(n.createdAt).toLocaleString(dateLocale())}</p>
-        </div>
-      ))}
-    </div>
-  )
 }
 
 /** 数据源徽标：DEV 下可点切换（写 localStorage + reload）；构建产物只读，
@@ -873,16 +783,10 @@ function Workspace({
         <oas-button type="text" size="small" data-testid="lang-toggle" onClick={toggleLang}>
           {lang === 'zh' ? 'EN' : '中'}
         </oas-button>
-        <oas-button
-          type="text"
-          size="small"
-          data-testid="toolbar-notify"
-          title={t('notifyTitle')}
-          onClick={() => notifyRef.current?.setAttribute('visible', '')}
-        >
-          {t('notify')}
-          <NotificationBadge currentUser={currentUser} />
-        </oas-button>
+        <NotificationBell
+          currentUser={currentUser}
+          onOpen={() => notifyRef.current?.setAttribute('visible', '')}
+        />
         <oas-button
           type="text"
           size="small"
@@ -1110,16 +1014,13 @@ function Workspace({
         </div>
       </oas-modal>
 
-      {/* 通知（与我相关的最近动态） */}
-      <oas-modal ref={notifyRef} title={t('notifyTitle')} no-footer data-testid="modal-notify">
-        <NotificationList
-          currentUser={currentUser}
-          onOpen={(issueId) => {
-            notifyRef.current?.removeAttribute('visible')
-            setSelectedId(issueId)
-          }}
-        />
-      </oas-modal>
+      {/* 通知中心（右侧面板：列表点击标已读并打开 Issue 详情） */}
+      <NotificationPanel
+        drawerRef={notifyRef}
+        currentUser={currentUser}
+        memberMap={memberMap}
+        onOpenIssue={setSelectedId}
+      />
 
       {/* 身份切换（Dexie 演示模式专用；API 模式换人 = 换 token，走登出） */}
       {!apiMode && (

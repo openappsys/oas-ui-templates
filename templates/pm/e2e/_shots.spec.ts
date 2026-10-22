@@ -47,6 +47,81 @@ async function switchUser(page: Page, id: string) {
   })
 }
 
+/** 造两条未读通知（李娜 @张伟 评论 + 把李娜负责的 Issue 改派张伟），切回张伟后截图 */
+async function composeUnreadNotifications(page: Page) {
+  await switchUser(page, 'member-2')
+  await sideItem(page, 'member:member-1').click()
+  await page.waitForTimeout(1000)
+  await openFirstDrawer(page)
+  await page.getByTestId('comment-input').fill('@张伟 请确认排期')
+  await page.getByTestId('comment-send').click()
+  await expect(page.getByTestId('comment-item').last()).toContainText('@张伟', {
+    timeout: 10_000,
+  })
+  await page.keyboard.press('Escape')
+  await page.waitForTimeout(600)
+
+  await sideItem(page, 'member:member-1').click()
+  await sideItem(page, 'member:member-2').click()
+  await page.waitForTimeout(1200)
+  await openFirstDrawer(page)
+  await page.evaluate(() => {
+    const el = document.querySelector('[data-testid=detail-assignee]') as HTMLElement & {
+      value?: string
+    }
+    if (!el) return
+    el.value = 'member-1'
+    el.dispatchEvent(
+      new CustomEvent('oas-change', { bubbles: true, detail: { value: 'member-1' } }),
+    )
+  })
+  await page.waitForTimeout(1200)
+  await page.keyboard.press('Escape')
+  await page.waitForTimeout(600)
+
+  await switchUser(page, 'member-1')
+  await expect(page.getByTestId('notify-badge')).toBeVisible({ timeout: 20_000 })
+}
+
+/** WCAG 相对亮度/对比度（登录页主按钮实测用；rgba 文本先按底色合成） */
+function parseRgb(input: string): [number, number, number, number] {
+  const m = input.match(/rgba?\(([^)]+)\)/)
+  const parts = (m?.[1] ?? '0,0,0,1')
+    .split(/[,/\s]+/)
+    .filter(Boolean)
+    .map(Number)
+  return [parts[0] ?? 0, parts[1] ?? 0, parts[2] ?? 0, parts[3] ?? 1]
+}
+
+function luminance([r, g, b]: [number, number, number, number]): number {
+  const channel = (v: number) => {
+    const s = v / 255
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4
+  }
+  return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b)
+}
+
+/** 登录页主按钮文字/底色对比度（取 oas-button shadow 内的内部按钮计算样式） */
+async function measureLoginContrast(page: Page) {
+  const raw = await page.getByTestId('login-submit').evaluate((host) => {
+    const btn = (host.shadowRoot?.querySelector('button') as HTMLElement | null) ?? host
+    const cs = getComputedStyle(btn)
+    return { color: cs.color, background: cs.backgroundColor, fontSize: cs.fontSize }
+  })
+  const fg = parseRgb(raw.color)
+  const bg = parseRgb(raw.background)
+  // 文字半透明时按底色合成，再算比值
+  const a = fg[3]
+  const fgOverBg: [number, number, number, number] = [
+    fg[0] * a + bg[0] * (1 - a),
+    fg[1] * a + bg[1] * (1 - a),
+    fg[2] * a + bg[2] * (1 - a),
+    1,
+  ]
+  const [hi, lo] = [luminance(fgOverBg), luminance(bg)].sort((x, y) => y - x)
+  return { ratio: Number(((hi + 0.05) / (lo + 0.05)).toFixed(2)), raw }
+}
+
 async function captureViews(page: Page, suffix: string) {
   await page.waitForTimeout(1500)
   await page.screenshot({ path: `shots/pm-list${suffix}.png` })
@@ -623,6 +698,8 @@ async function openLogin(page: Page, theme: 'light' | 'dark') {
 test('shots auth', async ({ page }) => {
   await openLogin(page, 'light')
   await page.screenshot({ path: 'shots/pm-login.png' })
+  const light = await measureLoginContrast(page)
+  console.log(`LOGIN_CONTRAST light=${light.ratio} ${light.raw.color} on ${light.raw.background}`)
 
   // 凭据错误提示
   await page.getByTestId('login-email').evaluate((el) => {
@@ -644,8 +721,39 @@ test('shots auth', async ({ page }) => {
 test('shots auth dark', async ({ page }) => {
   await openLogin(page, 'dark')
   await page.screenshot({ path: 'shots/pm-login-dark.png' })
+  const dark = await measureLoginContrast(page)
+  console.log(`LOGIN_CONTRAST dark=${dark.ratio} ${dark.raw.color} on ${dark.raw.background}`)
 
   console.log('shots auth dark done')
+})
+
+test('shots notifications', async ({ page }) => {
+  test.setTimeout(240_000)
+  await openApp(page)
+  await composeUnreadNotifications(page)
+  await page.waitForTimeout(800)
+  // 铃铛未读态（顶栏）
+  await page.screenshot({ path: 'shots/pm-notify-bell.png' })
+  await page.getByTestId('toolbar-notify').click()
+  await expect(page.getByTestId('notify-item').first()).toBeVisible({ timeout: 10_000 })
+  await page.waitForTimeout(800)
+  await page.screenshot({ path: 'shots/pm-notify-panel.png' })
+  console.log('shots notifications done')
+})
+
+test('shots notifications dark', async ({ page }) => {
+  test.setTimeout(240_000)
+  await page.addInitScript(() => localStorage.setItem('oas-pm-theme', 'dark'))
+  await openApp(page)
+  await expectDarkTheme(page)
+  await composeUnreadNotifications(page)
+  await page.waitForTimeout(800)
+  await page.screenshot({ path: 'shots/pm-notify-bell-dark.png' })
+  await page.getByTestId('toolbar-notify').click()
+  await expect(page.getByTestId('notify-item').first()).toBeVisible({ timeout: 10_000 })
+  await page.waitForTimeout(800)
+  await page.screenshot({ path: 'shots/pm-notify-panel-dark.png' })
+  console.log('shots notifications dark done')
 })
 
 test('shots list error', async ({ page }) => {

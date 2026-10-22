@@ -7,7 +7,7 @@ const dict = {
     exportCsv: '导出 CSV（当前窗口）',
     search: '搜索 Key 或标题…（/）',
     about: '关于',
-    notify: '动态',
+    notify: '通知',
     dashboard: '仪表盘',
     list: '列表',
     board: '看板',
@@ -302,8 +302,20 @@ const dict = {
     priorityHigh: '高',
     priorityMedium: '中',
     priorityLow: '低',
-    notifyEmpty: '暂无与我相关的动态',
-    notifyTitle: '与我相关的最近动态',
+    notifyEmpty: '暂无通知',
+    notifyTitle: '通知',
+    notifyReadAll: '全部已读',
+    notifyAssigned: '{actor} 把 {key} 指派给你',
+    notifyMention: '{actor} 在 {key} 的评论中提到你',
+    notifyComment: '{actor} 评论了 {key}',
+    notifyStatus: '{actor} 将 {key} 改为 {status}',
+    notifyCycle: '迭代 {name} 已结束',
+    notifySystem: '系统通知',
+    notifyIssueGone: '（Issue 已删除）',
+    notifyJustNow: '刚刚',
+    notifyMinutesAgo: '{n} 分钟前',
+    notifyHoursAgo: '{n} 小时前',
+    notifyDaysAgo: '{n} 天前',
     myView: '我的（{name}）',
     createTitlePlaceholder: 'Issue 标题',
     titleRequired: '标题不能为空',
@@ -317,7 +329,7 @@ const dict = {
     exportCsv: 'Export CSV (current window)',
     search: 'Search by key or title… (/)',
     about: 'About',
-    notify: 'Activity',
+    notify: 'Notifications',
     dashboard: 'Dashboard',
     list: 'List',
     board: 'Board',
@@ -612,8 +624,20 @@ const dict = {
     priorityHigh: 'High',
     priorityMedium: 'Medium',
     priorityLow: 'Low',
-    notifyEmpty: 'No activity related to you yet',
-    notifyTitle: 'Recent activity related to you',
+    notifyEmpty: 'No notifications',
+    notifyTitle: 'Notifications',
+    notifyReadAll: 'Mark all read',
+    notifyAssigned: '{actor} assigned {key} to you',
+    notifyMention: '{actor} mentioned you in {key}',
+    notifyComment: '{actor} commented on {key}',
+    notifyStatus: '{actor} changed {key} to {status}',
+    notifyCycle: 'Cycle {name} ended',
+    notifySystem: 'System notification',
+    notifyIssueGone: '(Issue deleted)',
+    notifyJustNow: 'Just now',
+    notifyMinutesAgo: '{n} min ago',
+    notifyHoursAgo: '{n} h ago',
+    notifyDaysAgo: '{n} days ago',
     myView: 'My issues ({name})',
     createTitlePlaceholder: 'Issue title',
     titleRequired: 'Title is required',
@@ -651,6 +675,20 @@ export function storeLang(l: Lang): void {
 
 export function dateLocale(): string {
   return currentLang === 'zh' ? 'zh-CN' : 'en-US'
+}
+
+const MINUTE = 60_000
+const HOUR = 60 * MINUTE
+const DAY = 24 * HOUR
+
+/** 相对时间：刚刚 / n 分钟前 / n 小时前 / n 天前；超过 7 天退回日期（通知面板的时间列） */
+export function relativeTime(ts: number, now = Date.now()): string {
+  const diff = Math.max(0, now - ts)
+  if (diff < MINUTE) return t('notifyJustNow')
+  if (diff < HOUR) return t('notifyMinutesAgo').replace('{n}', String(Math.floor(diff / MINUTE)))
+  if (diff < DAY) return t('notifyHoursAgo').replace('{n}', String(Math.floor(diff / HOUR)))
+  if (diff < 7 * DAY) return t('notifyDaysAgo').replace('{n}', String(Math.floor(diff / DAY)))
+  return new Date(ts).toLocaleDateString(dateLocale())
 }
 
 const STATUS_KEY: Record<string, DictKey> = {

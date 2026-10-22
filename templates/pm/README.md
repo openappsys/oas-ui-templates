@@ -1,6 +1,6 @@
 # OAS PM（pm）项目管理系统模板
 
-> 状态：**可用（2026-10-22）**——195 单测 + 114 e2e 全绿
+> 状态：**可用（2026-10-22）**——260 单测 + 135 e2e 全绿
 
 基于 oas-ui 的项目管理系统模板：**React 19 + Dexie（IndexedDB）+ @oas-ui/ui**。
 演示「生产级前端基线」：Repository 数据层（可换 REST 适配器）、三级权限模型、六大视图、中英双语、明暗双主题。
@@ -13,6 +13,7 @@
 - **时间线**：甘特图（项目分组 / 进度 / 里程碑 / 逾期约束 / 拖拽改期写回）
 - **资源**：成员负载泳道 / 超载高亮 / 拖拽改期与转派 / **一键均载**（levelResources reassign，admin）
 - **日程**：月历 / 周时刻轴 / 议程，截止日**全天 / 上午 / 下午**三档，拖拽归档写回 + 详情抽屉联动
+- **通知中心**：顶栏铃铛 + 未读角标（0 隐藏），右侧面板汇总 @提及 / 指派 / 评论 / 关闭状态四类通知，支持单条已读、全部已读，点击跳转对应 Issue
 - **管理控制台**（admin）：项目 / 成员 / 权限 / 标签 / 设置 / 总览六页签
 - **通用**：三级权限（admin / member / viewer，操作点 UI 拦截）、中英双语一键切换、明暗双主题、Cmd+K 命令面板、快捷键
 
@@ -49,7 +50,7 @@ src/
 
 # OAS PM (pm) — Project Management Template
 
-> Status: **Stable (2026-10-22)** — 195 unit + 114 e2e tests green
+> Status: **Stable (2026-10-22)** — 260 unit + 135 e2e tests green
 
 A project-management template built on oas-ui: **React 19 + Dexie (IndexedDB) + @oas-ui/ui**.
 A production-grade frontend baseline: Repository data layer (REST-adapter ready), 3-level permission model, six views, zh-en i18n, dual theme.
@@ -62,6 +63,7 @@ A production-grade frontend baseline: Repository data layer (REST-adapter ready)
 - **Timeline**: gantt (project groups / progress / milestones / overdue constraints / drag-reschedule writeback)
 - **Resource**: member workload swimlanes / overload highlighting / drag reschedule & reassign / **one-click load leveling** (levelResources reassign mode, admin)
 - **Schedule**: month / week time-axis / agenda views, due dates in **all-day / AM / PM** buckets, drag-to-bucket writeback + detail drawer
+- **Notifications**: bell with an unread badge (hidden at zero) and a right-side panel for mentions, assignments, comments, and closing status changes. Read one row or mark all read. Click a row to open the issue.
 - **Admin console** (admin): projects / members / permissions / labels / settings / overview
 - **General**: 3-level permissions (admin / member / viewer, per-action UI gating), one-click zh-en switch, light/dark themes, Cmd+K command palette, keyboard shortcuts
 

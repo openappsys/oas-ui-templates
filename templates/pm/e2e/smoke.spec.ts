@@ -827,12 +827,12 @@ test('M18 通知：他人变更我负责的 Issue → 切回后动态出现', as
       { timeout: 15_000 },
     )
     .toBe(true)
-  // 选一个与当前不同的状态，确保产生 diff 活动记录（新建默认 todo → in_progress）
+  // 选「已完成」：通知规则只对关闭类状态（done/cancelled）通知负责人
   const curStatus = await page.evaluate(
     () =>
       (document.querySelector('[data-testid=detail-status]') as { value?: string })?.value ?? '',
   )
-  await setOSelect(page, 'detail-status', curStatus === 'in_progress' ? 'todo' : 'in_progress')
+  await setOSelect(page, 'detail-status', curStatus === 'done' ? 'cancelled' : 'done')
   await page.keyboard.press('Escape')
   await page.waitForTimeout(500)
 
