@@ -1,6 +1,9 @@
 // 相对路径而非 @ 别名：vite.config.ts 直接加载 mock-server.ts，进而解析本模块——
 // 配置加载阶段的别名尚未注册，裸别名会被 Node 当成包名解析失败（同 lib/filters）
-import type { Cycle } from '../types/index.ts'
+import type { Cycle, Issue, IssueStatus } from '../types/index.ts'
+
+/** 一天的毫秒数（周期区间/燃尽按天切分用） */
+export const DAY_MS = 86_400_000
 
 /** 迭代筛选的「当前迭代」哨兵：周期 id 不会取此值。
  *  不落 status 字段——当前迭代由 now ∈ [startAt, endAt) 派生，时钟推进即自动换挡 */
@@ -20,6 +23,82 @@ export function isCurrentCycle(c: Cycle, now: number): boolean {
 /** 当前迭代之间的判定：两种数据源（Dexie/API）与 seed 共用同一派生口径 */
 export function currentCycleIds(cycles: Cycle[], now: number): Set<string> {
   return new Set(cycles.filter((c) => isCurrentCycle(c, now)).map((c) => c.id))
+}
+
+/** 周期相位（派生，无 status 字段）：now >= endAt 已结束；now ∈ [startAt, endAt) 进行中；否则未开始 */
+export type CyclePhase = 'ended' | 'current' | 'upcoming'
+
+export function cyclePhase(c: Cycle, now: number): CyclePhase {
+  if (now >= c.endAt) return 'ended'
+  return c.startAt <= now ? 'current' : 'upcoming'
+}
+
+/** 当前迭代（cycles 需按 startAt 倒序传入）：最新开始的那个。
+ *  「全部项目」作用域下每项目各有一个当前周期，取最新的一个作为看板/燃尽的主对象 */
+export function currentCycleOf(cycles: Cycle[], now: number): Cycle | undefined {
+  return cycles.find((c) => isCurrentCycle(c, now))
+}
+
+/** 迭代内「未完成」口径：done / cancelled 之外都算未完成——结转只搬这些 */
+export function isOpenIssue(issue: { status: IssueStatus }): boolean {
+  return issue.status !== 'done' && issue.status !== 'cancelled'
+}
+
+/** 结转目标「下一周期」：同项目里 startAt 大于本周期的最早一个；并列 startAt 取先出现者 */
+export function nextCycleOf(cycles: Cycle[], cycle: Cycle): Cycle | undefined {
+  let best: Cycle | undefined
+  for (const c of cycles) {
+    if (c.id === cycle.id || c.projectId !== cycle.projectId || c.startAt <= cycle.startAt) continue
+    if (!best || c.startAt < best.startAt) best = c
+  }
+  return best
+}
+
+/**
+ * 结转批量补丁：把该周期的未完成项改挂到目标周期（null = 移出迭代）。
+ * 纯函数——写库由调用方一次 updateMany（单事务）完成。
+ */
+export function rolloverUpdates(
+  issues: Issue[],
+  cycleId: string,
+  targetCycleId: string | null,
+): Array<{ id: string; changes: Partial<Issue> }> {
+  return issues
+    .filter((i) => (i.cycleId ?? null) === cycleId && isOpenIssue(i))
+    .map((i) => ({ id: i.id, changes: { cycleId: targetCycleId } }))
+}
+
+/** 同项目内区间是否与本周期重叠（左闭右开，首尾相接不算重叠）；excludeId 排除自身 */
+export function overlapsAnyCycle(
+  cycles: Cycle[],
+  projectId: string,
+  startAt: number,
+  endAt: number,
+  excludeId?: string,
+): boolean {
+  return cycles.some(
+    (c) =>
+      c.projectId === projectId && c.id !== excludeId && c.startAt < endAt && startAt < c.endAt,
+  )
+}
+
+/** 日期输入值 'YYYY-MM-DD'（本地日历）→ 当日 0 点时间戳；格式/日历日期不合法返回 null */
+export function dayInputToTs(value: string): number | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim())
+  if (!m) return null
+  const [year, month, day] = [Number(m[1]), Number(m[2]), Number(m[3])]
+  const d = new Date(year, month - 1, day)
+  // 溢出（如 02-30 滚到 03-02）视为非法，避免静默写错区间
+  if (d.getFullYear() !== year || d.getMonth() !== month - 1 || d.getDate() !== day) return null
+  return d.getTime()
+}
+
+/** 时间戳 → 本地 'YYYY-MM-DD'（date-picker 的输入值格式） */
+export function tsToDayInput(ts: number): string {
+  const d = new Date(ts)
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${d.getFullYear()}-${mm}-${dd}`
 }
 
 /**

@@ -4,11 +4,19 @@ import {
   CURRENT_CYCLE,
   NO_CYCLE,
   currentCycleIds,
+  currentCycleOf,
   cycleFilterPredicate,
+  cyclePhase,
+  dayInputToTs,
   demoCycleIdFor,
   isCurrentCycle,
+  isOpenIssue,
+  nextCycleOf,
+  overlapsAnyCycle,
+  rolloverUpdates,
+  tsToDayInput,
 } from './cycles'
-import type { Cycle } from '@/types'
+import type { Cycle, Issue } from '@/types'
 
 const DAY = 86_400_000
 
@@ -113,5 +121,97 @@ describe('demoCycleIdFor（seed/mock 共用的确定性归属）', () => {
 
   it('侧栏周期行上限是常量（避免魔法数字散落）', () => {
     expect(CYCLE_SIDEBAR_LIMIT).toBeGreaterThan(0)
+  })
+})
+
+describe('周期相位与结转语义', () => {
+  const now = 10_000
+
+  it('cyclePhase：endAt 到点即已结束，startAt 前为未开始', () => {
+    expect(cyclePhase(cycle({ id: 'a', startAt: 0, endAt: now }), now)).toBe('ended')
+    expect(cyclePhase(cycle({ id: 'b', startAt: 0, endAt: now + 1 }), now)).toBe('current')
+    expect(cyclePhase(cycle({ id: 'c', startAt: now, endAt: now + 1 }), now)).toBe('current')
+    expect(cyclePhase(cycle({ id: 'd', startAt: now + 1, endAt: now + 2 }), now)).toBe('upcoming')
+  })
+
+  it('currentCycleOf：倒序列表里取最新开始的当前周期', () => {
+    const rows = [
+      cycle({ id: 'next', startAt: 20_000, endAt: 30_000 }),
+      cycle({ id: 'live', startAt: 5_000, endAt: 15_000 }),
+      cycle({ id: 'past', startAt: 0, endAt: 4_000 }),
+    ]
+    expect(currentCycleOf(rows, now)?.id).toBe('live')
+    expect(currentCycleOf(rows, 40_000)).toBeUndefined()
+  })
+
+  it('isOpenIssue：done / cancelled 之外都算未完成', () => {
+    expect(isOpenIssue({ status: 'todo' })).toBe(true)
+    expect(isOpenIssue({ status: 'in_progress' })).toBe(true)
+    expect(isOpenIssue({ status: 'backlog' })).toBe(true)
+    expect(isOpenIssue({ status: 'done' })).toBe(false)
+    expect(isOpenIssue({ status: 'cancelled' })).toBe(false)
+  })
+
+  it('nextCycleOf：同项目里 startAt 更大的最近一个；跨项目/并列不误选', () => {
+    const current = cycle({ id: 'c2', startAt: 200, endAt: 300 })
+    const rows = [
+      cycle({ id: 'c3', startAt: 300, endAt: 400 }),
+      cycle({ id: 'c4', startAt: 500, endAt: 600 }),
+      current,
+      cycle({ id: 'c1', startAt: 100, endAt: 200 }),
+      cycle({ id: 'other-p2', startAt: 250, endAt: 350, projectId: 'p2' }),
+    ]
+    expect(nextCycleOf(rows, current)?.id).toBe('c3')
+    // 最后一个周期没有下一周期
+    expect(nextCycleOf(rows, rows[1])).toBeUndefined()
+    expect(nextCycleOf([], current)).toBeUndefined()
+  })
+
+  it('rolloverUpdates：只搬该周期的未完成项，done/cancelled 与其他周期不动', () => {
+    const issues = [
+      { id: 'a', cycleId: 'c2', status: 'todo' },
+      { id: 'b', cycleId: 'c2', status: 'in_progress' },
+      { id: 'c', cycleId: 'c2', status: 'done' },
+      { id: 'd', cycleId: 'c2', status: 'cancelled' },
+      { id: 'e', cycleId: 'c3', status: 'todo' },
+      { id: 'f', cycleId: null, status: 'todo' },
+    ] as unknown as Issue[]
+    expect(rolloverUpdates(issues, 'c2', 'c3')).toEqual([
+      { id: 'a', changes: { cycleId: 'c3' } },
+      { id: 'b', changes: { cycleId: 'c3' } },
+    ])
+    // 目标 null = 移出迭代
+    expect(rolloverUpdates(issues, 'c2', null).map((u) => u.changes.cycleId)).toEqual([null, null])
+    // 周期无未完成项 → 空批（不产生空写事务）
+    expect(rolloverUpdates(issues, 'c1', 'c2')).toEqual([])
+  })
+
+  it('overlapsAnyCycle：左闭右开，首尾相接不算重叠；排除自身', () => {
+    const rows = [
+      cycle({ id: 'a', startAt: 0, endAt: 100 }),
+      cycle({ id: 'b', startAt: 200, endAt: 300, projectId: 'p2' }),
+    ]
+    expect(overlapsAnyCycle(rows, 'p1', 50, 150)).toBe(true)
+    expect(overlapsAnyCycle(rows, 'p1', 100, 200)).toBe(false)
+    expect(overlapsAnyCycle(rows, 'p1', 0, 100, 'a')).toBe(false)
+    // 跨项目不算重叠
+    expect(overlapsAnyCycle(rows, 'p3', 0, 1000)).toBe(false)
+  })
+})
+
+describe('日期输入往返', () => {
+  it('dayInputToTs / tsToDayInput 为本地日历且可往返', () => {
+    const ts = dayInputToTs('2026-03-05')
+    expect(ts).not.toBeNull()
+    expect(tsToDayInput(ts as number)).toBe('2026-03-05')
+    const d = new Date(ts as number)
+    expect([d.getFullYear(), d.getMonth(), d.getDate(), d.getHours()]).toEqual([2026, 2, 5, 0])
+  })
+
+  it('非法输入返回 null（格式错、日历越界）', () => {
+    expect(dayInputToTs('')).toBeNull()
+    expect(dayInputToTs('2026-3-5')).toBeNull()
+    expect(dayInputToTs('2026-02-30')).toBeNull()
+    expect(dayInputToTs('abc')).toBeNull()
   })
 })

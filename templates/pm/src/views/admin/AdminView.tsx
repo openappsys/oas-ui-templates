@@ -2,18 +2,27 @@ import { t, type DictKey, type Lang } from '@/i18n'
 import type { Member } from '@/types'
 import type { ThemePreference } from '@/lib/preferences'
 import { ConfigTab } from './ConfigTab'
+import { CyclesTab } from './CyclesTab'
 import { MembersTab } from './MembersTab'
 import { OverviewTab } from './OverviewTab'
 import { PermissionsTab } from './PermissionsTab'
 import { ProjectsTab } from './ProjectsTab'
 import { SettingsTab } from './SettingsTab'
 
-export type AdminTab = 'overview' | 'projects' | 'members' | 'config' | 'permissions' | 'settings'
+export type AdminTab =
+  | 'overview'
+  | 'projects'
+  | 'members'
+  | 'cycles'
+  | 'config'
+  | 'permissions'
+  | 'settings'
 
 const TABS: Array<{ id: AdminTab; labelKey: DictKey }> = [
   { id: 'overview', labelKey: 'adminNavOverview' },
   { id: 'projects', labelKey: 'adminNavProjects' },
   { id: 'members', labelKey: 'adminNavMembers' },
+  { id: 'cycles', labelKey: 'adminNavCycles' },
   { id: 'config', labelKey: 'adminNavConfig' },
   { id: 'permissions', labelKey: 'adminNavPermissions' },
   { id: 'settings', labelKey: 'adminNavSettings' },
@@ -70,6 +79,8 @@ export function AdminView({
           <ProjectsTab memberMap={memberMap} />
         ) : tab === 'members' ? (
           <MembersTab currentUser={currentUser} onMemberDeleted={onMemberDeleted} />
+        ) : tab === 'cycles' ? (
+          <CyclesTab lang={lang} />
         ) : tab === 'config' ? (
           <ConfigTab />
         ) : tab === 'permissions' ? (
