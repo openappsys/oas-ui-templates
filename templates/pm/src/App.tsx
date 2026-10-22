@@ -447,10 +447,12 @@ function Workspace({
   const handleMemberDeleted = useCallback(
     (id: string) => {
       if (id !== currentUser) return
+      // API 模式的身份由 token 决定：删掉自己不能「切到另一个演示身份」，否则界面身份与令牌分叉
+      if (apiMode) return
       const next = (members ?? []).find((m) => m.role === 'admin' && m.id !== id)
       switchUser(next?.id ?? 'member-1')
     },
-    [currentUser, members, switchUser],
+    [apiMode, currentUser, members, switchUser],
   )
   const canCreateRef = useRef(canCreateIssue)
   canCreateRef.current = canCreateIssue
