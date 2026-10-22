@@ -31,6 +31,14 @@ export interface ProjectCounts {
   byStatus: Record<IssueStatus, number>
 }
 
+/** 单个周期的工作项计数；cycleId = null 是「未入迭代」桶（管理端结转与侧栏角标用） */
+export interface CycleIssueCount {
+  cycleId: string | null
+  total: number
+  done: number
+  cancelled: number
+}
+
 export interface CreateIssueInput {
   projectId: string
   title: string
@@ -73,6 +81,10 @@ export interface IssueRepository {
   delete(id: string): Promise<void>
   liveWindow(filters: IssueWindowFilters, currentUser: string, limit?: number): Observable<Issue[]>
   liveCounts(projectId: string): Observable<ProjectCounts>
+  /** 按周期聚合的工作项计数（含 cycleId = null 桶）；sort：null 桶在前，其余 cycleId 升序 */
+  liveCycleCounts(projectId: string): Observable<CycleIssueCount[]>
+  /** 单个周期的全部工作项（id 升序）。走迭代索引直取，已结束周期也不受 updatedAt 窗口截断 */
+  liveCycleIssues(projectId: string, cycleId: string): Observable<Issue[]>
   liveSubIssues(parentId: string): Observable<Issue[]>
   liveRelationCandidates(projectId: string, limit: number): Observable<Issue[]>
   liveByCreatedSince(sinceMs: number): Observable<Issue[]>

@@ -4,11 +4,12 @@ import type { PMDatabase } from '@/db/schema'
 import type { Issue, IssuePriority, IssueStatus } from '@/types'
 import { ISSUE_STATUSES } from '@/types'
 import { fromLiveQuery, type Observable } from '@/data/observable'
-import { cycleFilterPredicate, CURRENT_CYCLE } from '@/lib/cycles'
+import { cycleFilterPredicate, CURRENT_CYCLE, NO_CYCLE } from '@/lib/cycles'
 import { ALL_PROJECTS, LIST_WINDOW, UNASSIGNED } from '@/lib/filters'
 import { PRIORITY_WEIGHT } from '@/lib/order'
 import type {
   CreateIssueInput,
+  CycleIssueCount,
   IssueRepository,
   IssueWindowFilters,
   ProjectCounts,
@@ -20,6 +21,24 @@ import { allocateProjectKey } from './project-repo'
 function byUpdatedDesc(a: Issue, b: Issue): number {
   if (b.updatedAt !== a.updatedAt) return b.updatedAt - a.updatedAt
   return a.id < b.id ? 1 : a.id > b.id ? -1 : 0
+}
+
+function byIdAsc(a: { id: string }, b: { id: string }): number {
+  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0
+}
+
+/** 迭代直取：[projectId+cycleId]（跨项目作用域走单列 cycleId）。
+ *  已结束周期的工作项 updatedAt 可能很旧，走 updatedAt 窗口会被整段截断——直取索引才是
+ *  「点已结束迭代空列表」的修法；窗口语义只保留给「当前迭代 / 未入迭代 / 不限」 */
+function cycleOwnedRows(db: PMDatabase, projectId: string, cycleId: string): Promise<Issue[]> {
+  if (projectId === ALL_PROJECTS) return db.issues.where('cycleId').equals(cycleId).toArray()
+  return db.issues.where('[projectId+cycleId]').equals([projectId, cycleId]).toArray()
+}
+
+/** 具体周期 id（区别于 '__current__' / '__none__' 两个哨兵） */
+function concreteCycle(cycleFilter: string | null): string | null {
+  if (!cycleFilter || cycleFilter === CURRENT_CYCLE || cycleFilter === NO_CYCLE) return null
+  return cycleFilter
 }
 
 export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
@@ -74,14 +93,27 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
         // 有状态筛选走 [status+updatedAt]，逐状态各取 limit 条再归并（同项目内语义）
         const allProjects = pid === ALL_PROJECTS
         const statuses = filters.statusFilter
-        let items: Issue[]
-        if (statuses.length === 0) {
+        const search = filters.search.trim()
+        const directCycle = concreteCycle(filters.cycleFilter)
+        let out: Issue[]
+        if (search) {
+          const kw = search.toLowerCase()
+          out = await db.issues
+            .filter((i) => i.title.toLowerCase().includes(kw) || i.key.toLowerCase().includes(kw))
+            .limit(2000)
+            .toArray()
+        } else if (directCycle) {
+          // 迭代直取：整周期范围内筛状态（不分片、不按 updatedAt 截断）
+          const want = new Set(statuses)
+          out = (await cycleOwnedRows(db, pid, directCycle)).sort(byUpdatedDesc)
+          if (want.size) out = out.filter((i) => want.has(i.status))
+        } else if (statuses.length === 0) {
           const source = allProjects
             ? db.issues.orderBy('updatedAt')
             : db.issues
                 .where('[projectId+updatedAt]')
                 .between([pid, Dexie.minKey], [pid, Dexie.maxKey])
-          items = await source.reverse().limit(limit).toArray()
+          out = await source.reverse().limit(limit).toArray()
         } else {
           // 复合索引单次只能表达一个状态：逐状态各取最近 limit 条再归并。
           // 并集按 updatedAt 的前 limit 条必然落在这 n 份分片内（每片已按该索引倒序）。
@@ -104,15 +136,7 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
           )
           const merged = new Map<string, Issue>()
           for (const i of chunks.flat()) merged.set(i.id, i)
-          items = [...merged.values()].sort(byUpdatedDesc).slice(0, limit)
-        }
-        let out = items
-        if (filters.search.trim()) {
-          const kw = filters.search.trim().toLowerCase()
-          out = await db.issues
-            .filter((i) => i.title.toLowerCase().includes(kw) || i.key.toLowerCase().includes(kw))
-            .limit(2000)
-            .toArray()
+          out = [...merged.values()].sort(byUpdatedDesc).slice(0, limit)
         }
         if (filters.assigneeFilter.length) {
           const want = new Set(filters.assigneeFilter)
@@ -124,9 +148,8 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
           out = out.filter((i) => want.has(i.priority))
         }
         if (filters.cycleFilter) {
-          // 迭代与负责人/优先级同口径：窗口截断后再内存过滤（不改变窗口语义）。
-          // 只有「当前迭代」需要周期区间——同一次查询里读 cycles 表，liveQuery 会跟踪该读取，
-          // 周期起止被改后窗口自动重算
+          // 当前迭代需要周期区间——同一次查询里读 cycles 表，liveQuery 会跟踪该读取，
+          // 周期起止被改后窗口自动重算。具体周期 id 已在上面直取，这里再过滤等于空操作
           const cycles =
             filters.cycleFilter === CURRENT_CYCLE
               ? allProjects
@@ -140,6 +163,9 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
         } else if (filters.sortBy === 'createdAt') {
           out = [...out].sort((a, b) => b.createdAt - a.createdAt)
         }
+        // 直取路径在「筛选 + 排序」后分页（列表滚动续载即放大 limit）；
+        // 搜索分支沿用 2000 上限不分页，窗口分支已在取数时截断
+        if (directCycle && !search) out = out.slice(0, limit)
         return out
       })
     },
@@ -164,6 +190,69 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
           >,
         }
       })
+    },
+
+    /** 按周期聚合计数：每周期一次 [projectId+cycleId] 索引范围游标（不扫全项目）；
+     *  未入迭代桶 = 项目总量 − 各周期之和（总量走既有索引计数）。
+     *  与 API 实现同口径：total = 0 的周期不出现在结果里 */
+    liveCycleCounts(projectId: string): Observable<CycleIssueCount[]> {
+      return fromLiveQuery(async () => {
+        const allProjects = projectId === ALL_PROJECTS
+        // 读 cycles 表：周期增删时 liveQuery 自动重算
+        const cycles = allProjects
+          ? await db.cycles.toArray()
+          : await db.cycles.where('projectId').equals(projectId).toArray()
+        const perCycle = await Promise.all(
+          cycles.map(async (cycle) => {
+            const acc = { total: 0, done: 0, cancelled: 0 }
+            await db.issues
+              .where('[projectId+cycleId]')
+              .equals([cycle.projectId, cycle.id])
+              .each((issue) => {
+                acc.total += 1
+                if (issue.status === 'done') acc.done += 1
+                else if (issue.status === 'cancelled') acc.cancelled += 1
+              })
+            return { cycleId: cycle.id as string | null, ...acc }
+          }),
+        )
+        const [total, done, cancelled] = await Promise.all([
+          allProjects ? db.issues.count() : db.issues.where('projectId').equals(projectId).count(),
+          allProjects
+            ? db.issues.where('status').equals('done').count()
+            : db.issues.where('[projectId+status]').equals([projectId, 'done']).count(),
+          allProjects
+            ? db.issues.where('status').equals('cancelled').count()
+            : db.issues.where('[projectId+status]').equals([projectId, 'cancelled']).count(),
+        ])
+        const sum = perCycle.reduce(
+          (a, r) => ({
+            total: a.total + r.total,
+            done: a.done + r.done,
+            cancelled: a.cancelled + r.cancelled,
+          }),
+          { total: 0, done: 0, cancelled: 0 },
+        )
+        const rows: CycleIssueCount[] = [
+          {
+            cycleId: null,
+            total: total - sum.total,
+            done: done - sum.done,
+            cancelled: cancelled - sum.cancelled,
+          },
+          ...perCycle,
+        ].filter((r) => r.total > 0)
+        // null 桶在前（未入迭代不是周期），其余 cycleId 升序——与 API 实现同一排序口径
+        return rows.sort((a, b) => {
+          const ka = a.cycleId ?? ''
+          const kb = b.cycleId ?? ''
+          return ka < kb ? -1 : ka > kb ? 1 : 0
+        })
+      })
+    },
+
+    liveCycleIssues(projectId: string, cycleId: string): Observable<Issue[]> {
+      return fromLiveQuery(async () => (await cycleOwnedRows(db, projectId, cycleId)).sort(byIdAsc))
     },
 
     liveSubIssues(parentId: string): Observable<Issue[]> {

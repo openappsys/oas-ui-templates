@@ -354,8 +354,15 @@ describe('契约：同一份 seed 下 Dexie 与 API 输出相同', () => {
     const input = { projectId: 'project-2', name: 'API 周期', startAt: 1, endAt: 2, goal: 'g' }
     const apiCycle = await api.cycles.create(input)
     const dexieCycle = await dexie.cycles.create(input)
-    // id 各自生成，跨实现只比字段
-    expect({ ...apiCycle, id: '' }).toEqual({ ...dexieCycle, id: '' })
+    // id 与 createdAt/updatedAt 由各自实现取当刻时钟（可能不同毫秒），跨实现只比业务字段
+    const stable = (c: typeof apiCycle) => ({
+      projectId: c.projectId,
+      name: c.name,
+      startAt: c.startAt,
+      endAt: c.endAt,
+      goal: c.goal,
+    })
+    expect(stable(apiCycle)).toEqual(stable(dexieCycle))
     expect((await first(api.cycles.liveAll('project-2'))).length).toBe(1)
     expect((await first(dexie.cycles.liveAll('project-2'))).length).toBe(1)
 
@@ -411,6 +418,58 @@ describe('契约：同一份 seed 下 Dexie 与 API 输出相同', () => {
       api.issues.liveWindow(filters({ cycleFilter: CURRENT_CYCLE }), 'member-1', 200),
     )
     expect(current.map((i) => i.id).sort()).toEqual(picked.map((i) => i.id).sort())
+  })
+
+  it('liveWindow 具体周期直取一致：整周期 + 小 limit 分页（不受 updatedAt 窗口截断）', async () => {
+    for (const limit of [undefined, 3]) {
+      for (const f of [
+        filters({ cycleFilter: 'cycle-2' }),
+        filters({ cycleFilter: 'cycle-2', statusFilter: ['done'] }),
+        filters({ cycleFilter: 'cycle-2', statusFilter: ['todo', 'done'] }),
+        filters({ cycleFilter: 'cycle-2', assigneeFilter: ['member-2'] }),
+        filters({ cycleFilter: 'cycle-2', priorityFilter: ['high'] }),
+        filters({ cycleFilter: 'cycle-2', projectId: ALL_PROJECTS }),
+        filters({ cycleFilter: 'cycle-2', sortBy: 'priority' }),
+        filters({ cycleFilter: 'cycle-2', sortBy: 'createdAt' }),
+      ]) {
+        const a = await first(api.issues.liveWindow(f, 'member-1', limit))
+        const d = await first(dexie.issues.liveWindow(f, 'member-1', limit))
+        expect(a).toEqual(d)
+      }
+    }
+    // 直取的是「该周期全部工作项」而非窗口切片：条数 = min(limit, 周期条数)
+    const expected = store.issues.filter((i) => i.cycleId === 'cycle-2').length
+    const all = await first(api.issues.liveWindow(filters({ cycleFilter: 'cycle-2' }), 'member-1'))
+    expect(all.length).toBe(Math.min(500, expected))
+  })
+
+  it('liveCycleCounts 一致：按周期聚合（含未入迭代桶），两种数据源同序同值', async () => {
+    for (const pid of [projectId, ALL_PROJECTS, 'project-2']) {
+      expect(await first(api.issues.liveCycleCounts(pid))).toEqual(
+        await first(dexie.issues.liveCycleCounts(pid)),
+      )
+    }
+    const rows = await first(dexie.issues.liveCycleCounts(projectId))
+    expect(rows[0]?.cycleId).toBe(null)
+    expect(rows.reduce((n, r) => n + r.total, 0)).toBe(
+      store.issues.filter((i) => i.projectId === projectId).length,
+    )
+  })
+
+  it('liveCycleIssues 一致：整周期 id 升序（缺失周期返回空）', async () => {
+    for (const [pid, cid] of [
+      [projectId, 'cycle-2'],
+      [projectId, 'cycle-3'],
+      [ALL_PROJECTS, 'cycle-2'],
+      [projectId, 'ghost'],
+    ] as const) {
+      expect(await first(api.issues.liveCycleIssues(pid, cid))).toEqual(
+        await first(dexie.issues.liveCycleIssues(pid, cid)),
+      )
+    }
+    expect(
+      (await first(dexie.issues.liveCycleIssues(projectId, 'cycle-2'))).length,
+    ).toBeGreaterThan(0)
   })
 
   it('comments 增改删与按时间排序一致（同毫秒并列按主键序，不比顺序）', async () => {

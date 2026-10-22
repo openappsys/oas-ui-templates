@@ -845,7 +845,7 @@ describe('dexie issue repository — 迭代筛选', () => {
     ])
   }
 
-  it('具体周期 id：等值匹配（组内语义），与状态/负责人 AND', async () => {
+  it('具体周期 id：索引直取整周期（limit 只分页，不再因窗口截断丢行）', async () => {
     await seedCycles()
     await seedIssues()
     const repo = createDexieIssueRepository(db)
@@ -893,11 +893,139 @@ describe('dexie issue repository — 迭代筛选', () => {
     ).toEqual(['i-legacy', 'i-none'])
   })
 
-  it('窗口先截断再按迭代过滤（与负责人/优先级同口径）', async () => {
+  it('已结束周期：窗口外的旧工作项也全部能取到（直取索引，不靠 updatedAt 窗口）', async () => {
     await seedCycles()
-    await seedIssues()
+    const base = Date.now()
+    const old = base - 400 * DAY
+    await db.issues.bulkAdd([
+      seedIssue(db, { id: 'p1', cycleId: 'c-past', updatedAt: old }),
+      seedIssue(db, { id: 'p2', cycleId: 'c-past', updatedAt: old + 1 }),
+      seedIssue(db, { id: 'p3', cycleId: 'c-past', updatedAt: old + 2 }),
+      seedIssue(db, { id: 'live', cycleId: 'c-live', updatedAt: base }),
+    ])
     const repo = createDexieIssueRepository(db)
-    // 最近 2 条（i-next / i-live-p2）里没有 c-past 的成员 → 空集
-    expect(await windowRows(repo, { cycleFilter: 'c-past' }, 2)).toEqual([])
+    // 整周期按 updatedAt 倒序返回；limit 只表示分页（列表滚动续载的语义）
+    expect((await windowRows(repo, { cycleFilter: 'c-past' })).map((r) => r.id)).toEqual([
+      'p3',
+      'p2',
+      'p1',
+    ])
+    expect((await windowRows(repo, { cycleFilter: 'c-past' }, 2)).map((r) => r.id)).toEqual([
+      'p3',
+      'p2',
+    ])
+  })
+
+  it('迭代直取叠加状态 / 负责人 / 优先级（组内 OR、组间 AND）', async () => {
+    await seedCycles()
+    const base = Date.now()
+    await db.issues.bulkAdd([
+      seedIssue(db, {
+        id: 'a',
+        cycleId: 'c-past',
+        status: 'todo',
+        assigneeId: 'm1',
+        priority: 'high',
+        updatedAt: base - 30,
+      }),
+      seedIssue(db, {
+        id: 'b',
+        cycleId: 'c-past',
+        status: 'done',
+        assigneeId: 'm2',
+        priority: 'low',
+        updatedAt: base - 20,
+      }),
+      seedIssue(db, {
+        id: 'c',
+        cycleId: 'c-past',
+        status: 'in_progress',
+        assigneeId: null,
+        priority: 'urgent',
+        updatedAt: base - 10,
+      }),
+      seedIssue(db, { id: 'd', cycleId: 'c-live', status: 'todo', assigneeId: 'm1' }),
+    ])
+    const repo = createDexieIssueRepository(db)
+    const ids = async (filters: Partial<IssueWindowFilters>) =>
+      (await windowRows(repo, { cycleFilter: 'c-past', ...filters })).map((r) => r.id)
+    expect(await ids({ statusFilter: ['todo', 'done'] })).toEqual(['b', 'a'])
+    expect(await ids({ assigneeFilter: ['m1'] })).toEqual(['a'])
+    expect(await ids({ assigneeFilter: ['__none__'] })).toEqual(['c'])
+    expect(await ids({ priorityFilter: ['urgent', 'high'] })).toEqual(['c', 'a'])
+    expect(await ids({ assigneeFilter: ['m2'], statusFilter: ['todo'] })).toEqual([])
+    // 排序切换仍在直取集合内生效
+    expect(await ids({ sortBy: 'createdAt' })).toEqual(['c', 'b', 'a'])
+  })
+
+  it('liveCycleCounts：按周期聚合总数 / 完成 / 取消，含未入迭代桶', async () => {
+    await seedCycles()
+    await db.issues.bulkAdd([
+      seedIssue(db, { id: 'a', cycleId: 'c-live', status: 'todo' }),
+      seedIssue(db, { id: 'b', cycleId: 'c-live', status: 'done' }),
+      seedIssue(db, { id: 'c', cycleId: 'c-live', status: 'cancelled' }),
+      seedIssue(db, { id: 'd', cycleId: 'c-past', status: 'done' }),
+      seedIssue(db, { id: 'e', cycleId: null, status: 'todo' }),
+      // 历史行没有 cycleId 字段 → 归入未入迭代桶
+      seedIssue(db, { id: 'f', cycleId: undefined, status: 'done' }),
+      seedIssue(db, { id: 'g', projectId: 'p2', cycleId: 'c-live-p2', status: 'todo' }),
+    ])
+    const repo = createDexieIssueRepository(db)
+    const projectRows = await new Promise<unknown[]>((resolve) => {
+      const unsub = repo.liveCycleCounts('p1').subscribe({
+        next: (v) => {
+          resolve(v)
+          unsub()
+        },
+      })
+    })
+    expect(projectRows).toEqual([
+      { cycleId: null, total: 2, done: 1, cancelled: 0 },
+      { cycleId: 'c-live', total: 3, done: 1, cancelled: 1 },
+      { cycleId: 'c-past', total: 1, done: 1, cancelled: 0 },
+    ])
+    // 全部项目：跨项目并集（p2 的周期也进结果）
+    const allRows = await new Promise<unknown[]>((resolve) => {
+      const unsub = repo.liveCycleCounts(ALL_PROJECTS).subscribe({
+        next: (v) => {
+          resolve(v)
+          unsub()
+        },
+      })
+    })
+    expect(allRows).toEqual([
+      { cycleId: null, total: 2, done: 1, cancelled: 0 },
+      { cycleId: 'c-live', total: 3, done: 1, cancelled: 1 },
+      { cycleId: 'c-live-p2', total: 1, done: 0, cancelled: 0 },
+      { cycleId: 'c-past', total: 1, done: 1, cancelled: 0 },
+    ])
+  })
+
+  it('liveCycleIssues：整周期按 id 升序（含窗口外旧项），跨项目作用域按 cycleId 直取', async () => {
+    await seedCycles()
+    const old = Date.now() - 400 * DAY
+    await db.issues.bulkAdd([
+      seedIssue(db, { id: 'z', cycleId: 'c-past', updatedAt: old }),
+      seedIssue(db, { id: 'y', cycleId: 'c-past', updatedAt: old }),
+      seedIssue(db, { id: 'x', cycleId: 'c-live' }),
+      seedIssue(db, { id: 'w', projectId: 'p2', cycleId: 'c-past' }),
+    ])
+    const repo = createDexieIssueRepository(db)
+    const first = <T>(obs: import('@/data/observable').Observable<T>) =>
+      new Promise<T>((resolve) => {
+        const unsub = obs.subscribe({
+          next: (v) => {
+            resolve(v)
+            unsub()
+          },
+        })
+      })
+    expect((await first(repo.liveCycleIssues('p1', 'c-past'))).map((r) => r.id)).toEqual(['y', 'z'])
+    expect((await first(repo.liveCycleIssues(ALL_PROJECTS, 'c-past'))).map((r) => r.id)).toEqual([
+      'w',
+      'y',
+      'z',
+    ])
+    expect(await first(repo.liveCycleIssues('p1', 'c-next'))).toEqual([])
   })
 })

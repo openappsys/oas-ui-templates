@@ -8,6 +8,7 @@ import type {
   CreateCommentInput,
   CreateCycleInput,
   CreateIssueInput,
+  CycleIssueCount,
   CycleRepository,
   GlobalStats,
   IssueRepository,
@@ -196,6 +197,26 @@ export function createApiRepositories(options: ApiClientOptions = {}): Repositor
       ),
     liveCounts: (projectId) =>
       live(() => send<ProjectCounts>('GET', '/api/issues/counts', buildQuery({ projectId }))),
+    liveCycleCounts: (projectId) =>
+      live(async () =>
+        asItems<CycleIssueCount>(
+          await send<{ items: CycleIssueCount[] }>(
+            'GET',
+            '/api/issues/cycle-counts',
+            buildQuery({ projectId }),
+          ),
+        ),
+      ),
+    liveCycleIssues: (projectId, cycleId) =>
+      live(async () =>
+        asItems<Issue>(
+          await send<{ items: Issue[] }>(
+            'GET',
+            '/api/issues/cycle-issues',
+            buildQuery({ projectId, cycleId }),
+          ),
+        ),
+      ),
     liveSubIssues: (parentId) =>
       live(async () =>
         asItems<Issue>(

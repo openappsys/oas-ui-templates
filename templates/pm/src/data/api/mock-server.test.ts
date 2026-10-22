@@ -242,7 +242,7 @@ describe('issue window 查询语义（对齐 Dexie）', () => {
     expect(rows.map((i) => i.id)).toEqual(windowIds)
   })
 
-  it('cycle 参数：具体周期 / 未入迭代 / 当前迭代（窗口截断后过滤）', () => {
+  it('cycle 参数：具体周期直取整周期 / 未入迭代 / 当前迭代（哨兵仍走窗口）', () => {
     // 当前迭代按真实时钟派生：本用例用生产口径（now = 当日 0 点）播种，
     // 其余用例用固定时间做确定性比较
     const store = createMockStore()
@@ -267,14 +267,67 @@ describe('issue window 查询语义（对齐 Dexie）', () => {
     expect(current.length).toBeGreaterThan(0)
     expect(current.every((i) => i.cycleId === 'cycle-3')).toBe(true)
 
-    // 窗口先截断再过滤：limit=1 只取到最新一条，它不属于另一个周期 → 空集
-    const newest = store.issues
-      .filter((i) => i.projectId === 'project-1')
+    // 具体周期直取：limit=1 返回该周期最新一条（不再被窗口截成空集）
+    const newestOfCycle = store.issues
+      .filter((i) => i.projectId === 'project-1' && i.cycleId === 'cycle-2')
       .sort((a, b) => b.updatedAt - a.updatedAt || (a.id < b.id ? 1 : -1))[0]
-    const other = ['cycle-2', 'cycle-3'].find((c) => c !== newest.cycleId) as string
+    const paged = items<Issue>(
+      call(store, 'GET', '/api/issues', { query: { ...base, limit: '1', cycle: 'cycle-2' } }),
+    )
+    expect(paged.map((i) => i.id)).toEqual([newestOfCycle.id])
+
+    // 与状态的 AND 在整周期范围内成立
+    const done = items<Issue>(
+      call(store, 'GET', '/api/issues', {
+        query: { ...base, cycle: 'cycle-2', status: 'done' },
+      }),
+    )
+    expect(done.every((i) => i.cycleId === 'cycle-2' && i.status === 'done')).toBe(true)
+  })
+
+  it('cycle-counts：按周期聚合（null 桶在前，其后 id 升序）', () => {
+    const store = createMockStore({ now: FIXED })
+    const rows = items<{ cycleId: string | null; total: number; done: number; cancelled: number }>(
+      call(store, 'GET', '/api/issues/cycle-counts', { query: { projectId: 'project-1' } }),
+    )
+    expect(rows[0]?.cycleId).toBe(null)
+    const cycleIds = rows.map((r) => r.cycleId).filter((c): c is string => c !== null)
+    expect(cycleIds.length).toBeGreaterThan(0)
+    // 非 null 桶按 cycleId 升序
+    expect(cycleIds).toEqual([...cycleIds].sort())
+    // 与全表逐条统计一致（同一份数据，另一条实现路径）
+    for (const row of rows) {
+      const owned = store.issues.filter(
+        (i) => i.projectId === 'project-1' && (i.cycleId ?? null) === row.cycleId,
+      )
+      expect(row.total).toBe(owned.length)
+      expect(row.done).toBe(owned.filter((i) => i.status === 'done').length)
+      expect(row.cancelled).toBe(owned.filter((i) => i.status === 'cancelled').length)
+    }
+    // 全部项目 = 跨项目并集
+    const all = items<{ cycleId: string | null; total: number }>(
+      call(store, 'GET', '/api/issues/cycle-counts', { query: { projectId: '__all__' } }),
+    )
+    expect(all.reduce((n, r) => n + r.total, 0)).toBe(store.issues.length)
+    // 跨项目并集里除 null 桶外仍有具体周期桶
+    expect(all.filter((r) => r.cycleId !== null).length).toBeGreaterThan(0)
+  })
+
+  it('cycle-issues：整周期 id 升序直取（与 Dexie liveCycleIssues 同序）', () => {
+    const store = createMockStore({ now: FIXED })
+    const rows = items<Issue>(
+      call(store, 'GET', '/api/issues/cycle-issues', {
+        query: { projectId: 'project-1', cycleId: 'cycle-2' },
+      }),
+    )
+    expect(rows.length).toBeGreaterThan(0)
+    expect(rows.every((i) => i.cycleId === 'cycle-2')).toBe(true)
+    expect(rows.map((i) => i.id)).toEqual([...rows.map((i) => i.id)].sort())
     expect(
       items<Issue>(
-        call(store, 'GET', '/api/issues', { query: { ...base, limit: '1', cycle: other } }),
+        call(store, 'GET', '/api/issues/cycle-issues', {
+          query: { projectId: 'project-1', cycleId: 'nope' },
+        }),
       ),
     ).toEqual([])
   })

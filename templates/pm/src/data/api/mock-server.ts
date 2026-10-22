@@ -1,4 +1,4 @@
-import { cycleFilterPredicate, demoCycleIdFor, CURRENT_CYCLE } from '../../lib/cycles.ts'
+import { cycleFilterPredicate, demoCycleIdFor, CURRENT_CYCLE, NO_CYCLE } from '../../lib/cycles.ts'
 import { ALL_PROJECTS, LIST_WINDOW, UNASSIGNED } from '../../lib/filters.ts'
 import { PRIORITY_WEIGHT } from '../../lib/order.ts'
 import { mulberry32 } from '../../lib/prng.ts'
@@ -15,6 +15,7 @@ import {
   type Project,
   type SavedView,
 } from '../../types/index.ts'
+import type { CycleIssueCount } from '../types.ts'
 
 export interface SettingRow {
   key: string
@@ -334,7 +335,9 @@ function segments(path: string): string[] {
 }
 
 /** Dexie 语义复刻：search 走全表（无视 project/status、按主键序、上限 2000）；
- *  否则按索引窗口先截断，再套 assignee/myOnly/priority 过滤，最后在窗口内重排。
+ *  具体周期 id 走「迭代直取」（整周期范围筛状态，再按 sortBy 排序后分页，与 Dexie 的
+ *  [projectId+cycleId] 分支同口径——已结束周期不受 updatedAt 窗口截断）；
+ *  其余按索引窗口先截断，再套 assignee/myOnly/priority 过滤，最后在窗口内重排。
  *  多值维度走逗号分隔 query（status/assignee/priority），组内 OR；assignee 的 `__none__` 匹配未分配。
  *  projectId=__all__ 为全部项目作用域：窗口不设项目谓词（跨项目并集） */
 function windowIssues(store: MockStore, q: URLSearchParams): Issue[] {
@@ -343,21 +346,36 @@ function windowIssues(store: MockStore, q: URLSearchParams): Issue[] {
   const statuses = csvQuery(q, 'status')
   const limit = numQuery(q, 'limit', LIST_WINDOW)
   const statusSet = new Set(statuses)
-  const rows = store.issues.filter(
-    (i) =>
-      (allProjects || i.projectId === projectId) &&
-      (statusSet.size === 0 || statusSet.has(i.status)),
-  )
-  let out = rows.sort(byUpdatedDesc).slice(0, limit)
-
   const search = (q.get('search') ?? '').trim()
+  const cycleFilter = q.get('cycle') ?? ''
+  const directCycle =
+    cycleFilter && cycleFilter !== CURRENT_CYCLE && cycleFilter !== NO_CYCLE ? cycleFilter : null
+
+  let out: Issue[]
   if (search) {
     const kw = search.toLowerCase()
     out = [...store.issues]
       .sort(byIdAsc)
       .filter((i) => i.title.toLowerCase().includes(kw) || i.key.toLowerCase().includes(kw))
       .slice(0, SEARCH_LIMIT)
+  } else if (directCycle) {
+    out = store.issues
+      .filter(
+        (i) =>
+          (allProjects || i.projectId === projectId) &&
+          i.cycleId === directCycle &&
+          (statusSet.size === 0 || statusSet.has(i.status)),
+      )
+      .sort(byUpdatedDesc)
+  } else {
+    const rows = store.issues.filter(
+      (i) =>
+        (allProjects || i.projectId === projectId) &&
+        (statusSet.size === 0 || statusSet.has(i.status)),
+    )
+    out = rows.sort(byUpdatedDesc).slice(0, limit)
   }
+
   const assignees = csvQuery(q, 'assignee')
   if (assignees.length) {
     const want = new Set(assignees)
@@ -372,9 +390,8 @@ function windowIssues(store: MockStore, q: URLSearchParams): Issue[] {
     const want = new Set(priorities)
     out = out.filter((i) => want.has(i.priority))
   }
-  const cycleFilter = q.get('cycle') ?? ''
   if (cycleFilter) {
-    // 与 Dexie 同口径：窗口截断后再按迭代过滤；当前迭代需要周期区间
+    // 与 Dexie 同口径：具体周期已在上面直取（此处是空操作）；当前迭代需要周期区间
     const cycles =
       cycleFilter === CURRENT_CYCLE
         ? store.cycles.filter((c) => allProjects || c.projectId === projectId)
@@ -388,7 +405,32 @@ function windowIssues(store: MockStore, q: URLSearchParams): Issue[] {
   } else if (sortBy === 'createdAt') {
     out = [...out].sort((a, b) => b.createdAt - a.createdAt)
   }
+  // 迭代直取在筛选 + 排序后分页；搜索分支沿用 2000 上限，窗口分支取数时已截断
+  if (directCycle && !search) out = out.slice(0, limit)
   return out
+}
+
+/** 按周期聚合计数的 Dexie 对照实现（null 桶在前，其余 cycleId 升序；total = 0 的周期不出现） */
+function cycleIssueCounts(store: MockStore, projectId: string): CycleIssueCount[] {
+  const allProjects = projectId === ALL_PROJECTS
+  const acc = new Map<string | null, { total: number; done: number; cancelled: number }>()
+  for (const issue of store.issues) {
+    if (!allProjects && issue.projectId !== projectId) continue
+    const key = issue.cycleId ?? null
+    const row = acc.get(key) ?? { total: 0, done: 0, cancelled: 0 }
+    row.total += 1
+    if (issue.status === 'done') row.done += 1
+    else if (issue.status === 'cancelled') row.cancelled += 1
+    acc.set(key, row)
+  }
+  return [...acc.entries()]
+    .map(([cycleId, row]) => ({ cycleId, ...row }))
+    .filter((r) => r.total > 0)
+    .sort((a, b) => {
+      const ka = a.cycleId ?? ''
+      const kb = b.cycleId ?? ''
+      return ka < kb ? -1 : ka > kb ? 1 : 0
+    })
 }
 
 function issueCounts(store: MockStore, projectId: string) {
@@ -684,6 +726,19 @@ function routeIssues(
   }
   if (second === 'counts' && method === 'GET') {
     return ok(issueCounts(store, q.get('projectId') ?? ''))
+  }
+  if (second === 'cycle-counts' && method === 'GET') {
+    return ok({ items: cycleIssueCounts(store, q.get('projectId') ?? '') })
+  }
+  if (second === 'cycle-issues' && method === 'GET') {
+    // 迭代直取：整周期取回（id 升序，与 Dexie 的 liveCycleIssues 同序）
+    const projectId = q.get('projectId') ?? ''
+    const cycleId = q.get('cycleId') ?? ''
+    const allProjects = projectId === ALL_PROJECTS
+    const rows = store.issues
+      .filter((i) => (allProjects || i.projectId === projectId) && (i.cycleId ?? null) === cycleId)
+      .sort(byIdAsc)
+    return ok({ items: rows })
   }
   if (second === 'workload' && method === 'GET') {
     const projectId = q.get('projectId') ?? ''
