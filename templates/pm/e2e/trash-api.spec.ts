@@ -13,7 +13,12 @@ test.beforeEach(async ({ page }) => {
   })
 })
 
-const rowOfKey = (page: Page, key: string) => page.locator('.issue-row', { hasText: key }).first()
+// mock 种子的 key 形如 OAS-2 / OAS-1999：hasText 是子串匹配（OAS-2 会命中 OAS-20），改用精确文本
+const rowOfKey = (page: Page, key: string) =>
+  page
+    .locator('.issue-row')
+    .filter({ has: page.locator(`.issue-key:text-is("${key}")`) })
+    .first()
 
 async function openFirstDrawer(page: Page): Promise<string> {
   const key = (await page.locator('.issue-row .issue-key').first().textContent())?.trim() ?? ''
@@ -55,7 +60,10 @@ async function openAdminTrash(page: Page) {
 }
 
 const trashRow = (page: Page, key: string) =>
-  page.getByTestId('admin-table-trash').locator('tbody tr', { hasText: key })
+  page
+    .getByTestId('admin-table-trash')
+    .locator('tbody tr')
+    .filter({ has: page.locator(`td:text-is("${key}")`) })
 
 async function confirmPop(btn: Locator) {
   await btn.evaluate((el) => {
