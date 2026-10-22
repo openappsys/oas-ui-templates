@@ -20,20 +20,37 @@ export function createDexieAdminRepository(db: PMDatabase): AdminRepository {
     db.transaction('rw', allTables, async () => {
       for (const t of allTables) await t.clear()
     })
+  /** 软删行不参与统计：走 deletedAt 索引直取（只有回收站那一小撮），
+   *  再从索引计数里扣减，避免为排除去扫 10W 行 */
+  const deletedRows = async () => db.issues.where('deletedAt').above(0).toArray()
   return {
     liveGlobalStats: () =>
       fromLiveQuery(async (): Promise<GlobalStats> => {
-        const [projects, members, issues, done] = await Promise.all([
+        const [projects, members, issues, done, deleted] = await Promise.all([
           db.projects.count(),
           db.members.count(),
           db.issues.count(),
           db.issues.where('status').equals('done').count(),
+          deletedRows(),
         ])
-        return { projects, members, issues, done }
+        return {
+          projects,
+          members,
+          issues: issues - deleted.length,
+          done: done - deleted.filter((i) => i.status === 'done').length,
+        }
       }),
     liveMemberWorkload: () =>
       fromLiveQuery(async (): Promise<MemberWorkload[]> => {
-        const members = await db.members.toArray()
+        const [members, deleted] = await Promise.all([db.members.toArray(), deletedRows()])
+        // 软删行从成员计数里扣除（按 assignee 归组后逐成员减）
+        const deletedByMember = new Map<string, Partial<Record<IssueStatus, number>>>()
+        for (const row of deleted) {
+          if (!row.assigneeId) continue
+          const acc = deletedByMember.get(row.assigneeId) ?? {}
+          acc[row.status] = (acc[row.status] ?? 0) + 1
+          deletedByMember.set(row.assigneeId, acc)
+        }
         return Promise.all(
           members.map(async (m) => {
             const count = (status: IssueStatus | null) =>
@@ -46,7 +63,15 @@ export function createDexieAdminRepository(db: PMDatabase): AdminRepository {
               count('in_progress'),
               count('done'),
             ])
-            return { memberId: m.id, total, todo, inProgress, done }
+            const del = deletedByMember.get(m.id) ?? {}
+            const delTotal = Object.values(del).reduce((a, n) => a + (n ?? 0), 0)
+            return {
+              memberId: m.id,
+              total: total - delTotal,
+              todo: todo - (del.todo ?? 0),
+              inProgress: inProgress - (del.in_progress ?? 0),
+              done: done - (del.done ?? 0),
+            }
           }),
         )
       }),
@@ -58,11 +83,13 @@ export function createDexieAdminRepository(db: PMDatabase): AdminRepository {
         return Promise.all(
           projects.map(async (p) => {
             const rows = await db.issues.where('projectId').equals(p.id).toArray()
-            const open = rows.filter((i) => i.status !== 'done' && i.status !== 'cancelled')
+            // 软删行不计入健康度（按项目索引取回后本地剔除，行数即项目规模）
+            const own = rows.filter((i) => i.deletedAt == null)
+            const open = own.filter((i) => i.status !== 'done' && i.status !== 'cancelled')
             return {
               projectId: p.id,
               name: p.name,
-              total: rows.length,
+              total: own.length,
               overdue: open.filter((i) => i.dueAt !== null && i.dueAt < now).length,
               unassigned: open.filter((i) => !i.assigneeId).length,
               stale: open.filter((i) => i.updatedAt < now - 14 * day).length,
@@ -94,7 +121,7 @@ export function createDexieAdminRepository(db: PMDatabase): AdminRepository {
       ])
       return JSON.stringify({
         app: 'oas-pm',
-        version: 8,
+        version: 9,
         exportedAt: Date.now(),
         tables: {
           issues,

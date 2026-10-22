@@ -681,6 +681,71 @@ describe('契约：同一份 seed 下 Dexie 与 API 输出相同', () => {
     expect(await first(dexie.notifications.unreadCount('member-1'))).toBe(0)
   })
 
+  it('软删除 / 恢复 / 永久删除（含回收站列表）双实现一致', async () => {
+    const ids = store.issues.slice(10, 13).map((i) => i.id)
+    // 两侧同一批行软删：deletedAt 时间戳因实现各自取 now，比较时归一
+    for (const id of ids) {
+      await dexie.issues.delete(id)
+      await api.issues.delete(id)
+    }
+    // 软删行对外视同不存在
+    for (const id of ids) {
+      expect(await api.issues.get(id)).toBe(await dexie.issues.get(id))
+      expect(await api.issues.get(id)).toBeUndefined()
+    }
+    const strip = (rows: Issue[]) => rows.map((r) => ({ ...r, deletedAt: r.deletedAt ? 1 : 0 }))
+    expect(strip(await first(api.issues.liveTrash()))).toEqual(
+      strip(await first(dexie.issues.liveTrash())),
+    )
+    expect((await first(api.issues.liveTrash())).map((r) => r.id).sort()).toEqual([...ids].sort())
+    // 计数/窗口同步排除软删行
+    expect(await first(api.issues.liveCounts(projectId))).toEqual(
+      await first(dexie.issues.liveCounts(projectId)),
+    )
+    expect(await first(api.issues.liveCycleCounts(ALL_PROJECTS))).toEqual(
+      await first(dexie.issues.liveCycleCounts(ALL_PROJECTS)),
+    )
+
+    // 恢复：回到窗口，回收站清空
+    for (const id of ids.slice(0, 2)) {
+      await dexie.issues.restore(id)
+      await api.issues.restore(id)
+    }
+    expect((await first(api.issues.liveTrash())).map((r) => r.id)).toEqual([ids[2]])
+    expect(await api.issues.get(ids[0])).toEqual(await dexie.issues.get(ids[0]))
+
+    // 永久删除：物理删除后不再是软删行
+    await dexie.issues.purge(ids[2])
+    await api.issues.purge(ids[2])
+    expect(await first(api.issues.liveTrash())).toEqual([])
+    expect(await api.issues.get(ids[2])).toBe(await dexie.issues.get(ids[2]))
+  })
+
+  it('回收站行不出现在搜索/子任务/关联候选/创建趋势/工作量里', async () => {
+    const target = store.issues.find((i) => i.projectId === projectId)!
+    await dexie.issues.delete(target.id)
+    await api.issues.delete(target.id)
+    const kw = target.title.replace(/ #\d+$/, '')
+    for (const f of [filters({ search: kw }), filters({ search: target.key })]) {
+      const a = await first(api.issues.liveWindow(f, 'member-1', 100))
+      const d = await first(dexie.issues.liveWindow(f, 'member-1', 100))
+      expect(a).toEqual(d)
+      expect(a.some((r) => r.id === target.id)).toBe(false)
+    }
+    expect(await first(api.issues.liveRelationCandidates(projectId, 50))).toEqual(
+      await first(dexie.issues.liveRelationCandidates(projectId, 50)),
+    )
+    expect(await first(api.issues.liveByCreatedSince(FIXED - 400 * 86_400_000))).toEqual(
+      await first(dexie.issues.liveByCreatedSince(FIXED - 400 * 86_400_000)),
+    )
+    expect(await first(api.issues.liveAssigneeWorkload(projectId))).toEqual(
+      await first(dexie.issues.liveAssigneeWorkload(projectId)),
+    )
+    expect(await first(api.admin.liveGlobalStats())).toEqual(
+      await first(dexie.admin.liveGlobalStats()),
+    )
+  })
+
   it('export 信封同构、import 跨模式往返', async () => {
     const dexieJson = JSON.parse(await dexie.admin.exportAll())
     const apiJson = JSON.parse(await api.admin.exportAll())
@@ -705,8 +770,10 @@ describe('契约：同一份 seed 下 Dexie 与 API 输出相同', () => {
   })
 
   it('api.admin.resetDemo 复位到确定性种子', async () => {
-    await api.issues.bulkDelete(store.issues.slice(0, 10).map((i) => i.id))
-    expect(await api.issues.listAll(5000)).toHaveLength(store.issues.length)
+    const drop = store.issues.slice(0, 10).map((i) => i.id)
+    await api.issues.bulkDelete(drop)
+    // 软删除后行仍在库里，但对外列表少 10 条
+    expect(await api.issues.listAll(5000)).toHaveLength(store.issues.length - 10)
     await api.admin.resetDemo()
     const json = JSON.parse(await api.admin.exportAll())
     expect(json.tables.issues).toEqual(

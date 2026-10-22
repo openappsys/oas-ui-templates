@@ -2182,6 +2182,11 @@ oas-drawer::part(close):focus-visible {
   margin: 8px 14px 0;
 }
 
+/* 删除撤销提示条：与 api-notice 同一行位（顶栏下沿），撤销按钮走 alert 的 action 插槽 */
+.undo-bar {
+  margin: 8px 14px 0;
+}
+
 /* 只读身份块：API 模式不能就地切换身份，去掉按钮语义 */
 .tb-user-static {
   cursor: default;

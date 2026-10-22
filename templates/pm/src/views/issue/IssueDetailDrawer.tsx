@@ -222,12 +222,15 @@ export function IssueDetailDrawer({
   currentUser,
   onClose,
   can,
+  onDeleted,
 }: {
   issueId: string
   memberMap: Map<string, Member>
   currentUser: string
   onClose: () => void
   can: (action: Action, ctx?: Ctx) => boolean
+  /** 删除成功（软删除）：交给宿主弹「撤销」提示 */
+  onDeleted?: (issue: Issue) => void
 }) {
   const { issues: issuesRepo, activities: activitiesRepo, cycles: cyclesRepo } = useRepositories()
   const issue = useObservable(() => issuesRepo.live(issueId), [issueId, issuesRepo])
@@ -322,17 +325,28 @@ export function IssueDetailDrawer({
     }, 500)
     return () => clearInterval(t)
   }, [issue?.description])
-  // popconfirm 确认（reason='ok'）→ 删除并关抽屉
+  // popconfirm 确认（reason='ok'）→ 软删除并关抽屉；宿主拿 key 弹「撤销」条
+  const issueRef = useRef(issue)
+  issueRef.current = issue
+  const onDeletedRef = useRef(onDeleted)
+  onDeletedRef.current = onDeleted
+  // biome-ignore lint/correctness/useExhaustiveDependencies: issue?.id 是重挂触发器（首帧 issue 未到时抽屉走空渲染、popRef 为空，effect 体不引用它）
   useEffect(() => {
     const el = popRef.current
     if (!el) return
     const h = (e: Event) => {
       const reason = (e as CustomEvent<{ reason?: string }>).detail?.reason
-      if (reason === 'ok') void issuesRepo.delete(issueId).then(onClose)
+      if (reason !== 'ok') return
+      void issuesRepo.delete(issueId).then(() => {
+        const row = issueRef.current
+        if (row) onDeletedRef.current?.(row)
+        onClose()
+      })
     }
     el.addEventListener('oas-open-change', h)
     return () => el.removeEventListener('oas-open-change', h)
-  }, [issueId, onClose, issuesRepo])
+    // issue?.id 入依赖：首帧 issue 未到时抽屉走空渲染（popRef 为空），数据就绪后必须重挂监听
+  }, [issueId, issue?.id, onClose, issuesRepo])
 
   // 关联选择 state：必须在早退之前（hooks 顺序恒定）
   const [relType, setRelType] = useState('__none__')

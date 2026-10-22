@@ -15,11 +15,14 @@ export function BulkBar({
   currentUser,
   onDone,
   can,
+  onDeleted,
 }: {
   selectedIds: Set<string>
   currentUser: string
   onDone: () => void
   can: (action: Action, ctx?: Ctx) => boolean
+  /** 删除成功回调（id 列表）：宿主据此弹「撤销」条 */
+  onDeleted?: (ids: string[]) => void
 }) {
   const [status, setStatus] = useState('')
   const [priority, setPriority] = useState('')
@@ -42,7 +45,9 @@ export function BulkBar({
   }
 
   const remove = async () => {
-    await issuesRepo.bulkDelete([...selectedIds])
+    const ids = [...selectedIds]
+    await issuesRepo.bulkDelete(ids)
+    onDeleted?.(ids)
     onDone()
   }
 

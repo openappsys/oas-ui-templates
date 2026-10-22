@@ -219,6 +219,20 @@ export function createApiRepositories(options: ApiClientOptions = {}): Repositor
       await send('DELETE', `/api/issues/${encodeURIComponent(id)}`)
       poke()
     },
+    restore: async (id) => {
+      await send('POST', `/api/issues/${encodeURIComponent(id)}/restore`)
+      poke()
+    },
+    purge: async (id) => {
+      await send('DELETE', `/api/issues/${encodeURIComponent(id)}/purge`)
+      poke()
+    },
+    liveTrash: () =>
+      live(async () =>
+        asItems<Issue>(
+          await send<{ items: Issue[] }>('GET', '/api/issues', buildQuery({ deleted: 1 })),
+        ),
+      ),
     liveWindow: (filters: IssueWindowFilters, currentUser: string, limit = LIST_WINDOW) =>
       live(async () =>
         asItems<Issue>(

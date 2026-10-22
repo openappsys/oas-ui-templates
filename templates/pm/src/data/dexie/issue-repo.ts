@@ -29,6 +29,10 @@ function byIdAsc(a: { id: string }, b: { id: string }): number {
   return a.id < b.id ? -1 : a.id > b.id ? 1 : 0
 }
 
+function byIdDesc(a: { id: string }, b: { id: string }): number {
+  return a.id < b.id ? 1 : a.id > b.id ? -1 : 0
+}
+
 /** 迭代直取：[projectId+cycleId]（跨项目作用域走单列 cycleId）。
  *  已结束周期的工作项 updatedAt 可能很旧，走 updatedAt 窗口会被整段截断——直取索引才是
  *  「点已结束迭代空列表」的修法；窗口语义只保留给「当前迭代 / 未入迭代 / 不限」 */
@@ -43,12 +47,37 @@ function concreteCycle(cycleFilter: string | null): string | null {
   return cycleFilter
 }
 
+/** 软删除唯一谓词：deletedAt 缺失或 null 即在库可见。历史行无该字段，一律按「未删除」处理。
+ *  Dexie 与 mock-server 共用这套语义，漏用即两数据源分叉 */
+export function notDeleted(row: Pick<Issue, 'deletedAt'>): boolean {
+  return row.deletedAt == null
+}
+
+/** 已删除 id 集合。走 deletedAt 索引：IndexedDB 不索引 null/undefined，索引里只剩软删行，
+ *  10W 行库里也只读回收站这一小撮——不用为全局排除去扫全表 */
+async function deletedIds(db: PMDatabase): Promise<Set<string>> {
+  const rows = await db.issues.where('deletedAt').above(0).toArray()
+  return new Set(rows.map((i) => i.id))
+}
+
+/** 剔除已删除行（deleted 为空集合时原样返回，省一次拷贝） */
+function alive(rows: Issue[], deleted: Set<string>): Issue[] {
+  return deleted.size === 0 ? rows : rows.filter((r) => !deleted.has(r.id))
+}
+
 export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
   return {
-    get: (id) => db.issues.get(id),
+    // 已删除行对外视同不存在（详情/通知目标校验走这里），回收站另有 liveTrash
+    get: async (id) => {
+      const row = await db.issues.get(id)
+      return row && notDeleted(row) ? row : undefined
+    },
 
     live(id: string): Observable<Issue | undefined> {
-      return fromLiveQuery(() => db.issues.get(id))
+      return fromLiveQuery(async () => {
+        const row = await db.issues.get(id)
+        return row && notDeleted(row) ? row : undefined
+      })
     },
 
     async create(input: CreateIssueInput): Promise<Issue> {
@@ -77,11 +106,34 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
     },
 
     async update(id, changes) {
+      const row = await db.issues.get(id)
+      if (!row || !notDeleted(row)) return
       await db.issues.update(id, { ...changes, updatedAt: Date.now() })
     },
 
+    /** 软删除：只写 deletedAt，行留在库里供回收站恢复。updatedAt 不动——
+     *  恢复后回到原来的排序位置，不会因删除动作跳到列表头部 */
     async delete(id) {
+      const row = await db.issues.get(id)
+      if (!row || !notDeleted(row)) return
+      await db.issues.update(id, { deletedAt: Date.now() })
+    },
+
+    async restore(id) {
+      await db.issues.update(id, { deletedAt: null })
+    },
+
+    /** 永久删除：仅回收站内可用（物理删除，不可恢复） */
+    async purge(id) {
       await db.issues.delete(id)
+    },
+
+    liveTrash(): Observable<Issue[]> {
+      return fromLiveQuery(async () => {
+        const rows = await db.issues.where('deletedAt').above(0).toArray()
+        // 删除时间倒序；同刻（同一毫秒内连续删）按 id 倒序——与 mock-server 的 byDeletedDesc 同序
+        return rows.sort((a, b) => (b.deletedAt ?? 0) - (a.deletedAt ?? 0) || byIdDesc(a, b))
+      })
     },
 
     liveWindow(
@@ -97,17 +149,24 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
         const statuses = filters.statusFilter
         const search = filters.search.trim()
         const directCycle = concreteCycle(filters.cycleFilter)
+        const deleted = await deletedIds(db)
+        // 已删除行不占窗口名额：多取 deleted.size 条再剔回 limit
+        const pad = limit + deleted.size
         let out: Issue[]
         if (search) {
           const kw = search.toLowerCase()
           out = await db.issues
-            .filter((i) => i.title.toLowerCase().includes(kw) || i.key.toLowerCase().includes(kw))
+            .filter(
+              (i) =>
+                notDeleted(i) &&
+                (i.title.toLowerCase().includes(kw) || i.key.toLowerCase().includes(kw)),
+            )
             .limit(2000)
             .toArray()
         } else if (directCycle) {
           // 迭代直取：整周期范围内筛状态（不分片、不按 updatedAt 截断）
           const want = new Set(statuses)
-          out = (await cycleOwnedRows(db, pid, directCycle)).sort(byUpdatedDesc)
+          out = alive(await cycleOwnedRows(db, pid, directCycle), deleted).sort(byUpdatedDesc)
           if (want.size) out = out.filter((i) => want.has(i.status))
         } else if (statuses.length === 0) {
           const source = allProjects
@@ -115,7 +174,7 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
             : db.issues
                 .where('[projectId+updatedAt]')
                 .between([pid, Dexie.minKey], [pid, Dexie.maxKey])
-          out = await source.reverse().limit(limit).toArray()
+          out = alive(await source.reverse().limit(pad).toArray(), deleted).slice(0, limit)
         } else {
           // 复合索引单次只能表达一个状态：逐状态各取最近 limit 条再归并。
           // 并集按 updatedAt 的前 limit 条必然落在这 n 份分片内（每片已按该索引倒序）。
@@ -126,19 +185,19 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
                     .where('[status+updatedAt]')
                     .between([s, Dexie.minKey], [s, Dexie.maxKey])
                     .reverse()
-                    .limit(limit)
+                    .limit(pad)
                     .toArray()
                 : db.issues
                     .where('[projectId+status+updatedAt]')
                     .between([pid, s, Dexie.minKey], [pid, s, Dexie.maxKey])
                     .reverse()
-                    .limit(limit)
+                    .limit(pad)
                     .toArray(),
             ),
           )
           const merged = new Map<string, Issue>()
           for (const i of chunks.flat()) merged.set(i.id, i)
-          out = [...merged.values()].sort(byUpdatedDesc).slice(0, limit)
+          out = alive([...merged.values()].sort(byUpdatedDesc), deleted).slice(0, limit)
         }
         if (filters.assigneeFilter.length) {
           const want = new Set(filters.assigneeFilter)
@@ -184,12 +243,20 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
               : db.issues.where('[projectId+status]').equals([projectId, s]).count(),
           ),
         ])
+        // 索引计数含软删行：从 deletedAt 索引取回软删行（只有这一小撮）再逐状态扣减，
+        // 比逐状态 filter 全表便宜两个数量级（10W 行）
+        const deleted = (await db.issues.where('deletedAt').above(0).toArray()).filter(
+          (i) => allProjects || i.projectId === projectId,
+        )
+        const deletedByStatus = new Map<IssueStatus, number>()
+        for (const i of deleted) {
+          deletedByStatus.set(i.status, (deletedByStatus.get(i.status) ?? 0) + 1)
+        }
         return {
-          total,
-          byStatus: Object.fromEntries(ISSUE_STATUSES.map((s, i) => [s, byStatus[i]])) as Record<
-            IssueStatus,
-            number
-          >,
+          total: total - deleted.length,
+          byStatus: Object.fromEntries(
+            ISSUE_STATUSES.map((s, i) => [s, byStatus[i] - (deletedByStatus.get(s) ?? 0)]),
+          ) as Record<IssueStatus, number>,
         }
       })
     },
@@ -211,6 +278,7 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
               .where('[projectId+cycleId]')
               .equals([cycle.projectId, cycle.id])
               .each((issue) => {
+                if (!notDeleted(issue)) return
                 acc.total += 1
                 if (issue.status === 'done') acc.done += 1
                 else if (issue.status === 'cancelled') acc.cancelled += 1
@@ -227,6 +295,13 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
             ? db.issues.where('status').equals('cancelled').count()
             : db.issues.where('[projectId+status]').equals([projectId, 'cancelled']).count(),
         ])
+        // 总量同样扣掉软删行（perCycle 已逐行跳过，两侧口径一致才能正确派生「未入迭代」桶）
+        const deleted = (await db.issues.where('deletedAt').above(0).toArray()).filter(
+          (i) => allProjects || i.projectId === projectId,
+        )
+        const aliveTotal = total - deleted.length
+        const aliveDone = done - deleted.filter((i) => i.status === 'done').length
+        const aliveCancelled = cancelled - deleted.filter((i) => i.status === 'cancelled').length
         const sum = perCycle.reduce(
           (a, r) => ({
             total: a.total + r.total,
@@ -238,9 +313,9 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
         const rows: CycleIssueCount[] = [
           {
             cycleId: null,
-            total: total - sum.total,
-            done: done - sum.done,
-            cancelled: cancelled - sum.cancelled,
+            total: aliveTotal - sum.total,
+            done: aliveDone - sum.done,
+            cancelled: aliveCancelled - sum.cancelled,
           },
           ...perCycle,
         ].filter((r) => r.total > 0)
@@ -254,27 +329,42 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
     },
 
     liveCycleIssues(projectId: string, cycleId: string): Observable<Issue[]> {
-      return fromLiveQuery(async () => (await cycleOwnedRows(db, projectId, cycleId)).sort(byIdAsc))
+      return fromLiveQuery(async () => {
+        const deleted = await deletedIds(db)
+        return alive(await cycleOwnedRows(db, projectId, cycleId), deleted).sort(byIdAsc)
+      })
     },
 
     liveSubIssues(parentId: string): Observable<Issue[]> {
-      return fromLiveQuery(() => db.issues.where('parentId').equals(parentId).toArray())
+      return fromLiveQuery(async () =>
+        (await db.issues.where('parentId').equals(parentId).toArray()).filter(notDeleted),
+      )
     },
 
     liveRelationCandidates(projectId: string, limit: number): Observable<Issue[]> {
-      return fromLiveQuery(() =>
-        db.issues.where('projectId').equals(projectId).limit(limit).toArray(),
-      )
+      return fromLiveQuery(async () => {
+        const deleted = await deletedIds(db)
+        const rows = await db.issues
+          .where('projectId')
+          .equals(projectId)
+          .limit(limit + deleted.size)
+          .toArray()
+        return alive(rows, deleted).slice(0, limit)
+      })
     },
 
     liveByCreatedSince(sinceMs: number): Observable<Issue[]> {
-      return fromLiveQuery(() =>
-        db.issues.where('createdAt').between(sinceMs, Date.now()).toArray(),
+      return fromLiveQuery(async () =>
+        (await db.issues.where('createdAt').between(sinceMs, Date.now()).toArray()).filter(
+          notDeleted,
+        ),
       )
     },
 
-    listAll(limit: number): Promise<Issue[]> {
-      return db.issues.limit(limit).toArray()
+    async listAll(limit: number): Promise<Issue[]> {
+      const deleted = await deletedIds(db)
+      const rows = await db.issues.limit(limit + deleted.size).toArray()
+      return alive(rows, deleted).slice(0, limit)
     },
 
     liveAssigneeWorkload(projectId: string) {
@@ -285,6 +375,7 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
             : await db.issues.where('projectId').equals(projectId).toArray()
         const map = new Map<string, number>()
         for (const i of rows) {
+          if (!notDeleted(i)) continue
           if (!i.assigneeId) continue
           map.set(i.assigneeId, (map.get(i.assigneeId) ?? 0) + 1)
         }
@@ -292,14 +383,18 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
       })
     },
 
-    bulkGet(ids: string[]): Promise<Array<Issue | undefined>> {
-      return db.issues.bulkGet(ids)
+    async bulkGet(ids: string[]): Promise<Array<Issue | undefined>> {
+      const rows = await db.issues.bulkGet(ids)
+      // 软删行视同不存在（通知面板据此显示「Issue 已删除」占位）
+      return rows.map((row) => (row && notDeleted(row) ? row : undefined))
     },
 
     async updateMany(updates: Array<{ id: string; changes: Partial<Issue> }>): Promise<void> {
       await db.transaction('rw', db.issues, async () => {
         const now = Date.now()
         for (const u of updates) {
+          const row = await db.issues.get(u.id)
+          if (!row || !notDeleted(row)) continue
           await db.issues.update(u.id, { ...u.changes, updatedAt: now })
         }
       })
@@ -315,6 +410,8 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
         for (const id of ids) {
           // 通知规则需要变更前的负责人/状态（活动先写、字段后写，与单条编辑路径同序）
           const prior = await db.issues.get(id)
+          // 已删除行不参与批量改写：删除后残留的选中集不该把行「写活」
+          if (prior && !notDeleted(prior)) continue
           const acts: Array<Promise<unknown>> = []
           if (patch.status) {
             acts.push(
@@ -381,7 +478,13 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
 
     async bulkDelete(ids: string[]): Promise<void> {
       await db.transaction('rw', db.issues, async () => {
-        for (const id of ids) await db.issues.delete(id)
+        const now = Date.now()
+        for (const id of ids) {
+          const row = await db.issues.get(id)
+          // 批量删除与单条删除同口径：软删除，回收站可恢复
+          if (!row || !notDeleted(row)) continue
+          await db.issues.update(id, { deletedAt: now })
+        }
       })
     },
   }

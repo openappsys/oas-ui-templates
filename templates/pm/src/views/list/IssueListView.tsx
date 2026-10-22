@@ -28,6 +28,7 @@ export function IssueListView({
   can,
   navActive,
   onNearBottom,
+  onDeleted,
 }: {
   issues: Issue[] | undefined
   /** 窗口订阅失败（首次加载/重试失败）：有数据时保留旧表，无数据时显示错误态 */
@@ -45,6 +46,8 @@ export function IssueListView({
   can: (action: Action, ctx?: Ctx) => boolean
   navActive: boolean
   onNearBottom: () => void
+  /** 批量删除成功：交给宿主弹「撤销」提示 */
+  onDeleted?: (ids: string[]) => void
 }) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [cursorIndex, setCursorIndex] = useState(-1)
@@ -352,6 +355,7 @@ export function IssueListView({
         currentUser={currentUser}
         onDone={clearSelection}
         can={can}
+        onDeleted={onDeleted}
       />
     </div>
   )

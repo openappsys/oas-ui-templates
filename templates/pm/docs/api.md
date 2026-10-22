@@ -183,7 +183,22 @@ Response `200`: `{ "ok": true }`. Error `404`: unknown ID.
 
 ### 5.6 `DELETE /api/issues/:id`
 
+Soft delete. The server sets `deletedAt` to the current time and keeps the row. `updatedAt` does
+not change, so a restored row keeps its list position.
+
 Response `200`: `{ "ok": true }`. Error `404`: unknown ID.
+
+Deleted rows are excluded from every query: the list window, `search`, counts, sub-issues,
+relation candidates, created-since, workload, cycle counts, cycle issues, `bulk`, `all`, and the
+dashboard/admin requests. `GET /api/issues/:id` returns `404` for a deleted row.
+
+### 5.6.1 Trash endpoints
+
+| Endpoint | Response | Notes |
+| --- | --- | --- |
+| `GET /api/issues?deleted=1` | `{ items }` | Trash list. Sorted by `deletedAt` descending, then by ID descending. Admin-only. |
+| `POST /api/issues/:id/restore` | `{ ok: true }` | Clears `deletedAt`. Admin-only. A row that is not deleted is a no-op. `404` for an unknown ID. |
+| `DELETE /api/issues/:id/purge` | `{ ok: true }` | Physical delete. Admin-only. `409` when the row is not in the trash. `404` for an unknown ID. |
 
 ### 5.7 `GET /api/issues/:id/sub-issues`
 
@@ -202,7 +217,7 @@ Response `200`: `{ "items": [Issue, …] }` (children by `parentId`, ID ascendin
 | `GET /api/issues/created-since?since=<ms>` | `{ items }` | Created at or after `since`, created-at ascending |
 | `GET /api/issues/relation-candidates?projectId=&limit=` | `{ items }` | ID ascending |
 | `POST /api/issues/bulk-apply` | `{ ok: true }` | Body `{ ids, patch: { status?, priority?, assigneeId? }, actorId }`. The server appends activity rows. |
-| `POST /api/issues/bulk-delete` | `{ ok: true }` | Body `{ ids: string[] }` |
+| `POST /api/issues/bulk-delete` | `{ ok: true }` | Body `{ ids: string[] }`. Soft delete, same as `DELETE /api/issues/:id`. |
 
 Reserved segments: `all`, `bulk`, `counts`, `cycle-counts`, `cycle-issues`, `workload`,
 `created-since`, `relation-candidates`, `bulk-apply`, `bulk-delete`. An issue ID cannot use these
@@ -364,13 +379,16 @@ Backup envelope:
 ```json
 {
   "app": "oas-pm",
-  "version": 8,
+  "version": 9,
   "exportedAt": 1700000000000,
   "tables": { "issues": [], "projects": [], "members": [], "comments": [],
               "savedViews": [], "activities": [], "settings": [], "cycles": [],
               "notifications": [] }
 }
 ```
+
+The export includes soft-deleted rows and keeps their `deletedAt` value. An import restores
+the trash together with the live rows.
 
 `reset` and `wipe` do not touch sessions. A session stays valid after a wipe. An admin can
 therefore call `reset` again. A new login needs a member row, so `wipe` blocks new logins until
@@ -388,7 +406,7 @@ therefore call `reset` again. A new login needs a member row, so `wipe` blocks n
 | `403` | Valid token, but the endpoint needs the admin role |
 | `404` | Unknown path or unknown resource |
 | `405` | Wrong method for a known path |
-| `409` | Conflict: duplicate ID, last admin, or a project that still has issues |
+| `409` | Conflict: duplicate ID, last admin, a project that still has issues, or a purge of a row that is not in the trash |
 | `500` | Unexpected server error. The mock handler does not produce this code; uncaught errors surface as a Vite error. |
 
 ## 16. Client behavior

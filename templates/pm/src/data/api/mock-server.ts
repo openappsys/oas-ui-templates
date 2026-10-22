@@ -337,7 +337,12 @@ const ok = (body: unknown, status = 200): ApiResponse => ({ status, body })
 
 const cmpKey = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0)
 const byIdAsc = (a: { id: string }, b: { id: string }) => cmpKey(a.id, b.id)
+const byIdDesc = (a: { id: string }, b: { id: string }) => cmpKey(b.id, a.id)
 const byUpdatedDesc = (a: Issue, b: Issue) => b.updatedAt - a.updatedAt || cmpKey(b.id, a.id)
+/** 软删除唯一谓词（Dexie issue-repo 的 notDeleted 同义）：deletedAt 缺失/null 即在库 */
+const notDeleted = (i: Pick<Issue, 'deletedAt'>): boolean => i.deletedAt == null
+const byDeletedDesc = (a: Issue, b: Issue) =>
+  (b.deletedAt ?? 0) - (a.deletedAt ?? 0) || byIdDesc(a, b)
 
 function asRecord(value: unknown): Record<string, unknown> {
   return value !== null && typeof value === 'object' ? (value as Record<string, unknown>) : {}
@@ -388,12 +393,14 @@ function sessionMember(store: MockStore, req: ApiRequest): Member {
   return store.members.find((m) => m.id === snapshot.id) ?? snapshot
 }
 
-/** 仅 admin 可用的端点：admin 全部端点、项目/成员写操作、设置写操作。
- *  普通 issue/评论/视图写只要求已登录（前端 can() 仍做细粒度门禁） */
-function isAdminOnly(method: string, head: string): boolean {
+/** 仅 admin 可用的端点：admin 全部端点、项目/成员写操作、设置写操作、回收站行操作
+ *  （恢复/永久删除不可由 member 自助）。普通 issue/评论/视图写只要求已登录
+ *  （前端 can() 仍做细粒度门禁） */
+function isAdminOnly(method: string, head: string, second?: string, third?: string): boolean {
   if (head === 'admin') return true
   if (head === 'projects' || head === 'members') return method !== 'GET'
   if (head === 'settings') return method === 'PUT'
+  if (head === 'issues' && second && (third === 'restore' || third === 'purge')) return true
   return false
 }
 
@@ -419,12 +426,16 @@ function windowIssues(store: MockStore, q: URLSearchParams): Issue[] {
     const kw = search.toLowerCase()
     out = [...store.issues]
       .sort(byIdAsc)
-      .filter((i) => i.title.toLowerCase().includes(kw) || i.key.toLowerCase().includes(kw))
+      .filter(
+        (i) =>
+          notDeleted(i) && (i.title.toLowerCase().includes(kw) || i.key.toLowerCase().includes(kw)),
+      )
       .slice(0, SEARCH_LIMIT)
   } else if (directCycle) {
     out = store.issues
       .filter(
         (i) =>
+          notDeleted(i) &&
           (allProjects || i.projectId === projectId) &&
           i.cycleId === directCycle &&
           (statusSet.size === 0 || statusSet.has(i.status)),
@@ -433,6 +444,7 @@ function windowIssues(store: MockStore, q: URLSearchParams): Issue[] {
   } else {
     const rows = store.issues.filter(
       (i) =>
+        notDeleted(i) &&
         (allProjects || i.projectId === projectId) &&
         (statusSet.size === 0 || statusSet.has(i.status)),
     )
@@ -478,6 +490,7 @@ function cycleIssueCounts(store: MockStore, projectId: string): CycleIssueCount[
   const allProjects = projectId === ALL_PROJECTS
   const acc = new Map<string | null, { total: number; done: number; cancelled: number }>()
   for (const issue of store.issues) {
+    if (!notDeleted(issue)) continue
     if (!allProjects && issue.projectId !== projectId) continue
     const key = issue.cycleId ?? null
     const row = acc.get(key) ?? { total: 0, done: 0, cancelled: 0 }
@@ -504,6 +517,7 @@ function issueCounts(store: MockStore, projectId: string) {
   >
   let total = 0
   for (const issue of store.issues) {
+    if (!notDeleted(issue)) continue
     if (!allProjects && issue.projectId !== projectId) continue
     total += 1
     byStatus[issue.status] += 1
@@ -630,7 +644,8 @@ function updateMany(store: MockStore, raw: unknown): void {
   for (const item of updates) {
     const rec = asRecord(item)
     const issue = store.issues.find((i) => i.id === String(rec.id))
-    if (!issue) continue
+    // 软删行不参与批量改写（与 Dexie updateMany 的空转一致）
+    if (!issue || !notDeleted(issue)) continue
     Object.assign(issue, asRecord(rec.changes), { updatedAt: now })
   }
 }
@@ -647,7 +662,7 @@ function bulkApply(store: MockStore, raw: unknown): void {
   const now = Date.now()
   for (const id of ids) {
     const issue = store.issues.find((i) => i.id === id)
-    if (!issue) continue
+    if (!issue || !notDeleted(issue)) continue
     // 批量指派/关闭与单条编辑同一套通知规则；先取旧负责人/状态，再落字段
     const drafts = issueChangeNotificationDrafts({
       issueId: id,
@@ -701,14 +716,20 @@ function bulkApply(store: MockStore, raw: unknown): void {
 function bulkDelete(store: MockStore, raw: unknown): void {
   const ids = asRecord(raw).ids
   if (!Array.isArray(ids)) fail(400, 'ids must be an array')
+  const now = Date.now()
   const drop = new Set(ids.map((id) => String(id)))
-  store.issues = store.issues.filter((i) => !drop.has(i.id))
+  // 批量删除与单条 DELETE 同口径：软删除（回收站可恢复）
+  for (const issue of store.issues) {
+    if (drop.has(issue.id) && notDeleted(issue)) issue.deletedAt = now
+  }
 }
 
 function exportEnvelope(store: MockStore) {
-  return {
+  // 快照隔离：返回的行不能与 store 里的对象共享引用（调用方导出后继续改库——
+  // 例如软删除——会把已导出的信封一起改掉）
+  return structuredClone({
     app: 'oas-pm',
-    version: 8,
+    version: 9,
     exportedAt: Date.now(),
     tables: {
       issues: [...store.issues].sort(byIdAsc),
@@ -721,7 +742,7 @@ function exportEnvelope(store: MockStore) {
       cycles: [...store.cycles].sort(byIdAsc),
       notifications: [...store.notifications].sort(byIdAsc),
     },
-  }
+  })
 }
 
 function importEnvelope(store: MockStore, raw: unknown): void {
@@ -770,18 +791,20 @@ function wipeStore(store: MockStore): void {
 }
 
 function globalStats(store: MockStore) {
+  const alive = store.issues.filter(notDeleted)
   return {
     projects: store.projects.length,
     members: store.members.length,
-    issues: store.issues.length,
-    done: store.issues.filter((i) => i.status === 'done').length,
+    issues: alive.length,
+    done: alive.filter((i) => i.status === 'done').length,
   }
 }
 
 function memberWorkload(store: MockStore) {
   const sorted = [...store.members].sort(byIdAsc)
+  const alive = store.issues.filter(notDeleted)
   return sorted.map((m) => {
-    const rows = store.issues.filter((i) => i.assigneeId === m.id)
+    const rows = alive.filter((i) => i.assigneeId === m.id)
     return {
       memberId: m.id,
       total: rows.length,
@@ -795,7 +818,7 @@ function memberWorkload(store: MockStore) {
 function projectHealth(store: MockStore) {
   const now = Date.now()
   return [...store.projects].sort(byIdAsc).map((p) => {
-    const rows = store.issues.filter((i) => i.projectId === p.id)
+    const rows = store.issues.filter((i) => notDeleted(i) && i.projectId === p.id)
     const open = rows.filter((i) => i.status !== 'done' && i.status !== 'cancelled')
     return {
       projectId: p.id,
@@ -817,7 +840,14 @@ function routeIssues(
   body: unknown,
 ): ApiResponse {
   if (!second) {
-    if (method === 'GET') return ok({ items: windowIssues(store, q) })
+    if (method === 'GET') {
+      // deleted=1：回收站视图（删除时间倒序，同刻按 id 倒序），与 Dexie liveTrash 同序
+      if (q.get('deleted') === '1') {
+        const rows = store.issues.filter((i) => !notDeleted(i)).sort(byDeletedDesc)
+        return ok({ items: rows })
+      }
+      return ok({ items: windowIssues(store, q) })
+    }
     if (method === 'POST') {
       const issue = createIssue(store, body)
       store.revision += 1
@@ -833,17 +863,24 @@ function routeIssues(
 
   if (second === 'all' && method === 'GET') {
     const limit = numQuery(q, 'limit', LIST_WINDOW)
-    return ok({ items: [...store.issues].sort(byIdAsc).slice(0, limit) })
+    return ok({
+      items: store.issues.filter(notDeleted).sort(byIdAsc).slice(0, limit),
+    })
   }
   if (second === 'bulk' && method === 'GET') {
     const ids = (q.get('ids') ?? '').split(',').filter(Boolean)
-    return ok({ items: ids.map((id) => store.issues.find((i) => i.id === id) ?? null) })
+    return ok({
+      items: ids.map((id) => {
+        const row = store.issues.find((i) => i.id === id)
+        return row && notDeleted(row) ? row : null
+      }),
+    })
   }
   if (second === 'created-since' && method === 'GET') {
     const since = Number(q.get('since') ?? 0)
     const now = Date.now()
     const rows = store.issues
-      .filter((i) => i.createdAt >= since && i.createdAt <= now)
+      .filter((i) => notDeleted(i) && i.createdAt >= since && i.createdAt <= now)
       .sort((a, b) => a.createdAt - b.createdAt || cmpKey(a.id, b.id))
     return ok({ items: rows })
   }
@@ -851,7 +888,7 @@ function routeIssues(
     const projectId = q.get('projectId') ?? ''
     const limit = numQuery(q, 'limit', LIST_WINDOW)
     const rows = store.issues
-      .filter((i) => i.projectId === projectId)
+      .filter((i) => notDeleted(i) && i.projectId === projectId)
       .sort(byIdAsc)
       .slice(0, limit)
     return ok({ items: rows })
@@ -868,7 +905,12 @@ function routeIssues(
     const cycleId = q.get('cycleId') ?? ''
     const allProjects = projectId === ALL_PROJECTS
     const rows = store.issues
-      .filter((i) => (allProjects || i.projectId === projectId) && (i.cycleId ?? null) === cycleId)
+      .filter(
+        (i) =>
+          notDeleted(i) &&
+          (allProjects || i.projectId === projectId) &&
+          (i.cycleId ?? null) === cycleId,
+      )
       .sort(byIdAsc)
     return ok({ items: rows })
   }
@@ -877,7 +919,7 @@ function routeIssues(
     const allProjects = projectId === ALL_PROJECTS
     const counts = new Map<string, number>()
     for (const issue of [...store.issues]
-      .filter((i) => allProjects || i.projectId === projectId)
+      .filter((i) => notDeleted(i) && (allProjects || i.projectId === projectId))
       .sort(byIdAsc)) {
       if (!issue.assigneeId) continue
       counts.set(issue.assigneeId, (counts.get(issue.assigneeId) ?? 0) + 1)
@@ -900,19 +942,44 @@ function routeIssues(
   const id = second
   if (third === 'sub-issues') {
     if (method !== 'GET') fail(405, 'method not allowed')
-    const rows = store.issues.filter((i) => i.parentId === id).sort(byIdAsc)
+    const rows = store.issues.filter((i) => notDeleted(i) && i.parentId === id).sort(byIdAsc)
     return ok({ items: rows })
   }
+  if (third === 'restore') {
+    if (method !== 'POST') fail(405, 'method not allowed')
+    const issue = mustFindIssue(store, id)
+    // 恢复软删行（清 deletedAt）；未删除的行视为空操作
+    if (!notDeleted(issue)) issue.deletedAt = null
+    store.revision += 1
+    return ok({ ok: true })
+  }
+  if (third === 'purge') {
+    if (method !== 'DELETE') fail(405, 'method not allowed')
+    const issue = mustFindIssue(store, id)
+    // 永久删除只对回收站内的行开放：在库行必须先走软删除
+    if (notDeleted(issue)) fail(409, 'issue is not deleted')
+    store.issues = store.issues.filter((i) => i.id !== id)
+    store.revision += 1
+    return ok({ ok: true })
+  }
   if (third) fail(404, 'not found')
-  if (method === 'GET') return ok({ issue: mustFindIssue(store, id) })
+  if (method === 'GET') {
+    // 软删行对外视同不存在（与 Dexie get 同口径）；回收站另有 deleted=1 列表
+    const issue = mustFindIssue(store, id)
+    if (!notDeleted(issue)) fail(404, 'issue not found')
+    return ok({ issue })
+  }
   if (method === 'PATCH') {
-    updateIssue(store, id, asRecord(asRecord(body).changes))
+    const row = mustFindIssue(store, id)
+    // 软删行不可改写（与 Dexie update 的空转一致），仍回报成功保持幂等
+    if (notDeleted(row)) updateIssue(store, id, asRecord(asRecord(body).changes))
     store.revision += 1
     return ok({ ok: true })
   }
   if (method === 'DELETE') {
-    mustFindIssue(store, id)
-    store.issues = store.issues.filter((i) => i.id !== id)
+    const issue = mustFindIssue(store, id)
+    // 软删除：只写 deletedAt，行留在库里供回收站恢复（updatedAt 不动，恢复后回原位）
+    if (notDeleted(issue)) issue.deletedAt = Date.now()
     store.revision += 1
     return ok({ ok: true })
   }
@@ -1385,12 +1452,12 @@ function route(store: MockStore, req: ApiRequest, member: Member | null): ApiRes
 
 export function handleApi(store: MockStore, req: ApiRequest): ApiResponse {
   try {
-    const [head, second] = segments(req.path)
+    const [head, second, third] = segments(req.path)
     const method = req.method.toUpperCase()
     // 免鉴权端点：登录、登出（登出必须幂等）。其余端点（含 revision 轮询）都要求 Bearer
     const anonymous = head === 'auth' && (second === 'login' || second === 'logout')
     const member = anonymous ? null : sessionMember(store, req)
-    if (member && isAdminOnly(method, head) && member.role !== 'admin') {
+    if (member && isAdminOnly(method, head, second, third) && member.role !== 'admin') {
       fail(403, 'admin role required')
     }
     return route(store, req, member)

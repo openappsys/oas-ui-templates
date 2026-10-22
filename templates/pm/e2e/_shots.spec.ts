@@ -793,3 +793,83 @@ test('shots admin dark', async ({ page }) => {
 
   console.log('shots admin dark done')
 })
+
+/** 造软删除样本：逐个开抽屉 → popconfirm 确认（撤销条 6s 后自动收起） */
+async function seedTrash(page: Page, n = 3) {
+  for (let i = 0; i < n; i++) {
+    await openFirstDrawer(page)
+    await page.evaluate(() => {
+      document
+        .querySelector('[data-testid=detail-delete]')
+        ?.dispatchEvent(
+          new CustomEvent('oas-open-change', { bubbles: true, detail: { reason: 'ok' } }),
+        )
+    })
+    await expect(page.getByTestId('detail-drawer')).toHaveCount(0, { timeout: 10_000 })
+    await page.waitForTimeout(300)
+  }
+}
+
+/** 回收站页（工作项页签内的子视图）：滚到表格处再截，表格行含 key/标题/项目/删除时间/行操作 */
+async function captureTrash(page: Page, suffix: string) {
+  await seedTrash(page)
+  await page.getByTestId('admin-entry').click()
+  await expect(page.getByTestId('admin-view')).toBeVisible({ timeout: 10_000 })
+  await page.getByTestId('admin-nav-config').click()
+  await expect(page.getByTestId('admin-config-trash')).toBeVisible({ timeout: 10_000 })
+  await expect
+    .poll(() => tableDataLength(page, 'admin-table-trash'), { timeout: 30_000 })
+    .toBeGreaterThan(0)
+  await page.getByTestId('admin-config-trash').scrollIntoViewIfNeeded()
+  await page.waitForTimeout(1200)
+  await page.screenshot({ path: `shots/pm-admin-trash${suffix}.png` })
+}
+
+/** 删除撤销提示条（顶栏下沿）：删除后立刻截，再点撤销复位 */
+async function captureUndo(page: Page, suffix: string) {
+  await openFirstDrawer(page)
+  await page.evaluate(() => {
+    document
+      .querySelector('[data-testid=detail-delete]')
+      ?.dispatchEvent(
+        new CustomEvent('oas-open-change', { bubbles: true, detail: { reason: 'ok' } }),
+      )
+  })
+  await expect(page.getByTestId('undo-bar')).toBeVisible({ timeout: 5000 })
+  await page.waitForTimeout(500)
+  await page.screenshot({ path: `shots/pm-undo${suffix}.png` })
+  await page.getByTestId('undo-action').click()
+  await expect(page.getByTestId('undo-bar')).toHaveCount(0, { timeout: 5000 })
+}
+
+test('shots trash', async ({ page }) => {
+  test.setTimeout(240_000)
+  await openApp(page)
+  await captureTrash(page, '')
+  console.log('shots trash done')
+})
+
+test('shots trash dark', async ({ page }) => {
+  test.setTimeout(240_000)
+  await page.addInitScript(() => localStorage.setItem('oas-pm-theme', 'dark'))
+  await openApp(page)
+  await expectDarkTheme(page)
+  await captureTrash(page, '-dark')
+  console.log('shots trash dark done')
+})
+
+test('shots undo', async ({ page }) => {
+  test.setTimeout(240_000)
+  await openApp(page)
+  await captureUndo(page, '')
+  console.log('shots undo done')
+})
+
+test('shots undo dark', async ({ page }) => {
+  test.setTimeout(240_000)
+  await page.addInitScript(() => localStorage.setItem('oas-pm-theme', 'dark'))
+  await openApp(page)
+  await expectDarkTheme(page)
+  await captureUndo(page, '-dark')
+  console.log('shots undo dark done')
+})

@@ -44,6 +44,9 @@ import { NotificationBell, NotificationPanel } from './components/NotificationCe
 
 type View = 'dashboard' | 'issues' | 'board' | 'timeline' | 'resource' | 'schedule' | 'admin'
 
+/** 删除撤销窗口：提示条存活时长（超时后仍可从管理台回收站恢复） */
+const UNDO_MS = 6000
+
 /** 数据窗口：compound index 取项目/状态维度最近 listLimit 条，再内存细筛；
  *  触底续载：滚动近底时 listLimit 递增（每批 LIST_WINDOW_STEP 条）。
  *  retryNonce 变化 = 重新订阅（API 模式首屏失败后的「重试」入口） */
@@ -270,6 +273,27 @@ function Workspace({
     })
   }, [apiMode])
   useEffect(() => () => window.clearTimeout(apiNoticeTimer.current), [])
+  // 删除撤销：软删除后 6 秒内可一键恢复（超时提示收起，回收站仍可恢复）。
+  // 只存 id 与 key，文案在渲染时取自 t()——切换语言提示条跟着变
+  const [undo, setUndo] = useState<{ ids: string[]; key?: string } | null>(null)
+  const undoTimer = useRef<number | undefined>(undefined)
+  const showUndo = useCallback((ids: string[], key?: string) => {
+    window.clearTimeout(undoTimer.current)
+    setUndo({ ids, key })
+    undoTimer.current = window.setTimeout(() => setUndo(null), UNDO_MS)
+  }, [])
+  useEffect(() => () => window.clearTimeout(undoTimer.current), [])
+  const undoIds = useMemo(() => undo?.ids ?? [], [undo])
+  const runUndo = useCallback(async () => {
+    window.clearTimeout(undoTimer.current)
+    setUndo(null)
+    try {
+      for (const id of undoIds) await issuesRepo.restore(id)
+    } catch (e) {
+      // 撤销失败（会话失效/行已被永久删除）：提示条已收起，回收站仍可手动恢复
+      console.error('[undo: restore]', (e as Error)?.message ?? e)
+    }
+  }, [undoIds, issuesRepo])
   const applySavedView = useCallback((filtersJson: string) => {
     // 旧视图存的是单值/null：读取处归一为多选结构，不迁移存量数据
     const next = parseFilters(filtersJson)
@@ -801,6 +825,21 @@ function Workspace({
           {apiNotice}
         </oas-alert>
       )}
+      {undo && (
+        <oas-alert type="warning" size="small" className="undo-bar" data-testid="undo-bar">
+          {undo.key
+            ? t('undoDeleted').replace('{name}', undo.key)
+            : t('undoDeletedMany').replace('{n}', String(undo.ids.length))}
+          <oas-button
+            slot="action"
+            size="small"
+            data-testid="undo-action"
+            onClick={() => void runUndo()}
+          >
+            {t('undoAction')}
+          </oas-button>
+        </oas-alert>
+      )}
       <div className="main">
         {view === 'admin' ? (
           <AdminView
@@ -869,6 +908,7 @@ function Workspace({
                     can={can}
                     navActive={view === 'issues' && selectedId === null}
                     onNearBottom={extendList}
+                    onDeleted={(ids) => showUndo(ids)}
                   />
                 </ErrorBoundary>
               )}
@@ -986,6 +1026,7 @@ function Workspace({
           currentUser={currentUser}
           onClose={() => setSelectedId(null)}
           can={can}
+          onDeleted={(issue) => showUndo([issue.id], issue.key)}
         />
       )}
 

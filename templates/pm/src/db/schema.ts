@@ -132,6 +132,21 @@ export class PMDatabase extends Dexie {
       cycles: 'id, projectId, [projectId+startAt]',
       notifications: 'id, memberId, createdAt, [memberId+createdAt], [memberId+readAt]',
     })
+    // v11：软删除。issues 增 deletedAt 索引——IndexedDB 不索引 null/undefined，
+    // 索引里只剩「已删除」这一小撮行，回收站与计数扣减都走索引直取，不扫全表（10W 行）。
+    // 不重建数据：老行的 deletedAt 缺失即视为未删除
+    this.version(11).stores({
+      issues:
+        'id, projectId, key, status, priority, assigneeId, parentId, cycleId, createdAt, updatedAt, deletedAt, [projectId+status], [projectId+priority], [projectId+assigneeId], [projectId+updatedAt], [projectId+status+updatedAt], [assigneeId+status], [status+updatedAt], [projectId+cycleId]',
+      projects: 'id, key',
+      members: 'id, role',
+      comments: 'id, issueId, [issueId+createdAt]',
+      savedViews: 'id, name',
+      activities: 'id, issueId, [issueId+createdAt], createdAt',
+      settings: 'key',
+      cycles: 'id, projectId, [projectId+startAt]',
+      notifications: 'id, memberId, createdAt, [memberId+createdAt], [memberId+readAt]',
+    })
   }
 }
 

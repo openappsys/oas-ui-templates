@@ -79,7 +79,14 @@ export interface IssueRepository {
   live(id: string): Observable<Issue | undefined>
   create(input: CreateIssueInput): Promise<Issue>
   update(id: string, changes: Partial<Issue>): Promise<void>
+  /** 软删除：写 deletedAt，行留在库里（回收站可恢复；物理删除走 purge） */
   delete(id: string): Promise<void>
+  /** 恢复软删行（清 deletedAt） */
+  restore(id: string): Promise<void>
+  /** 永久删除（仅回收站内可用，不可恢复） */
+  purge(id: string): Promise<void>
+  /** 回收站：已删除行，删除时间倒序（同刻按 id 倒序） */
+  liveTrash(): Observable<Issue[]>
   liveWindow(filters: IssueWindowFilters, currentUser: string, limit?: number): Observable<Issue[]>
   liveCounts(projectId: string): Observable<ProjectCounts>
   /** 按周期聚合的工作项计数（含 cycleId = null 桶）；sort：null 桶在前，其余 cycleId 升序 */

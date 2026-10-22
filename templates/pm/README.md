@@ -50,7 +50,7 @@ src/
 
 # OAS PM (pm) — Project Management Template
 
-> Status: **Stable (2026-10-22)** — 260 unit + 135 e2e tests green
+> Status: **Stable (2026-10-23)** — 271 unit + 143 e2e tests green
 
 A project-management template built on oas-ui: **React 19 + Dexie (IndexedDB) + @oas-ui/ui**.
 A production-grade frontend baseline: Repository data layer (REST-adapter ready), 3-level permission model, six views, zh-en i18n, dual theme.
@@ -64,7 +64,8 @@ A production-grade frontend baseline: Repository data layer (REST-adapter ready)
 - **Resource**: member workload swimlanes / overload highlighting / drag reschedule & reassign / **one-click load leveling** (levelResources reassign mode, admin)
 - **Schedule**: month / week time-axis / agenda views, due dates in **all-day / AM / PM** buckets, drag-to-bucket writeback + detail drawer
 - **Notifications**: bell with an unread badge (hidden at zero) and a right-side panel for mentions, assignments, comments, and closing status changes. Read one row or mark all read. Click a row to open the issue.
-- **Admin console** (admin): projects / members / permissions / labels / settings / overview
+- **Soft delete**: delete moves an issue to the trash. A 6-second undo bar offers one-click restore. Admin trash (Work items tab) lists deleted rows with restore and delete-forever actions. Every query excludes deleted rows.
+- **Admin console** (admin): projects / members / permissions / labels / trash / settings / overview
 - **General**: 3-level permissions (admin / member / viewer, per-action UI gating), one-click zh-en switch, light/dark themes, Cmd+K command palette, keyboard shortcuts
 
 ## Run

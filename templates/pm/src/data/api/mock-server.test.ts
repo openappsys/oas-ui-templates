@@ -471,7 +471,9 @@ describe('issue 写路径', () => {
 
     call(store, 'DELETE', `/api/issues/${issue.id}`)
     expect(revision()).toBe(r0 + 3)
-    expect(store.issues.some((i) => i.id === issue.id)).toBe(false)
+    // 软删除：行仍在库里（deletedAt 有值），GET 视同不存在
+    expect(store.issues.find((i) => i.id === issue.id)?.deletedAt).toBeGreaterThan(0)
+    expect(call(store, 'GET', `/api/issues/${issue.id}`).status).toBe(404)
   })
 
   it('PATCH /api/issues 批量更新（一次写、一次 revision）', () => {
@@ -515,13 +517,39 @@ describe('issue 写路径', () => {
     expect(store.activities.length).toBe(before)
   })
 
-  it('bulk-delete 批量删除', () => {
+  it('bulk-delete 批量软删除（回收站可恢复）', () => {
     const store = createMockStore({ now: FIXED })
     const ids = store.issues.slice(0, 3).map((i) => i.id)
     call(store, 'POST', '/api/issues/bulk-delete', { body: { ids: [ids[0], ids[2]] } })
-    expect(store.issues.some((i) => i.id === ids[0])).toBe(false)
-    expect(store.issues.some((i) => i.id === ids[1])).toBe(true)
-    expect(store.issues.some((i) => i.id === ids[2])).toBe(false)
+    const softRaw = (id: string) => store.issues.find((i) => i.id === id)
+    expect(softRaw(ids[0])?.deletedAt).toBeGreaterThan(0)
+    expect(softRaw(ids[1])?.deletedAt ?? null).toBeNull()
+    expect(softRaw(ids[2])?.deletedAt).toBeGreaterThan(0)
+    // 列表与 bulk 查询不再返回软删行
+    const listed = call(store, 'GET', '/api/issues/bulk', {
+      query: { ids: ids.join(',') },
+    }).body as { items: Array<Issue | null> }
+    expect(listed.items.map((r) => Boolean(r))).toEqual([false, true, false])
+  })
+
+  it('回收站：deleted=1 列出软删行；restore 恢复、purge 物理删除（仅 admin）', () => {
+    const store = createMockStore({ now: FIXED })
+    const id = store.issues[0].id
+    call(store, 'DELETE', `/api/issues/${id}`)
+    const trash = call(store, 'GET', '/api/issues', { query: { deleted: '1' } }).body as {
+      items: Issue[]
+    }
+    expect(trash.items.map((r) => r.id)).toEqual([id])
+
+    expect(call(store, 'POST', `/api/issues/${id}/restore`).status).toBe(200)
+    expect(store.issues.find((i) => i.id === id)?.deletedAt ?? null).toBeNull()
+    expect(call(store, 'GET', `/api/issues/${id}`).status).toBe(200)
+
+    // 在库行不可永久删除（必须先软删）
+    expect(call(store, 'DELETE', `/api/issues/${id}/purge`).status).toBe(409)
+    call(store, 'DELETE', `/api/issues/${id}`)
+    expect(call(store, 'DELETE', `/api/issues/${id}/purge`).status).toBe(200)
+    expect(store.issues.some((i) => i.id === id)).toBe(false)
   })
 })
 
@@ -627,7 +655,7 @@ describe('备份信封与 reset', () => {
       tables: Record<string, unknown[]>
     }
     expect(body.app).toBe('oas-pm')
-    expect(body.version).toBe(8)
+    expect(body.version).toBe(9)
     expect(typeof body.exportedAt).toBe('number')
     expect(Object.keys(body.tables).sort()).toEqual([
       'activities',

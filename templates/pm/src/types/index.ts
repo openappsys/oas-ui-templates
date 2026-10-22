@@ -28,6 +28,8 @@ export interface Issue {
   relations?: Array<{ type: 'blocks' | 'blocked-by' | 'relates'; targetId: string }>
   /** 所属迭代（空 = 未入迭代）。历史数据无此字段，读取处一律按 null 处理 */
   cycleId?: string | null
+  /** 软删除时间（null/缺失 = 在库可见）。物理删除只在回收站「永久删除」发生 */
+  deletedAt?: number | null
 }
 
 /** 迭代（Sprint/Cycle）：状态由 now 与区间派生，不落 status 字段——

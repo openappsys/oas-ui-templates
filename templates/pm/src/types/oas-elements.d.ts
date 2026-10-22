@@ -26,7 +26,11 @@ declare module 'react' {
         min?: number | string
         max?: number | string
       }
-      'oas-empty': HTMLAttributes<HTMLElement> & { description?: string }
+      'oas-empty': HTMLAttributes<HTMLElement> & {
+        description?: string
+        size?: string
+        'hide-image'?: boolean | string
+      }
       'oas-list-item': HTMLAttributes<HTMLElement> & { title?: string }
       'oas-list': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
         size?: string

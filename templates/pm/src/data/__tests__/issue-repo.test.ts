@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import 'fake-indexeddb/auto'
 import { PMDatabase } from '@/db/schema'
+import { createDexieAdminRepository } from '@/data/dexie/admin-repo'
 import { createDexieIssueRepository } from '@/data/dexie/issue-repo'
 import type { IssueWindowFilters } from '@/data/types'
 import { ALL_PROJECTS } from '@/lib/filters'
@@ -1027,5 +1028,213 @@ describe('dexie issue repository — 迭代筛选', () => {
       'z',
     ])
     expect(await first(repo.liveCycleIssues('p1', 'c-next'))).toEqual([])
+  })
+})
+
+describe('dexie issue repository — 软删除与回收站', () => {
+  let db: PMDatabase
+  beforeEach(async () => {
+    db = new PMDatabase(`test-${crypto.randomUUID()}`)
+    await db.open()
+  })
+
+  const first = <T>(obs: import('@/data/observable').Observable<T>) =>
+    new Promise<T>((resolve) => {
+      const unsub = obs.subscribe({
+        next: (v) => {
+          resolve(v)
+          unsub()
+        },
+      })
+    })
+
+  const windowRows = (
+    repo: ReturnType<typeof createDexieIssueRepository>,
+    filters: Partial<IssueWindowFilters> = {},
+    limit?: number,
+  ): Promise<Issue[]> =>
+    first(
+      repo.liveWindow(
+        {
+          projectId: 'p1',
+          statusFilter: [],
+          assigneeFilter: [],
+          priorityFilter: [],
+          search: '',
+          myOnly: false,
+          cycleFilter: null,
+          sortBy: 'updatedAt',
+          ...filters,
+        },
+        'm1',
+        limit,
+      ),
+    )
+
+  /** 软删除后残留在库里的原始行（绕过 repo 的过滤直读表） */
+  const rawRow = (id: string) => db.issues.get(id)
+
+  it('delete 写 deletedAt 而非物理删除；get/live 视同不存在', async () => {
+    await db.issues.add(seedIssue(db, { id: 'soft1' }))
+    const repo = createDexieIssueRepository(db)
+    await repo.delete('soft1')
+    const row = await rawRow('soft1')
+    expect(row).toBeDefined()
+    expect(typeof row?.deletedAt).toBe('number')
+    expect(row!.deletedAt!).toBeGreaterThan(0)
+    expect(await repo.get('soft1')).toBeUndefined()
+    expect(await first(repo.live('soft1'))).toBeUndefined()
+  })
+
+  it('软删除行从窗口/计数/搜索/子任务/关联候选/创建趋势/工作量/周期计数全部排除', async () => {
+    const now = 1_000_000
+    await db.cycles.add({
+      id: 'c1',
+      projectId: 'p1',
+      name: 'Sprint A',
+      startAt: 0,
+      endAt: now * 2,
+      createdAt: 0,
+      updatedAt: 0,
+    })
+    await db.issues.bulkAdd([
+      seedIssue(db, {
+        id: 'keep',
+        title: '保留行',
+        updatedAt: now,
+        createdAt: now,
+        assigneeId: 'm1',
+        cycleId: 'c1',
+      }),
+      seedIssue(db, {
+        id: 'gone',
+        title: '删除行',
+        status: 'done',
+        updatedAt: now + 1,
+        createdAt: now,
+        assigneeId: 'm1',
+        cycleId: 'c1',
+        parentId: 'keep',
+      }),
+    ])
+    const repo = createDexieIssueRepository(db)
+    await repo.delete('gone')
+
+    expect((await windowRows(repo)).map((r) => r.id)).toEqual(['keep'])
+    expect((await windowRows(repo, { search: '删除行' })).map((r) => r.id)).toEqual([])
+    expect((await windowRows(repo, { search: '行' })).map((r) => r.id)).toEqual(['keep'])
+    expect((await windowRows(repo, { statusFilter: ['done'] })).map((r) => r.id)).toEqual([])
+
+    const counts = await first(repo.liveCounts('p1'))
+    expect(counts.total).toBe(1)
+    expect(counts.byStatus.done).toBe(0)
+    expect(counts.byStatus.todo).toBe(1)
+
+    expect(await first(repo.liveSubIssues('keep'))).toEqual([])
+    expect((await first(repo.liveRelationCandidates('p1', 100))).map((r) => r.id)).toEqual(['keep'])
+    expect((await first(repo.liveByCreatedSince(0))).map((r) => r.id)).toEqual(['keep'])
+    const workload = await first(repo.liveAssigneeWorkload('p1'))
+    expect(workload).toEqual([{ memberId: 'm1', count: 1 }])
+    expect((await first(repo.liveCycleIssues('p1', 'c1'))).map((r) => r.id)).toEqual(['keep'])
+    const cycleCounts = await first(repo.liveCycleCounts('p1'))
+    expect(cycleCounts).toEqual([{ cycleId: 'c1', total: 1, done: 0, cancelled: 0 }])
+    expect(await first(repo.liveTrash())).toMatchObject([{ id: 'gone' }])
+  })
+
+  it('窗口按未删行补足 limit（删除行不占名额）', async () => {
+    const now = 1_000_000
+    await db.issues.bulkAdd([
+      seedIssue(db, { id: 'w1', updatedAt: now - 1 }),
+      seedIssue(db, { id: 'w2', updatedAt: now - 2 }),
+      seedIssue(db, { id: 'w3', updatedAt: now - 3 }),
+      seedIssue(db, { id: 'w4', updatedAt: now - 4 }),
+    ])
+    const repo = createDexieIssueRepository(db)
+    await repo.delete('w1')
+    expect((await windowRows(repo, {}, 2)).map((r) => r.id)).toEqual(['w2', 'w3'])
+  })
+
+  it('restore 让行回到窗口，purge 物理删除', async () => {
+    await db.issues.add(seedIssue(db, { id: 'r1', updatedAt: 1000 }))
+    const repo = createDexieIssueRepository(db)
+    await repo.delete('r1')
+    expect(await first(repo.liveTrash())).toHaveLength(1)
+
+    await repo.restore('r1')
+    expect((await rawRow('r1'))?.deletedAt ?? null).toBeNull()
+    expect((await windowRows(repo)).map((r) => r.id)).toEqual(['r1'])
+    expect(await first(repo.liveTrash())).toEqual([])
+
+    await repo.delete('r1')
+    await repo.purge('r1')
+    expect(await rawRow('r1')).toBeUndefined()
+    expect(await first(repo.liveTrash())).toEqual([])
+  })
+
+  it('bulkDelete 走软删除，bulkGet 不返回已删除行', async () => {
+    await db.issues.bulkAdd([seedIssue(db, { id: 'bd1' }), seedIssue(db, { id: 'bd2' })])
+    const repo = createDexieIssueRepository(db)
+    await repo.bulkDelete(['bd1'])
+    expect(await rawRow('bd1')).toBeDefined()
+    expect((await repo.bulkGet(['bd1', 'bd2'])).map((r) => r?.id)).toEqual([undefined, 'bd2'])
+  })
+
+  it('liveTrash 按删除时间倒序（同刻按 id 倒序）', async () => {
+    await db.issues.bulkAdd([
+      seedIssue(db, { id: 'a', deletedAt: 100 }),
+      seedIssue(db, { id: 'b', deletedAt: 300 }),
+      seedIssue(db, { id: 'c', deletedAt: 100 }),
+      seedIssue(db, { id: 'd' }),
+    ])
+    const repo = createDexieIssueRepository(db)
+    expect((await first(repo.liveTrash())).map((r) => r.id)).toEqual(['b', 'c', 'a'])
+  })
+
+  it('导出的信封版本为 9 且软删除行如实带 deletedAt', async () => {
+    await db.issues.add(seedIssue(db, { id: 'e1' }))
+    const repo = createDexieIssueRepository(db)
+    await repo.delete('e1')
+    const admin = createDexieAdminRepository(db)
+    const envelope = JSON.parse(await admin.exportAll()) as {
+      version: number
+      tables: { issues: Issue[] }
+    }
+    expect(envelope.version).toBe(9)
+    expect(envelope.tables.issues).toHaveLength(1)
+    expect(typeof envelope.tables.issues[0].deletedAt).toBe('number')
+  })
+
+  it('管理统计/工作量/健康度排除软删除行', async () => {
+    await db.members.add({
+      id: 'm1',
+      name: 'A',
+      email: 'a@oas.dev',
+      avatarColor: '#000',
+      role: 'admin',
+    })
+    await db.projects.add({
+      id: 'p1',
+      name: 'P',
+      key: 'OAS',
+      description: '',
+      leadId: 'm1',
+      createdAt: 0,
+    })
+    await db.issues.bulkAdd([
+      seedIssue(db, { id: 's1', assigneeId: 'm1', status: 'todo' }),
+      seedIssue(db, { id: 's2', assigneeId: 'm1', status: 'done', dueAt: 1 }),
+    ])
+    const repo = createDexieIssueRepository(db)
+    await repo.delete('s2')
+    const admin = createDexieAdminRepository(db)
+    const stats = await first(admin.liveGlobalStats())
+    expect(stats.issues).toBe(1)
+    expect(stats.done).toBe(0)
+    expect(await first(admin.liveMemberWorkload())).toMatchObject([
+      { memberId: 'm1', total: 1, todo: 1, done: 0 },
+    ])
+    expect(await first(admin.liveProjectHealth())).toMatchObject([
+      { projectId: 'p1', total: 1, overdue: 0 },
+    ])
   })
 })
