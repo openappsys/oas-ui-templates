@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { bearer, loginToken, quickLogin } from './api-auth'
 
 // API 模式由 localStorage 决断；一次性 init script（sessionStorage 标记防 reload 重写，A3「切回本地」
 // 依赖点击移除后 reload 不再注入）；origin 无关，端口可配置
@@ -43,15 +44,24 @@ test('A1 引导：reset 端点 + mock 2K 数据渲染 + 徽标 API + 不跑 Dexi
   page,
   request,
 }) => {
-  test.setTimeout(60_000)
-  // 复用 dev server 时 store 会跨跑污染：先用 reset 端点回到确定性种子
-  const reset = await request.post('/api/admin/reset')
-  expect(reset.ok()).toBe(true)
-  expect((await request.get('/api/revision')).ok()).toBe(true)
-
+  test.setTimeout(90_000)
+  // 未登录先见登录页：工作台在 API 模式下必须先有会话
   await page.goto('/')
+  await expect(page.getByTestId('login-page')).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByTestId('pm-toolbar')).toHaveCount(0)
+
+  // 复用 dev server 时 store 会跨跑污染：先用 reset 端点回到确定性种子（admin 凭据）
+  const reset = await request.post('/api/admin/reset', {
+    headers: bearer(await loginToken(request)),
+  })
+  expect(reset.ok()).toBe(true)
+  const revision = await request.get('/api/revision', {
+    headers: bearer(await loginToken(request)),
+  })
+  expect(revision.ok()).toBe(true)
+
+  await quickLogin(page, 'admin')
   // 高负载下首屏壳可能晚于 10s：等待放宽到 15s（断言语义不变）
-  await expect(page.getByTestId('pm-toolbar')).toBeVisible({ timeout: 15_000 })
   await expect(page.getByTestId('data-source-badge')).toHaveText('API')
   await expect(page.locator('.issue-row').first()).toBeVisible({ timeout: 15_000 })
 
@@ -78,10 +88,13 @@ test('A2 编辑推送：UI 改状态即时生效 + 外部 PATCH 经 revision 轮
   page,
   request,
 }) => {
-  test.setTimeout(60_000)
-  await request.post('/api/admin/reset')
+  test.setTimeout(90_000)
+  await request.post('/api/admin/reset', { headers: bearer(await loginToken(request)) })
   await page.goto('/')
+  await quickLogin(page, 'admin')
   await expect(page.locator('.issue-row').first()).toBeVisible({ timeout: 15_000 })
+  const pageToken = await page.evaluate(() => localStorage.getItem('oas-pm-token'))
+  expect(pageToken).toBeTruthy()
 
   // 1) UI 改状态：打开首行详情抽屉 → 改状态 → 关抽屉 → 表内该行状态跟随
   await page
@@ -116,7 +129,10 @@ test('A2 编辑推送：UI 改状态即时生效 + 外部 PATCH 经 revision 轮
 
   // 2) 外部 PATCH（不在本页发起）：轮询到 revision 变化后表内标题跟随
   const head = await page.evaluate(async () => {
-    const res = await fetch('/api/issues?projectId=project-1&limit=1')
+    const token = localStorage.getItem('oas-pm-token') ?? ''
+    const res = await fetch('/api/issues?projectId=project-1&limit=1', {
+      headers: { authorization: `Bearer ${token}` },
+    })
     const json = (await res.json()) as { items: Array<{ id: string; title: string }> }
     return json.items[0]
   })
@@ -124,6 +140,7 @@ test('A2 编辑推送：UI 改状态即时生效 + 外部 PATCH 经 revision 轮
   const title = `外部改标题 ${Date.now()}`
   const patched = await request.patch(`/api/issues/${head.id}`, {
     data: { changes: { title } },
+    headers: bearer(pageToken ?? ''),
   })
   expect(patched.ok()).toBe(true)
   const started = Date.now()
@@ -139,6 +156,7 @@ test('A3 切回本地：DEV 徽标点击写回 dexie 并走既有 Dexie seed', a
   // 高负载下 100K 播种可能超 100s：轮询与用例预算统一留余量
   test.setTimeout(240_000)
   await page.goto('/')
+  await quickLogin(page, 'admin')
   await expect(page.getByTestId('data-source-badge')).toHaveText('API', { timeout: 15_000 })
   await expect(page.locator('.issue-row').first()).toBeVisible({ timeout: 15_000 })
 

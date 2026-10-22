@@ -14,6 +14,10 @@ declare module 'react' {
         type?: string
         size?: string
         disabled?: boolean | string
+        /** 撑满父容器宽度（dist 契约的 block 属性） */
+        block?: boolean | string
+        /** 列表内渲染时 React 需要 key；WC 声明缺 Attributes 交集，这里补上 */
+        key?: string | number
       }
       'oas-card': HTMLAttributes<HTMLElement> & { title?: string }
       'oas-switch': HTMLAttributes<HTMLElement> & { checked?: boolean | string }
@@ -48,6 +52,19 @@ declare module 'react' {
         value?: string
         placeholder?: string
         disabled?: boolean | string
+        /** 表单字段名（oas-form 按 name 收集取值） */
+        name?: string
+        type?: string
+        'show-password'?: boolean | string
+      }
+      'oas-form': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        /** 校验规则（property 通道，支持 validator 函数，故不落 attribute） */
+        rules?: unknown
+        layout?: string
+      }
+      'oas-form-item': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        label?: string
+        required?: boolean | string
       }
       'oas-chart': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
         type?: string

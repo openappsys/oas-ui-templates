@@ -122,19 +122,30 @@ async function expectDarkTheme(page: Page) {
     .toBe('dark')
 }
 
-/** API 模式（DEV 决断 localStorage oas-pm-data=api）：不跑 Dexie seed，数据来自 mock 端点 */
-async function openApiApp(page: Page, theme: 'light' | 'dark' = 'light') {
+/** API 模式（DEV 决断 localStorage oas-pm-data=api）：不跑 Dexie seed，数据来自 mock 端点。
+ *  API 模式需要会话：预置 admin token，否则首屏停在登录页。
+ *  expectRows=false 用于故意让首屏请求失败的截图（无行可等） */
+async function openApiApp(page: Page, theme: 'light' | 'dark' = 'light', expectRows = true) {
+  const login = await page.request.post('/api/auth/login', {
+    data: { email: 'user1@oas.dev', password: 'oas' },
+  })
+  expect(login.ok()).toBe(true)
+  const { token } = (await login.json()) as { token: string }
   await page.addInitScript(
-    ([mode]) => {
+    ([mode, authToken]) => {
       localStorage.setItem('oas-pm-data', 'api')
       localStorage.setItem('oas-pm-theme', mode)
+      localStorage.setItem('oas-pm-token', authToken)
     },
-    [theme],
+    [theme, token] as const,
   )
-  const reset = await page.request.post('/api/admin/reset')
+  const reset = await page.request.post('/api/admin/reset', {
+    headers: { authorization: `Bearer ${token}` },
+  })
   expect(reset.ok()).toBe(true)
   await page.goto('/')
   await expect(page.getByTestId('data-source-badge')).toHaveText('API', { timeout: 20_000 })
+  if (!expectRows) return
   await page.waitForSelector('.issue-row', { timeout: 20_000 })
   if (theme === 'dark') await expectDarkTheme(page)
   // 行渲染早于成员/权限就绪时勾选列缺失、头像退化成灰色 ?——断言两者可见后再截图
@@ -595,6 +606,64 @@ test('shots api dark', async ({ page }) => {
   await page.screenshot({ path: 'shots/pm-api-list-dark.png' })
 
   console.log('shots api dark done')
+})
+
+/** 登录页（浅/深）：API 模式无会话时的首屏 */
+async function openLogin(page: Page, theme: 'light' | 'dark') {
+  await page.addInitScript((mode) => {
+    localStorage.setItem('oas-pm-data', 'api')
+    localStorage.setItem('oas-pm-theme', mode)
+    localStorage.removeItem('oas-pm-token')
+  }, theme)
+  await page.goto('/')
+  await expect(page.getByTestId('login-page')).toBeVisible({ timeout: 20_000 })
+  await page.waitForTimeout(600)
+}
+
+test('shots auth', async ({ page }) => {
+  await openLogin(page, 'light')
+  await page.screenshot({ path: 'shots/pm-login.png' })
+
+  // 凭据错误提示
+  await page.getByTestId('login-email').evaluate((el) => {
+    const input = el as HTMLElement & { value?: string }
+    input.value = 'user1@oas.dev'
+  })
+  await page.getByTestId('login-password').evaluate((el) => {
+    const input = el as HTMLElement & { value?: string }
+    input.value = 'wrong'
+  })
+  await page.getByTestId('login-submit').click()
+  await expect(page.getByTestId('login-error')).toBeVisible({ timeout: 10_000 })
+  await page.waitForTimeout(400)
+  await page.screenshot({ path: 'shots/pm-login-error.png' })
+
+  console.log('shots auth done')
+})
+
+test('shots auth dark', async ({ page }) => {
+  await openLogin(page, 'dark')
+  await page.screenshot({ path: 'shots/pm-login-dark.png' })
+
+  console.log('shots auth dark done')
+})
+
+test('shots list error', async ({ page }) => {
+  test.setTimeout(120_000)
+  const failures = (url: URL) => url.pathname === '/api/issues'
+  await page.route(failures, (route) =>
+    route.fulfill({
+      status: 500,
+      contentType: 'application/json',
+      body: JSON.stringify({ error: 'upstream unavailable' }),
+    }),
+  )
+  await openApiApp(page, 'light', false)
+  await expect(page.getByTestId('list-error')).toBeVisible({ timeout: 20_000 })
+  await page.waitForTimeout(600)
+  await page.screenshot({ path: 'shots/pm-list-error.png' })
+
+  console.log('shots list error done')
 })
 
 test('shots admin', async ({ page }) => {

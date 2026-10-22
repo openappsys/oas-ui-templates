@@ -14,6 +14,8 @@ import { VirtualIssueList } from './VirtualIssueList'
 /* ── Issue 列表（筛选/排序/分组工具条） ── */
 export function IssueListView({
   issues,
+  error,
+  onRetry,
   total,
   filters,
   setFilters,
@@ -28,6 +30,9 @@ export function IssueListView({
   onNearBottom,
 }: {
   issues: Issue[] | undefined
+  /** 窗口订阅失败（首次加载/重试失败）：有数据时保留旧表，无数据时显示错误态 */
+  error?: unknown
+  onRetry?: () => void
   total: number
   filters: Filters
   setFilters: React.Dispatch<React.SetStateAction<Filters>>
@@ -44,7 +49,9 @@ export function IssueListView({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [cursorIndex, setCursorIndex] = useState(-1)
   const list = issues ?? []
-  const loading = issues === undefined
+  // 三重态：有错误且无数据 → 错误态；无数据 → 加载中；有数据 → 表格（错误只进 console，不闪空表）
+  const failed = error !== undefined && issues === undefined
+  const loading = issues === undefined && !failed
   const hasActiveFilter =
     filters.statusFilter.length > 0 ||
     filters.assigneeFilter.length > 0 ||
@@ -199,13 +206,15 @@ export function IssueListView({
       <div className="issue-header">
         <h1>Issues</h1>
         <span className="issue-total" data-testid="issue-total">
-          {loading
-            ? '…'
-            : total > list.length
-              ? t('issueTotalMore')
-                  .replace('{total}', total.toLocaleString())
-                  .replace('{n}', list.length.toLocaleString())
-              : t('issueTotal').replace('{total}', total.toLocaleString())}
+          {failed
+            ? '—'
+            : loading
+              ? '…'
+              : total > list.length
+                ? t('issueTotalMore')
+                    .replace('{total}', total.toLocaleString())
+                    .replace('{n}', list.length.toLocaleString())
+                : t('issueTotal').replace('{total}', total.toLocaleString())}
         </span>
       </div>
       <div className="issue-toolbar" data-testid="issue-toolbar">
@@ -278,14 +287,31 @@ export function IssueListView({
           </button>
         )}
       </div>
-      <div className="issue-thead">
-        <span>{t('key')}</span>
-        <span>{t('title')}</span>
-        <span>{t('assignee')}</span>
-        <span>{t('priority')}</span>
-        <span>{t('status')}</span>
-      </div>
-      {loading ? (
+      {!failed && (
+        <div className="issue-thead">
+          <span>{t('key')}</span>
+          <span>{t('title')}</span>
+          <span>{t('assignee')}</span>
+          <span>{t('priority')}</span>
+          <span>{t('status')}</span>
+        </div>
+      )}
+      {failed ? (
+        <div className="list-error" data-testid="list-error">
+          <p className="list-error-title">{t('listErrorTitle')}</p>
+          <p className="list-error-hint">{t('listErrorHint')}</p>
+          {error instanceof Error && error.message !== '' && (
+            <p className="list-error-detail" data-testid="list-error-detail">
+              {error.message}
+            </p>
+          )}
+          {onRetry && (
+            <oas-button type="primary" data-testid="list-error-retry" onClick={onRetry}>
+              {t('errorRetry')}
+            </oas-button>
+          )}
+        </div>
+      ) : loading ? (
         <ListSkeleton />
       ) : groups ? (
         <div className="issue-scroll">

@@ -21,8 +21,10 @@ import { loadTheme, storeTheme, type ThemePreference } from './lib/preferences'
 import { applyTheme } from './lib/theme'
 import { isOverlayOpen, registerKey } from './lib/keyboard'
 import { useRepositories } from './data/context'
-import { useObservable } from './data/use-observable'
+import { useObservable, useObservableState } from './data/use-observable'
 import { activeDataSource, storeDataSource } from './data/source'
+import { fetchMe, logout as logoutSession, type LoginResult } from './data/api/auth'
+import { getToken, onApiError, onSessionExpired } from './data/api/session'
 import { can as policyCan, type Action, type Ctx } from './permission/policy'
 import { Avatar } from './components/Avatar'
 import { SideList, type SideRow } from './components/SideList'
@@ -37,14 +39,16 @@ import { ResourceView } from './views/resource/ResourceView'
 import { ScheduleView } from './views/schedule/ScheduleView'
 import { IssueDetailDrawer } from './views/issue/IssueDetailDrawer'
 import { AdminView, type AdminTab } from './views/admin/AdminView'
+import { LoginView } from './views/auth/LoginView'
 
 type View = 'dashboard' | 'issues' | 'board' | 'timeline' | 'resource' | 'schedule' | 'admin'
 
 /** 数据窗口：compound index 取项目/状态维度最近 listLimit 条，再内存细筛；
- *  触底续载：滚动近底时 listLimit 递增（每批 LIST_WINDOW_STEP 条） */
-function useIssueWindow(f: Filters, currentUser: string, listLimit: number) {
+ *  触底续载：滚动近底时 listLimit 递增（每批 LIST_WINDOW_STEP 条）。
+ *  retryNonce 变化 = 重新订阅（API 模式首屏失败后的「重试」入口） */
+function useIssueWindow(f: Filters, currentUser: string, listLimit: number, retryNonce: number) {
   const { issues } = useRepositories()
-  return useObservable(
+  return useObservableState(
     () =>
       issues.liveWindow(
         {
@@ -71,6 +75,7 @@ function useIssueWindow(f: Filters, currentUser: string, listLimit: number) {
       f.cycleFilter,
       currentUser,
       listLimit,
+      retryNonce,
     ],
   )
 }
@@ -235,14 +240,83 @@ function DataSourceBadge() {
 }
 
 export function App() {
+  const apiMode = activeDataSource() === 'api'
+  // API 模式的会话先决：token 校验通过才挂载工作台（数据订阅在登录前后不空转）
+  const [session, setSession] = useState<Member | null>(null)
+  const [ready, setReady] = useState(!apiMode)
+  const [notice, setNotice] = useState('')
+
+  useEffect(() => {
+    if (!apiMode) return
+    if (!getToken()) {
+      setReady(true)
+      return
+    }
+    let alive = true
+    fetchMe()
+      .then((member) => {
+        if (!alive) return
+        setSession(member)
+        setReady(true)
+      })
+      .catch((e) => {
+        console.error('[session]', e)
+        if (alive) setReady(true)
+      })
+    return () => {
+      alive = false
+    }
+  }, [apiMode])
+
+  // token 被服务端判失效（任何请求收到 401）：回登录页并说明原因
+  useEffect(() => {
+    if (!apiMode) return
+    return onSessionExpired(() => {
+      setSession(null)
+      setNotice(t('sessionExpired'))
+    })
+  }, [apiMode])
+
+  const signedIn = useCallback((result: LoginResult) => {
+    localStorage.setItem('oas-pm-user', result.member.id)
+    setNotice('')
+    setSession(result.member)
+  }, [])
+
+  const signOut = useCallback(() => {
+    setNotice('')
+    setSession(null)
+    void logoutSession()
+  }, [])
+
+  if (!ready) {
+    return (
+      <div className="login-page" data-testid="session-check">
+        <p className="login-hint">{t('loginChecking')}</p>
+      </div>
+    )
+  }
+  if (apiMode && !session) return <LoginView notice={notice} onSignedIn={signedIn} />
+  return <Workspace apiMode={apiMode} session={session} onSignOut={signOut} />
+}
+
+function Workspace({
+  apiMode,
+  session,
+  onSignOut,
+}: {
+  apiMode: boolean
+  session: Member | null
+  onSignOut: () => void
+}) {
   const {
     issues: issuesRepo,
     activities: activitiesRepo,
     savedViews: savedViewsRepo,
   } = useRepositories()
-  // 当前登录身份（localStorage 持久化，默认张伟）；头像点击可切换
+  // 当前登录身份：API 模式取会话成员；Dexie 模式沿用 localStorage 演示身份（默认张伟，头像点击切换）
   const [currentUser, setCurrentUser] = useState(
-    () => localStorage.getItem('oas-pm-user') ?? 'member-1',
+    () => session?.id ?? localStorage.getItem('oas-pm-user') ?? 'member-1',
   )
   const [lang, setLangState] = useState<Lang>(loadLang())
   const toggleLang = useCallback(() => {
@@ -273,6 +347,19 @@ export function App() {
         : t('themeSystem')
   const savedViews = useSavedViews()
   const saveViewNameRef = useRef<HTMLElement & { value?: string }>(null)
+  // 403 提示条：非 admin 触到管理端点时由服务端拒绝，前端给可见反馈（6s 自动收起）
+  const [apiNotice, setApiNotice] = useState('')
+  const apiNoticeTimer = useRef<number | undefined>(undefined)
+  useEffect(() => {
+    if (!apiMode) return
+    return onApiError((status) => {
+      if (status !== 403) return
+      setApiNotice(t('apiForbidden'))
+      window.clearTimeout(apiNoticeTimer.current)
+      apiNoticeTimer.current = window.setTimeout(() => setApiNotice(''), 6000)
+    })
+  }, [apiMode])
+  useEffect(() => () => window.clearTimeout(apiNoticeTimer.current), [])
   const applySavedView = useCallback((filtersJson: string) => {
     // 旧视图存的是单值/null：读取处归一为多选结构，不迁移存量数据
     const next = parseFilters(filtersJson)
@@ -306,7 +393,11 @@ export function App() {
 
   const [listLimit, setListLimit] = useState(LIST_WINDOW)
   const extendList = useCallback(() => setListLimit((n) => n + LIST_WINDOW_STEP), [])
-  const issues = useIssueWindow(filters, currentUser, listLimit)
+  // 窗口订阅失败的重试入口：改 nonce → 重新订阅（错误态复位为加载态）
+  const [windowRetry, setWindowRetry] = useState(0)
+  const retryWindow = useCallback(() => setWindowRetry((n) => n + 1), [])
+  const issueWindow = useIssueWindow(filters, currentUser, listLimit, windowRetry)
+  const issues = issueWindow.value
   const counts = useProjectCounts(filters.projectId)
   const members = useMembers()
   const projects = useProjects()
@@ -319,12 +410,13 @@ export function App() {
       policyCan(
         {
           id: currentUser,
-          role: members?.find((m) => m.id === currentUser)?.role ?? 'viewer',
+          // 角色取成员表；表被清空/未到时用会话快照，避免 admin 掉成 viewer
+          role: members?.find((m) => m.id === currentUser)?.role ?? session?.role ?? 'viewer',
         },
         action,
         ctx,
       ),
-    [currentUser, members],
+    [currentUser, members, session],
   )
   const canCreateIssue = can('issue:create')
   const canManage = can('project:manage')
@@ -709,16 +801,29 @@ export function App() {
           <span className="tb-logo">OAS</span> PM
         </span>
         <DataSourceBadge />
-        <button
-          className="tb-user"
-          type="button"
-          data-testid="tb-user"
-          title={t('paletteSwitchUser')}
-          onClick={() => userPickRef.current?.setAttribute('visible', '')}
-        >
-          <Avatar member={memberMap.get(currentUser)} size={22} />
-          <span>{memberMap.get(currentUser)?.name ?? ''}</span>
-        </button>
+        {apiMode ? (
+          <>
+            {/* API 模式的身份来自会话（token 决定），不能就地切换：换人 = 换 token */}
+            <span className="tb-user tb-user-static" data-testid="tb-user">
+              <Avatar member={memberMap.get(currentUser)} size={22} />
+              <span>{memberMap.get(currentUser)?.name ?? session?.name ?? ''}</span>
+            </span>
+            <oas-button type="text" size="small" data-testid="tb-logout" onClick={onSignOut}>
+              {t('logout')}
+            </oas-button>
+          </>
+        ) : (
+          <button
+            className="tb-user"
+            type="button"
+            data-testid="tb-user"
+            title={t('paletteSwitchUser')}
+            onClick={() => userPickRef.current?.setAttribute('visible', '')}
+          >
+            <Avatar member={memberMap.get(currentUser)} size={22} />
+            <span>{memberMap.get(currentUser)?.name ?? ''}</span>
+          </button>
+        )}
         {canManage && (
           <oas-button
             type="text"
@@ -785,6 +890,11 @@ export function App() {
           {t('about')}
         </oas-button>
       </header>
+      {apiNotice && (
+        <oas-alert type="error" className="api-notice" data-testid="api-forbidden">
+          {apiNotice}
+        </oas-alert>
+      )}
       <div className="main">
         {view === 'admin' ? (
           <AdminView
@@ -839,6 +949,8 @@ export function App() {
                 <ErrorBoundary key={view}>
                   <IssueListView
                     issues={issues}
+                    error={issueWindow.error}
+                    onRetry={retryWindow}
                     total={counts?.total ?? issues?.length ?? 0}
                     filters={filters}
                     setFilters={setFilters}
@@ -1007,32 +1119,34 @@ export function App() {
         />
       </oas-modal>
 
-      {/* 身份切换 */}
-      <oas-modal
-        ref={userPickRef}
-        title={t('paletteSwitchUser')}
-        no-footer
-        data-testid="modal-user"
-      >
-        <div className="user-picker">
-          {(members ?? []).map((m) => (
-            <button
-              key={m.id}
-              className={`user-pick-item${m.id === currentUser ? ' is-current' : ''}`}
-              type="button"
-              data-testid={`pick-user-${m.id}`}
-              onClick={() => {
-                switchUser(m.id)
-                userPickRef.current?.removeAttribute('visible')
-              }}
-            >
-              <Avatar member={m} size={26} />
-              <span>{m.name}</span>
-              <span className="user-pick-role">{m.role}</span>
-            </button>
-          ))}
-        </div>
-      </oas-modal>
+      {/* 身份切换（Dexie 演示模式专用；API 模式换人 = 换 token，走登出） */}
+      {!apiMode && (
+        <oas-modal
+          ref={userPickRef}
+          title={t('paletteSwitchUser')}
+          no-footer
+          data-testid="modal-user"
+        >
+          <div className="user-picker">
+            {(members ?? []).map((m) => (
+              <button
+                key={m.id}
+                className={`user-pick-item${m.id === currentUser ? ' is-current' : ''}`}
+                type="button"
+                data-testid={`pick-user-${m.id}`}
+                onClick={() => {
+                  switchUser(m.id)
+                  userPickRef.current?.removeAttribute('visible')
+                }}
+              >
+                <Avatar member={m} size={26} />
+                <span>{m.name}</span>
+                <span className="user-pick-role">{m.role}</span>
+              </button>
+            ))}
+          </div>
+        </oas-modal>
+      )}
 
       {/* 命令面板 */}
       <CommandPalette
@@ -1046,7 +1160,7 @@ export function App() {
         onToggleTheme={cycleTheme}
         onToggleLang={toggleLang}
         onShortcuts={() => setHelpOpen(true)}
-        onSwitchUser={switchUser}
+        onSwitchUser={apiMode ? onSignOut : switchUser}
         onOpenIssue={setSelectedId}
         lang={lang}
       />
