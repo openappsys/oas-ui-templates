@@ -77,7 +77,6 @@ function CommentsBlock({
   const comments = useObservable(() => commentsRepo.liveByIssue(issueId), [issueId, commentsRepo])
   const inputRef = useRef<HTMLInputElement>(null)
   const editRef = useRef<HTMLElement & { value?: string }>(null)
-  const [draft, setDraft] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
 
   const submit = async () => {
@@ -191,13 +190,13 @@ function CommentsBlock({
       </div>
       {can('comment:create') && (
         <div className="comment-input-row">
+          {/* 非受控：draft 只用于提交时读 DOM，受控 value 会在任何一次父级重渲染
+              （如标签写库推回）时把用户/脚本刚填的内容清空 */}
           <input
             ref={inputRef}
             className="comment-input"
             data-testid="comment-input"
             placeholder={t('commentPlaceholder')}
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') void submit()
             }}
@@ -230,9 +229,14 @@ export function IssueDetailDrawer({
   onClose: () => void
   can: (action: Action, ctx?: Ctx) => boolean
 }) {
-  const { issues: issuesRepo, activities: activitiesRepo } = useRepositories()
+  const { issues: issuesRepo, activities: activitiesRepo, cycles: cyclesRepo } = useRepositories()
   const issue = useObservable(() => issuesRepo.live(issueId), [issueId, issuesRepo])
   const subs = useObservable(() => issuesRepo.liveSubIssues(issueId), [issueId, issuesRepo])
+  // 迭代下拉只列本项目的周期（跨项目周期不可写）；issue 未加载时订阅空项目 id
+  const projectCycles = useObservable(
+    () => cyclesRepo.liveAll(issue?.projectId ?? ''),
+    [issue?.projectId, cyclesRepo],
+  )
   const labelSet = useLabelSet()
   const subInputRef = useRef<HTMLInputElement>(null)
   const [, setSelectedId] = useState<string | null>(null)
@@ -369,12 +373,16 @@ export function IssueDetailDrawer({
       title: '标题',
       dueAt: '截止日期',
       startAt: '开始日期',
+      cycleId: '迭代',
     }
+    // 迭代的活动记录写周期名而非 id：历史里出现 nanoid 对读者无意义
+    const cycleName = (id: string | null | undefined) =>
+      id == null ? '' : ((projectCycles ?? []).find((c) => c.id === id)?.name ?? id)
     const acts: Promise<unknown>[] = []
     for (const k of Object.keys(changes) as Array<keyof Issue>) {
       if (k === 'updatedAt' || !(k in FIELD_LABEL)) continue
-      const to = String(changes[k] ?? '')
-      const from = String(issue[k] ?? '')
+      const to = k === 'cycleId' ? cycleName(changes.cycleId) : String(changes[k] ?? '')
+      const from = k === 'cycleId' ? cycleName(issue.cycleId) : String(issue[k] ?? '')
       if (from === to) continue
       acts.push(
         activitiesRepo.log({
@@ -396,6 +404,10 @@ export function IssueDetailDrawer({
   const memberOptions = [
     { label: t('resourceUnassigned'), value: '__none__' },
     ...[...memberMap.values()].map((m) => ({ label: m.name, value: m.id })),
+  ]
+  const cycleOptions = [
+    { label: t('noCycle'), value: '__none__' },
+    ...(projectCycles ?? []).map((c) => ({ label: c.name, value: c.id })),
   ]
   // 回显 = f(issue.dueAt)：恰为桶时刻（UTC 00/09/14）亮对应档，否则亮自定义（§3.1-1，
   // 精度必须可见）；customSel 仅覆盖「点了自定义尚未写库」的瞬态窗口
@@ -436,6 +448,16 @@ export function IssueDetailDrawer({
               value={issue.assigneeId ?? '__none__'}
               options={memberOptions}
               onChange={(v) => save({ assigneeId: v === '__none__' ? null : v })}
+              disabled={!canEdit}
+            />
+          </div>
+          <div className="detail-field">
+            <span>{t('cycle')}</span>
+            <OSelect
+              testid="detail-cycle"
+              value={issue.cycleId ?? '__none__'}
+              options={cycleOptions}
+              onChange={(v) => save({ cycleId: v === '__none__' ? null : v })}
               disabled={!canEdit}
             />
           </div>

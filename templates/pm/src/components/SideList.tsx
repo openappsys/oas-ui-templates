@@ -5,7 +5,7 @@ import { t } from '@/i18n'
 export interface SideRow {
   group: string
   value: string
-  kind: 'project' | 'view' | 'status' | 'priority' | 'savedview' | 'member'
+  kind: 'project' | 'view' | 'status' | 'priority' | 'savedview' | 'member' | 'cycle'
   id?: string
   label: string
   count?: string
@@ -107,6 +107,9 @@ export function SideList({
         item.icon = 'menu'
       } else if (row.kind === 'savedview') {
         item.icon = 'star'
+      } else if (row.kind === 'cycle') {
+        // refresh = 周期循环；当前迭代与具体周期同一图标，靠分组内高亮区分
+        item.icon = 'refresh'
       }
       if (row.avatarColor) {
         item.avatarText = row.avatarText ?? ''

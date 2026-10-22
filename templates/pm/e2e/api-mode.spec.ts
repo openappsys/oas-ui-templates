@@ -64,7 +64,7 @@ test('A1 引导：reset 端点 + mock 2K 数据渲染 + 徽标 API + 不跑 Dexi
   await expect(page.locator('.issue-row .issue-key').first()).toContainText('OAS-')
 
   // API 模式不碰 IndexedDB：Dexie seed 标记不应出现
-  expect(await page.evaluate(() => localStorage.getItem('oas-pm-seed-v7'))).toBeNull()
+  expect(await page.evaluate(() => localStorage.getItem('oas-pm-seed-v8'))).toBeNull()
 
   // 管理 → 设置：数据源只读展示为 REST API，破坏性操作文案不再误称本地数据
   await page.getByTestId('admin-entry').click()
@@ -148,7 +148,7 @@ test('A3 切回本地：DEV 徽标点击写回 dexie 并走既有 Dexie seed', a
 
   // 既有 Dexie seed 等待预算（100K；高负载下留足余量）
   await expect
-    .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-seed-v7')), {
+    .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-seed-v8')), {
       timeout: 180_000,
       intervals: [1000, 3000, 5000],
     })

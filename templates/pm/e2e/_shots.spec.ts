@@ -3,7 +3,7 @@ import { expect, test, type Page } from '@playwright/test'
 async function openApp(page: Page) {
   await page.goto('/')
   // 高负载下 100K 播种可能超 100s：与主用例预算保持同一口径
-  await page.waitForFunction(() => localStorage.getItem('oas-pm-seed-v7') === '1', {
+  await page.waitForFunction(() => localStorage.getItem('oas-pm-seed-v8') === '1', {
     timeout: 180_000,
   })
   await page.waitForSelector('.issue-row', { timeout: 20_000 })
@@ -271,6 +271,22 @@ async function captureFilterSelection(page: Page, suffix: string) {
     .screenshot({ path: `shots/pm-filters-sidebar-bottom${suffix}.png` })
 }
 
+/** 迭代组：当前迭代筛选 + 侧栏迭代组（分组在优先级之后，滚动到可见再截图） */
+async function captureCycles(page: Page, suffix: string) {
+  await sideItem(page, 'cycle:__current__').click()
+  await expect(sideItem(page, 'cycle:__current__')).toHaveAttribute('aria-pressed', 'true')
+  await page.waitForTimeout(1500)
+  await page.screenshot({ path: `shots/pm-list-current-cycle${suffix}.png` })
+
+  await page.getByTestId('side-list').evaluate((el) => {
+    el.shadowRoot
+      ?.querySelector('[part="item"][data-value="cycle:__current__"]')
+      ?.scrollIntoView({ block: 'center' })
+  })
+  await page.waitForTimeout(400)
+  await page.getByTestId('side-panel').screenshot({ path: `shots/pm-sidebar-cycles${suffix}.png` })
+}
+
 test('shots', async ({ page }) => {
   test.setTimeout(240_000)
   await openApp(page)
@@ -395,6 +411,22 @@ test('shots sidebar dark', async ({ page }) => {
   await captureSidebarCollapsed(page, '-dark')
 
   console.log('shots sidebar dark done')
+})
+
+test('shots cycles', async ({ page }) => {
+  test.setTimeout(240_000)
+  await openApp(page)
+  await captureCycles(page, '')
+  console.log('shots cycles done')
+})
+
+test('shots cycles dark', async ({ page }) => {
+  test.setTimeout(240_000)
+  await page.addInitScript(() => localStorage.setItem('oas-pm-theme', 'dark'))
+  await openApp(page)
+  await expectDarkTheme(page)
+  await captureCycles(page, '-dark')
+  console.log('shots cycles dark done')
 })
 
 test('shots filters multi', async ({ page }) => {

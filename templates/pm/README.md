@@ -1,6 +1,6 @@
 # OAS PM（pm）项目管理系统模板
 
-> 状态：**可用（2026-10-21）**——140 单测 + 88 e2e 全绿
+> 状态：**可用（2026-10-22）**——195 单测 + 114 e2e 全绿
 
 基于 oas-ui 的项目管理系统模板：**React 19 + Dexie（IndexedDB）+ @oas-ui/ui**。
 演示「生产级前端基线」：Repository 数据层（可换 REST 适配器）、三级权限模型、六大视图、中英双语、明暗双主题。
@@ -8,7 +8,7 @@
 ## 功能
 
 - **仪表盘**：全局统计 / 状态分布 / 成员负载 Top / 近 30 天趋势
-- **列表**：10W+ Issue 虚拟化渲染 + 触底续载（500 起步）、多维度筛选（项目/视图/状态/成员/搜索）、排序与分组、批量操作
+- **列表**：10W+ Issue 虚拟化渲染 + 触底续载（500 起步）、多维度筛选（项目/视图/状态/成员/迭代/搜索）、排序与分组、批量操作
 - **看板**：状态列拖拽（权限门禁 + 回弹）
 - **时间线**：甘特图（项目分组 / 进度 / 里程碑 / 逾期约束 / 拖拽改期写回）
 - **资源**：成员负载泳道 / 超载高亮 / 拖拽改期与转派 / **一键均载**（levelResources reassign，admin）
@@ -28,7 +28,7 @@ pnpm build      # tsc6 类型检查 + vite 产物
 
 ## 数据
 
-IndexedDB（Dexie）本地持久化；首启自动 seed 演示数据（10 万 Issue、8 成员、3 项目，清 localStorage `oas-pm-seed-v7` 重播）。数据层为 Repository 接口 + React Context 注入，默认 Dexie 实现，可替换为 REST 适配器。
+IndexedDB（Dexie）本地持久化；首启自动 seed 演示数据（10 万 Issue、8 成员、3 项目、3 个迭代，清 localStorage `oas-pm-seed-v8` 重播）。数据层为 Repository 接口 + React Context 注入，默认 Dexie 实现，可替换为 REST 适配器。
 
 **REST 示范（API 模式）**：同一套 Repository 接口另有一份 HTTP 实现（`src/data/api/client.ts`），后端由零依赖 Vite 中间件承载（`src/data/api/mock-server.ts`：2K Issue 确定性种子、revision 轮询推送、`/api/admin/reset` 复位）。开发模式下点页头数据源徽标可在「本地 / API」间切换（`localStorage 'oas-pm-data'`）；构建产物固定本地模式。`PATCH /api/issues/:id` 等写操作对同一进程内所有标签页实时可见。
 
@@ -49,7 +49,7 @@ src/
 
 # OAS PM (pm) — Project Management Template
 
-> Status: **Stable (2026-10-21)** — 140 unit + 88 e2e tests green
+> Status: **Stable (2026-10-22)** — 195 unit + 114 e2e tests green
 
 A project-management template built on oas-ui: **React 19 + Dexie (IndexedDB) + @oas-ui/ui**.
 A production-grade frontend baseline: Repository data layer (REST-adapter ready), 3-level permission model, six views, zh-en i18n, dual theme.
@@ -57,7 +57,7 @@ A production-grade frontend baseline: Repository data layer (REST-adapter ready)
 ## Features
 
 - **Dashboard**: global stats / status distribution / top member workloads / 30-day trend
-- **List**: 100K+ virtualized issues with infinite scroll (500-row window), multi-facet filters (project / view / status / member / search), sorting & grouping, bulk operations
+- **List**: 100K+ virtualized issues with infinite scroll (500-row window), multi-facet filters (project / view / status / member / cycle / search), sorting & grouping, bulk operations
 - **Board**: status-column drag & drop (permission-gated, bounce-back on deny)
 - **Timeline**: gantt (project groups / progress / milestones / overdue constraints / drag-reschedule writeback)
 - **Resource**: member workload swimlanes / overload highlighting / drag reschedule & reassign / **one-click load leveling** (levelResources reassign mode, admin)
@@ -77,7 +77,7 @@ pnpm build      # tsc6 typecheck + vite build
 
 ## Data
 
-Local persistence in IndexedDB (Dexie); demo data is seeded on first launch (100K issues, 8 members, 3 projects — clear the `oas-pm-seed-v7` localStorage key to reseed). The data layer is a Repository interface injected via React Context, with Dexie as the default implementation.
+Local persistence in IndexedDB (Dexie); demo data is seeded on first launch (100K issues, 8 members, 3 projects — clear the `oas-pm-seed-v8` localStorage key to reseed). The data layer is a Repository interface injected via React Context, with Dexie as the default implementation.
 
 **REST demo (API mode)**: a second implementation of the same Repository interface talks HTTP (`src/data/api/client.ts`). A zero-dependency Vite middleware serves the mock backend (`src/data/api/mock-server.ts`: 2K deterministic issues, revision polling, `/api/admin/reset`). In development, click the data-source badge in the header to switch between Local and API (`localStorage 'oas-pm-data'`). The built site always runs in local mode. Writes such as `PATCH /api/issues/:id` reach every open tab in the same process.
 

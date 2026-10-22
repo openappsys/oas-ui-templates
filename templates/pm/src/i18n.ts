@@ -46,6 +46,11 @@ const dict = {
     // 侧栏状态/优先级两组的「全部」行同名会让读屏听到两个「全部」——按组语义各自命名
     allStatuses: '全部状态',
     allPriorities: '全部优先级',
+    cycles: '迭代',
+    allCycles: '全部迭代',
+    currentCycle: '当前迭代',
+    noCycle: '无迭代',
+    cycle: '迭代',
     members: '成员',
     savedViews: '保存的视图',
     window: '窗口',
@@ -222,6 +227,7 @@ const dict = {
     actDescription: '更新了描述',
     actTitle: '更新了标题',
     actDates: '调整了排期',
+    actCycle: '更新了迭代',
     actorUnknown: '某人',
     commentAnonymous: '匿名',
     relBlocks: '阻塞',
@@ -297,6 +303,11 @@ const dict = {
     all: 'All',
     allStatuses: 'All statuses',
     allPriorities: 'All priorities',
+    cycles: 'Cycles',
+    allCycles: 'All cycles',
+    currentCycle: 'Current cycle',
+    noCycle: 'No cycle',
+    cycle: 'Cycle',
     members: 'Members',
     savedViews: 'Saved views',
     window: 'Window',
@@ -474,6 +485,7 @@ const dict = {
     actDescription: 'updated the description',
     actTitle: 'updated the title',
     actDates: 'adjusted the schedule',
+    actCycle: 'updated the cycle',
     actorUnknown: 'Someone',
     commentAnonymous: 'Anonymous',
     relBlocks: 'Blocks',
@@ -584,6 +596,7 @@ const ACTIVITY_TYPE_KEY: Record<string, DictKey> = {
   dates: 'actDates',
   dueAt: 'actDates',
   startAt: 'actDates',
+  cycleId: 'actCycle',
 }
 
 export function activityTypeLabel(type: string): string {

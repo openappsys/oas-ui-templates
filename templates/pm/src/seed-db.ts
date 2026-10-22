@@ -1,5 +1,6 @@
-import type { Issue, Project, Member } from './types'
+import type { Cycle, Issue, Project, Member } from './types'
 import { db } from './db/schema'
+import { demoCycleIdFor } from './lib/cycles'
 import { mulberry32 } from './lib/prng'
 
 const NAMES = ['张伟', '李娜', '王强', '赵敏', '刘洋', '陈静', '杨帆', '周琳']
@@ -30,7 +31,7 @@ const LABELS = ['frontend', 'backend', 'design', 'bug', 'feature', 'tech-debt', 
 export async function seedDatabase(): Promise<void> {
   // seed 版本标记：调整 seed 逻辑后 bump。标记 + 数据双验证——
   // 单看标记会在「上次 seed 中断」时永久跳过，留下空库
-  const SEED_VER = 'oas-pm-seed-v7'
+  const SEED_VER = 'oas-pm-seed-v8'
   const marked = localStorage.getItem(SEED_VER)
   const issueCount = await db.issues.count()
   if (marked && issueCount > 0) return
@@ -81,6 +82,42 @@ export async function seedDatabase(): Promise<void> {
     },
   ]
   await db.projects.bulkPut(projects)
+
+  // 迭代（Sprint）：project-1 两份已结束 + 一份进行中（now ∈ [start,end) 派生当前，无 status 字段）。
+  // 区间按天对齐，与 API mock 的 buildSeed 同形；归属规则见 lib/cycles.demoCycleIdFor
+  const cycles: Cycle[] = [
+    {
+      id: 'cycle-1',
+      projectId: 'project-1',
+      name: 'Sprint 1',
+      startAt: now - 28 * day,
+      endAt: now - 14 * day,
+      goal: '平台基础能力',
+      createdAt: now - 28 * day,
+      updatedAt: now - 14 * day,
+    },
+    {
+      id: 'cycle-2',
+      projectId: 'project-1',
+      name: 'Sprint 2',
+      startAt: now - 14 * day,
+      endAt: now,
+      goal: '权限与导出',
+      createdAt: now - 14 * day,
+      updatedAt: now,
+    },
+    {
+      id: 'cycle-3',
+      projectId: 'project-1',
+      name: 'Sprint 3',
+      startAt: now,
+      endAt: now + 14 * day,
+      goal: '性能与体验',
+      createdAt: now,
+      updatedAt: now,
+    },
+  ]
+  await db.cycles.bulkPut(cycles)
 
   const ISSUE_COUNT = 100_000
   const statuses = ['backlog', 'todo', 'in_progress', 'done', 'cancelled'] as const
@@ -171,6 +208,9 @@ export async function seedDatabase(): Promise<void> {
         completedAt:
           status === 'done' ? Math.min(createdAt + Math.floor(rand() * 5 + 1) * day, now) : null,
         order: idx,
+        // 迭代归属只读 idx/dueAt（不抽 rand，否则随机流平移、e2e 锚定的 issue id 会漂移）；
+        // 项目 2 没有周期 → 全部留在「未入迭代」
+        cycleId: proj.id === 'project-1' ? demoCycleIdFor(idx, dueAt, cycles) : null,
       })
     }
     await db.issues.bulkPut(batch)

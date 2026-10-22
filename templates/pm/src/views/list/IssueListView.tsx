@@ -49,6 +49,7 @@ export function IssueListView({
     filters.statusFilter.length > 0 ||
     filters.assigneeFilter.length > 0 ||
     filters.priorityFilter.length > 0 ||
+    filters.cycleFilter !== null ||
     filters.search !== '' ||
     filters.myOnly
   const emptyText = hasActiveFilter ? t('emptyNoMatch') : t('emptyNoData')
@@ -246,6 +247,7 @@ export function IssueListView({
         {(filters.search ||
           filters.assigneeFilter.length > 0 ||
           filters.priorityFilter.length > 0 ||
+          filters.cycleFilter !== null ||
           filters.myOnly) && (
           <button
             className="issue-toolbar-clear"
@@ -257,6 +259,7 @@ export function IssueListView({
                 search: '',
                 assigneeFilter: [],
                 priorityFilter: [],
+                cycleFilter: null,
                 myOnly: false,
               }))
             }

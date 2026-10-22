@@ -1,10 +1,11 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
-import type { Issue, IssuePriority, IssueStatus, Member, Project } from './types'
+import type { Cycle, Issue, IssuePriority, IssueStatus, Member, Project } from './types'
 import { ISSUE_PRIORITIES, ISSUE_STATUSES } from './types'
 import { OSelect, OTabs } from './components/oas-wrappers'
 import { t, loadLang, setLang, statusLabel, priorityLabel, dateLocale, type Lang } from './i18n'
 import { useSavedViews } from './components/BulkBar'
 import { PRIORITY_TEXT, STATUS_COLOR } from './lib/colors'
+import { CYCLE_SIDEBAR_LIMIT, CURRENT_CYCLE } from './lib/cycles'
 import {
   ALL_PROJECTS,
   DEFAULT_FILTERS,
@@ -54,6 +55,7 @@ function useIssueWindow(f: Filters, currentUser: string, listLimit: number) {
           search: f.search,
           myOnly: f.myOnly,
           sortBy: f.sortBy,
+          cycleFilter: f.cycleFilter,
         },
         currentUser,
         listLimit,
@@ -66,6 +68,7 @@ function useIssueWindow(f: Filters, currentUser: string, listLimit: number) {
       f.search,
       f.myOnly,
       f.sortBy,
+      f.cycleFilter,
       currentUser,
       listLimit,
     ],
@@ -80,6 +83,12 @@ function useMembers(): Member[] | undefined {
 function useProjects(): Project[] | undefined {
   const { projects } = useRepositories()
   return useObservable(() => projects.liveAll(), [projects])
+}
+
+/** 当前项目作用域下的迭代（startAt 倒序）；「全部项目」= 跨项目并集 */
+function useCycles(projectId: string): Cycle[] | undefined {
+  const { cycles } = useRepositories()
+  return useObservable(() => cycles.liveAll(projectId), [cycles, projectId])
 }
 
 /** 成员在当前窗口内的计数（窗口 500 内，展示用） */
@@ -289,6 +298,7 @@ export function App() {
   const counts = useProjectCounts(filters.projectId)
   const members = useMembers()
   const projects = useProjects()
+  const cycles = useCycles(filters.projectId)
   const memberCounts = useWindowAssigneeCounts(issues)
   const memberMap = useMemo(() => new Map((members ?? []).map((m) => [m.id, m])), [members])
   const can = useCallback(
@@ -309,7 +319,8 @@ export function App() {
     if (view === 'admin' && !canManage) setView('issues')
   }, [view, canManage])
   const openProject = useCallback((projectId: string) => {
-    setFilters((prev) => ({ ...prev, projectId, statusFilter: [] }))
+    // 换项目即离开原项目的迭代：cycleFilter 复位（周期 id 不跨项目复用）
+    setFilters((prev) => ({ ...prev, projectId, statusFilter: [], cycleFilter: null }))
     setView('issues')
   }, [])
   // 全部项目作用域下新建 Issue 必须落到一个真实项目（key 前缀来自项目）：
@@ -428,6 +439,34 @@ export function App() {
       iconColor: PRIORITY_TEXT[p],
     })
   }
+  // 迭代组：单选（周期有序，多选无交集意义）。行 = 全部迭代 / 当前迭代（派生）/
+  // 本项目周期（startAt 倒序，最多 CYCLE_SIDEBAR_LIMIT 个）。项目无周期时只留「全部迭代」，
+  // 「当前迭代」指向必然为空的集合，不列入
+  sideRows.push({
+    group: t('cycles'),
+    kind: 'cycle',
+    value: 'cycle:all',
+    id: 'all',
+    label: t('allCycles'),
+  })
+  if ((cycles ?? []).length > 0) {
+    sideRows.push({
+      group: t('cycles'),
+      kind: 'cycle',
+      value: `cycle:${CURRENT_CYCLE}`,
+      id: CURRENT_CYCLE,
+      label: t('currentCycle'),
+    })
+  }
+  for (const c of (cycles ?? []).slice(0, CYCLE_SIDEBAR_LIMIT)) {
+    sideRows.push({
+      group: t('cycles'),
+      kind: 'cycle',
+      value: `cycle:${c.id}`,
+      id: c.id,
+      label: c.name,
+    })
+  }
   for (const v of savedViews ?? []) {
     sideRows.push({
       group: t('savedViews'),
@@ -460,6 +499,7 @@ export function App() {
     [t('priority')]: filters.priorityFilter.length
       ? filters.priorityFilter.map((p) => `priority:${p}`)
       : ['priority:all'],
+    [t('cycles')]: `cycle:${filters.cycleFilter ?? 'all'}`,
     [t('members')]: filters.assigneeFilter.map((a) => `member:${a}`),
   }
 
@@ -467,9 +507,15 @@ export function App() {
     (row: SideRow) => {
       switch (row.kind) {
         case 'project':
-          // 点项目行 = 离开「全部项目」；点「全部项目」= 跨项目作用域（记住上次真实项目供新建 Issue）
+          // 点项目行 = 离开「全部项目」；点「全部项目」= 跨项目作用域（记住上次真实项目供新建 Issue）。
+          // 换项目时迭代筛选复位：周期 id 只在本项目内有意义
           if (row.id && row.id !== ALL_PROJECTS) setLastProjectId(row.id)
-          setFilters((prev) => ({ ...prev, projectId: row.id ?? '', statusFilter: [] }))
+          setFilters((prev) => ({
+            ...prev,
+            projectId: row.id ?? '',
+            statusFilter: [],
+            cycleFilter: null,
+          }))
           break
         case 'view':
           setF('myOnly', row.id === 'my')
@@ -489,6 +535,15 @@ export function App() {
               row.id === 'all' ? [] : toggleIn(prev.priorityFilter, row.id as IssuePriority),
           }))
           break
+        case 'cycle': {
+          // 单选切换：再点同一行取消（回到全部迭代）；「全部迭代」行直接清空
+          const next = row.id === 'all' ? null : (row.id ?? null)
+          setFilters((prev) => ({
+            ...prev,
+            cycleFilter: prev.cycleFilter === next ? null : next,
+          }))
+          break
+        }
         case 'savedview':
           if (row.savedFilters) applySavedView(row.savedFilters)
           break
