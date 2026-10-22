@@ -14,10 +14,10 @@
     "size": "node scripts/size.mjs"
   },
   "dependencies": {
-    "@oas-ui/i18n": "^2.6.1",
-    "@oas-ui/icons": "^2.6.1",
-    "@oas-ui/theme": "^2.6.1",
-    "@oas-ui/ui": "^2.6.1",
+    "@oas-ui/i18n": "^2.6.3",
+    "@oas-ui/icons": "^2.6.3",
+    "@oas-ui/theme": "^2.6.3",
+    "@oas-ui/ui": "^2.6.3",
     "svelte": "^5.57.2"
   },
   "devDependencies": {

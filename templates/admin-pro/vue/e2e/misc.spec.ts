@@ -90,10 +90,17 @@ test('admin 仪表盘 7/14/30 天切换全联动（趋势/订单构成/最近订
   await expect(trend.locator('svg .dot')).toHaveCount(30)
   await expect(page.getByTestId('donut-legend')).toContainText('6,208')
   await expect(page.getByTestId('orders-table').locator('tbody tr')).toHaveCount(11)
+  // 2.6.2 起 oas-chart 按可用宽度自动抽稀 x 轴标签（步长随标签宽度估算而定），
+  // 锁死具体刻度会随上游宽度估算调整而碎——只断言抽稀不变量：首末保留、单调递增、确有抽稀。
   const axisLabels = await trend
     .locator('svg text.axis-label')
     .evaluateAll((els) => els.map((el) => el.textContent ?? '').filter((text) => text.length > 0))
-  expect(axisLabels).toEqual(['1日', '5日', '10日', '15日', '20日', '25日', '30日'])
+  expect(axisLabels[0]).toBe('1日')
+  expect(axisLabels[axisLabels.length - 1]).toBe('30日')
+  expect(axisLabels.length).toBeLessThan(30)
+  const axisDays = axisLabels.map((text) => Number(text.replace('日', '')))
+  expect(axisDays).toEqual([...axisDays].sort((a, b) => a - b))
+  expect(new Set(axisDays).size).toBe(axisDays.length)
   expect(errors).toEqual([])
 })
 
