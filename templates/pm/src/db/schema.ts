@@ -1,5 +1,14 @@
 import Dexie, { type EntityTable } from 'dexie'
-import type { Activity, Comment, Cycle, Issue, Project, Member, SavedView } from '@/types'
+import type {
+  Activity,
+  Comment,
+  Cycle,
+  Issue,
+  Notification,
+  Project,
+  Member,
+  SavedView,
+} from '@/types'
 
 export interface SettingRow {
   key: string
@@ -16,6 +25,7 @@ export class PMDatabase extends Dexie {
   activities!: EntityTable<Activity, 'id'>
   settings!: EntityTable<SettingRow, 'key'>
   cycles!: EntityTable<Cycle, 'id'>
+  notifications!: EntityTable<Notification, 'id'>
 
   constructor(name = 'oas-pm') {
     super(name)
@@ -106,6 +116,21 @@ export class PMDatabase extends Dexie {
       activities: 'id, issueId, [issueId+createdAt], createdAt',
       settings: 'key',
       cycles: 'id, projectId, [projectId+startAt]',
+    })
+    // v10：站内通知。memberId 必须独立成索引（复合索引首字段），否则 Dexie 拒绝建表；
+    // [memberId+createdAt] 支撑「本人通知倒序」，[memberId+readAt] 只索引已读行——
+    // IndexedDB 不接受 null 作为索引键，未读行天然不在该索引里，未读计数走 memberId 索引 + filter。
+    this.version(10).stores({
+      issues:
+        'id, projectId, key, status, priority, assigneeId, parentId, cycleId, createdAt, updatedAt, [projectId+status], [projectId+priority], [projectId+assigneeId], [projectId+updatedAt], [projectId+status+updatedAt], [assigneeId+status], [status+updatedAt], [projectId+cycleId]',
+      projects: 'id, key',
+      members: 'id, role',
+      comments: 'id, issueId, [issueId+createdAt]',
+      savedViews: 'id, name',
+      activities: 'id, issueId, [issueId+createdAt], createdAt',
+      settings: 'key',
+      cycles: 'id, projectId, [projectId+startAt]',
+      notifications: 'id, memberId, createdAt, [memberId+createdAt], [memberId+readAt]',
     })
   }
 }

@@ -90,6 +90,22 @@ export interface Activity {
   createdAt: number
 }
 
+export type NotificationType = 'mention' | 'assigned' | 'comment' | 'status' | 'cycle' | 'system'
+
+/** 站内通知：接收者视角的一行，读态由 readAt 表达（null = 未读） */
+export interface Notification {
+  id: string
+  /** 接收者 */
+  memberId: string
+  type: NotificationType
+  issueId?: string
+  actorId?: string
+  /** 按 type 解释：mention/comment 为正文摘要，status 为新状态码，cycle 为周期名 */
+  message?: string
+  readAt: number | null
+  createdAt: number
+}
+
 // ── 查询 ──────────────────────────────────────────────────────────────
 
 export interface IssueQuery {

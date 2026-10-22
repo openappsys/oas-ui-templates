@@ -6,6 +6,7 @@ import { ISSUE_STATUSES } from '@/types'
 import { fromLiveQuery, type Observable } from '@/data/observable'
 import { cycleFilterPredicate, CURRENT_CYCLE, NO_CYCLE } from '@/lib/cycles'
 import { ALL_PROJECTS, LIST_WINDOW, UNASSIGNED } from '@/lib/filters'
+import { issueChangeNotificationDrafts } from '@/lib/notify'
 import { PRIORITY_WEIGHT } from '@/lib/order'
 import type {
   CreateIssueInput,
@@ -14,6 +15,7 @@ import type {
   IssueWindowFilters,
   ProjectCounts,
 } from '@/data/types'
+import { insertNotificationDrafts } from './notify-write'
 import { allocateProjectKey } from './project-repo'
 
 /** updatedAt 倒序，并列时按 id 倒序——与 API 实现（mock-server 的 byUpdatedDesc）同一条并列规则，
@@ -308,9 +310,11 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
       patch: { status?: IssueStatus; priority?: IssuePriority; assigneeId?: string | null },
       actorId: string,
     ): Promise<void> {
-      await db.transaction('rw', db.issues, db.activities, async () => {
+      await db.transaction('rw', db.issues, db.activities, db.notifications, async () => {
         const now = Date.now()
         for (const id of ids) {
+          // 通知规则需要变更前的负责人/状态（活动先写、字段后写，与单条编辑路径同序）
+          const prior = await db.issues.get(id)
           const acts: Array<Promise<unknown>> = []
           if (patch.status) {
             acts.push(
@@ -352,6 +356,20 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
             )
           }
           await Promise.all(acts)
+          if (prior) {
+            // 批量指派/关闭也走同一套规则：自己触发的不通知自己，解除指派不通知
+            await insertNotificationDrafts(
+              db,
+              issueChangeNotificationDrafts({
+                issueId: id,
+                actorId,
+                prevAssigneeId: prior.assigneeId,
+                nextAssigneeId: 'assigneeId' in patch ? (patch.assigneeId ?? null) : undefined,
+                prevStatus: prior.status,
+                nextStatus: patch.status,
+              }),
+            )
+          }
           const changes: Partial<Issue> = { updatedAt: now }
           if (patch.status) changes.status = patch.status
           if (patch.priority) changes.priority = patch.priority

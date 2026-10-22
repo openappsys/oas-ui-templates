@@ -45,6 +45,17 @@ function adminBearer(store: MockStore): string {
   return bearer
 }
 
+/** 指定成员的 Bearer（走真实登录端点，验证身份隔离时不给 admin 缓存） */
+function bearerFor(store: MockStore, email: string): string {
+  const res = handleApi(store, {
+    method: 'POST',
+    path: '/api/auth/login',
+    query: new URLSearchParams(),
+    body: { email, password: DEMO_PASSWORD },
+  })
+  return `Bearer ${(res.body as { token: string }).token}`
+}
+
 const call = (store: MockStore, method: string, path: string, init: CallInit = {}): ApiResponse =>
   handleApi(store, {
     ...req(method, path, init),
@@ -607,7 +618,7 @@ describe('项目/成员守卫', () => {
 })
 
 describe('备份信封与 reset', () => {
-  it('export 信封含 8 张表与元信息', () => {
+  it('export 信封含 9 张表与元信息', () => {
     const store = createMockStore({ now: FIXED })
     const body = call(store, 'GET', '/api/admin/export').body as {
       app: string
@@ -616,7 +627,7 @@ describe('备份信封与 reset', () => {
       tables: Record<string, unknown[]>
     }
     expect(body.app).toBe('oas-pm')
-    expect(body.version).toBe(7)
+    expect(body.version).toBe(8)
     expect(typeof body.exportedAt).toBe('number')
     expect(Object.keys(body.tables).sort()).toEqual([
       'activities',
@@ -624,6 +635,7 @@ describe('备份信封与 reset', () => {
       'cycles',
       'issues',
       'members',
+      'notifications',
       'projects',
       'savedViews',
       'settings',
@@ -814,6 +826,122 @@ describe('设置与评论/活动/视图', () => {
     expect(all[0].filters).toBe(JSON.stringify({ b: 2 }))
     call(store, 'DELETE', `/api/saved-views/${all[0].id}`)
     expect(items(call(store, 'GET', '/api/saved-views')).length).toBe(1)
+  })
+})
+
+describe('站内通知', () => {
+  const noticeRows = (res: ApiResponse) =>
+    (res.body as { items: Array<Record<string, unknown>> }).items
+
+  const asMember1 = 'user1@oas.dev'
+  const asMember2 = 'user2@oas.dev'
+  const asViewer = 'user4@oas.dev'
+
+  it('评论提及：按 Bearer 身份隔离，未被提及者看不到', () => {
+    const store = createMockStore({ now: FIXED })
+    const issueId = store.issues[0].id
+    store.issues[0].assigneeId = 'member-1'
+    const add = call(store, 'POST', '/api/comments', {
+      authorization: bearerFor(store, asMember2),
+      body: { issueId, authorId: 'member-2', body: '@张伟 请确认' },
+    })
+    expect(add.status).toBe(201)
+
+    const mine = noticeRows(
+      call(store, 'GET', '/api/notifications', { authorization: bearerFor(store, asMember1) }),
+    )
+    expect(mine).toHaveLength(1)
+    expect(mine[0]).toMatchObject({
+      memberId: 'member-1',
+      type: 'mention',
+      issueId,
+      actorId: 'member-2',
+      message: '@张伟 请确认',
+      readAt: null,
+    })
+    expect(
+      noticeRows(
+        call(store, 'GET', '/api/notifications', { authorization: bearerFor(store, asMember2) }),
+      ),
+    ).toEqual([])
+    expect(
+      noticeRows(
+        call(store, 'GET', '/api/notifications', { authorization: bearerFor(store, asViewer) }),
+      ),
+    ).toEqual([])
+  })
+
+  it('活动日志驱动：指派给他人 → assigned，关闭类状态 → status，非关闭状态不通知', () => {
+    const store = createMockStore({ now: FIXED })
+    const issue = store.issues[0]
+    issue.assigneeId = null
+    const log = (entry: Record<string, unknown>) =>
+      call(store, 'POST', '/api/activities', {
+        body: { issueId: issue.id, actorId: 'member-2', ...entry },
+      })
+    log({ type: 'assignee', to: 'member-1' })
+    issue.assigneeId = 'member-1'
+    log({ type: 'status', to: 'done' })
+    log({ type: 'status', to: 'in_progress' })
+    // 自己指派给自己：不通知
+    log({ type: 'assignee', to: 'member-2' })
+    // 详情抽屉按字段名写 assigneeId：也要认（先解除负责人）
+    issue.assigneeId = null
+    log({ type: 'assigneeId', to: 'member-1' })
+
+    expect(store.notifications.map((n) => `${n.type}:${n.memberId}:${n.message ?? ''}`)).toEqual([
+      'assigned:member-1:',
+      'status:member-1:done',
+      'assigned:member-1:',
+    ])
+  })
+
+  it('已读：只能标本人通知（他人 id → 404），read-all 只清本人', () => {
+    const store = createMockStore({ now: FIXED })
+    store.notifications.push(
+      { id: 'n1', memberId: 'member-1', type: 'system', readAt: null, createdAt: 1 },
+      { id: 'n2', memberId: 'member-1', type: 'system', readAt: null, createdAt: 2 },
+      { id: 'n3', memberId: 'member-2', type: 'system', readAt: null, createdAt: 3 },
+    )
+    const m1 = bearerFor(store, asMember1)
+    const m2 = bearerFor(store, asMember2)
+
+    expect(call(store, 'POST', '/api/notifications/n1/read', { authorization: m1 }).status).toBe(
+      200,
+    )
+    expect(store.notifications.find((n) => n.id === 'n1')?.readAt).not.toBeNull()
+    expect(call(store, 'POST', '/api/notifications/n3/read', { authorization: m1 }).status).toBe(
+      404,
+    )
+    expect(store.notifications.find((n) => n.id === 'n3')?.readAt).toBeNull()
+
+    expect(call(store, 'POST', '/api/notifications/read-all', { authorization: m1 }).status).toBe(
+      200,
+    )
+    expect(
+      store.notifications.filter((n) => n.memberId === 'member-1').every((n) => n.readAt !== null),
+    ).toBe(true)
+    expect(store.notifications.find((n) => n.id === 'n3')?.readAt).toBeNull()
+    expect(
+      noticeRows(call(store, 'GET', '/api/notifications', { authorization: m2 })),
+    ).toHaveLength(1)
+  })
+
+  it('列表倒序 + limit 截断；写方法不合法返回 405', () => {
+    const store = createMockStore({ now: FIXED })
+    for (let i = 1; i <= 5; i += 1) {
+      store.notifications.push({
+        id: `n${i}`,
+        memberId: 'member-1',
+        type: 'system',
+        readAt: null,
+        createdAt: i,
+      })
+    }
+    const res = call(store, 'GET', '/api/notifications', { query: { limit: '2' } })
+    expect(noticeRows(res).map((n) => n.id)).toEqual(['n5', 'n4'])
+    expect(call(store, 'PUT', '/api/notifications').status).toBe(405)
+    expect(call(store, 'GET', '/api/notifications/n1/read').status).toBe(405)
   })
 })
 

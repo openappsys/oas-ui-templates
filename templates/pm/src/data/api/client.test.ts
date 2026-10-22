@@ -5,7 +5,7 @@ import { createDexieRepositories } from '@/data/dexie'
 import type { IssueWindowFilters, Repositories } from '@/data/types'
 import { CURRENT_CYCLE, NO_CYCLE } from '@/lib/cycles'
 import { ALL_PROJECTS } from '@/lib/filters'
-import type { Activity, Comment, Issue } from '@/types'
+import type { Activity, Comment, Issue, Notification } from '@/types'
 import { createApiRepositories, type ApiTransport } from './client'
 import { createMockStore, handleApi, type MockStore } from './mock-server'
 
@@ -611,6 +611,74 @@ describe('契约：同一份 seed 下 Dexie 与 API 输出相同', () => {
     const apiHealth = await first(api.admin.liveProjectHealth())
     const dexieHealth = await first(dexie.admin.liveProjectHealth())
     expect(apiHealth).toEqual(dexieHealth)
+  })
+
+  it('notifications 一致：评论/活动写路径生成同一组通知，读态语义一致', async () => {
+    const issue = store.issues[0]
+    // 负责人先设为 member-1：普通评论 → comment，@提及 → mention
+    issue.assigneeId = 'member-1'
+    await db.issues.update(issue.id, { assigneeId: 'member-1' })
+    for (const body of ['@张伟 请确认', '进度如何']) {
+      await api.comments.add({ issueId: issue.id, authorId: 'member-2', body })
+      await dexie.comments.add({ issueId: issue.id, authorId: 'member-2', body })
+    }
+    // 解除指派 → 指派给 member-1：assigned；再关闭：status
+    issue.assigneeId = null
+    await db.issues.update(issue.id, { assigneeId: null })
+    await api.activities.log({
+      issueId: issue.id,
+      actorId: 'member-2',
+      type: 'assignee',
+      to: 'member-1',
+    })
+    await dexie.activities.log({
+      issueId: issue.id,
+      actorId: 'member-2',
+      type: 'assignee',
+      to: 'member-1',
+    })
+    issue.assigneeId = 'member-1'
+    await db.issues.update(issue.id, { assigneeId: 'member-1' })
+    await api.activities.log({ issueId: issue.id, actorId: 'member-2', type: 'status', to: 'done' })
+    await dexie.activities.log({
+      issueId: issue.id,
+      actorId: 'member-2',
+      type: 'status',
+      to: 'done',
+    })
+
+    // API 身份固定为 admin（member-1）：只比较 member-1 视角；同毫秒并列按 id 兜底 → 比多重集
+    const shape = (rows: Notification[]) =>
+      rows
+        .map(
+          (r) =>
+            `${r.memberId}|${r.type}|${r.issueId ?? ''}|${r.actorId ?? ''}|${r.message ?? ''}|${r.readAt === null}`,
+        )
+        .sort()
+    const apiRows = await first(api.notifications.liveFor('member-1', 50))
+    const dexieRows = await first(dexie.notifications.liveFor('member-1', 50))
+    expect(apiRows.every((r) => r.memberId === 'member-1')).toBe(true)
+    expect(apiRows).toHaveLength(4)
+    expect(shape(apiRows)).toEqual(shape(dexieRows))
+    expect(shape(dexieRows)).toEqual([
+      'member-1|assigned|' + issue.id + '|member-2||true',
+      'member-1|comment|' + issue.id + '|member-2|进度如何|true',
+      'member-1|mention|' + issue.id + '|member-2|@张伟 请确认|true',
+      'member-1|status|' + issue.id + '|member-2|done|true',
+    ])
+
+    expect(await first(api.notifications.unreadCount('member-1'))).toBe(4)
+    expect(await first(dexie.notifications.unreadCount('member-1'))).toBe(4)
+
+    await api.notifications.markRead(apiRows[0].id)
+    await dexie.notifications.markRead(dexieRows.find((r) => r.type === apiRows[0].type)!.id)
+    expect(await first(api.notifications.unreadCount('member-1'))).toBe(3)
+    expect(await first(dexie.notifications.unreadCount('member-1'))).toBe(3)
+
+    await api.notifications.markAllRead('member-1')
+    await dexie.notifications.markAllRead('member-1')
+    expect(await first(api.notifications.unreadCount('member-1'))).toBe(0)
+    expect(await first(dexie.notifications.unreadCount('member-1'))).toBe(0)
   })
 
   it('export 信封同构、import 跨模式往返', async () => {

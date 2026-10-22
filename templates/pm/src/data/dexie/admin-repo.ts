@@ -14,6 +14,7 @@ export function createDexieAdminRepository(db: PMDatabase): AdminRepository {
     db.activities,
     db.settings,
     db.cycles,
+    db.notifications,
   ]
   const wipeAll = () =>
     db.transaction('rw', allTables, async () => {
@@ -70,22 +71,42 @@ export function createDexieAdminRepository(db: PMDatabase): AdminRepository {
         )
       }),
     exportAll: async () => {
-      const [issues, projects, members, comments, savedViews, activities, settings, cycles] =
-        await Promise.all([
-          db.issues.toArray(),
-          db.projects.toArray(),
-          db.members.toArray(),
-          db.comments.toArray(),
-          db.savedViews.toArray(),
-          db.activities.toArray(),
-          db.settings.toArray(),
-          db.cycles.toArray(),
-        ])
+      const [
+        issues,
+        projects,
+        members,
+        comments,
+        savedViews,
+        activities,
+        settings,
+        cycles,
+        notifications,
+      ] = await Promise.all([
+        db.issues.toArray(),
+        db.projects.toArray(),
+        db.members.toArray(),
+        db.comments.toArray(),
+        db.savedViews.toArray(),
+        db.activities.toArray(),
+        db.settings.toArray(),
+        db.cycles.toArray(),
+        db.notifications.toArray(),
+      ])
       return JSON.stringify({
         app: 'oas-pm',
-        version: 7,
+        version: 8,
         exportedAt: Date.now(),
-        tables: { issues, projects, members, comments, savedViews, activities, settings, cycles },
+        tables: {
+          issues,
+          projects,
+          members,
+          comments,
+          savedViews,
+          activities,
+          settings,
+          cycles,
+          notifications,
+        },
       })
     },
     importAll: async (json: string) => {
@@ -110,6 +131,7 @@ export function createDexieAdminRepository(db: PMDatabase): AdminRepository {
         [db.activities, rows('activities')],
         [db.settings, rows('settings')],
         [db.cycles, rows('cycles')],
+        [db.notifications, rows('notifications')],
       ]
       await db.transaction('rw', allTables, async () => {
         for (const t of allTables) await t.clear()

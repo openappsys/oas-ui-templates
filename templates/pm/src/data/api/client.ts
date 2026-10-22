@@ -1,5 +1,15 @@
 import { LIST_WINDOW } from '@/lib/filters'
-import type { Activity, Comment, Cycle, Issue, Member, Project, SavedView } from '@/types'
+import { NOTIFICATION_LIMIT } from '@/lib/notify'
+import type {
+  Activity,
+  Comment,
+  Cycle,
+  Issue,
+  Member,
+  Notification,
+  Project,
+  SavedView,
+} from '@/types'
 import { ApiError, errorMessage } from './errors'
 import { clearToken, getToken, sessionEvents, type SessionEvents } from './session'
 import type {
@@ -17,6 +27,7 @@ import type {
   IssueWindowFilters,
   MemberRepository,
   MemberWorkload,
+  NotificationRepository,
   ProjectCounts,
   ProjectHealth,
   ProjectRepository,
@@ -448,6 +459,36 @@ export function createApiRepositories(options: ApiClientOptions = {}): Repositor
     },
   }
 
+  /** 通知列表由 Bearer 身份决定，memberId 不参与请求（仅作为调用方的重订阅键）。
+   *  未读数从同一份最近 50 条派生：API 契约没有单独的计数端点 */
+  const notifications: NotificationRepository = {
+    liveFor: (_memberId, limit = NOTIFICATION_LIMIT) =>
+      live(async () =>
+        asItems<Notification>(
+          await send<{ items: Notification[] }>('GET', '/api/notifications', buildQuery({ limit })),
+        ),
+      ),
+    unreadCount: (_memberId) =>
+      live(async () => {
+        const rows = asItems<Notification>(
+          await send<{ items: Notification[] }>(
+            'GET',
+            '/api/notifications',
+            buildQuery({ limit: NOTIFICATION_LIMIT }),
+          ),
+        )
+        return rows.filter((n) => n.readAt === null).length
+      }),
+    markRead: async (id) => {
+      await send('POST', `/api/notifications/${encodeURIComponent(id)}/read`)
+      poke()
+    },
+    markAllRead: async (_memberId) => {
+      await send('POST', '/api/notifications/read-all')
+      poke()
+    },
+  }
+
   const readSetting = async (key: string): Promise<unknown> => {
     const res = await send<{ found: boolean; value: unknown }>(
       'GET',
@@ -501,6 +542,7 @@ export function createApiRepositories(options: ApiClientOptions = {}): Repositor
     savedViews,
     cycles,
     settings,
+    notifications,
     admin,
   }
 }

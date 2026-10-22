@@ -6,6 +6,11 @@ import {
   NO_CYCLE,
 } from '../../lib/cycles.ts'
 import { ALL_PROJECTS, LIST_WINDOW, UNASSIGNED } from '../../lib/filters.ts'
+import {
+  commentNotificationDrafts,
+  issueChangeNotificationDrafts,
+  type NotificationDraft,
+} from '../../lib/notify.ts'
 import { PRIORITY_WEIGHT } from '../../lib/order.ts'
 import { mulberry32 } from '../../lib/prng.ts'
 import {
@@ -18,6 +23,7 @@ import {
   type IssueStatus,
   type Member,
   type MemberRole,
+  type Notification,
   type Project,
   type SavedView,
 } from '../../types/index.ts'
@@ -38,6 +44,7 @@ export interface SeedTables {
   activities: Activity[]
   settings: SettingRow[]
   cycles: Cycle[]
+  notifications: Notification[]
 }
 
 export interface MockStore extends SeedTables {
@@ -298,6 +305,7 @@ function buildSeed(seed: number, now: number): SeedTables {
     activities,
     settings: [{ key: 'labels', value: LABELS, updatedAt: now }],
     cycles,
+    notifications: [],
   }
 }
 
@@ -508,6 +516,62 @@ function nextId(store: MockStore, prefix: string): string {
   return `${prefix}-new-${store.seq}`
 }
 
+/** 通知写入（Dexie 写入钩子的服务端对照）：同一批共享基准时间，+i 让插入顺序稳定 */
+function pushNotificationDrafts(
+  store: MockStore,
+  drafts: NotificationDraft[],
+  now = Date.now(),
+): void {
+  drafts.forEach((draft, index) => {
+    store.notifications.push({
+      id: nextId(store, 'notif'),
+      readAt: null,
+      createdAt: now + index,
+      ...draft,
+    })
+  })
+}
+
+/** 评论落库后按同一套规则生成通知（@提及 → mention，否则负责人收 comment） */
+function notifyCommentStored(store: MockStore, comment: Comment): void {
+  const issue = store.issues.find((i) => i.id === comment.issueId)
+  if (!issue) return
+  pushNotificationDrafts(
+    store,
+    commentNotificationDrafts({
+      issueId: comment.issueId,
+      issueAssigneeId: issue.assigneeId,
+      actorId: comment.authorId,
+      body: comment.body,
+      members: store.members,
+    }),
+  )
+}
+
+/** 活动落库后：指派/关闭类状态变更 → 通知（活动先于字段更新到达，读到的是变更前 Issue）。
+ *  指派活动可能是字段名 'assigneeId'（详情抽屉）或语义名 'assignee'（批量通道） */
+function notifyActivityStored(store: MockStore, activity: Activity): void {
+  const isAssignee = activity.type === 'assignee' || activity.type === 'assigneeId'
+  if (activity.type !== 'status' && !isAssignee) return
+  const issue = store.issues.find((i) => i.id === activity.issueId)
+  if (!issue) return
+  const drafts = isAssignee
+    ? issueChangeNotificationDrafts({
+        issueId: activity.issueId,
+        actorId: activity.actorId,
+        prevAssigneeId: issue.assigneeId,
+        nextAssigneeId: activity.to ? activity.to : null,
+      })
+    : issueChangeNotificationDrafts({
+        issueId: activity.issueId,
+        actorId: activity.actorId,
+        prevAssigneeId: issue.assigneeId,
+        prevStatus: issue.status,
+        nextStatus: activity.to as IssueStatus | undefined,
+      })
+  pushNotificationDrafts(store, drafts)
+}
+
 interface CreateIssueBody {
   projectId: string
   title: string
@@ -584,6 +648,15 @@ function bulkApply(store: MockStore, raw: unknown): void {
   for (const id of ids) {
     const issue = store.issues.find((i) => i.id === id)
     if (!issue) continue
+    // 批量指派/关闭与单条编辑同一套通知规则；先取旧负责人/状态，再落字段
+    const drafts = issueChangeNotificationDrafts({
+      issueId: id,
+      actorId,
+      prevAssigneeId: issue.assigneeId,
+      nextAssigneeId: hasAssignee ? assigneeId : undefined,
+      prevStatus: issue.status,
+      nextStatus: status,
+    })
     if (status) {
       store.activities.push({
         id: nextId(store, 'act'),
@@ -621,6 +694,7 @@ function bulkApply(store: MockStore, raw: unknown): void {
     if (priority) issue.priority = priority
     if (hasAssignee) issue.assigneeId = assigneeId
     issue.updatedAt = now
+    pushNotificationDrafts(store, drafts, now)
   }
 }
 
@@ -634,7 +708,7 @@ function bulkDelete(store: MockStore, raw: unknown): void {
 function exportEnvelope(store: MockStore) {
   return {
     app: 'oas-pm',
-    version: 7,
+    version: 8,
     exportedAt: Date.now(),
     tables: {
       issues: [...store.issues].sort(byIdAsc),
@@ -645,6 +719,7 @@ function exportEnvelope(store: MockStore) {
       activities: [...store.activities].sort(byIdAsc),
       settings: [...store.settings].sort((a, b) => cmpKey(a.key, b.key)),
       cycles: [...store.cycles].sort(byIdAsc),
+      notifications: [...store.notifications].sort(byIdAsc),
     },
   }
 }
@@ -673,6 +748,7 @@ function importEnvelope(store: MockStore, raw: unknown): void {
     activities: rows('activities') as Activity[],
     settings: rows('settings') as SettingRow[],
     cycles: rows('cycles') as Cycle[],
+    notifications: rows('notifications') as Notification[],
   })
   Object.assign(store, next)
 }
@@ -690,6 +766,7 @@ function wipeStore(store: MockStore): void {
   store.activities = []
   store.settings = []
   store.cycles = []
+  store.notifications = []
 }
 
 function globalStats(store: MockStore) {
@@ -968,6 +1045,7 @@ function routeComments(
         createdAt: Date.now(),
       }
       store.comments.push(comment)
+      notifyCommentStored(store, comment)
       store.revision += 1
       return ok({ comment }, 201)
     }
@@ -1014,7 +1092,7 @@ function routeActivities(
   }
   if (method === 'POST') {
     const input = asRecord(body)
-    store.activities.push({
+    const activity: Activity = {
       id: nextId(store, 'act'),
       issueId: String(input.issueId ?? ''),
       actorId: String(input.actorId ?? ''),
@@ -1023,7 +1101,9 @@ function routeActivities(
       from: input.from as string | undefined,
       to: input.to as string | undefined,
       createdAt: Date.now(),
-    })
+    }
+    store.activities.push(activity)
+    notifyActivityStored(store, activity)
     store.revision += 1
     return ok({ ok: true }, 201)
   }
@@ -1125,6 +1205,49 @@ function routeCycles(
     return ok({ ok: true })
   }
   fail(405, 'method not allowed')
+}
+
+function routeNotifications(
+  store: MockStore,
+  method: string,
+  second: string | undefined,
+  third: string | undefined,
+  q: URLSearchParams,
+  member: Member,
+): ApiResponse {
+  if (!second) {
+    if (method !== 'GET') fail(405, 'method not allowed')
+    const limit = numQuery(q, 'limit', 50)
+    const rows = store.notifications
+      .filter((n) => n.memberId === member.id)
+      .sort((a, b) => b.createdAt - a.createdAt || cmpKey(b.id, a.id))
+      .slice(0, limit)
+    return ok({ items: rows })
+  }
+  if (method !== 'POST') fail(405, 'method not allowed')
+  if (second === 'read-all' && !third) {
+    const now = Date.now()
+    let changed = false
+    for (const row of store.notifications) {
+      if (row.memberId === member.id && row.readAt === null) {
+        row.readAt = now
+        changed = true
+      }
+    }
+    if (changed) store.revision += 1
+    return ok({ ok: true })
+  }
+  if (third === 'read') {
+    const row = store.notifications.find((n) => n.id === second)
+    // 别人的通知一律 404：不确认其他成员收件箱里是否存在该 id
+    if (!row || row.memberId !== member.id) fail(404, 'notification not found')
+    if (row.readAt === null) {
+      row.readAt = Date.now()
+      store.revision += 1
+    }
+    return ok({ ok: true })
+  }
+  fail(404, 'not found')
 }
 
 function routeSettings(
@@ -1247,6 +1370,10 @@ function route(store: MockStore, req: ApiRequest, member: Member | null): ApiRes
       return routeSavedViews(store, method, second, third, req.body)
     case 'cycles':
       return routeCycles(store, method, second, third, q, req.body)
+    case 'notifications': {
+      if (!member) fail(401, 'invalid or expired token')
+      return routeNotifications(store, method, second, third, q, member)
+    }
     case 'settings':
       return routeSettings(store, method, second, third, req.body)
     case 'admin':

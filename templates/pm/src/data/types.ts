@@ -6,6 +6,7 @@ import type {
   IssuePriority,
   IssueStatus,
   Member,
+  Notification,
   Project,
   SavedView,
 } from '@/types'
@@ -138,6 +139,14 @@ export interface SavedViewRepository {
   delete(id: string): Promise<void>
 }
 
+/** 站内通知：Dexie 按 memberId 直查；API 模式的身份来自 Bearer token（memberId 仅用于重订阅键） */
+export interface NotificationRepository {
+  liveFor(memberId: string, limit: number): Observable<Notification[]>
+  unreadCount(memberId: string): Observable<number>
+  markRead(id: string): Promise<void>
+  markAllRead(memberId: string): Promise<void>
+}
+
 export interface CycleRepository {
   /** 本项目迭代，startAt 倒序（全部项目作用域 = 跨项目并集） */
   all(projectId: string): Promise<Cycle[]>
@@ -197,5 +206,6 @@ export interface Repositories {
   savedViews: SavedViewRepository
   cycles: CycleRepository
   settings: SettingsRepository
+  notifications: NotificationRepository
   admin: AdminRepository
 }

@@ -79,7 +79,7 @@ Response: `204` with no body.
 
 | Rule | Effect |
 | --- | --- |
-| Any valid token | Read every resource, and write issues, comments, activities, saved views and cycles |
+| Any valid token | Read every resource, write issues, comments, activities, saved views and cycles, and mark own notifications read |
 | `role = "admin"` only | All `/api/admin/*` endpoints, `POST/PATCH/DELETE /api/projects*`, `POST/PATCH/DELETE /api/members*`, `PUT /api/settings/:key` |
 | No token | `401` |
 
@@ -285,7 +285,67 @@ The server stores `filters` as a JSON string. The client parses it on read.
 `GET` never returns `404`. A missing key returns `{ "found": false, "value": null }`. `PUT` is
 admin-only.
 
-## 13. Admin
+## 13. Notifications
+
+The notification center keeps one row per receiver.
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `id` | string | Row id |
+| `memberId` | string | Receiver |
+| `type` | string | `mention`, `assigned`, `comment`, `status`, `cycle`, `system` |
+| `issueId` | string? | Related issue |
+| `actorId` | string? | Member that triggered the event |
+| `message` | string? | Comment snippet for `mention`/`comment`, status code for `status`, cycle name for `cycle` |
+| `readAt` | number \| null | `null` means unread |
+| `createdAt` | number | Epoch milliseconds |
+
+### 13.1 Generation rules
+
+The client and the mock server share the same rules (`src/lib/notify.ts`). A write hook creates rows at
+the same points as the activity log:
+
+- A comment that mentions a member with `@name` sends `mention` to that member.
+- A comment on an issue sends `comment` to the assignee. The assignee does not get a second row when
+  the same comment mentions them.
+- An assignee change sends `assigned` to the new assignee.
+- A status change to `done` or `cancelled` sends `status` to the assignee.
+
+No rule notifies the actor. Unassigning an issue notifies nobody. Rows are keyed by receiver, so each
+member sees only their own rows.
+
+### 13.2 `GET /api/notifications`
+
+Returns the rows of the calling member, newest first.
+
+| Query | Default | Notes |
+| --- | --- | --- |
+| `limit` | `50` | Maximum number of rows |
+
+Response `200`: `{ "items": [ { … } ] }`
+
+The client derives the unread badge from this list (the newest 50 rows).
+
+### 13.3 `POST /api/notifications/:id/read`
+
+Marks one row as read. The `readAt` value does not change when the row is already read.
+
+Response `200`: `{ "ok": true }`
+
+Errors:
+
+| Status | When |
+| --- | --- |
+| `404` | The id is unknown, or it belongs to another member |
+| `405` | Method is not `POST` |
+
+### 13.4 `POST /api/notifications/read-all`
+
+Marks every unread row of the calling member as read. Other members keep their state.
+
+Response `200`: `{ "ok": true }`
+
+## 14. Admin
 
 All admin endpoints are admin-only. A non-admin token gets `403`.
 
@@ -304,10 +364,11 @@ Backup envelope:
 ```json
 {
   "app": "oas-pm",
-  "version": 7,
+  "version": 8,
   "exportedAt": 1700000000000,
   "tables": { "issues": [], "projects": [], "members": [], "comments": [],
-              "savedViews": [], "activities": [], "settings": [], "cycles": [] }
+              "savedViews": [], "activities": [], "settings": [], "cycles": [],
+              "notifications": [] }
 }
 ```
 
@@ -315,7 +376,7 @@ Backup envelope:
 therefore call `reset` again. A new login needs a member row, so `wipe` blocks new logins until
 `reset` runs.
 
-## 14. Status codes
+## 15. Status codes
 
 | Code | Meaning |
 | --- | --- |
@@ -330,7 +391,7 @@ therefore call `reset` again. A new login needs a member row, so `wipe` blocks n
 | `409` | Conflict: duplicate ID, last admin, or a project that still has issues |
 | `500` | Unexpected server error. The mock handler does not produce this code; uncaught errors surface as a Vite error. |
 
-## 15. Client behavior
+## 16. Client behavior
 
 `src/data/api/client.ts` does the following for every request:
 

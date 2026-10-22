@@ -9,6 +9,7 @@ import { createDexieActivityRepository } from './activity-repo'
 import { createDexieSavedViewRepository } from './saved-view-repo'
 import { createDexieCycleRepository } from './cycle-repo'
 import { createDexieSettingsRepository } from './settings-repo'
+import { createDexieNotificationRepository } from './notification-repo'
 import { createDexieAdminRepository } from './admin-repo'
 
 export function createDexieRepositories(database: PMDatabase): Repositories {
@@ -21,6 +22,7 @@ export function createDexieRepositories(database: PMDatabase): Repositories {
     savedViews: createDexieSavedViewRepository(database),
     cycles: createDexieCycleRepository(database),
     settings: createDexieSettingsRepository(database),
+    notifications: createDexieNotificationRepository(database),
     admin: createDexieAdminRepository(database),
   }
 }
