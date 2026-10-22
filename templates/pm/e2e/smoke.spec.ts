@@ -944,3 +944,40 @@ test('M20 看板：卡片点击打开详情抽屉', async ({ page }) => {
   await expect(page.locator('.detail-title')).toContainText(`#${seq}`, { timeout: 10_000 })
   await page.keyboard.press('Escape')
 })
+
+test('M22 触底续载：滚动到底部计数持续增加（行高与阈值一致）', async ({ page }) => {
+  test.setTimeout(240_000)
+  await page.goto('/')
+  await expect(page.getByTestId('pm-toolbar')).toBeVisible({ timeout: 10_000 })
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-seed-v9')), {
+      timeout: 180_000,
+      intervals: [1000, 3000, 5000],
+    })
+    .toBe('1')
+  await expect(page.locator('.issue-row').first()).toBeVisible({ timeout: 60_000 })
+
+  const loaded = async () => {
+    const t = (await page.getByTestId('issue-total').textContent()) ?? ''
+    return Number((t.match(/已加载\s*([\d,]+)/)?.[1] ?? '0').replace(/,/g, ''))
+  }
+  const scrollBottom = () =>
+    page.evaluate(() => {
+      const host = document.querySelector('[data-testid=issue-vlist]') as HTMLElement | null
+      const els = host ? Array.from(host.shadowRoot?.querySelectorAll('*') ?? []) : []
+      const scroller = els.find((e) => e.scrollHeight > e.clientHeight + 50) as
+        | HTMLElement
+        | undefined
+      if (!scroller) return false
+      scroller.scrollTop = scroller.scrollHeight
+      return true
+    })
+
+  const first = await loaded()
+  expect(first).toBeGreaterThan(0)
+  await scrollBottom()
+  await expect.poll(loaded, { timeout: 15_000 }).toBeGreaterThan(first)
+  const second = await loaded()
+  await scrollBottom()
+  await expect.poll(loaded, { timeout: 15_000 }).toBeGreaterThan(second)
+})

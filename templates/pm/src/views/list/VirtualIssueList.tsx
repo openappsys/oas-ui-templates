@@ -264,7 +264,9 @@ export function VirtualIssueList({
   useEffect(() => {
     const el = listRef.current
     if (!el) return
-    ;(el as unknown as { 'item-height'?: number })['item-height'] = 44
+    // 组件按 attribute 计算行高（默认 36）；必须与注入样式的行高 44 一致，
+    // 否则滚动内容高与触底阈值错位，续载永远不会触发
+    el.setAttribute('item-height', '44')
     const onItem = (e: Event) => {
       const d = (e as CustomEvent<{ index: number; item: unknown; element: HTMLElement }>).detail
       const issue = d.item as Issue
