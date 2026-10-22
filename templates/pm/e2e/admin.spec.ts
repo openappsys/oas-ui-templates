@@ -420,3 +420,124 @@ test('A12 重建演示数据：确认 → 页面重载 → 数据恢复（统计
     })
     .toBeGreaterThan(60000)
 })
+
+/* ── 迭代管理页签 ── */
+
+function dayStr(offset: number): string {
+  const d = new Date()
+  d.setDate(d.getDate() + offset)
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${d.getFullYear()}-${mm}-${dd}`
+}
+
+/** 日期选择器：value 走 property（'YYYY-MM-DD'），oas-change detail {value} 驱动受控状态 */
+async function setODate(page: Page, testid: string, v: string) {
+  await page.evaluate(
+    ([tid, val]) => {
+      const el = document.querySelector(`[data-testid="${tid}"]`)
+      ;(el as unknown as { value: string }).value = val as string
+      el?.dispatchEvent(new CustomEvent('oas-change', { bubbles: true, detail: { value: val } }))
+    },
+    [testid, v],
+  )
+}
+
+test('A13 迭代页签闭环：新建（重叠警告允许保存）→ 编辑名称 → 删除', async ({ page }) => {
+  await waitForSeed(page)
+  await page.getByTestId('admin-entry').click()
+  await page.getByTestId('admin-nav-cycles').click()
+  await expect(page.getByTestId('admin-tab-cycles')).toBeVisible({ timeout: 10_000 })
+
+  const table = page.getByTestId('admin-table-cycles')
+  // seed v8：project-1 三个周期，Sprint 1/2 已结束、Sprint 3 进行中
+  await expect(table.locator('tbody tr', { hasText: 'Sprint 1' })).toBeVisible({ timeout: 30_000 })
+  await expect(table.locator('tbody tr', { hasText: 'Sprint 1' })).toContainText('已结束')
+  await expect(table.locator('tbody tr', { hasText: 'Sprint 3' })).toContainText('进行中')
+
+  // 新建：今天 ~ 今天+7（与 Sprint 3 重叠 → 警告出现，但允许保存）
+  await page.getByTestId('admin-cycle-new').click()
+  await expect(page.getByTestId('admin-cycle-modal')).toHaveAttribute('visible', /.*/)
+  await fillOInput(page, 'admin-cycle-name', 'Sprint 9')
+  await setOSelect(page, 'admin-cycle-project', 'project-1')
+  await setODate(page, 'admin-cycle-start', dayStr(0))
+  await setODate(page, 'admin-cycle-end', dayStr(7))
+  await expect(page.getByTestId('admin-cycle-overlap-warn')).toBeVisible({ timeout: 10_000 })
+  await page.getByTestId('admin-cycle-save').click()
+  await expect(page.getByTestId('admin-cycle-modal')).not.toHaveAttribute('visible', /.*/, {
+    timeout: 10_000,
+  })
+
+  const row = table.locator('tbody tr', { hasText: 'Sprint 9' })
+  await expect(row).toBeVisible({ timeout: 15_000 })
+  await expect(row).toContainText('进行中')
+
+  // 编辑：改名后表格行跟随
+  await row.getByTestId(/^admin-cycle-edit-/).click()
+  await expect(page.getByTestId('admin-cycle-modal')).toHaveAttribute('visible', /.*/)
+  await fillOInput(page, 'admin-cycle-name', 'Sprint 9b')
+  await page.getByTestId('admin-cycle-save').click()
+  await expect(table.locator('tbody tr', { hasText: 'Sprint 9b' })).toBeVisible({ timeout: 10_000 })
+
+  // 删除：确认后行消失
+  await confirmPop(
+    table.locator('tbody tr', { hasText: 'Sprint 9b' }).getByTestId(/^admin-cycle-del-/),
+  )
+  await expect(table.locator('tbody tr', { hasText: 'Sprint 9b' })).toHaveCount(0, {
+    timeout: 10_000,
+  })
+})
+
+test('A14 迭代删除不误删工作项：删周期后 Issue 仍在，归属回到未入迭代', async ({ page }) => {
+  await waitForSeed(page)
+  // 取一个归属 Sprint 1 的 issue key（表格外的原始数据探针）
+  const key = await page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((res, rej) => {
+      const rq = indexedDB.open('oas-pm')
+      rq.onsuccess = () => res(rq.result)
+      rq.onerror = () => rej(rq.error)
+    })
+    const idx = db.transaction('issues', 'readonly').objectStore('issues').index('cycleId')
+    return await new Promise<string>((res) => {
+      const rq = idx.openCursor(IDBKeyRange.only('cycle-1'))
+      rq.onsuccess = () => {
+        const cur = rq.result
+        if (!cur) {
+          res('')
+          return
+        }
+        res(String((cur.value as { key?: string }).key ?? ''))
+      }
+    })
+  })
+  expect(key).not.toBe('')
+
+  await page.getByTestId('admin-entry').click()
+  await page.getByTestId('admin-nav-cycles').click()
+  const table = page.getByTestId('admin-table-cycles')
+  const row = table.locator('tbody tr', { hasText: 'Sprint 1' })
+  await expect(row).toBeVisible({ timeout: 30_000 })
+  await confirmPop(row.getByTestId(/^admin-cycle-del-/))
+  await expect(table.locator('tbody tr', { hasText: 'Sprint 1' })).toHaveCount(0, {
+    timeout: 15_000,
+  })
+
+  // Issue 未删、归属清空
+  const row2 = await page.evaluate(async (k) => {
+    const db = await new Promise<IDBDatabase>((res, rej) => {
+      const rq = indexedDB.open('oas-pm')
+      rq.onsuccess = () => res(rq.result)
+      rq.onerror = () => rej(rq.error)
+    })
+    const idx = db.transaction('issues', 'readonly').objectStore('issues').index('key')
+    return await new Promise<{ cycleId: string | null } | null>((res) => {
+      const rq = idx.get(k)
+      rq.onsuccess = () => {
+        const v = rq.result as { cycleId?: string | null } | undefined
+        res(v ? { cycleId: v.cycleId ?? null } : null)
+      }
+    })
+  }, key)
+  expect(row2).not.toBeNull()
+  expect(row2?.cycleId).toBe(null)
+})

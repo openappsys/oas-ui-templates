@@ -59,6 +59,20 @@ async function captureViews(page: Page, suffix: string) {
   await page.waitForTimeout(2500)
   await page.screenshot({ path: `shots/pm-dash${suffix}.png` })
 
+  // 迭代报表卡（当前迭代燃尽 + 近 6 期完成量）：仪表盘纵向滚动到底部再截
+  await expect
+    .poll(
+      async () => {
+        const raw = await page.getByTestId('chart-burndown').getAttribute('data')
+        return /"data":\[\d/.test(raw ?? '') ? 1 : 0
+      },
+      { timeout: 60_000 },
+    )
+    .toBe(1)
+  await page.getByTestId('velocity-box').scrollIntoViewIfNeeded()
+  await page.waitForTimeout(1200)
+  await page.screenshot({ path: `shots/pm-dash-cycles${suffix}.png` })
+
   await setView(page, 'timeline')
   await page.waitForTimeout(2500)
   await page.screenshot({ path: `shots/pm-timeline${suffix}.png` })
@@ -192,6 +206,60 @@ async function captureAdminTabs(page: Page, suffix: string) {
   })
   await page.waitForTimeout(1200)
   await page.screenshot({ path: `shots/pm-admin-members${suffix}.png` })
+
+  await page.getByTestId('admin-nav-cycles').click()
+  await expect(page.getByTestId('admin-tab-cycles')).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByTestId('admin-table-cycles').locator('tbody tr').first()).toBeVisible({
+    timeout: 30_000,
+  })
+  await page.waitForTimeout(1500)
+  await page.screenshot({ path: `shots/pm-admin-cycles${suffix}.png` })
+
+  // 新建迭代弹窗：名称/项目/起止/目标 + 重叠警告（与进行中的 Sprint 3 区间重叠）
+  await page.getByTestId('admin-cycle-new').click()
+  await expect(page.getByTestId('admin-cycle-modal')).toHaveAttribute('visible', /.*/)
+  const today = new Date()
+  const dayStr = (offset: number) => {
+    const d = new Date(today)
+    d.setDate(d.getDate() + offset)
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  }
+  await page.getByTestId('admin-cycle-name').evaluate((el, v) => {
+    const host = el as HTMLElement
+    const input = host.shadowRoot?.querySelector('input') as HTMLInputElement | null
+    if (input) input.value = v
+    host.dispatchEvent(new CustomEvent('oas-input', { bubbles: true, detail: { value: v } }))
+  }, 'Sprint 4')
+  for (const [tid, v] of [
+    ['admin-cycle-start', dayStr(0)],
+    ['admin-cycle-end', dayStr(7)],
+  ] as const) {
+    await page.getByTestId(tid).evaluate((el, val) => {
+      ;(el as unknown as { value: string }).value = val
+      el.dispatchEvent(new CustomEvent('oas-change', { bubbles: true, detail: { value: val } }))
+    }, v)
+  }
+  await expect(page.getByTestId('admin-cycle-overlap-warn')).toBeVisible({ timeout: 10_000 })
+  await page.waitForTimeout(900)
+  await page.screenshot({ path: `shots/pm-admin-cycle-modal${suffix}.png` })
+  await page.getByTestId('admin-cycle-cancel').click()
+  await expect(page.getByTestId('admin-cycle-modal')).not.toHaveAttribute('visible', /.*/, {
+    timeout: 10_000,
+  })
+
+  // 结转确认弹窗：目标二选一（有下一周期时默认「移到下一周期」，无则只可移出）
+  await page
+    .getByTestId('admin-table-cycles')
+    .locator('tbody tr', { hasText: 'Sprint 3' })
+    .getByTestId(/^admin-cycle-close-/)
+    .click()
+  await expect(page.getByTestId('admin-cycle-close-modal')).toHaveAttribute('visible', /.*/)
+  await page.waitForTimeout(900)
+  await page.screenshot({ path: `shots/pm-admin-cycle-close${suffix}.png` })
+  await page.getByTestId('admin-cycle-close-cancel').click()
+  await expect(page.getByTestId('admin-cycle-close-modal')).not.toHaveAttribute('visible', /.*/, {
+    timeout: 10_000,
+  })
 
   await page.getByTestId('admin-nav-config').click()
   await expect(page.getByTestId('admin-config-labels')).toBeVisible({ timeout: 10_000 })

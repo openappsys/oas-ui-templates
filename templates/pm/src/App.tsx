@@ -5,7 +5,7 @@ import { OSelect, OTabs } from './components/oas-wrappers'
 import { t, loadLang, setLang, statusLabel, priorityLabel, dateLocale, type Lang } from './i18n'
 import { useSavedViews } from './components/BulkBar'
 import { PRIORITY_TEXT, STATUS_COLOR } from './lib/colors'
-import { CYCLE_SIDEBAR_LIMIT, CURRENT_CYCLE } from './lib/cycles'
+import { CYCLE_SIDEBAR_LIMIT, CURRENT_CYCLE, currentCycleIds } from './lib/cycles'
 import {
   ALL_PROJECTS,
   DEFAULT_FILTERS,
@@ -89,6 +89,18 @@ function useProjects(): Project[] | undefined {
 function useCycles(projectId: string): Cycle[] | undefined {
   const { cycles } = useRepositories()
   return useObservable(() => cycles.liveAll(projectId), [cycles, projectId])
+}
+
+/** 迭代组计数：cycleId → 该周期工作项总数（侧栏角标用）。
+ *  全部迭代行不显示；「当前迭代」行是派生行，按当前周期集合求和 */
+function useCycleCountTotals(projectId: string) {
+  const { issues } = useRepositories()
+  const rows = useObservable(() => issues.liveCycleCounts(projectId), [issues, projectId])
+  return useMemo(() => {
+    const byCycle = new Map<string, number>()
+    for (const r of rows ?? []) if (r.cycleId) byCycle.set(r.cycleId, r.total)
+    return byCycle
+  }, [rows])
 }
 
 /** 成员在当前窗口内的计数（窗口 500 内，展示用） */
@@ -299,6 +311,7 @@ export function App() {
   const members = useMembers()
   const projects = useProjects()
   const cycles = useCycles(filters.projectId)
+  const cycleCounts = useCycleCountTotals(filters.projectId)
   const memberCounts = useWindowAssigneeCounts(issues)
   const memberMap = useMemo(() => new Map((members ?? []).map((m) => [m.id, m])), [members])
   const can = useCallback(
@@ -450,12 +463,15 @@ export function App() {
     label: t('allCycles'),
   })
   if ((cycles ?? []).length > 0) {
+    const currentIds = currentCycleIds(cycles ?? [], Date.now())
+    const currentTotal = [...currentIds].reduce((n, id) => n + (cycleCounts.get(id) ?? 0), 0)
     sideRows.push({
       group: t('cycles'),
       kind: 'cycle',
       value: `cycle:${CURRENT_CYCLE}`,
       id: CURRENT_CYCLE,
       label: t('currentCycle'),
+      count: currentTotal.toLocaleString(),
     })
   }
   for (const c of (cycles ?? []).slice(0, CYCLE_SIDEBAR_LIMIT)) {
@@ -465,6 +481,7 @@ export function App() {
       value: `cycle:${c.id}`,
       id: c.id,
       label: c.name,
+      count: (cycleCounts.get(c.id) ?? 0).toLocaleString(),
     })
   }
   for (const v of savedViews ?? []) {

@@ -1,14 +1,42 @@
 import { useMemo } from 'react'
 import { useRepositories } from '@/data/context'
 import { useObservable } from '@/data/use-observable'
-import type { IssueStatus, Member } from '@/types'
+import type { Cycle, IssueStatus, Member } from '@/types'
 import { ISSUE_STATUSES } from '@/types'
 import { statusLabel, t } from '@/i18n'
 import { STATUS_COLOR } from '@/lib/colors'
 import { useProjectCounts } from '@/lib/hooks'
 import { Chart } from '@/components/Chart'
 import { toChartData } from '@/lib/chart-data'
+import { currentCycleOf } from '@/lib/cycles'
+import { buildBurndown, buildVelocity } from '@/lib/cycle-charts'
 import { DashSkeleton } from '@/components/skeletons/DashSkeleton'
+
+/** 燃尽图：周期内每个自然日一条「剩余未完成」序列 + 线性理想线（对全部工作项按索引直取，不受窗口截断） */
+function BurndownChart({ projectId, cycle }: { projectId: string; cycle: Cycle }) {
+  const { issues: issuesRepo } = useRepositories()
+  const rows = useObservable(
+    () => issuesRepo.liveCycleIssues(projectId, cycle.id),
+    [issuesRepo, projectId, cycle.id],
+  )
+  const data = useMemo(() => {
+    if (!rows) return undefined
+    const burn = buildBurndown(cycle, rows)
+    return {
+      labels: burn.labels,
+      series: [
+        { name: t('burndownActual'), data: burn.actual },
+        { name: t('burndownIdeal'), data: burn.ideal },
+      ],
+    }
+  }, [rows, cycle])
+  // 不传 options.colors：dist 的折线点（circle.dot）不吃 colors，只按序号取内置色板——
+  // 自定义 colors 会让线与点异色（实测第二序列的点恒绿）。用内置色板保证线与点同色
+  if (!data) {
+    return <oas-skeleton rows="3" widths="90%,70%,80%" effect="pulse" />
+  }
+  return <Chart type="line" data={data} testid="chart-burndown" label={t('chartBurndownAria')} />
+}
 
 /* ── 仪表盘 ── */
 export function DashboardView({
@@ -20,9 +48,14 @@ export function DashboardView({
   memberMap: Map<string, Member>
   currentUser: string
 }) {
-  const { issues: issuesRepo, members: membersRepo } = useRepositories()
+  const { issues: issuesRepo, members: membersRepo, cycles: cyclesRepo } = useRepositories()
   const counts = useProjectCounts(projectId)
   const members = useObservable(() => membersRepo.liveAll(), [membersRepo])
+  const cycles = useObservable(() => cyclesRepo.liveAll(projectId), [cyclesRepo, projectId])
+  const cycleCounts = useObservable(
+    () => issuesRepo.liveCycleCounts(projectId),
+    [issuesRepo, projectId],
+  )
   const workload = useObservable(
     () => issuesRepo.liveAssigneeWorkload(projectId),
     [issuesRepo, projectId],
@@ -64,6 +97,12 @@ export function DashboardView({
     }
     return [...byDay.entries()].map(([label, value]) => ({ label, value }))
   }, [trendRows])
+
+  // 迭代两张卡：当前迭代燃尽 + 近 6 期完成量（口径见 lib/cycle-charts）。
+  // 不 memo：数据量是周期级（≤ 十几个），且 now 每次渲染都要取真时钟，缓存反而拦了时钟推进
+  const now = Date.now()
+  const currentCycle = currentCycleOf(cycles ?? [], now)
+  const velocity = buildVelocity(cycles ?? [], cycleCounts ?? [], now)
 
   if (counts === undefined) {
     return (
@@ -126,6 +165,31 @@ export function DashboardView({
           testid="chart-trend"
           label={t('chartTrendAria')}
         />
+      </div>
+      <div className="dash-charts">
+        <div className="dash-chart-box" data-testid="burndown-box">
+          <p className="dash-chart-title">
+            {currentCycle ? `${t('chartBurndown')} · ${currentCycle.name}` : t('chartBurndown')}
+          </p>
+          {currentCycle ? (
+            <BurndownChart projectId={projectId} cycle={currentCycle} />
+          ) : (
+            <oas-empty data-testid="burndown-empty" description={t('chartBurndownEmpty')} />
+          )}
+        </div>
+        <div className="dash-chart-box" data-testid="velocity-box">
+          <p className="dash-chart-title">{t('chartVelocity')}</p>
+          {velocity.length > 0 ? (
+            <Chart
+              type="bar"
+              data={toChartData(t('chartVelocity'), velocity)}
+              testid="chart-velocity"
+              label={t('chartVelocityAria')}
+            />
+          ) : (
+            <oas-empty data-testid="velocity-empty" description={t('chartVelocityEmpty')} />
+          )}
+        </div>
       </div>
       <p className="dash-note" data-testid="dashboard-member-note">
         {t('dashNote').replace('{name}', memberMap.get(currentUser)?.name ?? '')}
