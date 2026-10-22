@@ -43,8 +43,8 @@ export const DEFAULT_FILTERS: Filters = {
   cycleFilter: null,
 }
 
-export const LIST_WINDOW = 500
-export const LIST_WINDOW_STEP = 500
+export const LIST_WINDOW = 200
+export const LIST_WINDOW_STEP = 200
 export const GROUP_PREVIEW = 30
 
 /** 多选切换：已选中则移除，否则追加（保留点击顺序） */

@@ -4,7 +4,7 @@ import { PMDatabase } from '@/db/schema'
 import { createDexieRepositories } from '@/data/dexie'
 import type { IssueWindowFilters, Repositories } from '@/data/types'
 import { CURRENT_CYCLE, NO_CYCLE } from '@/lib/cycles'
-import { ALL_PROJECTS } from '@/lib/filters'
+import { ALL_PROJECTS, LIST_WINDOW } from '@/lib/filters'
 import type { Activity, Comment, Issue, Notification } from '@/types'
 import { createApiRepositories, type ApiTransport } from './client'
 import { createMockStore, handleApi, type MockStore } from './mock-server'
@@ -109,7 +109,7 @@ describe('契约：同一份 seed 下 Dexie 与 API 输出相同', () => {
       const a = await first(api.issues.liveWindow(filters(), 'member-1', limit))
       const d = await first(dexie.issues.liveWindow(filters(), 'member-1', limit))
       expect(a).toEqual(d)
-      expect(a.length).toBe(limit ?? 500)
+      expect(a.length).toBe(limit ?? LIST_WINDOW)
     }
   })
 
@@ -218,7 +218,7 @@ describe('契约：同一份 seed 下 Dexie 与 API 输出相同', () => {
       dexie.issues.liveWindow(filters({ projectId: ALL_PROJECTS }), 'member-1'),
     )
     expect(apiAll).toEqual(dexieAll)
-    expect(apiAll.length).toBe(500)
+    expect(apiAll.length).toBe(LIST_WINDOW)
     expect(new Set(apiAll.map((i) => i.projectId)).size).toBeGreaterThan(1)
 
     const counts = await first(dexie.issues.liveCounts(ALL_PROJECTS))
