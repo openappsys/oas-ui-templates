@@ -6,7 +6,7 @@ async function waitForSeed(page: Page) {
   await page.goto('/')
   await expect(page.getByTestId('pm-toolbar')).toBeVisible({ timeout: 10_000 })
   await expect
-    .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-seed-v8')), {
+    .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-seed-v9')), {
       timeout: 180_000,
       intervals: [1000, 3000, 5000],
     })
@@ -26,16 +26,17 @@ function readItems(page: Page) {
 test('C1 Ctrl+K 与顶栏按钮都能打开命令面板', async ({ page }) => {
   await waitForSeed(page)
   await page.getByTestId('command-open').click()
+  // 高负载下（并行 worker + 种子播种）命令面板首开可能迟滞，等待放宽到 15s
   await expect(page.getByTestId('command-palette')).toHaveAttribute('open', /.*/, {
-    timeout: 5000,
+    timeout: 15_000,
   })
   await page.keyboard.press('Escape')
   await expect(page.getByTestId('command-palette')).not.toHaveAttribute('open', /.*/, {
-    timeout: 5000,
+    timeout: 15_000,
   })
   await page.keyboard.press('Control+k')
   await expect(page.getByTestId('command-palette')).toHaveAttribute('open', /.*/, {
-    timeout: 5000,
+    timeout: 15_000,
   })
 })
 

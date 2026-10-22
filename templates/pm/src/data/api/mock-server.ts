@@ -1,4 +1,10 @@
-import { cycleFilterPredicate, demoCycleIdFor, CURRENT_CYCLE, NO_CYCLE } from '../../lib/cycles.ts'
+import {
+  cycleFilterPredicate,
+  demoCycleIdFor,
+  demoDoneAt,
+  CURRENT_CYCLE,
+  NO_CYCLE,
+} from '../../lib/cycles.ts'
 import { ALL_PROJECTS, LIST_WINDOW, UNASSIGNED } from '../../lib/filters.ts'
 import { PRIORITY_WEIGHT } from '../../lib/order.ts'
 import { mulberry32 } from '../../lib/prng.ts'
@@ -150,40 +156,44 @@ function buildSeed(seed: number, now: number): SeedTables {
   ]
 
   const issues: Issue[] = []
-  // 迭代（Sprint）：project-1 两份已结束 + 一份进行中。区间与 seed-db v8 同形，
-  // 归属规则共用 lib/cycles.demoCycleIdFor——两种数据源同分布才有契约可比性
+  // 迭代（Sprint）：project-1 两份已结束 + 一份进行中。区间与 seed-db v9 同形（进行中的周期
+  // 起点 10 天前、终点 4 天后，三期首尾相接），归属规则共用 lib/cycles.demoCycleIdFor——
+  // 两种数据源同分布才有契约可比性
+  const CUR_START = now - 10 * DAY
+  const CUR_END = now + 4 * DAY
   const cycles: Cycle[] = [
     {
       id: 'cycle-1',
       projectId: 'project-1',
       name: 'Sprint 1',
-      startAt: now - 28 * DAY,
-      endAt: now - 14 * DAY,
+      startAt: CUR_START - 28 * DAY,
+      endAt: CUR_START - 14 * DAY,
       goal: '平台基础能力',
-      createdAt: now - 28 * DAY,
-      updatedAt: now - 14 * DAY,
+      createdAt: CUR_START - 28 * DAY,
+      updatedAt: CUR_START - 14 * DAY,
     },
     {
       id: 'cycle-2',
       projectId: 'project-1',
       name: 'Sprint 2',
-      startAt: now - 14 * DAY,
-      endAt: now,
+      startAt: CUR_START - 14 * DAY,
+      endAt: CUR_START,
       goal: '权限与导出',
-      createdAt: now - 14 * DAY,
-      updatedAt: now,
+      createdAt: CUR_START - 14 * DAY,
+      updatedAt: CUR_START,
     },
     {
       id: 'cycle-3',
       projectId: 'project-1',
       name: 'Sprint 3',
-      startAt: now,
-      endAt: now + 14 * DAY,
+      startAt: CUR_START,
+      endAt: CUR_END,
       goal: '性能与体验',
-      createdAt: now,
+      createdAt: CUR_START,
       updatedAt: now,
     },
   ]
+  const cycleById = new Map(cycles.map((c) => [c.id, c]))
   for (let i = 0; i < MOCK_ISSUE_COUNT; i++) {
     const roll = rand()
     const project = roll < 0.5 ? projects[0] : roll < 0.8 ? projects[1] : projects[2]
@@ -199,7 +209,11 @@ function buildSeed(seed: number, now: number): SeedTables {
     const updatedAt = now - (i + 1) * 30 * 60_000
     // createdAt 由 updatedAt 回推 1~60 天：恒早于 updatedAt，且日粒度的分布不均，趋势图才有起伏
     const createdAt = updatedAt - (1 + Math.floor(rand() * 60)) * DAY
-    const dueAt = rand() > 0.35 ? now + (Math.floor(rand() * 28) - 7) * DAY : null
+    // 截止日期前后铺 63 天（-42 ~ +20）：跨度必须盖住全部三个周期区间，
+    // 否则已结束的 Sprint 2 一条都分不到（迭代归属只按 dueAt 落在 [startAt, endAt) 判定）
+    const dueAt = rand() > 0.35 ? now + (Math.floor(rand() * 63) - 42) * DAY : null
+    const cycleId = project.id === 'project-1' ? demoCycleIdFor(i, dueAt, cycles) : null
+    const cycle = cycleId === null ? undefined : cycleById.get(cycleId)
     issues.push({
       id: `issue-${project.id}-${i + 1}`,
       projectId: project.id,
@@ -215,10 +229,17 @@ function buildSeed(seed: number, now: number): SeedTables {
       dueAt,
       createdAt,
       updatedAt,
-      completedAt: status === 'done' ? updatedAt : null,
+      // 周期内 done 项的完成时刻必须落在周期区间内（seed 同口径 demoDoneAt）：
+      // 沿用 updatedAt 会落到周期起点之前，API 模式的燃尽同样变成平直线
+      completedAt:
+        status === 'done'
+          ? cycle
+            ? demoDoneAt(cycle.startAt, Math.min(cycle.endAt, now), i)
+            : updatedAt
+          : null,
       order: i,
       parentId: i > 0 && i % 100 === 0 ? issues[0].id : null,
-      cycleId: project.id === 'project-1' ? demoCycleIdFor(i, dueAt, cycles) : null,
+      cycleId,
     })
   }
 

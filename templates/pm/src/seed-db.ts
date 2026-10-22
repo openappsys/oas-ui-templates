@@ -1,6 +1,6 @@
 import type { Cycle, Issue, Project, Member } from './types'
 import { db } from './db/schema'
-import { demoCycleIdFor } from './lib/cycles'
+import { demoCycleIdFor, demoDoneAt } from './lib/cycles'
 import { mulberry32 } from './lib/prng'
 
 const NAMES = ['张伟', '李娜', '王强', '赵敏', '刘洋', '陈静', '杨帆', '周琳']
@@ -31,7 +31,7 @@ const LABELS = ['frontend', 'backend', 'design', 'bug', 'feature', 'tech-debt', 
 export async function seedDatabase(): Promise<void> {
   // seed 版本标记：调整 seed 逻辑后 bump。标记 + 数据双验证——
   // 单看标记会在「上次 seed 中断」时永久跳过，留下空库
-  const SEED_VER = 'oas-pm-seed-v8'
+  const SEED_VER = 'oas-pm-seed-v9'
   const marked = localStorage.getItem(SEED_VER)
   const issueCount = await db.issues.count()
   if (marked && issueCount > 0) return
@@ -84,40 +84,45 @@ export async function seedDatabase(): Promise<void> {
   await db.projects.bulkPut(projects)
 
   // 迭代（Sprint）：project-1 两份已结束 + 一份进行中（now ∈ [start,end) 派生当前，无 status 字段）。
-  // 区间按天对齐，与 API mock 的 buildSeed 同形；归属规则见 lib/cycles.demoCycleIdFor
+  // 区间按天对齐，与 API mock 的 buildSeed 同形；归属规则见 lib/cycles.demoCycleIdFor。
+  // 进行中的周期必须以 now 为基准跨过去：起点 10 天前、终点 4 天后——燃尽图才有已流逝的区段；
+  // 三期首尾相接（14 天一格、左闭右开），否则同刻会有两个「进行中」周期
+  const CUR_START = now - 10 * day
+  const CUR_END = now + 4 * day
   const cycles: Cycle[] = [
     {
       id: 'cycle-1',
       projectId: 'project-1',
       name: 'Sprint 1',
-      startAt: now - 28 * day,
-      endAt: now - 14 * day,
+      startAt: CUR_START - 28 * day,
+      endAt: CUR_START - 14 * day,
       goal: '平台基础能力',
-      createdAt: now - 28 * day,
-      updatedAt: now - 14 * day,
+      createdAt: CUR_START - 28 * day,
+      updatedAt: CUR_START - 14 * day,
     },
     {
       id: 'cycle-2',
       projectId: 'project-1',
       name: 'Sprint 2',
-      startAt: now - 14 * day,
-      endAt: now,
+      startAt: CUR_START - 14 * day,
+      endAt: CUR_START,
       goal: '权限与导出',
-      createdAt: now - 14 * day,
-      updatedAt: now,
+      createdAt: CUR_START - 14 * day,
+      updatedAt: CUR_START,
     },
     {
       id: 'cycle-3',
       projectId: 'project-1',
       name: 'Sprint 3',
-      startAt: now,
-      endAt: now + 14 * day,
+      startAt: CUR_START,
+      endAt: CUR_END,
       goal: '性能与体验',
-      createdAt: now,
+      createdAt: CUR_START,
       updatedAt: now,
     },
   ]
   await db.cycles.bulkPut(cycles)
+  const cycleById = new Map(cycles.map((c) => [c.id, c]))
 
   const ISSUE_COUNT = 100_000
   const statuses = ['backlog', 'todo', 'in_progress', 'done', 'cancelled'] as const
@@ -190,6 +195,20 @@ export async function seedDatabase(): Promise<void> {
         // 更新时间 clamp 到 now——seed 走未来时间戳会把真实新建/拖拽的数据压出窗口头部
         updatedAt = Math.min(createdAt + Math.floor(rand() * 3) * day, now)
       }
+      // 迭代归属只读 idx/dueAt（不抽 rand，否则随机流平移、e2e 锚定的 issue id 会漂移）；
+      // 项目 2 没有周期 → 全部留在「未入迭代」
+      const cycleId = proj.id === 'project-1' ? demoCycleIdFor(idx, dueAt, cycles) : null
+      const cycle = cycleId === null ? undefined : cycleById.get(cycleId)
+      // 完成时刻改为「周期区间内按 idx 均匀铺开」（lib/cycles.demoDoneAt）：
+      // 旧的 createdAt + 1~5 天 会落到周期起点之前，燃尽首日一次扣完 → 实际线永远平直
+      let completedAt: number | null = null
+      if (status === 'done') {
+        // 这次 rand 仍要消耗掉：少抽一次会平移整条随机流，撞飞 e2e 锚定的 issue id（v6 教训）
+        rand()
+        completedAt = cycle
+          ? demoDoneAt(cycle.startAt, Math.min(cycle.endAt, now), idx)
+          : Math.min(createdAt + 3 * day, now)
+      }
       batch.push({
         id: `issue-${proj.id}-${idx + 1}`,
         projectId: proj.id,
@@ -205,12 +224,9 @@ export async function seedDatabase(): Promise<void> {
         dueAt,
         createdAt,
         updatedAt,
-        completedAt:
-          status === 'done' ? Math.min(createdAt + Math.floor(rand() * 5 + 1) * day, now) : null,
+        completedAt,
         order: idx,
-        // 迭代归属只读 idx/dueAt（不抽 rand，否则随机流平移、e2e 锚定的 issue id 会漂移）；
-        // 项目 2 没有周期 → 全部留在「未入迭代」
-        cycleId: proj.id === 'project-1' ? demoCycleIdFor(idx, dueAt, cycles) : null,
+        cycleId,
       })
     }
     await db.issues.bulkPut(batch)

@@ -6,7 +6,7 @@ async function waitForSeed(page: Page) {
   await page.goto('/')
   await expect(page.getByTestId('pm-toolbar')).toBeVisible({ timeout: 10_000 })
   await expect
-    .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-seed-v8')), {
+    .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-seed-v9')), {
       timeout: 180_000,
       intervals: [1000, 3000, 5000],
     })
@@ -450,7 +450,7 @@ test('A13 迭代页签闭环：新建（重叠警告允许保存）→ 编辑名
   await expect(page.getByTestId('admin-tab-cycles')).toBeVisible({ timeout: 10_000 })
 
   const table = page.getByTestId('admin-table-cycles')
-  // seed v8：project-1 三个周期，Sprint 1/2 已结束、Sprint 3 进行中
+  // seed v9：project-1 三个周期，Sprint 1/2 已结束、Sprint 3 进行中
   await expect(table.locator('tbody tr', { hasText: 'Sprint 1' })).toBeVisible({ timeout: 30_000 })
   await expect(table.locator('tbody tr', { hasText: 'Sprint 1' })).toContainText('已结束')
   await expect(table.locator('tbody tr', { hasText: 'Sprint 3' })).toContainText('进行中')

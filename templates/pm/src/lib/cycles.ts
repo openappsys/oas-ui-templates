@@ -137,3 +137,29 @@ export function demoCycleIdFor(
   for (const c of cyclesAsc) if (c.startAt <= dueAt) hit = c
   return hit.id
 }
+
+/** 本地日 0 点（周期按自然日切分，与 lib/cycle-charts 的 cycleDays 同口径） */
+function startOfLocalDay(ts: number): number {
+  const d = new Date(ts)
+  d.setHours(0, 0, 0, 0)
+  return d.getTime()
+}
+
+/**
+ * 演示数据的确定性「完成时刻」（seed 与 API mock 共用，保证两种数据源同形）：
+ * 把周期内的 done 项按 index 均匀铺在 [周期次日 0 点, endBefore) 上。
+ *
+ * 两条约束来自燃尽图口径（lib/cycle-charts.buildBurndown 按 completedAt 逐日扣减）：
+ * 1. 必须落在周期区间内——落在起点之前会在首日一次性扣完，实际线变成平直线；
+ * 2. 首日不排完成——首点因此等于周期总量，之后逐日下降，末尾仍有剩余。
+ * 只读 index，不消耗随机流（多抽一次会平移随机流、撞飞 e2e 锚定的 issue id）。
+ * endBefore 传 min(cycle.endAt, now)：进行中的周期不能把完成时间铺到未来。
+ */
+export function demoDoneAt(startAt: number, endBefore: number, index: number): number {
+  const first = startOfLocalDay(startAt) + DAY_MS
+  // 兜底 1 小时跨度：周期短于一天时也给出区间内的时刻
+  const span = Math.max(3_600_000, endBefore - first)
+  const at = first + Math.floor(((index % 997) / 997) * span)
+  // 极短周期（first 已越过 endBefore）不越界
+  return Math.min(at, endBefore - 1)
+}

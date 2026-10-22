@@ -6,7 +6,7 @@ async function waitForSeed(page: Page) {
   await page.goto('/')
   await expect(page.getByTestId('pm-toolbar')).toBeVisible({ timeout: 10_000 })
   await expect
-    .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-seed-v8')), {
+    .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-seed-v9')), {
       timeout: 180_000,
       intervals: [1000, 3000, 5000],
     })

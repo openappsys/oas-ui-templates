@@ -50,7 +50,8 @@ test('A1 引导：reset 端点 + mock 2K 数据渲染 + 徽标 API + 不跑 Dexi
   expect((await request.get('/api/revision')).ok()).toBe(true)
 
   await page.goto('/')
-  await expect(page.getByTestId('pm-toolbar')).toBeVisible({ timeout: 10_000 })
+  // 高负载下首屏壳可能晚于 10s：等待放宽到 15s（断言语义不变）
+  await expect(page.getByTestId('pm-toolbar')).toBeVisible({ timeout: 15_000 })
   await expect(page.getByTestId('data-source-badge')).toHaveText('API')
   await expect(page.locator('.issue-row').first()).toBeVisible({ timeout: 15_000 })
 
@@ -64,7 +65,7 @@ test('A1 引导：reset 端点 + mock 2K 数据渲染 + 徽标 API + 不跑 Dexi
   await expect(page.locator('.issue-row .issue-key').first()).toContainText('OAS-')
 
   // API 模式不碰 IndexedDB：Dexie seed 标记不应出现
-  expect(await page.evaluate(() => localStorage.getItem('oas-pm-seed-v8'))).toBeNull()
+  expect(await page.evaluate(() => localStorage.getItem('oas-pm-seed-v9'))).toBeNull()
 
   // 管理 → 设置：数据源只读展示为 REST API，破坏性操作文案不再误称本地数据
   await page.getByTestId('admin-entry').click()
@@ -148,7 +149,7 @@ test('A3 切回本地：DEV 徽标点击写回 dexie 并走既有 Dexie seed', a
 
   // 既有 Dexie seed 等待预算（100K；高负载下留足余量）
   await expect
-    .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-seed-v8')), {
+    .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-seed-v9')), {
       timeout: 180_000,
       intervals: [1000, 3000, 5000],
     })

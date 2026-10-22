@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 
 /**
  * 迭代（Cycle）侧栏组 + 筛选 + 详情抽屉。
- * 数据来自 seed v8：project-1 有 3 个演示周期（Sprint 1/2 已结束、Sprint 3 进行中），
+ * 数据来自 seed v9：project-1 有 3 个演示周期（Sprint 1/2 已结束、Sprint 3 进行中），
  * project-2 没有周期——这正是「分组数据随项目变化」的验收面。
  */
 
@@ -11,7 +11,7 @@ async function waitForSeed(page: Page) {
   await page.goto('/')
   await expect(page.getByTestId('pm-toolbar')).toBeVisible({ timeout: 10_000 })
   await expect
-    .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-seed-v8')), {
+    .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-seed-v9')), {
       timeout: 180_000,
       intervals: [1000, 3000, 5000],
     })
@@ -351,13 +351,16 @@ test('C7 仪表盘：当前迭代燃尽（两序列，点数 = 周期自然日�
     .toBe(true)
   const burnData = (await readBurn()) as { labels: string[]; series: Array<{ data: number[] }> }
   expect(burnData.series.every((s) => s.data.length === days)).toBe(true)
-  // 理想线首尾锚定（total → 0），实际线单调不增；
-  // 实际线首点可能已低于 total——演示数据的 done 项 completedAt 早于周期开始（公式按「当日前已完成」扣减）
+  // 理想线首尾锚定（total → 0），实际线单调不增。
+  // seed v9 起 done 项的 completedAt 落在周期区间内且首日不排完成：
+  // 实际线首点 = 周期总量、末端仍有剩余（否则就是「平直线」缺陷回归）
   const actual = burnData.series[0]?.data ?? []
   const ideal = burnData.series[1]?.data ?? []
-  expect(ideal[0]).toBeGreaterThanOrEqual(actual[0])
   expect(ideal[0]).toBeGreaterThan(0)
+  expect(actual[0]).toBe(ideal[0])
   expect(ideal[ideal.length - 1]).toBe(0)
+  expect(actual[actual.length - 1]).toBeGreaterThan(0)
+  expect(actual[actual.length - 1]).toBeLessThan(actual[0])
   for (let i = 1; i < actual.length; i++) {
     expect(actual[i]).toBeLessThanOrEqual(actual[i - 1])
   }

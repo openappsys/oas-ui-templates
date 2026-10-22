@@ -3,7 +3,7 @@ import { expect, test, type Page } from '@playwright/test'
 async function openApp(page: Page) {
   await page.goto('/')
   // 高负载下 100K 播种可能超 100s：与主用例预算保持同一口径
-  await page.waitForFunction(() => localStorage.getItem('oas-pm-seed-v8') === '1', {
+  await page.waitForFunction(() => localStorage.getItem('oas-pm-seed-v9') === '1', {
     timeout: 180_000,
   })
   await page.waitForSelector('.issue-row', { timeout: 20_000 })
