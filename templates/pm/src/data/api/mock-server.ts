@@ -45,6 +45,9 @@ export interface MockStore extends SeedTables {
   seq: number
   /** 首次播种的只读快照，reset 从它重放（保证每次 reset 输出相等） */
   seed: SeedTables
+  /** token → 登录时的成员快照。身份随会话而非业务表存活：
+   *  wipe/reset 清表后会话仍有效（角色取库里最新一行，缺行时用快照） */
+  sessions: Map<string, Member>
 }
 
 export interface MockStoreOptions {
@@ -58,6 +61,8 @@ export interface ApiRequest {
   path: string
   query: URLSearchParams
   body?: unknown
+  /** Authorization 头原文（`Bearer <token>`）；登录端点之外的所有端点都要求它 */
+  authorization?: string | null
 }
 
 export interface ApiResponse {
@@ -66,6 +71,8 @@ export interface ApiResponse {
 }
 
 export const MOCK_ISSUE_COUNT = 2000
+/** 演示口令：所有 seed 成员共用（mock 认证只用于演示，不做真实口令存储） */
+export const DEMO_PASSWORD = 'oas'
 const SEARCH_LIMIT = 2000
 const DAY = 86_400_000
 
@@ -296,7 +303,7 @@ function buildSeed(seed: number, now: number): SeedTables {
 
 export function createMockStore(options: MockStoreOptions = {}): MockStore {
   const seed = buildSeed(options.seed ?? 42, options.now ?? startOfToday())
-  return { ...cloneTables(seed), revision: 0, seq: 0, seed }
+  return { ...cloneTables(seed), revision: 0, seq: 0, seed, sessions: new Map() }
 }
 
 /** dev 中间件用：模块级单例 store，配 POST /api/admin/reset 跨请求复位 */
@@ -353,6 +360,33 @@ function segments(path: string): string[] {
     .split('/')
     .filter(Boolean)
     .map((s) => decodeURIComponent(s))
+}
+
+/** 从 `Authorization: Bearer <token>` 取 token；不合法/缺失返回 null */
+function bearerToken(req: ApiRequest): string | null {
+  const raw = (req.authorization ?? '').trim()
+  const match = /^bearer\s+(.+)$/i.exec(raw)
+  const token = match?.[1]?.trim()
+  return token ? token : null
+}
+
+/** 认证守卫：token 缺失/未知一律 401（不泄露 token 是否曾经有效）。
+ *  成员仍在库里时返回最新一行（改角色即时生效），被删后回落到登录快照 */
+function sessionMember(store: MockStore, req: ApiRequest): Member {
+  const token = bearerToken(req)
+  if (!token) fail(401, 'missing bearer token')
+  const snapshot = store.sessions.get(token)
+  if (!snapshot) fail(401, 'invalid or expired token')
+  return store.members.find((m) => m.id === snapshot.id) ?? snapshot
+}
+
+/** 仅 admin 可用的端点：admin 全部端点、项目/成员写操作、设置写操作。
+ *  普通 issue/评论/视图写只要求已登录（前端 can() 仍做细粒度门禁） */
+function isAdminOnly(method: string, head: string): boolean {
+  if (head === 'admin') return true
+  if (head === 'projects' || head === 'members') return method !== 'GET'
+  if (head === 'settings') return method === 'PUT'
+  return false
 }
 
 /** Dexie 语义复刻：search 走全表（无视 project/status、按主键序、上限 2000）；
@@ -1151,11 +1185,51 @@ function routeAdmin(
   fail(404, 'not found')
 }
 
-function route(store: MockStore, req: ApiRequest): ApiResponse {
+/** 认证：login / logout 免鉴权（登出必须幂等：会话已死也要能清完）；me 需要 Bearer */
+function routeAuth(
+  store: MockStore,
+  method: string,
+  second: string | undefined,
+  req: ApiRequest,
+  member: Member | null,
+): ApiResponse {
+  if (second === 'login') {
+    if (method !== 'POST') fail(405, 'method not allowed')
+    const input = asRecord(req.body)
+    const email = String(input.email ?? '')
+      .trim()
+      .toLowerCase()
+    const password = String(input.password ?? '')
+    if (!email || !password) fail(400, 'email and password are required')
+    const found = store.members.find((m) => m.email.toLowerCase() === email)
+    // 未知邮箱与错误口令返回同一结果：不暴露账号是否存在
+    if (!found || password !== DEMO_PASSWORD) fail(401, 'invalid credentials')
+    const token = `mock-${crypto.randomUUID()}`
+    store.sessions.set(token, found)
+    return ok({ token, member: found })
+  }
+  if (second === 'logout') {
+    if (method !== 'POST') fail(405, 'method not allowed')
+    const token = bearerToken(req)
+    if (token) store.sessions.delete(token)
+    // 幂等：token 已知或已失效都回报成功，客户端只需清本地状态
+    return { status: 204, body: null }
+  }
+  if (!member) fail(401, 'invalid or expired token')
+  if (second === 'me') {
+    if (method !== 'GET') fail(405, 'method not allowed')
+    return ok({ member })
+  }
+  fail(404, 'not found')
+}
+
+function route(store: MockStore, req: ApiRequest, member: Member | null): ApiResponse {
   const method = req.method.toUpperCase()
   const q = req.query ?? new URLSearchParams()
   const [head, second, third] = segments(req.path)
   switch (head) {
+    case 'auth':
+      return routeAuth(store, method, second, req, member)
     case 'revision':
       if (method !== 'GET') fail(405, 'method not allowed')
       return ok({ revision: store.revision })
@@ -1184,7 +1258,15 @@ function route(store: MockStore, req: ApiRequest): ApiResponse {
 
 export function handleApi(store: MockStore, req: ApiRequest): ApiResponse {
   try {
-    return route(store, req)
+    const [head, second] = segments(req.path)
+    const method = req.method.toUpperCase()
+    // 免鉴权端点：登录、登出（登出必须幂等）。其余端点（含 revision 轮询）都要求 Bearer
+    const anonymous = head === 'auth' && (second === 'login' || second === 'logout')
+    const member = anonymous ? null : sessionMember(store, req)
+    if (member && isAdminOnly(method, head) && member.role !== 'admin') {
+      fail(403, 'admin role required')
+    }
+    return route(store, req, member)
   } catch (e) {
     if (e instanceof ApiError) return { status: e.status, body: { error: e.message } }
     throw e

@@ -35,6 +35,11 @@ function mockApi(): Plugin {
       server.middlewares.use('/api', (req: IncomingMessage, res: ServerResponse) => {
         const send = (status: number, body: unknown) => {
           res.statusCode = status
+          // 204 按语义不带实体（登出）；写 JSON 体会让浏览器把响应当成有体
+          if (status === 204) {
+            res.end()
+            return
+          }
           res.setHeader('content-type', 'application/json; charset=utf-8')
           res.end(JSON.stringify(body))
         }
@@ -47,6 +52,8 @@ function mockApi(): Plugin {
               path: `/api${url.pathname}`,
               query: url.searchParams,
               body,
+              // Bearer token 原样透传：鉴权在 handler 内统一判定
+              authorization: req.headers.authorization ?? null,
             })
             send(out.status, out.body)
           })

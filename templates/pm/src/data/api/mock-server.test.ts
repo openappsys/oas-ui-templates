@@ -12,24 +12,44 @@ import {
 
 const FIXED = 1_700_000_000_000
 const DAY = 86_400_000
+const ADMIN_EMAIL = 'user1@oas.dev'
+const DEMO_PASSWORD = 'oas'
 
-const req = (
-  method: string,
-  path: string,
-  init: { query?: Record<string, string>; body?: unknown } = {},
-): ApiRequest => ({
+interface CallInit {
+  query?: Record<string, string>
+  body?: unknown
+  /** 覆盖默认身份；null = 匿名（验 401 用） */
+  authorization?: string | null
+}
+
+const req = (method: string, path: string, init: CallInit = {}): ApiRequest => ({
   method,
   path,
   query: new URLSearchParams(init.query ?? {}),
   body: init.body,
 })
 
-const call = (
-  store: MockStore,
-  method: string,
-  path: string,
-  init: { query?: Record<string, string>; body?: unknown } = {},
-): ApiResponse => handleApi(store, req(method, path, init))
+/** 默认以 admin 身份发请求：走真实 login 端点换 token（鉴权路径不被测试旁路） */
+const bearerCache = new WeakMap<MockStore, string>()
+function adminBearer(store: MockStore): string {
+  const cached = bearerCache.get(store)
+  if (cached) return cached
+  const res = handleApi(store, {
+    method: 'POST',
+    path: '/api/auth/login',
+    query: new URLSearchParams(),
+    body: { email: ADMIN_EMAIL, password: DEMO_PASSWORD },
+  })
+  const bearer = `Bearer ${(res.body as { token: string }).token}`
+  bearerCache.set(store, bearer)
+  return bearer
+}
+
+const call = (store: MockStore, method: string, path: string, init: CallInit = {}): ApiResponse =>
+  handleApi(store, {
+    ...req(method, path, init),
+    authorization: init.authorization === undefined ? adminBearer(store) : init.authorization,
+  })
 
 const items = <T>(res: ApiResponse): T[] => (res.body as { items: T[] }).items
 
@@ -646,13 +666,28 @@ describe('备份信封与 reset', () => {
   })
 
   it('createMockHandler 复用同一 store（reset 跨请求生效）', () => {
-    const handle = createMockHandler()
+    const handler = createMockHandler()
+    const login = handler({
+      method: 'POST',
+      path: '/api/auth/login',
+      query: new URLSearchParams(),
+      body: { email: ADMIN_EMAIL, password: DEMO_PASSWORD },
+    })
+    const auth = `Bearer ${(login.body as { token: string }).token}`
+    const send = (method: string, path: string, body?: unknown) =>
+      handler({
+        method,
+        path,
+        query: new URLSearchParams(),
+        body,
+        authorization: auth,
+      })
     const r = (body: unknown) => body as { revision: number }
-    const first = r(handle(req('GET', '/api/revision')).body).revision
-    handle(req('POST', '/api/issues/bulk-delete', { body: { ids: ['nope'] } }))
-    expect(r(handle(req('GET', '/api/revision')).body).revision).toBe(first + 1)
-    handle(req('POST', '/api/admin/reset'))
-    expect(r(handle(req('GET', '/api/revision')).body).revision).toBe(first + 2)
+    const first = r(send('GET', '/api/revision').body).revision
+    send('POST', '/api/issues/bulk-delete', { ids: ['nope'] })
+    expect(r(send('GET', '/api/revision').body).revision).toBe(first + 1)
+    send('POST', '/api/admin/reset')
+    expect(r(send('GET', '/api/revision').body).revision).toBe(first + 2)
   })
 })
 

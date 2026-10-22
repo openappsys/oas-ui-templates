@@ -12,10 +12,36 @@ import { createMockStore, handleApi, type MockStore } from './mock-server'
 const FIXED = 1_700_000_000_000
 const projectId = 'project-1'
 
+const ADMIN_EMAIL = 'user1@oas.dev'
+const DEMO_PASSWORD = 'oas'
+
+/** 直连 handler 的映射层补上 Bearer：契约测试默认以 admin 身份跑（鉴权路径真实生效） */
+const bearerCache = new WeakMap<MockStore, string>()
+function adminBearer(store: MockStore): string {
+  const cached = bearerCache.get(store)
+  if (cached) return cached
+  const res = handleApi(store, {
+    method: 'POST',
+    path: '/api/auth/login',
+    query: new URLSearchParams(),
+    body: { email: ADMIN_EMAIL, password: DEMO_PASSWORD },
+  })
+  const bearer = `Bearer ${(res.body as { token: string }).token}`
+  bearerCache.set(store, bearer)
+  return bearer
+}
+
 const directTransport =
   (store: MockStore): ApiTransport =>
   async (method, path, query, body) =>
-    handleApi(store, { method, path, query, body })
+    handleApi(store, {
+      method,
+      path,
+      query,
+      body,
+      // client 传下来的 token 可能是 null（测试不注入会话）；契约测试固定用 admin token
+      authorization: adminBearer(store),
+    })
 
 const filters = (over: Partial<IssueWindowFilters> = {}): IssueWindowFilters => ({
   projectId,
@@ -637,7 +663,7 @@ describe('Observable：轮询推送', () => {
     const calls: string[] = []
     const transport: ApiTransport = async (method, path, query, body) => {
       calls.push(`${method} ${path}`)
-      return handleApi(store, { method, path, query, body })
+      return handleApi(store, { method, path, query, body, authorization: adminBearer(store) })
     }
     const api = createApiRepositories({ transport, pollMs: 15 })
 
@@ -659,6 +685,7 @@ describe('Observable：轮询推送', () => {
       path: `/api/issues/${target?.id}`,
       query: new URLSearchParams(),
       body: { changes: { status: 'done' } },
+      authorization: adminBearer(store),
     })
     await waitFor(() => seen.length === 2, '再次推送')
     expect(seen[1]).toBe((seen[0] ?? 0) + 1)
@@ -671,6 +698,7 @@ describe('Observable：轮询推送', () => {
       path: `/api/issues/${target?.id}`,
       query: new URLSearchParams(),
       body: { changes: { status: 'todo' } },
+      authorization: adminBearer(store),
     })
     await new Promise((r) => setTimeout(r, 90))
     expect(countCalls()).toBe(callsAtUnsub)

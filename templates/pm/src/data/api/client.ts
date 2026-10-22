@@ -1,5 +1,7 @@
 import { LIST_WINDOW } from '@/lib/filters'
 import type { Activity, Comment, Cycle, Issue, Member, Project, SavedView } from '@/types'
+import { ApiError, errorMessage } from './errors'
+import { clearToken, getToken, sessionEvents, type SessionEvents } from './session'
 import type {
   ActivityInput,
   ActivityRepository,
@@ -31,27 +33,45 @@ interface ApiResult {
   body: unknown
 }
 
+/** 会话相关的可注入点：测试注入内存实现，应用走 session.ts（localStorage + window 事件） */
+export interface ApiAuthOptions {
+  token?: () => string | null
+  clearToken?: () => void
+  events?: SessionEvents
+}
+
 /** 传输层注入点：默认走原生 fetch；测试注入直连 handler 的实现（vitest 无真实 HTTP） */
 export type ApiTransport = (
   method: string,
   path: string,
   query: URLSearchParams,
   body?: unknown,
+  token?: string | null,
 ) => Promise<ApiResult>
 
 export interface ApiClientOptions {
   transport?: ApiTransport
   /** revision 轮询间隔；测试用小值避免真等 */
   pollMs?: number
+  /** 会话注入；缺省用 localStorage 里的 token 与 window 事件 */
+  auth?: ApiAuthOptions
 }
 
-function fetchTransport(method: string, path: string, query: URLSearchParams, body?: unknown) {
+function fetchTransport(
+  method: string,
+  path: string,
+  query: URLSearchParams,
+  body?: unknown,
+  token?: string | null,
+) {
   const qs = query.toString()
+  const headers: Record<string, string> = {}
+  if (token) headers.authorization = `Bearer ${token}`
+  if (body !== undefined) headers['content-type'] = 'application/json'
   return fetch(qs ? `${path}?${qs}` : path, {
     method,
-    ...(body === undefined
-      ? {}
-      : { headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }),
+    headers,
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   }).then(async (res) => ({ status: res.status, body: await res.json().catch(() => null) }))
 }
 
@@ -69,27 +89,44 @@ function joinFilter(values: readonly string[]): string | null {
   return values.length ? values.join(',') : null
 }
 
-const errorMessage = (body: unknown): string | undefined =>
-  body !== null && typeof body === 'object' ? (body as { error?: string }).error : undefined
-
 const asItems = <T>(body: unknown): T[] => (body as { items: T[] }).items
 
 export function createApiRepositories(options: ApiClientOptions = {}): Repositories {
+  const auth = options.auth ?? {}
+  const readToken = auth.token ?? getToken
+  const dropToken = auth.clearToken ?? clearToken
+  const events = auth.events ?? sessionEvents
   const transport = options.transport ?? fetchTransport
   const pollMs = options.pollMs ?? DEFAULT_POLL_MS
+
+  /** 401 只对「携 token 却被拒」判会话失效：无 token 的请求（登录页后台订阅）不该反复踢人 */
+  const expireSession = () => {
+    if (readToken() === null) return
+    dropToken()
+    events.expired()
+  }
 
   const call = async (
     method: string,
     path: string,
     query: URLSearchParams = new URLSearchParams(),
     body?: unknown,
-  ): Promise<ApiResult> => transport(method, path, query, body)
+  ): Promise<ApiResult> => {
+    const res = await transport(method, path, query, body, readToken())
+    if (res.status === 401) expireSession()
+    else if (res.status === 403) events.forbidden(errorMessage(res.body) ?? 'forbidden')
+    return res
+  }
+
+  const toError = (res: ApiResult, method: string, path: string): ApiError =>
+    new ApiError(
+      res.status,
+      errorMessage(res.body) ?? `request failed: ${res.status} ${method} ${path}`,
+    )
 
   const send = async <T>(method: string, path: string, query?: URLSearchParams, body?: unknown) => {
     const res = await call(method, path, query, body)
-    if (res.status >= 400) {
-      throw new Error(errorMessage(res.body) ?? `request failed: ${res.status} ${method} ${path}`)
-    }
+    if (res.status >= 400) throw toError(res, method, path)
     return res.body as T
   }
 
@@ -137,24 +174,21 @@ export function createApiRepositories(options: ApiClientOptions = {}): Repositor
   const getIssue = async (id: string): Promise<Issue | undefined> => {
     const res = await call('GET', `/api/issues/${encodeURIComponent(id)}`)
     if (res.status === 404) return undefined
-    if (res.status >= 400)
-      throw new Error(errorMessage(res.body) ?? `request failed: ${res.status}`)
+    if (res.status >= 400) throw toError(res, 'GET', `/api/issues/${id}`)
     return (res.body as { issue: Issue }).issue
   }
 
   const getProject = async (id: string): Promise<Project | undefined> => {
     const res = await call('GET', `/api/projects/${encodeURIComponent(id)}`)
     if (res.status === 404) return undefined
-    if (res.status >= 400)
-      throw new Error(errorMessage(res.body) ?? `request failed: ${res.status}`)
+    if (res.status >= 400) throw toError(res, 'GET', `/api/projects/${id}`)
     return (res.body as { project: Project }).project
   }
 
   const getMember = async (id: string): Promise<Member | undefined> => {
     const res = await call('GET', `/api/members/${encodeURIComponent(id)}`)
     if (res.status === 404) return undefined
-    if (res.status >= 400)
-      throw new Error(errorMessage(res.body) ?? `request failed: ${res.status}`)
+    if (res.status >= 400) throw toError(res, 'GET', `/api/members/${id}`)
     return (res.body as { member: Member }).member
   }
 
@@ -486,7 +520,10 @@ function createRevisionPoller(
   const read = async (): Promise<number> => {
     const res = await call('GET', '/api/revision', new URLSearchParams())
     if (res.status >= 400) {
-      throw new Error(errorMessage(res.body) ?? `request failed: ${res.status} GET /api/revision`)
+      throw new ApiError(
+        res.status,
+        errorMessage(res.body) ?? `request failed: ${res.status} GET /api/revision`,
+      )
     }
     return (res.body as { revision: number }).revision
   }
