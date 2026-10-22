@@ -1,8 +1,15 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 
-async function waitForSeed(page: Page) {
-  // 高负载下 100K 播种可能超 100s：轮询与用例预算统一留余量
+/** e2e 播种规模（产品默认 10 万；M1 架构用例单独传 100_000） */
+const E2E_SEED_SIZE = 5_000
+
+async function waitForSeed(page: Page, size = E2E_SEED_SIZE) {
+  // 预算沿用 10 万口径（M1 仍跑 10 万，其余 5K）：轮询与用例预算统一留足
   test.setTimeout(240_000)
+  // 播种规模：e2e 默认 5K（产品默认仍 10 万）。每个用例都是新上下文、都要重播种子，
+  // 10 万条实测 44–134s（随负载波动），会撞穿用例预算 → 轮换式 seed 超时
+  await page.addInitScript((n) => localStorage.setItem('oas-pm-seed-size', String(n)), size)
+
   await page.goto('/')
   await expect(page.getByTestId('pm-toolbar')).toBeVisible({ timeout: 10_000 })
   await expect
@@ -90,7 +97,8 @@ test('A1 管理总览：入口 → 统计/工作量/健康度 → 行点击回�
     .poll(async () => statNumber(await page.getByTestId('admin-stat-issues').textContent()), {
       timeout: 30_000,
     })
-    .toBeGreaterThan(60000)
+    // e2e 播种 5K：断言「真实全量（≈5K）而非首屏窗口」，不再写死 10 万级的绝对数
+    .toBeGreaterThan(4_000)
   await expect
     .poll(async () => statNumber(await page.getByTestId('admin-stat-projects').textContent()))
     .toBe(2)
@@ -382,10 +390,11 @@ test('A11 数据闭环：导出 JSON → 清空（管理态被收回+空态）�
       timeout: 120_000,
       intervals: [1000, 3000, 5000],
     })
-    .toBeGreaterThan(60000)
+    // 备份文件来自 e2e 5K seed：导入后条数应回到 5K 量级（> 首屏窗口）
+    .toBeGreaterThan(4_000)
 })
 
-test('A12 重建演示数据：确认 → 页面重载 → 数据恢复（统计 > 6 万）', async ({ page }) => {
+test('A12 重建演示数据：确认 → 页面重载 → 数据恢复（统计回到 5K 量级）', async ({ page }) => {
   test.setTimeout(300_000)
   await waitForSeed(page)
   await page.getByTestId('admin-entry').click()
@@ -418,7 +427,8 @@ test('A12 重建演示数据：确认 → 页面重载 → 数据恢复（统计
       timeout: 120_000,
       intervals: [1000, 3000, 5000],
     })
-    .toBeGreaterThan(60000)
+    // 重建后回填 e2e 5K seed（initScript 仍生效）：断言回到 5K 量级
+    .toBeGreaterThan(4_000)
 })
 
 /* ── 迭代管理页签 ── */

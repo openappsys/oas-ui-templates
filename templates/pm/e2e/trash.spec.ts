@@ -1,9 +1,16 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { bearer, loginToken } from './api-auth'
 
-/** 100K 播种在高负载下可能超 100s：与既有 spec 同一预算口径 */
-async function waitForSeed(page: Page) {
+/** e2e 播种规模（产品默认 10 万；M1 架构用例单独传 100_000） */
+const E2E_SEED_SIZE = 5_000
+
+/** 预算沿用 10 万口径：与既有 spec 同一口径 */
+async function waitForSeed(page: Page, size = E2E_SEED_SIZE) {
   test.setTimeout(240_000)
+  // 播种规模：e2e 默认 5K（产品默认仍 10 万）。每个用例都是新上下文、都要重播种子，
+  // 10 万条实测 44–134s（随负载波动），会撞穿用例预算 → 轮换式 seed 超时
+  await page.addInitScript((n) => localStorage.setItem('oas-pm-seed-size', String(n)), size)
+
   await page.goto('/')
   await expect(page.getByTestId('pm-toolbar')).toBeVisible({ timeout: 10_000 })
   await expect

@@ -1,5 +1,8 @@
 import { expect, test, type Page } from '@playwright/test'
 
+/** e2e 播种规模（产品默认 10 万；M1 架构用例单独传 100_000） */
+const E2E_SEED_SIZE = 5_000
+
 /** 视图切换（oas-segmented property + 契约事件） */
 async function setView(page: Page, v: string) {
   await page.evaluate((view) => {
@@ -44,12 +47,16 @@ const sideRow = (page: Page, name: string) =>
 const sideItem = (page: Page, value: string) =>
   page.getByTestId('side-list').locator(`[part="item"][data-value="${value}"]`)
 
-/** 等待 100K seed 完成并以列表行出现（seed 走后台 bulkPut；高负载下可能显著超 15s，故预算留余量） */
-async function waitForSeed(page: Page) {
+/** 等待 seed 完成并以列表行出现（e2e 默认 5K；seed 走后台 bulkPut，故预算留余量） */
+async function waitForSeed(page: Page, size = E2E_SEED_SIZE) {
   test.setTimeout(240_000)
+  // 播种规模：e2e 默认 5K（产品默认仍 10 万）。每个用例都是新上下文、都要重播种子，
+  // 10 万条实测 44–134s（随负载波动），会撞穿用例预算 → 轮换式 seed 超时
+  await page.addInitScript((n) => localStorage.setItem('oas-pm-seed-size', String(n)), size)
+
   await page.goto('/')
   await expect(page.getByTestId('pm-toolbar')).toBeVisible({ timeout: 10_000 })
-  // seed 完成的确定性信号：SEED_VER 标记写入（写完 100K 才 set）
+  // seed 完成的确定性信号：SEED_VER 标记写入（播完才 set）
   await expect
     .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-seed-v9')), {
       timeout: 180_000,
@@ -60,7 +67,8 @@ async function waitForSeed(page: Page) {
 }
 
 test('M1 架构：100K seed + 虚拟列表渲染 + 真实计数', async ({ page }) => {
-  await waitForSeed(page)
+  // 唯一保留 10 万规模的用例：架构验收就是「10 万级数据下只渲染窗口行」
+  await waitForSeed(page, 100_000)
   // 虚拟滚动只渲染窗口行（40~60 行），不能是全量
   const rows = await page.locator('.issue-row').count()
   expect(rows).toBeGreaterThan(10)
@@ -432,7 +440,9 @@ test('M10 仪表盘：统计卡 + 图表数据', async ({ page }) => {
   await waitForSeed(page)
   await setView(page, 'dashboard')
   await expect(page.getByTestId('dashboard')).toBeVisible()
-  // 统计卡数字就位（seed 大事务批间让出后 liveQuery 逐步逼近，最终一致）
+  // 统计卡数字就位（seed 大事务批间让出后 liveQuery 逐步逼近，最终一致）。
+  // e2e 播种 5K、默认 project-1 约 3.5K：断言真实全量（>2K）远大于首屏窗口 200，
+  // 而不是写死 10 万级的绝对数
   await expect
     .poll(
       async () => {
@@ -441,7 +451,7 @@ test('M10 仪表盘：统计卡 + 图表数据', async ({ page }) => {
       },
       { timeout: 30_000 },
     )
-    .toBeGreaterThan(60000)
+    .toBeGreaterThan(2_000)
   await expect(page.getByTestId('stat-in_progress')).toBeVisible()
   // 图表 data attribute 非空且含数值
   await expect
@@ -574,8 +584,13 @@ test('M12 标签与评论：添加标签 chip + 发送评论', async ({ page }) 
   await page.keyboard.type('frontend')
   await page.keyboard.press('Enter')
   await expect(tagChip('frontend')).toBeVisible({ timeout: 10_000 })
-  await page.getByTestId('label-quick-bug').click()
-  await expect(tagChip('bug')).toBeVisible({ timeout: 10_000 })
+  // 快捷标签只列「当前 issue 尚未持有」的标签：首行 issue 随 seed 规模变化，标签自带
+  // 'bug' 时 label-quick-bug 不会渲染——按渲染出来的第一个快捷按钮动态取标签
+  const quickBtn = page.getByTestId('label-quick').locator('.label-quick-btn').first()
+  const quickLabel = (await quickBtn.getAttribute('data-testid'))?.replace('label-quick-', '') ?? ''
+  expect(quickLabel).toBeTruthy()
+  await quickBtn.click()
+  await expect(tagChip(quickLabel)).toBeVisible({ timeout: 10_000 })
   // 发评论（回车）
   await fillOInput(page, 'comment-input', 'E2E 评论内容')
   await page.getByTestId('comment-send').click()
@@ -897,7 +912,7 @@ test('M19 关联候选：选 relates 后目标下拉候选 > 1', async ({ page }
 })
 
 test('M20 看板：卡片点击打开详情抽屉', async ({ page }) => {
-  // 高负载下 100K 播种可能超 100s：轮询与用例预算统一留余量
+  // 预算沿用 10 万口径（M1 仍跑 10 万，其余 5K）：轮询与用例预算统一留足
   test.setTimeout(240_000)
   await page.goto('/')
   await expect
@@ -947,6 +962,11 @@ test('M20 看板：卡片点击打开详情抽屉', async ({ page }) => {
 
 test('M22 触底续载：滚动到底部计数持续增加（行高与阈值一致）', async ({ page }) => {
   test.setTimeout(240_000)
+  // 本用例内联等待 seed（不用 helper）：同样在 goto 前把播种规模调到 e2e 默认 5K
+  await page.addInitScript(
+    (n) => localStorage.setItem('oas-pm-seed-size', String(n)),
+    E2E_SEED_SIZE,
+  )
   await page.goto('/')
   await expect(page.getByTestId('pm-toolbar')).toBeVisible({ timeout: 10_000 })
   await expect
@@ -978,6 +998,9 @@ test('M22 触底续载：滚动到底部计数持续增加（行高与阈值一�
   await scrollBottom()
   await expect.poll(loaded, { timeout: 15_000 }).toBeGreaterThan(first)
   const second = await loaded()
+  // 续载有 800ms 节流（VirtualIssueList 的 lastExtendRef）：等过节流窗口再触底，
+  // 否则第二次「瞬间跳到底」落在窗口内会被吞掉——真实用户持续滚动会不断产生 scroll 事件，不受影响
+  await page.waitForTimeout(900)
   await scrollBottom()
   await expect.poll(loaded, { timeout: 15_000 }).toBeGreaterThan(second)
 })

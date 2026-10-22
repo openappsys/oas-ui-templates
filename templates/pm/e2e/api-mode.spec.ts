@@ -5,6 +5,8 @@ import { bearer, loginToken, quickLogin } from './api-auth'
 // 依赖点击移除后 reload 不再注入）；origin 无关，端口可配置
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
+    // 播种规模：A3 切回本地会真跑 Dexie seed——e2e 统一 5K（产品默认仍是 10 万）
+    localStorage.setItem('oas-pm-seed-size', '5000')
     if (!sessionStorage.getItem('oas-pm-api-init')) {
       localStorage.setItem('oas-pm-data', 'api')
       sessionStorage.setItem('oas-pm-api-init', '1')
@@ -153,7 +155,7 @@ test('A2 编辑推送：UI 改状态即时生效 + 外部 PATCH 经 revision 轮
 })
 
 test('A3 切回本地：DEV 徽标点击写回 dexie 并走既有 Dexie seed', async ({ page }) => {
-  // 高负载下 100K 播种可能超 100s：轮询与用例预算统一留余量
+  // 预算沿用 10 万口径（M1 仍跑 10 万，其余 5K）：轮询与用例预算统一留足
   test.setTimeout(240_000)
   await page.goto('/')
   await quickLogin(page, 'admin')
@@ -165,7 +167,7 @@ test('A3 切回本地：DEV 徽标点击写回 dexie 并走既有 Dexie seed', a
   await expect(page.getByTestId('data-source-badge')).toHaveText('本地', { timeout: 20_000 })
   expect(await page.evaluate(() => localStorage.getItem('oas-pm-data'))).toBeNull()
 
-  // 既有 Dexie seed 等待预算（100K；高负载下留足余量）
+  // 既有 Dexie seed 等待预算（e2e 5K；高负载下留足余量）
   await expect
     .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-seed-v9')), {
       timeout: 180_000,
@@ -173,5 +175,6 @@ test('A3 切回本地：DEV 徽标点击写回 dexie 并走既有 Dexie seed', a
     })
     .toBe('1')
   await expect(page.locator('.issue-row').first()).toBeVisible({ timeout: 60_000 })
-  expect(await issueTotal(page)).toBeGreaterThan(60_000)
+  // 规模断言改为相对：e2e 播种 5K（默认 project-1 占约 7 成 ≈3.5K），远超 API mock 的项目内 1K 级
+  expect(await issueTotal(page)).toBeGreaterThan(3_000)
 })

@@ -1,13 +1,20 @@
 import { expect, test, type Page } from '@playwright/test'
 
+/** e2e 播种规模（产品默认 10 万；M1 架构用例单独传 100_000） */
+const E2E_SEED_SIZE = 5_000
+
 /**
  * 迭代（Cycle）侧栏组 + 筛选 + 详情抽屉。
  * 数据来自 seed v9：project-1 有 3 个演示周期（Sprint 1/2 已结束、Sprint 3 进行中），
  * project-2 没有周期——这正是「分组数据随项目变化」的验收面。
  */
 
-async function waitForSeed(page: Page) {
+async function waitForSeed(page: Page, size = E2E_SEED_SIZE) {
   test.setTimeout(240_000)
+  // 播种规模：e2e 默认 5K（产品默认仍 10 万）。每个用例都是新上下文、都要重播种子，
+  // 10 万条实测 44–134s（随负载波动），会撞穿用例预算 → 轮换式 seed 超时
+  await page.addInitScript((n) => localStorage.setItem('oas-pm-seed-size', String(n)), size)
+
   await page.goto('/')
   await expect(page.getByTestId('pm-toolbar')).toBeVisible({ timeout: 10_000 })
   await expect
@@ -257,7 +264,10 @@ test('C4 抽屉改迭代：落库到 issue.cycleId，活动历史记周期名', 
     return el.options ?? []
   })
   expect(options.length).toBeGreaterThan(1)
-  const target = options.find((o) => o.value !== from)?.value
+  // 未入迭代的哨兵 __none__ 与 null 同义：直接按 value 比较会选中「同一状态」，
+  // save 不产生 diff → 活动历史不落，用例在活动断言处失败（首行 issue 随 seed 规模而变）
+  const norm = (v: string) => (v === '__none__' ? null : v)
+  const target = options.find((o) => norm(o.value) !== from)?.value
   expect(target).toBeTruthy()
 
   await page.evaluate((v) => {

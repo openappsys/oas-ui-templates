@@ -2,6 +2,7 @@ import type { Cycle, Issue, Project, Member } from './types'
 import { db } from './db/schema'
 import { demoCycleIdFor, demoDoneAt } from './lib/cycles'
 import { mulberry32 } from './lib/prng'
+import { SEED_SIZE_KEY, parseSeedSize } from './lib/seed-size'
 
 const NAMES = ['张伟', '李娜', '王强', '赵敏', '刘洋', '陈静', '杨帆', '周琳']
 const TITLES = [
@@ -124,7 +125,10 @@ export async function seedDatabase(): Promise<void> {
   await db.cycles.bulkPut(cycles)
   const cycleById = new Map(cycles.map((c) => [c.id, c]))
 
-  const ISSUE_COUNT = 100_000
+  // 播种规模可配（默认 10 万）：e2e 每用例新上下文都要重播，10 万条在负载波动下
+  // 44–134s，会撞穿用例预算；e2e 用 addInitScript 写 5K。派生规则（日程演示组/
+  // 周期归属按 idx 或末 N 条）都相对 ISSUE_COUNT，不随规模变化
+  const ISSUE_COUNT = parseSeedSize(localStorage.getItem(SEED_SIZE_KEY))
   const statuses = ['backlog', 'todo', 'in_progress', 'done', 'cancelled'] as const
   const priorities = ['urgent', 'high', 'medium', 'low'] as const
   const CHUNK = 5000
@@ -136,11 +140,12 @@ export async function seedDatabase(): Promise<void> {
   const dayAt = (addDays: number, hour: number) =>
     Date.UTC(nb.getUTCFullYear(), nb.getUTCMonth(), nb.getUTCDate() + addDays, hour)
 
-  console.time('seed:100k')
-  for (let chunk = 0; chunk < ISSUE_COUNT / CHUNK; chunk++) {
+  console.time(`seed:${ISSUE_COUNT}`)
+  // 按 start 步进而非 chunk 计数：规模可能不是 CHUNK 的整数倍（夹取区间是 [1000, 100000]）
+  for (let start = 0; start < ISSUE_COUNT; start += CHUNK) {
     const batch: Issue[] = []
-    for (let i = 0; i < CHUNK; i++) {
-      const idx = chunk * CHUNK + i
+    const end = Math.min(start + CHUNK, ISSUE_COUNT)
+    for (let idx = start; idx < end; idx++) {
       const proj = rand() > 0.3 ? projects[0] : projects[1]
       const schedJ = idx - schedFirst
       const inSched = schedJ >= 0
@@ -231,7 +236,7 @@ export async function seedDatabase(): Promise<void> {
     }
     await db.issues.bulkPut(batch)
   }
-  console.timeEnd('seed:100k')
+  console.timeEnd(`seed:${ISSUE_COUNT}`)
   await db.settings.put({ key: 'labels', value: LABELS, updatedAt: Date.now() })
   localStorage.setItem(SEED_VER, '1')
 }

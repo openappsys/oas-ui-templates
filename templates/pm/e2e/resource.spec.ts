@@ -1,5 +1,8 @@
 import { expect, test, type Page } from '@playwright/test'
 
+/** e2e 播种规模（产品默认 10 万；M1 架构用例单独传 100_000） */
+const E2E_SEED_SIZE = 5_000
+
 /** 视图切换（oas-tabs 宿主 + oas-change 契约事件，与 segmented 时代同协议） */
 async function setView(page: Page, v: string) {
   await page.evaluate((view) => {
@@ -9,9 +12,13 @@ async function setView(page: Page, v: string) {
   }, v)
 }
 
-async function waitForSeed(page: Page) {
-  // 高负载下 100K 播种可能超 100s：轮询与用例预算统一留余量
+async function waitForSeed(page: Page, size = E2E_SEED_SIZE) {
+  // 预算沿用 10 万口径（M1 仍跑 10 万，其余 5K）：轮询与用例预算统一留足
   test.setTimeout(240_000)
+  // 播种规模：e2e 默认 5K（产品默认仍 10 万）。每个用例都是新上下文、都要重播种子，
+  // 10 万条实测 44–134s（随负载波动），会撞穿用例预算 → 轮换式 seed 超时
+  await page.addInitScript((n) => localStorage.setItem('oas-pm-seed-size', String(n)), size)
+
   await page.goto('/')
   await expect(page.getByTestId('pm-toolbar')).toBeVisible({ timeout: 10_000 })
   await expect
