@@ -1,6 +1,7 @@
 import type {
   Activity,
   Comment,
+  Cycle,
   Issue,
   IssuePriority,
   IssueStatus,
@@ -20,6 +21,9 @@ export interface IssueWindowFilters {
   search: string
   myOnly: boolean
   sortBy: 'updatedAt' | 'priority' | 'createdAt'
+  /** 迭代单选：null = 不限，'__current__' = 当前迭代（按 now 派生），'__none__' = 未入迭代，
+   *  其他值为 cycleId。与 assignee/priority 同口径：窗口截断后再内存过滤 */
+  cycleFilter: string | null
 }
 
 export interface ProjectCounts {
@@ -42,6 +46,14 @@ export interface CreateCommentInput {
   issueId: string
   authorId: string
   body: string
+}
+
+export interface CreateCycleInput {
+  projectId: string
+  name: string
+  startAt: number
+  endAt: number
+  goal?: string
 }
 
 export interface ActivityInput {
@@ -114,6 +126,16 @@ export interface SavedViewRepository {
   delete(id: string): Promise<void>
 }
 
+export interface CycleRepository {
+  /** 本项目迭代，startAt 倒序（全部项目作用域 = 跨项目并集） */
+  all(projectId: string): Promise<Cycle[]>
+  liveAll(projectId: string): Observable<Cycle[]>
+  create(input: CreateCycleInput): Promise<Cycle>
+  update(id: string, changes: Partial<Cycle>): Promise<void>
+  /** 删除迭代并解除其 Issue 的归属（不删 Issue） */
+  delete(id: string): Promise<void>
+}
+
 export interface SettingsRepository {
   get<T>(key: string): Promise<T | undefined>
   set(key: string, value: unknown): Promise<void>
@@ -161,6 +183,7 @@ export interface Repositories {
   comments: CommentRepository
   activities: ActivityRepository
   savedViews: SavedViewRepository
+  cycles: CycleRepository
   settings: SettingsRepository
   admin: AdminRepository
 }

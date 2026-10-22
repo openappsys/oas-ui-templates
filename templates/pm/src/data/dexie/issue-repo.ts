@@ -4,6 +4,7 @@ import type { PMDatabase } from '@/db/schema'
 import type { Issue, IssuePriority, IssueStatus } from '@/types'
 import { ISSUE_STATUSES } from '@/types'
 import { fromLiveQuery, type Observable } from '@/data/observable'
+import { cycleFilterPredicate, CURRENT_CYCLE } from '@/lib/cycles'
 import { ALL_PROJECTS, LIST_WINDOW, UNASSIGNED } from '@/lib/filters'
 import { PRIORITY_WEIGHT } from '@/lib/order'
 import type {
@@ -48,6 +49,7 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
         createdAt: Date.now(),
         updatedAt: Date.now(),
         order: input.order ?? Date.now(),
+        cycleId: null,
       }
       await db.issues.add(issue)
       return issue
@@ -120,6 +122,18 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
         if (filters.priorityFilter.length) {
           const want = new Set(filters.priorityFilter)
           out = out.filter((i) => want.has(i.priority))
+        }
+        if (filters.cycleFilter) {
+          // 迭代与负责人/优先级同口径：窗口截断后再内存过滤（不改变窗口语义）。
+          // 只有「当前迭代」需要周期区间——同一次查询里读 cycles 表，liveQuery 会跟踪该读取，
+          // 周期起止被改后窗口自动重算
+          const cycles =
+            filters.cycleFilter === CURRENT_CYCLE
+              ? allProjects
+                ? await db.cycles.toArray()
+                : await db.cycles.where('projectId').equals(pid).toArray()
+              : []
+          out = out.filter(cycleFilterPredicate(filters.cycleFilter, cycles, Date.now()))
         }
         if (filters.sortBy === 'priority') {
           out = [...out].sort((a, b) => PRIORITY_WEIGHT[a.priority] - PRIORITY_WEIGHT[b.priority])

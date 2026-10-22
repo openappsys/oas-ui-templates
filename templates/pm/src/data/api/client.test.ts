@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { PMDatabase } from '@/db/schema'
 import { createDexieRepositories } from '@/data/dexie'
 import type { IssueWindowFilters, Repositories } from '@/data/types'
+import { CURRENT_CYCLE, NO_CYCLE } from '@/lib/cycles'
 import { ALL_PROJECTS } from '@/lib/filters'
 import type { Activity, Comment, Issue } from '@/types'
 import { createApiRepositories, type ApiTransport } from './client'
@@ -23,6 +24,7 @@ const filters = (over: Partial<IssueWindowFilters> = {}): IssueWindowFilters => 
   priorityFilter: [],
   search: '',
   myOnly: false,
+  cycleFilter: null,
   sortBy: 'updatedAt',
   ...over,
 })
@@ -71,6 +73,7 @@ describe('契约：同一份 seed 下 Dexie 与 API 输出相同', () => {
     await db.savedViews.bulkPut(store.savedViews)
     await db.activities.bulkPut(store.activities)
     await db.settings.bulkPut(store.settings)
+    await db.cycles.bulkPut(store.cycles)
     dexie = createDexieRepositories(db)
     api = createApiRepositories({ transport: directTransport(store), pollMs: 10 })
   })
@@ -335,6 +338,79 @@ describe('契约：同一份 seed 下 Dexie 与 API 输出相同', () => {
     expect(shape(await first(api.savedViews.liveAll()))).toEqual(
       shape(await first(dexie.savedViews.liveAll())),
     )
+  })
+
+  it('cycles liveAll 一致（startAt 倒序），CRUD 语义对齐', async () => {
+    const shape = (
+      rows: Array<{ projectId: string; name: string; startAt: number; endAt: number }>,
+    ) => rows.map((r) => `${r.projectId}|${r.name}|${r.startAt}|${r.endAt}`)
+    expect(shape(await first(api.cycles.liveAll(projectId)))).toEqual(
+      shape(await first(dexie.cycles.liveAll(projectId))),
+    )
+    expect(shape(await first(api.cycles.liveAll(ALL_PROJECTS)))).toEqual(
+      shape(await first(dexie.cycles.liveAll(ALL_PROJECTS))),
+    )
+
+    const input = { projectId: 'project-2', name: 'API 周期', startAt: 1, endAt: 2, goal: 'g' }
+    const apiCycle = await api.cycles.create(input)
+    const dexieCycle = await dexie.cycles.create(input)
+    // id 各自生成，跨实现只比字段
+    expect({ ...apiCycle, id: '' }).toEqual({ ...dexieCycle, id: '' })
+    expect((await first(api.cycles.liveAll('project-2'))).length).toBe(1)
+    expect((await first(dexie.cycles.liveAll('project-2'))).length).toBe(1)
+
+    await api.cycles.update(apiCycle.id, { name: '改' })
+    await dexie.cycles.update(dexieCycle.id, { name: '改' })
+    expect(shape(await first(api.cycles.liveAll('project-2')))).toEqual(
+      shape(await first(dexie.cycles.liveAll('project-2'))),
+    )
+
+    await api.cycles.delete(apiCycle.id)
+    await dexie.cycles.delete(dexieCycle.id)
+    expect(await first(api.cycles.liveAll('project-2'))).toEqual([])
+    expect(await first(dexie.cycles.liveAll('project-2'))).toEqual([])
+  })
+
+  it('liveWindow cycleFilter 一致：具体周期 / 未入迭代 / 当前迭代', async () => {
+    const now = Date.now()
+    const liveCycle = {
+      id: 'cycle-live',
+      projectId,
+      name: 'Live',
+      startAt: now - 3_600_000,
+      endAt: now + 86_400_000,
+      createdAt: now,
+      updatedAt: now,
+    }
+    await db.cycles.add(liveCycle)
+    store.cycles.push(structuredClone(liveCycle))
+    // 取窗口内的几条 Issue 挂到「当前」周期（两种实现同一批）
+    const picked = store.issues
+      .filter((i) => i.projectId === projectId)
+      .sort((a, b) => b.updatedAt - a.updatedAt)
+      .slice(0, 4)
+    const pickedIds = new Set(picked.map((i) => i.id))
+    await db.issues.bulkPut(picked.map((i) => ({ ...i, cycleId: liveCycle.id })))
+    for (const row of store.issues) if (pickedIds.has(row.id)) row.cycleId = liveCycle.id
+
+    const cases = [
+      filters({ cycleFilter: 'cycle-2' }),
+      filters({ cycleFilter: NO_CYCLE }),
+      filters({ cycleFilter: CURRENT_CYCLE }),
+      filters({ cycleFilter: CURRENT_CYCLE, statusFilter: ['done'] }),
+      filters({ cycleFilter: NO_CYCLE, projectId: ALL_PROJECTS }),
+      filters({ cycleFilter: 'cycle-2', projectId: ALL_PROJECTS }),
+    ]
+    for (const f of cases) {
+      const a = await first(api.issues.liveWindow(f, 'member-1', 200))
+      const d = await first(dexie.issues.liveWindow(f, 'member-1', 200))
+      expect(a).toEqual(d)
+    }
+    // 当前迭代确实命中挂载的 4 条
+    const current = await first(
+      api.issues.liveWindow(filters({ cycleFilter: CURRENT_CYCLE }), 'member-1', 200),
+    )
+    expect(current.map((i) => i.id).sort()).toEqual(picked.map((i) => i.id).sort())
   })
 
   it('comments 增改删与按时间排序一致（同毫秒并列按主键序，不比顺序）', async () => {

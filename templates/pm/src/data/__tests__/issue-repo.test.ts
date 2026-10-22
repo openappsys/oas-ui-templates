@@ -51,6 +51,7 @@ describe('dexie issue repository', () => {
             priorityFilter: [],
             search: '',
             myOnly: false,
+            cycleFilter: null,
             sortBy: 'updatedAt',
             ...filters,
           },
@@ -166,6 +167,7 @@ describe('dexie issue repository', () => {
             priorityFilter: [],
             search: '',
             myOnly: false,
+            cycleFilter: null,
             sortBy: 'updatedAt',
           },
           'm1',
@@ -198,6 +200,7 @@ describe('dexie issue repository', () => {
             priorityFilter: [],
             search: '',
             myOnly: false,
+            cycleFilter: null,
             sortBy: 'priority',
           },
           'm1',
@@ -231,6 +234,7 @@ describe('dexie issue repository', () => {
             priorityFilter: [],
             search: '',
             myOnly: false,
+            cycleFilter: null,
             sortBy: 'updatedAt',
           },
           'm1',
@@ -403,6 +407,7 @@ describe('dexie issue repository', () => {
             priorityFilter: [],
             search: '登录',
             myOnly: false,
+            cycleFilter: null,
             sortBy: 'updatedAt',
           },
           'm1',
@@ -599,6 +604,7 @@ describe('dexie issue repository — 全部项目作用域', () => {
             priorityFilter: [],
             search: '',
             myOnly: false,
+            cycleFilter: null,
             sortBy: 'updatedAt',
             ...filters,
           },
@@ -735,5 +741,163 @@ describe('dexie issue repository — 全部项目作用域', () => {
     expect(map.get('m1')).toBe(2)
     expect(map.get('m2')).toBe(1)
     expect(map.size).toBe(2)
+  })
+})
+
+describe('dexie issue repository — 迭代筛选', () => {
+  let db: PMDatabase
+  const DAY = 86_400_000
+
+  beforeEach(async () => {
+    db = new PMDatabase(`test-${crypto.randomUUID()}`)
+    await db.open()
+  })
+
+  /** 项目 p1 三个周期：已结束 / 进行中（含 now）/ 未开始；p2 一个进行中周期 */
+  const seedCycles = async () => {
+    const now = Date.now()
+    await db.cycles.bulkAdd([
+      {
+        id: 'c-past',
+        projectId: 'p1',
+        name: 'Past',
+        startAt: now - 28 * DAY,
+        endAt: now - 14 * DAY,
+        createdAt: 0,
+        updatedAt: 0,
+      },
+      {
+        id: 'c-live',
+        projectId: 'p1',
+        name: 'Live',
+        startAt: now - 7 * DAY,
+        endAt: now + 7 * DAY,
+        createdAt: 0,
+        updatedAt: 0,
+      },
+      {
+        id: 'c-next',
+        projectId: 'p1',
+        name: 'Next',
+        startAt: now + 7 * DAY,
+        endAt: now + 21 * DAY,
+        createdAt: 0,
+        updatedAt: 0,
+      },
+      {
+        id: 'c-live-p2',
+        projectId: 'p2',
+        name: 'Live p2',
+        startAt: now - 1 * DAY,
+        endAt: now + 1 * DAY,
+        createdAt: 0,
+        updatedAt: 0,
+      },
+    ])
+  }
+
+  /** 取 liveWindow 首个快照（默认 p1 作用域） */
+  const windowRows = (
+    repo: ReturnType<typeof createDexieIssueRepository>,
+    filters: Partial<IssueWindowFilters> = {},
+    limit?: number,
+  ): Promise<Issue[]> =>
+    new Promise<Issue[]>((resolve) => {
+      const unsub = repo
+        .liveWindow(
+          {
+            projectId: 'p1',
+            statusFilter: [],
+            assigneeFilter: [],
+            priorityFilter: [],
+            search: '',
+            myOnly: false,
+            sortBy: 'updatedAt',
+            cycleFilter: null,
+            ...filters,
+          },
+          'm1',
+          limit,
+        )
+        .subscribe({
+          next: (v) => {
+            resolve(v)
+            unsub()
+          },
+        })
+    })
+
+  const seedIssues = async () => {
+    const base = Date.now()
+    await db.issues.bulkAdd([
+      seedIssue(db, { id: 'i-past', cycleId: 'c-past', updatedAt: base - 600 }),
+      seedIssue(db, { id: 'i-live', cycleId: 'c-live', updatedAt: base - 500 }),
+      seedIssue(db, { id: 'i-none', cycleId: null, updatedAt: base - 400 }),
+      // 历史数据：v9 之前写入的行没有 cycleId 字段，按未入迭代处理
+      seedIssue(db, { id: 'i-legacy', cycleId: undefined, updatedAt: base - 300 }),
+      seedIssue(db, {
+        id: 'i-live-p2',
+        projectId: 'p2',
+        cycleId: 'c-live-p2',
+        updatedAt: base - 200,
+      }),
+      seedIssue(db, { id: 'i-next', cycleId: 'c-next', updatedAt: base - 100 }),
+    ])
+  }
+
+  it('具体周期 id：等值匹配（组内语义），与状态/负责人 AND', async () => {
+    await seedCycles()
+    await seedIssues()
+    const repo = createDexieIssueRepository(db)
+    expect((await windowRows(repo, { cycleFilter: 'c-past' })).map((r) => r.id)).toEqual(['i-past'])
+    expect((await windowRows(repo, { cycleFilter: 'c-live' })).map((r) => r.id)).toEqual(['i-live'])
+    // 与状态维度的 AND：i-live 是 todo，筛 done 后为空
+    expect(await windowRows(repo, { cycleFilter: 'c-live', statusFilter: ['done'] })).toEqual([])
+    expect(
+      (await windowRows(repo, { cycleFilter: 'c-live', statusFilter: ['todo'] })).map((r) => r.id),
+    ).toEqual(['i-live'])
+  })
+
+  it('未入迭代：null 与缺失字段都命中', async () => {
+    await seedCycles()
+    await seedIssues()
+    const repo = createDexieIssueRepository(db)
+    expect((await windowRows(repo, { cycleFilter: '__none__' })).map((r) => r.id)).toEqual([
+      'i-legacy',
+      'i-none',
+    ])
+  })
+
+  it('当前迭代：由 now 派生（只有覆盖当前时刻的周期命中）', async () => {
+    await seedCycles()
+    await seedIssues()
+    const repo = createDexieIssueRepository(db)
+    expect((await windowRows(repo, { cycleFilter: '__current__' })).map((r) => r.id)).toEqual([
+      'i-live',
+    ])
+  })
+
+  it('全部项目作用域：迭代筛选照常生效（当前迭代跨项目并集）', async () => {
+    await seedCycles()
+    await seedIssues()
+    const repo = createDexieIssueRepository(db)
+    expect(
+      (await windowRows(repo, { projectId: ALL_PROJECTS, cycleFilter: '__current__' })).map(
+        (r) => r.id,
+      ),
+    ).toEqual(['i-live-p2', 'i-live'])
+    expect(
+      (await windowRows(repo, { projectId: ALL_PROJECTS, cycleFilter: '__none__' })).map(
+        (r) => r.id,
+      ),
+    ).toEqual(['i-legacy', 'i-none'])
+  })
+
+  it('窗口先截断再按迭代过滤（与负责人/优先级同口径）', async () => {
+    await seedCycles()
+    await seedIssues()
+    const repo = createDexieIssueRepository(db)
+    // 最近 2 条（i-next / i-live-p2）里没有 c-past 的成员 → 空集
+    expect(await windowRows(repo, { cycleFilter: 'c-past' }, 2)).toEqual([])
   })
 })

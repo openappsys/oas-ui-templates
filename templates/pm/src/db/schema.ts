@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie'
-import type { Activity, Comment, Issue, Project, Member, SavedView } from '@/types'
+import type { Activity, Comment, Cycle, Issue, Project, Member, SavedView } from '@/types'
 
 export interface SettingRow {
   key: string
@@ -15,6 +15,7 @@ export class PMDatabase extends Dexie {
   savedViews!: EntityTable<SavedView, 'id'>
   activities!: EntityTable<Activity, 'id'>
   settings!: EntityTable<SettingRow, 'key'>
+  cycles!: EntityTable<Cycle, 'id'>
 
   constructor(name = 'oas-pm') {
     super(name)
@@ -91,6 +92,20 @@ export class PMDatabase extends Dexie {
       savedViews: 'id, name',
       activities: 'id, issueId, [issueId+createdAt], createdAt',
       settings: 'key',
+    })
+    // v9：迭代（Cycle）。cycles 只增表；issues 增 cycleId 单列 + [projectId+cycleId]——
+    // 删除周期后按 cycleId 解除归属、阶段 2 的「迭代内工作项」都走这两条索引。
+    // 存量 issue 无 cycleId（不落空串），读取处一律 ?? null。
+    this.version(9).stores({
+      issues:
+        'id, projectId, key, status, priority, assigneeId, parentId, cycleId, createdAt, updatedAt, [projectId+status], [projectId+priority], [projectId+assigneeId], [projectId+updatedAt], [projectId+status+updatedAt], [assigneeId+status], [status+updatedAt], [projectId+cycleId]',
+      projects: 'id, key',
+      members: 'id, role',
+      comments: 'id, issueId, [issueId+createdAt]',
+      savedViews: 'id, name',
+      activities: 'id, issueId, [issueId+createdAt], createdAt',
+      settings: 'key',
+      cycles: 'id, projectId, [projectId+startAt]',
     })
   }
 }

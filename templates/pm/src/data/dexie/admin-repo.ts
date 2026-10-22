@@ -13,6 +13,7 @@ export function createDexieAdminRepository(db: PMDatabase): AdminRepository {
     db.savedViews,
     db.activities,
     db.settings,
+    db.cycles,
   ]
   const wipeAll = () =>
     db.transaction('rw', allTables, async () => {
@@ -69,7 +70,7 @@ export function createDexieAdminRepository(db: PMDatabase): AdminRepository {
         )
       }),
     exportAll: async () => {
-      const [issues, projects, members, comments, savedViews, activities, settings] =
+      const [issues, projects, members, comments, savedViews, activities, settings, cycles] =
         await Promise.all([
           db.issues.toArray(),
           db.projects.toArray(),
@@ -78,12 +79,13 @@ export function createDexieAdminRepository(db: PMDatabase): AdminRepository {
           db.savedViews.toArray(),
           db.activities.toArray(),
           db.settings.toArray(),
+          db.cycles.toArray(),
         ])
       return JSON.stringify({
         app: 'oas-pm',
-        version: 6,
+        version: 7,
         exportedAt: Date.now(),
-        tables: { issues, projects, members, comments, savedViews, activities, settings },
+        tables: { issues, projects, members, comments, savedViews, activities, settings, cycles },
       })
     },
     importAll: async (json: string) => {
@@ -107,6 +109,7 @@ export function createDexieAdminRepository(db: PMDatabase): AdminRepository {
         [db.savedViews, rows('savedViews')],
         [db.activities, rows('activities')],
         [db.settings, rows('settings')],
+        [db.cycles, rows('cycles')],
       ]
       await db.transaction('rw', allTables, async () => {
         for (const t of allTables) await t.clear()

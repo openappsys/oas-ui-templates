@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ISSUE_STATUSES, type Issue } from '@/types'
+import { ISSUE_STATUSES, type Cycle, type Issue } from '@/types'
 import {
   MOCK_ISSUE_COUNT,
   createMockHandler,
@@ -41,6 +41,7 @@ const tables = (store: MockStore) => ({
   savedViews: store.savedViews,
   activities: store.activities,
   settings: store.settings,
+  cycles: store.cycles,
 })
 
 const makeIssue = (over: Partial<Issue> & { id: string }): Issue => ({
@@ -69,6 +70,7 @@ describe('mock seed', () => {
     expect(a.issues).toHaveLength(MOCK_ISSUE_COUNT)
     expect(a.projects).toHaveLength(3)
     expect(a.members).toHaveLength(8)
+    expect(a.cycles).toHaveLength(3)
     expect(tables(a)).toEqual(tables(b))
     expect(a.comments.length).toBeGreaterThan(0)
     expect(a.activities.length).toBeGreaterThan(0)
@@ -238,6 +240,43 @@ describe('issue window 查询语义（对齐 Dexie）', () => {
       }),
     )
     expect(rows.map((i) => i.id)).toEqual(windowIds)
+  })
+
+  it('cycle 参数：具体周期 / 未入迭代 / 当前迭代（窗口截断后过滤）', () => {
+    // 当前迭代按真实时钟派生：本用例用生产口径（now = 当日 0 点）播种，
+    // 其余用例用固定时间做确定性比较
+    const store = createMockStore()
+    const base = { projectId: 'project-1', limit: '200' }
+
+    const byCycle = items<Issue>(
+      call(store, 'GET', '/api/issues', { query: { ...base, cycle: 'cycle-2' } }),
+    )
+    expect(byCycle.length).toBeGreaterThan(0)
+    expect(byCycle.every((i) => i.cycleId === 'cycle-2')).toBe(true)
+
+    const noCycle = items<Issue>(
+      call(store, 'GET', '/api/issues', { query: { ...base, cycle: '__none__' } }),
+    )
+    expect(noCycle.length).toBeGreaterThan(0)
+    expect(noCycle.every((i) => (i.cycleId ?? null) === null)).toBe(true)
+
+    // 当前迭代由 now 派生：store 的 now = 当日 0 点 → cycle-3 覆盖 now
+    const current = items<Issue>(
+      call(store, 'GET', '/api/issues', { query: { ...base, cycle: '__current__' } }),
+    )
+    expect(current.length).toBeGreaterThan(0)
+    expect(current.every((i) => i.cycleId === 'cycle-3')).toBe(true)
+
+    // 窗口先截断再过滤：limit=1 只取到最新一条，它不属于另一个周期 → 空集
+    const newest = store.issues
+      .filter((i) => i.projectId === 'project-1')
+      .sort((a, b) => b.updatedAt - a.updatedAt || (a.id < b.id ? 1 : -1))[0]
+    const other = ['cycle-2', 'cycle-3'].find((c) => c !== newest.cycleId) as string
+    expect(
+      items<Issue>(
+        call(store, 'GET', '/api/issues', { query: { ...base, limit: '1', cycle: other } }),
+      ),
+    ).toEqual([])
   })
 
   it('projectId=__all__：跨项目窗口（无状态/多状态）与全局计数聚合', () => {
@@ -495,7 +534,7 @@ describe('项目/成员守卫', () => {
 })
 
 describe('备份信封与 reset', () => {
-  it('export 信封含 7 张表与元信息', () => {
+  it('export 信封含 8 张表与元信息', () => {
     const store = createMockStore({ now: FIXED })
     const body = call(store, 'GET', '/api/admin/export').body as {
       app: string
@@ -504,11 +543,12 @@ describe('备份信封与 reset', () => {
       tables: Record<string, unknown[]>
     }
     expect(body.app).toBe('oas-pm')
-    expect(body.version).toBe(6)
+    expect(body.version).toBe(7)
     expect(typeof body.exportedAt).toBe('number')
     expect(Object.keys(body.tables).sort()).toEqual([
       'activities',
       'comments',
+      'cycles',
       'issues',
       'members',
       'projects',
@@ -516,6 +556,7 @@ describe('备份信封与 reset', () => {
       'settings',
     ])
     expect(body.tables.issues).toHaveLength(MOCK_ISSUE_COUNT)
+    expect(body.tables.cycles).toHaveLength(3)
   })
 
   it('import 整体替换 store，非法 JSON 返回 400', () => {
@@ -559,6 +600,63 @@ describe('备份信封与 reset', () => {
     expect(r(handle(req('GET', '/api/revision')).body).revision).toBe(first + 1)
     handle(req('POST', '/api/admin/reset'))
     expect(r(handle(req('GET', '/api/revision')).body).revision).toBe(first + 2)
+  })
+})
+
+describe('迭代（cycles）端点', () => {
+  it('GET 按 startAt 倒序；projectId 缺省/__all__ 为跨项目并集', () => {
+    const store = createMockStore({ now: FIXED })
+    const rows = items<Cycle>(
+      call(store, 'GET', '/api/cycles', { query: { projectId: 'project-1' } }),
+    )
+    expect(rows.map((c) => c.id)).toEqual(['cycle-3', 'cycle-2', 'cycle-1'])
+    expect(rows.every((c) => c.projectId === 'project-1')).toBe(true)
+    expect(items<Cycle>(call(store, 'GET', '/api/cycles')).map((c) => c.id)).toEqual([
+      'cycle-3',
+      'cycle-2',
+      'cycle-1',
+    ])
+    expect(
+      items<Cycle>(call(store, 'GET', '/api/cycles', { query: { projectId: 'project-2' } })),
+    ).toEqual([])
+  })
+
+  it('POST 创建、PATCH 改字段并盖 updatedAt、DELETE 解除 Issue 归属', () => {
+    const store = createMockStore({ now: FIXED })
+    const created = call(store, 'POST', '/api/cycles', {
+      body: { projectId: 'project-2', name: 'C-new', startAt: 10, endAt: 20, goal: 'g' },
+    })
+    expect(created.status).toBe(201)
+    const cycle = (created.body as { cycle: Cycle }).cycle
+    expect(cycle.id).toBeTruthy()
+    expect(store.cycles.some((c) => c.id === cycle.id)).toBe(true)
+    const revision = store.revision
+
+    call(store, 'PATCH', `/api/cycles/${cycle.id}`, { body: { changes: { name: 'C-renamed' } } })
+    const patched = store.cycles.find((c) => c.id === cycle.id)
+    expect(patched?.name).toBe('C-renamed')
+    expect(patched?.updatedAt).toBeGreaterThan(0)
+    expect(store.revision).toBe(revision + 1)
+
+    // 归属解除：Issue 保留、cycleId 置空
+    const owned = store.issues.filter((i) => i.cycleId === 'cycle-2').slice(0, 5)
+    expect(owned.length).toBeGreaterThan(0)
+    const total = store.issues.length
+    const res = call(store, 'DELETE', '/api/cycles/cycle-2')
+    expect(res.status).toBe(200)
+    expect(store.issues.length).toBe(total)
+    expect(store.issues.filter((i) => i.cycleId === 'cycle-2')).toEqual([])
+    expect(owned.every((i) => i.cycleId === null)).toBe(true)
+    expect(store.cycles.some((c) => c.id === 'cycle-2')).toBe(false)
+  })
+
+  it('未知周期 404；DELETE 后 revision 递增', () => {
+    const store = createMockStore({ now: FIXED })
+    expect(call(store, 'GET', '/api/cycles/nope').status).toBe(404)
+    expect(call(store, 'PATCH', '/api/cycles/nope', { body: { changes: {} } }).status).toBe(404)
+    const before = store.revision
+    call(store, 'DELETE', '/api/cycles/cycle-1')
+    expect(store.revision).toBe(before + 1)
   })
 })
 

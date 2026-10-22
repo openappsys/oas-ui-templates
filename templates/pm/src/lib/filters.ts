@@ -27,6 +27,9 @@ export interface Filters {
   search: string
   myOnly: boolean
   sortBy: SortBy
+  /** 迭代单选（周期有序，多选无意义）：null = 全部迭代，CURRENT_CYCLE = 当前迭代，
+   *  NO_CYCLE = 未入迭代，其余为 cycleId。与项目作用域正交 */
+  cycleFilter: string | null
 }
 
 export const DEFAULT_FILTERS: Filters = {
@@ -37,6 +40,7 @@ export const DEFAULT_FILTERS: Filters = {
   search: '',
   myOnly: false,
   sortBy: 'updatedAt',
+  cycleFilter: null,
 }
 
 export const LIST_WINDOW = 500
@@ -94,6 +98,10 @@ export function normalizeFilters(raw: unknown): Filters {
     search: typeof rec.search === 'string' ? rec.search : '',
     myOnly: rec.myOnly === true,
     sortBy: rec.sortBy === 'priority' || rec.sortBy === 'createdAt' ? rec.sortBy : 'updatedAt',
+    // 迭代 id 无法穷举校验：任意非空字符串保留（含 __current__ / __none__ 哨兵）；
+    // 旧视图没有该字段 → null（全部迭代）
+    cycleFilter:
+      typeof rec.cycleFilter === 'string' && rec.cycleFilter !== '' ? rec.cycleFilter : null,
   }
 }
 

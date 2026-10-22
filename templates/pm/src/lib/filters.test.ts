@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { CURRENT_CYCLE, NO_CYCLE } from './cycles'
 import {
   ALL_PROJECTS,
   DEFAULT_FILTERS,
@@ -27,6 +28,7 @@ describe('normalizeFilters', () => {
       search: '',
       myOnly: true,
       sortBy: 'priority',
+      cycleFilter: null,
     })
   })
 
@@ -84,6 +86,21 @@ describe('normalizeFilters', () => {
     expect(normalizeFilters(JSON.parse(JSON.stringify(f)))).toEqual(f)
     // 空串仍回退默认项目，不会被当成「全部项目」
     expect(normalizeFilters({ projectId: '' }).projectId).toBe(DEFAULT_FILTERS.projectId)
+  })
+
+  it('cycleFilter 三态：缺省/空串 → null（全部迭代），哨兵与任意 id 原样保留', () => {
+    // 旧视图没有该字段
+    expect(normalizeFilters({ projectId: 'project-1' }).cycleFilter).toBeNull()
+    expect(normalizeFilters({ cycleFilter: null }).cycleFilter).toBeNull()
+    expect(normalizeFilters({ cycleFilter: '' }).cycleFilter).toBeNull()
+    expect(normalizeFilters({ cycleFilter: 42 }).cycleFilter).toBeNull()
+    expect(normalizeFilters({ cycleFilter: CURRENT_CYCLE }).cycleFilter).toBe('__current__')
+    expect(normalizeFilters({ cycleFilter: NO_CYCLE }).cycleFilter).toBe('__none__')
+    // 周期 id 无法穷举校验：任意非空字符串保留
+    expect(normalizeFilters({ cycleFilter: 'cycle-3' }).cycleFilter).toBe('cycle-3')
+    // 保存视图往返不丢
+    const f = normalizeFilters({ cycleFilter: 'cycle-3' })
+    expect(normalizeFilters(JSON.parse(JSON.stringify(f)))).toEqual(f)
   })
 })
 

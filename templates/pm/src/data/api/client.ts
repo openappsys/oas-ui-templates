@@ -1,12 +1,14 @@
 import { LIST_WINDOW } from '@/lib/filters'
-import type { Activity, Comment, Issue, Member, Project, SavedView } from '@/types'
+import type { Activity, Comment, Cycle, Issue, Member, Project, SavedView } from '@/types'
 import type {
   ActivityInput,
   ActivityRepository,
   AdminRepository,
   CommentRepository,
   CreateCommentInput,
+  CreateCycleInput,
   CreateIssueInput,
+  CycleRepository,
   GlobalStats,
   IssueRepository,
   IssueWindowFilters,
@@ -186,6 +188,7 @@ export function createApiRepositories(options: ApiClientOptions = {}): Repositor
               myOnly: filters.myOnly ? '1' : null,
               currentUser,
               sortBy: filters.sortBy,
+              cycle: filters.cycleFilter,
               limit,
             }),
           ),
@@ -364,6 +367,32 @@ export function createApiRepositories(options: ApiClientOptions = {}): Repositor
     },
   }
 
+  const cycles: CycleRepository = {
+    all: async (projectId) =>
+      asItems<Cycle>(
+        await send<{ items: Cycle[] }>('GET', '/api/cycles', buildQuery({ projectId })),
+      ),
+    liveAll: (projectId) =>
+      live(async () =>
+        asItems<Cycle>(
+          await send<{ items: Cycle[] }>('GET', '/api/cycles', buildQuery({ projectId })),
+        ),
+      ),
+    create: async (input: CreateCycleInput) => {
+      const body = await send<{ cycle: Cycle }>('POST', '/api/cycles', undefined, input)
+      poke()
+      return body.cycle
+    },
+    update: async (id, changes) => {
+      await send('PATCH', `/api/cycles/${encodeURIComponent(id)}`, undefined, { changes })
+      poke()
+    },
+    delete: async (id) => {
+      await send('DELETE', `/api/cycles/${encodeURIComponent(id)}`)
+      poke()
+    },
+  }
+
   const readSetting = async (key: string): Promise<unknown> => {
     const res = await send<{ found: boolean; value: unknown }>(
       'GET',
@@ -408,7 +437,17 @@ export function createApiRepositories(options: ApiClientOptions = {}): Repositor
     },
   }
 
-  return { issues, projects, members, comments, activities, savedViews, settings, admin }
+  return {
+    issues,
+    projects,
+    members,
+    comments,
+    activities,
+    savedViews,
+    cycles,
+    settings,
+    admin,
+  }
 }
 
 function createRevisionPoller(

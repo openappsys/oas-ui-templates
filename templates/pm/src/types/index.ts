@@ -26,6 +26,21 @@ export interface Issue {
   completedAt?: number | null
   /** 关联：blocks / blocked-by / relates */
   relations?: Array<{ type: 'blocks' | 'blocked-by' | 'relates'; targetId: string }>
+  /** 所属迭代（空 = 未入迭代）。历史数据无此字段，读取处一律按 null 处理 */
+  cycleId?: string | null
+}
+
+/** 迭代（Sprint/Cycle）：状态由 now 与区间派生，不落 status 字段——
+ *  now ∈ [startAt, endAt) 为当前，now >= endAt 为已结束（详见 lib/cycles） */
+export interface Cycle {
+  id: string
+  projectId: string
+  name: string
+  startAt: number
+  endAt: number
+  goal?: string
+  createdAt: number
+  updatedAt: number
 }
 
 export interface Project {

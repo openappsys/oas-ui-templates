@@ -1,3 +1,4 @@
+import { cycleFilterPredicate, demoCycleIdFor, CURRENT_CYCLE } from '../../lib/cycles.ts'
 import { ALL_PROJECTS, LIST_WINDOW, UNASSIGNED } from '../../lib/filters.ts'
 import { PRIORITY_WEIGHT } from '../../lib/order.ts'
 import { mulberry32 } from '../../lib/prng.ts'
@@ -5,6 +6,7 @@ import {
   ISSUE_STATUSES,
   type Activity,
   type Comment,
+  type Cycle,
   type Issue,
   type IssuePriority,
   type IssueStatus,
@@ -28,6 +30,7 @@ export interface SeedTables {
   savedViews: SavedView[]
   activities: Activity[]
   settings: SettingRow[]
+  cycles: Cycle[]
 }
 
 export interface MockStore extends SeedTables {
@@ -146,6 +149,40 @@ function buildSeed(seed: number, now: number): SeedTables {
   ]
 
   const issues: Issue[] = []
+  // 迭代（Sprint）：project-1 两份已结束 + 一份进行中。区间与 seed-db v8 同形，
+  // 归属规则共用 lib/cycles.demoCycleIdFor——两种数据源同分布才有契约可比性
+  const cycles: Cycle[] = [
+    {
+      id: 'cycle-1',
+      projectId: 'project-1',
+      name: 'Sprint 1',
+      startAt: now - 28 * DAY,
+      endAt: now - 14 * DAY,
+      goal: '平台基础能力',
+      createdAt: now - 28 * DAY,
+      updatedAt: now - 14 * DAY,
+    },
+    {
+      id: 'cycle-2',
+      projectId: 'project-1',
+      name: 'Sprint 2',
+      startAt: now - 14 * DAY,
+      endAt: now,
+      goal: '权限与导出',
+      createdAt: now - 14 * DAY,
+      updatedAt: now,
+    },
+    {
+      id: 'cycle-3',
+      projectId: 'project-1',
+      name: 'Sprint 3',
+      startAt: now,
+      endAt: now + 14 * DAY,
+      goal: '性能与体验',
+      createdAt: now,
+      updatedAt: now,
+    },
+  ]
   for (let i = 0; i < MOCK_ISSUE_COUNT; i++) {
     const roll = rand()
     const project = roll < 0.5 ? projects[0] : roll < 0.8 ? projects[1] : projects[2]
@@ -180,6 +217,7 @@ function buildSeed(seed: number, now: number): SeedTables {
       completedAt: status === 'done' ? updatedAt : null,
       order: i,
       parentId: i > 0 && i % 100 === 0 ? issues[0].id : null,
+      cycleId: project.id === 'project-1' ? demoCycleIdFor(i, dueAt, cycles) : null,
     })
   }
 
@@ -230,6 +268,7 @@ function buildSeed(seed: number, now: number): SeedTables {
     savedViews: [],
     activities,
     settings: [{ key: 'labels', value: LABELS, updatedAt: now }],
+    cycles,
   }
 }
 
@@ -332,6 +371,15 @@ function windowIssues(store: MockStore, q: URLSearchParams): Issue[] {
   if (priorities.length) {
     const want = new Set(priorities)
     out = out.filter((i) => want.has(i.priority))
+  }
+  const cycleFilter = q.get('cycle') ?? ''
+  if (cycleFilter) {
+    // 与 Dexie 同口径：窗口截断后再按迭代过滤；当前迭代需要周期区间
+    const cycles =
+      cycleFilter === CURRENT_CYCLE
+        ? store.cycles.filter((c) => allProjects || c.projectId === projectId)
+        : []
+    out = out.filter(cycleFilterPredicate(cycleFilter, cycles, Date.now()))
   }
 
   const sortBy = q.get('sortBy') ?? 'updatedAt'
@@ -489,7 +537,7 @@ function bulkDelete(store: MockStore, raw: unknown): void {
 function exportEnvelope(store: MockStore) {
   return {
     app: 'oas-pm',
-    version: 6,
+    version: 7,
     exportedAt: Date.now(),
     tables: {
       issues: [...store.issues].sort(byIdAsc),
@@ -499,6 +547,7 @@ function exportEnvelope(store: MockStore) {
       savedViews: [...store.savedViews].sort(byIdAsc),
       activities: [...store.activities].sort(byIdAsc),
       settings: [...store.settings].sort((a, b) => cmpKey(a.key, b.key)),
+      cycles: [...store.cycles].sort(byIdAsc),
     },
   }
 }
@@ -526,6 +575,7 @@ function importEnvelope(store: MockStore, raw: unknown): void {
     savedViews: rows('savedViews') as SavedView[],
     activities: rows('activities') as Activity[],
     settings: rows('settings') as SettingRow[],
+    cycles: rows('cycles') as Cycle[],
   })
   Object.assign(store, next)
 }
@@ -542,6 +592,7 @@ function wipeStore(store: MockStore): void {
   store.savedViews = []
   store.activities = []
   store.settings = []
+  store.cycles = []
 }
 
 function globalStats(store: MockStore) {
@@ -905,6 +956,67 @@ function routeSavedViews(
   fail(405, 'method not allowed')
 }
 
+/** 迭代：GET 列表（projectId 省略或 __all__ = 跨项目）/ POST / PATCH / DELETE。
+ *  删除时不删 Issue，只把归属清空（与 Dexie 实现一致） */
+function routeCycles(
+  store: MockStore,
+  method: string,
+  second: string | undefined,
+  third: string | undefined,
+  q: URLSearchParams,
+  body: unknown,
+): ApiResponse {
+  if (!second) {
+    if (method === 'GET') {
+      const projectId = q.get('projectId') ?? ''
+      const allProjects = projectId === '' || projectId === ALL_PROJECTS
+      const rows = store.cycles
+        .filter((c) => allProjects || c.projectId === projectId)
+        .sort((a, b) => b.startAt - a.startAt || cmpKey(b.id, a.id))
+      return ok({ items: rows })
+    }
+    if (method === 'POST') {
+      const input = asRecord(body)
+      const now = Date.now()
+      const cycle: Cycle = {
+        id: nextId(store, 'cycle'),
+        projectId: String(input.projectId ?? ''),
+        name: String(input.name ?? ''),
+        startAt: Number(input.startAt ?? 0),
+        endAt: Number(input.endAt ?? 0),
+        ...(typeof input.goal === 'string' ? { goal: input.goal } : {}),
+        createdAt: now,
+        updatedAt: now,
+      }
+      store.cycles.push(cycle)
+      store.revision += 1
+      return ok({ cycle }, 201)
+    }
+    fail(405, 'method not allowed')
+  }
+  if (third) fail(404, 'not found')
+  const cycle = store.cycles.find((c) => c.id === second)
+  if (!cycle) fail(404, 'cycle not found')
+  if (method === 'GET') return ok({ cycle })
+  if (method === 'PATCH') {
+    Object.assign(cycle, asRecord(asRecord(body).changes), { updatedAt: Date.now() })
+    store.revision += 1
+    return ok({ ok: true })
+  }
+  if (method === 'DELETE') {
+    const now = Date.now()
+    for (const issue of store.issues) {
+      if (issue.cycleId !== second) continue
+      issue.cycleId = null
+      issue.updatedAt = now
+    }
+    store.cycles = store.cycles.filter((c) => c.id !== second)
+    store.revision += 1
+    return ok({ ok: true })
+  }
+  fail(405, 'method not allowed')
+}
+
 function routeSettings(
   store: MockStore,
   method: string,
@@ -983,6 +1095,8 @@ function route(store: MockStore, req: ApiRequest): ApiResponse {
       return routeActivities(store, method, second, third, q, req.body)
     case 'saved-views':
       return routeSavedViews(store, method, second, third, req.body)
+    case 'cycles':
+      return routeCycles(store, method, second, third, q, req.body)
     case 'settings':
       return routeSettings(store, method, second, third, req.body)
     case 'admin':
