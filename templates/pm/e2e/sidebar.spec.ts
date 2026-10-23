@@ -32,6 +32,25 @@ const sideItem = (page: Page, value: string) =>
 /** 列表渲染行的状态文案集合 */
 const rowStatuses = (page: Page) => page.locator('.issue-row .issue-status').allTextContents()
 
+/** 工具条成员多选（oas-select multiple+searchable+clearable）：trigger / 选项行都在 shadow 内 */
+const assigneeSelect = (page: Page) => page.getByTestId('filter-assignee')
+const assigneeDropdown = (page: Page) => assigneeSelect(page).locator('.dropdown')
+
+async function openAssignee(page: Page) {
+  await assigneeSelect(page).locator('button.trigger').click()
+  await expect(assigneeDropdown(page)).toHaveClass(/open/, { timeout: 5000 })
+}
+
+/** 点某个选项（label 含计数后缀，如「李娜 (58)」） */
+const pickAssignee = (page: Page, label: string) =>
+  assigneeSelect(page).locator('.option').filter({ hasText: label }).first().click()
+
+/** 行头像姓名集合（oas-avatar 的 title 属性随成员名） */
+const rowAssignees = (page: Page) =>
+  page
+    .locator('.issue-row oas-avatar')
+    .evaluateAll((els) => els.map((e) => e.getAttribute('title') ?? ''))
+
 test('S1 多组独立高亮：项目/视图/状态各组 active 互不干扰', async ({ page }) => {
   await waitForSeed(page)
   await expect(sideRow(page, 'OAS 平台')).toHaveAttribute('aria-pressed', 'true')
@@ -98,29 +117,48 @@ test('S2 状态多选：组内 OR 并集，再点取消，「全部」清空', a
     .toBe(true)
 })
 
-test('S3 成员多选 toggle：点两行取并集，再点清除', async ({ page }) => {
+test('S3 工具栏成员多选：点两项取并集（chips 回显），再点取消', async ({ page }) => {
   await waitForSeed(page)
-  const li = sideRow(page, '李娜')
-  await expect(li).toHaveAttribute('aria-pressed', 'false')
-  await li.click()
-  await expect(li).toHaveAttribute('aria-pressed', 'true')
-  const zhang = sideRow(page, '张伟')
-  await zhang.click()
-  await expect(zhang).toHaveAttribute('aria-pressed', 'true')
+  await openAssignee(page)
+  // 选项 label 带窗口计数后缀，而计数会随窗口加载变化——点击与断言只用成员名（去掉 " (n)"）
+  const labels = await assigneeSelect(page).evaluate((el) => {
+    const opts = (el as { options?: Array<{ label: string; value: string }> }).options ?? []
+    return opts.filter((o) => o.value !== '__none__').map((o) => o.label)
+  })
+  expect(labels.length).toBeGreaterThanOrEqual(2)
+  const plain = (label: string) => label.replace(/\s*\(\d+\)$/, '')
+  const names = labels.map(plain).slice(0, 2) as [string, string]
+  const [first, second] = names
+
+  await expect(assigneeSelect(page).locator('.value')).toHaveText('全部成员')
+  await pickAssignee(page, first)
+  await expect(assigneeSelect(page).locator('.chip:not(.chip-plus)').first()).toContainText(first)
   await expect
-    .poll(() =>
-      page.locator('.issue-row oas-avatar').evaluateAll((els) => {
-        const names = els.map((e) => e.getAttribute('title') ?? '')
-        return names.length > 0 && names.every((t) => t === '李娜' || t === '张伟')
-      }),
-    )
+    .poll(async () => {
+      const list = await rowAssignees(page)
+      return list.length > 0 && list.every((n) => n === first)
+    })
     .toBe(true)
 
-  await li.click()
-  await expect(li).toHaveAttribute('aria-pressed', 'false')
-  await expect(zhang).toHaveAttribute('aria-pressed', 'true')
-  await zhang.click()
-  await expect(zhang).toHaveAttribute('aria-pressed', 'false')
+  await pickAssignee(page, second)
+  await expect(assigneeSelect(page).locator('.chip:not(.chip-plus)')).toHaveCount(2)
+  // 并集：渲染行只含这两位成员
+  await expect
+    .poll(async () => {
+      const list = await rowAssignees(page)
+      return list.length > 0 && list.every((n) => n === first || n === second)
+    })
+    .toBe(true)
+
+  // 再点已选项 = 取消该值，仅剩另一位
+  await pickAssignee(page, first)
+  await expect(assigneeSelect(page).locator('.chip:not(.chip-plus)')).toHaveCount(1)
+  await expect
+    .poll(async () => {
+      const list = await rowAssignees(page)
+      return list.length > 0 && list.every((n) => n === second)
+    })
+    .toBe(true)
 })
 
 test('S4 优先级组多选：紧急+高 并集，全部清空', async ({ page }) => {
@@ -189,19 +227,15 @@ test('S5 保存的视图：多选筛选存读（点击行应用，删除动作�
   await expect(sideItem(page, 'status:all')).toHaveAttribute('aria-pressed', 'true')
 })
 
-test('S6 折叠 rail：56px 收窄、项目/成员行存活、badge 角标，再展开恢复', async ({ page }) => {
+test('S6 折叠 rail：56px 收窄、行存活、badge 角标，再展开恢复', async ({ page }) => {
   await waitForSeed(page)
   const sidebar = page.getByTestId('side-list')
   const panel = page.getByTestId('side-panel')
   const toggle = sidebar.locator('[part="toggle"]')
   await expect(toggle).toBeVisible()
-  // 成员行头像：展开态可见；折叠态行仍存活且头像不被宿主样式藏掉（上游折叠保留 avatar 项）
-  const memberAvatar = sidebar.locator(
-    '[part="item"][data-value="member:member-2"] [part="avatar"]',
-  )
-  await expect(memberAvatar).toBeVisible()
-  // 成员行只有头像、不再挂 user icon（宿主 workaround 已摘除；上游给无 icon 行留 hidden 占位）
-  await expect(sidebar.locator('[part="item"][data-value="member:member-2"] .icon')).toBeHidden()
+  // 侧栏不再有成员组（成员筛选已移到列表工具条）：优先级组是最后一个可折叠分组的代表
+  await expect(sideItem(page, 'priority:all')).toBeVisible()
+  await expect(sidebar.locator('[part="item"][data-value^="member:"]')).toHaveCount(0)
   const barWidth = () => sidebar.evaluate((el) => Math.round(el.getBoundingClientRect().width))
   const panelWidth = () => panel.evaluate((el) => Math.round(el.getBoundingClientRect().width))
   await expect.poll(barWidth).toBe(220)
@@ -214,8 +248,7 @@ test('S6 折叠 rail：56px 收窄、项目/成员行存活、badge 角标，再
   await expect(sideRow(page, 'OAS 平台')).toBeVisible()
   await expect(sideRow(page, '全部 Issues')).toBeVisible()
   await expect(sideItem(page, 'status:all')).toBeVisible()
-  await expect(sideRow(page, '李娜')).toBeVisible()
-  await expect(memberAvatar).toBeVisible()
+  await expect(sideItem(page, 'priority:all')).toBeVisible()
   await expect(sidebar.locator('[part="badge"]').first()).toBeVisible()
 
   await toggle.click()
@@ -226,6 +259,34 @@ test('S6 折叠 rail：56px 收窄、项目/成员行存活、badge 角标，再
   await expect(page.locator('.issue-row .issue-status').first()).toHaveText('已完成', {
     timeout: 10_000,
   })
+})
+
+test('S8 工具栏成员多选：搜索过滤选项、+N 折叠、清空回全部', async ({ page }) => {
+  await waitForSeed(page)
+  await openAssignee(page)
+  // 搜索：输入姓「李」只剩李娜一项（选项按 label 本地过滤）
+  await assigneeSelect(page).locator('input.search-input').fill('李')
+  await expect(assigneeSelect(page).locator('.option')).toHaveCount(1, { timeout: 5000 })
+  await expect(assigneeSelect(page).locator('.option')).toContainText('李娜')
+
+  // 选中后搜索词自动清空，其余选项回到列表
+  await pickAssignee(page, '李娜')
+  await expect(assigneeSelect(page).locator('.option').filter({ hasText: '张伟' })).toHaveCount(1)
+
+  // 三选：max-tag-count=2 → 折叠出 +N（数字随可用宽度浮动，只断言形态）
+  await pickAssignee(page, '张伟')
+  await pickAssignee(page, '王强')
+  await expect(assigneeSelect(page).locator('.chip-plus')).toHaveText(/^\+\d+$/, {
+    timeout: 5000,
+  })
+  expect(
+    await assigneeSelect(page).locator('.chip:not(.chip-plus):visible').count(),
+  ).toBeGreaterThan(0)
+
+  // clearable：清空回全部成员（占位文案复位，行恢复多成员）
+  await assigneeSelect(page).locator('[part="clear"]').click()
+  await expect(assigneeSelect(page).locator('.value')).toHaveText('全部成员')
+  await expect.poll(async () => new Set(await rowAssignees(page)).size).toBeGreaterThan(1)
 })
 
 test('S7 Ctrl+B 快捷键切换 collapsed', async ({ page }) => {

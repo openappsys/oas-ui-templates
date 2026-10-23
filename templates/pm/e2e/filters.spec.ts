@@ -66,25 +66,38 @@ test('F2 状态 × 成员 AND：行同时满足两个维度', async ({ page }) =
   await waitForSeed(page)
   await sideItem(page, 'status:backlog').click()
   await sideItem(page, 'status:in_progress').click()
+  // 等窗口落地再读计数：选项后缀的计数来自筛选后的窗口
+  await expect
+    .poll(
+      async () => {
+        const st = await rowStatuses(page)
+        return st.length > 0 && st.every((s) => s === '待规划' || s === '进行中')
+      },
+      { timeout: 10_000 },
+    )
+    .toBe(true)
 
-  // 从侧栏成员组的角标里挑一个「当前窗口内仍有行」的成员，避免挑到空集
-  const target = await page.getByTestId('side-list').evaluate((el) => {
-    const items = [
-      ...(el.shadowRoot?.querySelectorAll('[part="item"][data-value^="member:"]') ?? []),
-    ] as HTMLElement[]
-    for (const it of items) {
-      const badge = it.querySelector('[part="badge"]')?.textContent ?? '0'
-      const count = Number(badge.replace(/[^\d]/g, ''))
-      const name = (it.querySelector('.label')?.textContent ?? '').trim()
-      if (count > 0 && name) return { value: it.dataset.value ?? '', name }
+  // 成员筛选在工具条多选里（侧栏已无成员组）：从带计数的选项里挑一个当前窗口内仍有行的成员，
+  // 避免挑到空集（计数后缀即窗口内条数）
+  const assignee = page.getByTestId('filter-assignee')
+  await assignee.locator('button.trigger').click()
+  await expect(assignee.locator('.dropdown')).toHaveClass(/open/, { timeout: 5000 })
+  const target = await assignee.evaluate((el) => {
+    const opts =
+      (el as { options?: Array<{ label: string; value: string }> }).options?.filter(
+        (o) => o.value !== '__none__',
+      ) ?? []
+    for (const o of opts) {
+      const count = Number(o.label.match(/\((\d+)\)$/)?.[1] ?? '0')
+      if (count > 0) return { label: o.label, name: o.label.replace(/\s*\(\d+\)$/, '') }
     }
     return null
   })
   expect(target).not.toBeNull()
-  const picked = target as { value: string; name: string }
+  const picked = target as { label: string; name: string }
 
-  await sideItem(page, picked.value).click()
-  await expect(sideItem(page, picked.value)).toHaveAttribute('aria-pressed', 'true')
+  await assignee.locator('.option').filter({ hasText: picked.label }).first().click()
+  await expect(assignee.locator('.chip').first()).toContainText(picked.name)
 
   await expect
     .poll(
@@ -104,9 +117,10 @@ test('F2 状态 × 成员 AND：行同时满足两个维度', async ({ page }) =
     )
     .toBe(true)
 
-  // 成员组「再点取消」回到只有状态维度
-  await sideItem(page, picked.value).click()
-  await expect(sideItem(page, picked.value)).toHaveAttribute('aria-pressed', 'false')
+  // 再点已选项 = 取消，回到只有状态维度
+  await assignee.locator('.option').filter({ hasText: picked.label }).first().click()
+  await expect(assignee.locator('.chip')).toHaveCount(0)
+  await expect(assignee.locator('.value')).toHaveText('全部成员')
 })
 
 test('F3 工具条优先级单值入口：与侧栏多选互通', async ({ page }) => {

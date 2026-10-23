@@ -21,9 +21,6 @@ async function waitForSeed(page: Page, size = E2E_SEED_SIZE) {
   await expect(page.locator('.issue-row').first()).toBeVisible({ timeout: 60_000 })
 }
 
-const sideItem = (page: Page, value: string) =>
-  page.getByTestId('side-list').locator(`[part="item"][data-value="${value}"]`)
-
 async function switchUser(page: Page, id: string) {
   await page.getByTestId('tb-user').click()
   await expect(page.getByTestId('modal-user')).toHaveAttribute('visible', /.*/, { timeout: 5000 })
@@ -45,6 +42,19 @@ async function setOSelect(page: Page, testid: string, value: string) {
     },
     [testid, value],
   )
+}
+
+/** 工具条成员多选（oas-select multiple）：value 为数组，detail.value 同为数组
+ *  （侧栏成员组已移除，成员筛选的主入口在工具条） */
+async function setAssigneeFilter(page: Page, ids: string[]) {
+  await page.evaluate((values) => {
+    const el = document.querySelector('[data-testid="filter-assignee"]') as
+      | (HTMLElement & { value?: string[] })
+      | null
+    if (!el) return
+    el.value = values
+    el.dispatchEvent(new CustomEvent('oas-change', { bubbles: true, detail: { value: values } }))
+  }, ids)
 }
 
 /** 抽屉是否已开（oas-drawer 暴露 opened getter） */
@@ -77,8 +87,7 @@ async function composeUnread(page: Page) {
   await expect.poll(() => drawerOpened(page, 'detail-drawer'), { timeout: 10_000 }).toBe(false)
 
   // 换到李娜负责的 Issue：改派给张伟 → assigned 通知
-  await sideItem(page, 'member:member-1').click()
-  await sideItem(page, 'member:member-2').click()
+  await setAssigneeFilter(page, ['member-2'])
   await page.waitForTimeout(1200)
   const assignedKey = (await page.locator('.issue-row .issue-key').first().textContent()) ?? ''
   const assignedTitle = (await page.locator('.issue-row .issue-title').first().textContent()) ?? ''
@@ -97,7 +106,7 @@ test('N1 通知中心：未读角标 → 面板 → 点击标已读并开抽屉 
 
   // 张伟视角先锁定一个「负责人=张伟」的 Issue，再切到李娜评论提及
   await switchUser(page, 'member-2')
-  await sideItem(page, 'member:member-1').click()
+  await setAssigneeFilter(page, ['member-1'])
   await page.waitForTimeout(1000)
   const { assignedKey, assignedTitle } = await composeUnread(page)
 

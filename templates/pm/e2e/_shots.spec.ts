@@ -49,10 +49,22 @@ async function switchUser(page: Page, id: string) {
   })
 }
 
+/** 工具条成员多选（oas-select multiple）：value 为数组，detail.value 同为数组 */
+async function setAssigneeFilter(page: Page, ids: string[]) {
+  await page.evaluate((values) => {
+    const el = document.querySelector('[data-testid="filter-assignee"]') as
+      | (HTMLElement & { value?: string[] })
+      | null
+    if (!el) return
+    el.value = values
+    el.dispatchEvent(new CustomEvent('oas-change', { bubbles: true, detail: { value: values } }))
+  }, ids)
+}
+
 /** 造两条未读通知（李娜 @张伟 评论 + 把李娜负责的 Issue 改派张伟），切回张伟后截图 */
 async function composeUnreadNotifications(page: Page) {
   await switchUser(page, 'member-2')
-  await sideItem(page, 'member:member-1').click()
+  await setAssigneeFilter(page, ['member-1'])
   await page.waitForTimeout(1000)
   await openFirstDrawer(page)
   await page.getByTestId('comment-input').fill('@张伟 请确认排期')
@@ -63,8 +75,7 @@ async function composeUnreadNotifications(page: Page) {
   await page.keyboard.press('Escape')
   await page.waitForTimeout(600)
 
-  await sideItem(page, 'member:member-1').click()
-  await sideItem(page, 'member:member-2').click()
+  await setAssigneeFilter(page, ['member-2'])
   await page.waitForTimeout(1200)
   await openFirstDrawer(page)
   await page.evaluate(() => {
@@ -399,12 +410,12 @@ async function captureSidebarCollapsed(page: Page, suffix: string) {
 const sideItem = (page: Page, value: string) =>
   page.getByTestId('side-list').locator(`[part="item"][data-value="${value}"]`)
 
-/** 多选筛选态：两状态并集 + 成员 + 两优先级（组内 OR / 组间 AND）。
- *  侧栏内容超出视口：分「顶部（状态组）」与「底部（优先级组 + 成员）」两张，供目检多高亮 */
+/** 多选筛选态：两状态并集 + 成员（工具条多选 chips）+ 两优先级（组内 OR / 组间 AND）。
+ *  侧栏内容超出视口：分「顶部（状态组）」与「底部（优先级组 + 迭代组）」两张，供目检多高亮 */
 async function captureFilterSelection(page: Page, suffix: string) {
   await sideItem(page, 'status:todo').click()
   await sideItem(page, 'status:in_progress').click()
-  await sideItem(page, 'member:member-2').click()
+  await setAssigneeFilter(page, ['member-2'])
   await sideItem(page, 'priority:urgent').click()
   await sideItem(page, 'priority:high').click()
   await page.waitForTimeout(1500)
@@ -549,6 +560,32 @@ test('shots schedule same moment', async ({ page }) => {
   console.log('shots schedule same moment done')
 })
 
+/** 工具栏成员多选（展开 / 搜索过滤 / 已选 chips + +N）：双主题目检 */
+async function captureAssigneeFilter(page: Page, suffix: string) {
+  const sel = page.getByTestId('filter-assignee')
+  await sel.locator('button.trigger').click()
+  await expect(sel.locator('.dropdown')).toHaveClass(/open/, { timeout: 5000 })
+  await page.waitForTimeout(600)
+  await page.screenshot({ path: `shots/pm-assignee-open${suffix}.png` })
+
+  await sel.locator('input.search-input').fill('张')
+  await page.waitForTimeout(500)
+  await page.screenshot({ path: `shots/pm-assignee-search${suffix}.png` })
+
+  // 选中搜索命中的第一项，再清空搜索多选两项 → 折叠出 +N
+  await sel.locator('.option').first().click()
+  await sel.locator('input.search-input').fill('')
+  await page.waitForTimeout(400)
+  await sel.locator('.option').nth(1).click()
+  await sel.locator('.option').nth(2).click()
+  // 点工具条外关闭下拉（Esc 被全局快捷键吞掉），只看触发器的 chips 回显
+  await page.locator('.issue-header h1').click()
+  await expect(sel.locator('.dropdown')).not.toHaveClass(/open/, { timeout: 5000 })
+  await page.waitForTimeout(400)
+  await expect(sel.locator('.chip-plus')).toBeVisible({ timeout: 5000 })
+  await page.screenshot({ path: `shots/pm-assignee-chips${suffix}.png` })
+}
+
 test('shots sidebar', async ({ page }) => {
   test.setTimeout(240_000)
   await openApp(page)
@@ -567,6 +604,22 @@ test('shots sidebar dark', async ({ page }) => {
   await captureSidebarCollapsed(page, '-dark')
 
   console.log('shots sidebar dark done')
+})
+
+test('shots assignee filter', async ({ page }) => {
+  test.setTimeout(240_000)
+  await openApp(page)
+  await captureAssigneeFilter(page, '')
+  console.log('shots assignee filter done')
+})
+
+test('shots assignee filter dark', async ({ page }) => {
+  test.setTimeout(240_000)
+  await page.addInitScript(() => localStorage.setItem('oas-pm-theme', 'dark'))
+  await openApp(page)
+  await expectDarkTheme(page)
+  await captureAssigneeFilter(page, '-dark')
+  console.log('shots assignee filter dark done')
 })
 
 test('shots cycles', async ({ page }) => {
