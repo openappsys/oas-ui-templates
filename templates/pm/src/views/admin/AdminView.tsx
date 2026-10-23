@@ -72,7 +72,7 @@ export function AdminView({
           </button>
         ))}
       </nav>
-      <div className="admin-content">
+      <main className="admin-content">
         {tab === 'overview' ? (
           <OverviewTab memberMap={memberMap} onOpenProject={onOpenProject} />
         ) : tab === 'projects' ? (
@@ -93,7 +93,7 @@ export function AdminView({
             onSetLang={onSetLang}
           />
         )}
-      </div>
+      </main>
     </div>
   )
 }

@@ -44,6 +44,14 @@ export function OSelect({
     el.addEventListener('oas-change', h)
     return () => el.removeEventListener('oas-change', h)
   }, [])
+  // oas-select 只在内部 trigger 上写 aria-label（来源是 `label` attribute，placeholder 兜底）；
+  // 宿主 aria-label 不会穿过 shadow，所以要显式写 attribute 才真正命名 combobox
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    if (ariaLabel) el.setAttribute('label', ariaLabel)
+    else el.removeAttribute('label')
+  }, [ariaLabel])
   return <oas-select ref={ref} data-testid={testid} aria-label={ariaLabel} />
 }
 
@@ -52,12 +60,15 @@ export function OCheckbox({
   className,
   checked,
   disabled,
+  ariaLabel,
   onChange,
 }: {
   testid: string
   className?: string
   checked: boolean
   disabled?: boolean
+  /** 可访问名：走默认 slot（shadow 内的 <label><slot> 即名字来源），视觉上由 .sr-only 隐藏 */
+  ariaLabel?: string
   onChange: () => void
 }) {
   const ref = useRef<HTMLElement>(null)
@@ -87,7 +98,11 @@ export function OCheckbox({
       el.removeEventListener('click', c)
     }
   }, [])
-  return <oas-checkbox ref={ref} size="small" className={className} data-testid={testid} />
+  return (
+    <oas-checkbox ref={ref} size="small" className={className} data-testid={testid}>
+      {ariaLabel && <span className="sr-only">{ariaLabel}</span>}
+    </oas-checkbox>
+  )
 }
 
 /** oas-date-picker 包装（type=date）：value 走 property 受控写（'YYYY-MM-DD'，空串=已清），
@@ -233,11 +248,14 @@ export function OTabs({
   testid,
   value,
   options,
+  ariaLabel,
   onChange,
 }: {
   testid: string
   value: string
   options: Array<{ label: string; value: string }>
+  /** 可访问名：写到宿主 aria-label（oas-tabs 不转发到 shadow 内的 tablist，见审计遗留项） */
+  ariaLabel?: string
   onChange: (v: string) => void
 }) {
   const ref = useRef<HTMLElement>(null)
@@ -265,7 +283,14 @@ export function OTabs({
     return () => el.removeEventListener('oas-change', h)
   }, [])
   return (
-    <oas-tabs ref={ref} tab-position="left" size="small" hide-content="" data-testid={testid} />
+    <oas-tabs
+      ref={ref}
+      tab-position="left"
+      size="small"
+      hide-content=""
+      aria-label={ariaLabel}
+      data-testid={testid}
+    />
   )
 }
 

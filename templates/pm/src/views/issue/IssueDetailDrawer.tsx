@@ -439,6 +439,7 @@ export function IssueDetailDrawer({
             <span>{t('status')}</span>
             <OSelect
               testid="detail-status"
+              ariaLabel={t('status')}
               value={issue.status}
               options={ISSUE_STATUSES.map((s) => ({ label: statusLabel(s), value: s }))}
               onChange={(v) => save({ status: v as IssueStatus })}
@@ -449,6 +450,7 @@ export function IssueDetailDrawer({
             <span>{t('priority')}</span>
             <OSelect
               testid="detail-priority"
+              ariaLabel={t('priority')}
               value={issue.priority}
               options={ISSUE_PRIORITIES.map((p) => ({ label: p, value: p }))}
               onChange={(v) => save({ priority: v as IssuePriority })}
@@ -459,6 +461,7 @@ export function IssueDetailDrawer({
             <span>{t('assignee')}</span>
             <OSelect
               testid="detail-assignee"
+              ariaLabel={t('assignee')}
               value={issue.assigneeId ?? '__none__'}
               options={memberOptions}
               onChange={(v) => save({ assigneeId: v === '__none__' ? null : v })}
@@ -469,6 +472,7 @@ export function IssueDetailDrawer({
             <span>{t('cycle')}</span>
             <OSelect
               testid="detail-cycle"
+              ariaLabel={t('cycle')}
               value={issue.cycleId ?? '__none__'}
               options={cycleOptions}
               onChange={(v) => save({ cycleId: v === '__none__' ? null : v })}
@@ -662,6 +666,7 @@ export function IssueDetailDrawer({
             {canEdit && (
               <OSelect
                 testid="relation-add-type"
+                ariaLabel={t('relAdd')}
                 value={relType}
                 options={[
                   { label: t('relAdd'), value: '__none__' },
@@ -675,6 +680,7 @@ export function IssueDetailDrawer({
             {canEdit && relType !== '__none__' && (
               <OSelect
                 testid="relation-add-target"
+                ariaLabel={t('relPickIssue')}
                 value="__none__"
                 options={[
                   { label: t('relPickIssue'), value: '__none__' },

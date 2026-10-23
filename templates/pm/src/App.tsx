@@ -784,6 +784,7 @@ function Workspace({
           size="small"
           data-testid="command-open"
           title={t('shortcutPalette')}
+          aria-label={t('shortcutPalette')}
           onClick={() => setPaletteOpen(true)}
         >
           <oas-icon name="search" size={14} />
@@ -861,6 +862,7 @@ function Workspace({
               <div className="side-view-seg">
                 <OTabs
                   testid="view-seg"
+                  ariaLabel={t('viewNav')}
                   value={view}
                   options={[
                     { label: t('dashboard'), value: 'dashboard' },

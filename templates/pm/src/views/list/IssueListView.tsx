@@ -192,6 +192,7 @@ export function IssueListView({
         <OCheckbox
           className="row-check"
           testid="row-check"
+          ariaLabel={t('rowSelect').replace('{key}', i.key)}
           checked={selectedIds.has(i.id)}
           onChange={() => toggleSelect(i.id)}
         />
@@ -224,6 +225,7 @@ export function IssueListView({
         <span className="issue-toolbar-label">{t('sort')}</span>
         <OSelect
           testid="sort-by"
+          ariaLabel={t('sort')}
           value={filters.sortBy}
           options={[
             { label: t('recentUpdate'), value: 'updatedAt' },
@@ -235,6 +237,7 @@ export function IssueListView({
         <span className="issue-toolbar-label">{t('group')}</span>
         <OSelect
           testid="group-by"
+          ariaLabel={t('group')}
           value={grouping}
           options={[
             { label: t('none'), value: 'none' },
@@ -246,6 +249,7 @@ export function IssueListView({
         <span className="issue-toolbar-label">{t('priority')}</span>
         <OSelect
           testid="filter-priority"
+          ariaLabel={t('priority')}
           value={priorityValue}
           options={priorityOptions}
           onChange={(v) => {

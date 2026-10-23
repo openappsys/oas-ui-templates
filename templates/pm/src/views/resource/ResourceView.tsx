@@ -218,7 +218,7 @@ export function ResourceView({
     return (
       <div className="resource-page" data-testid="resource-view">
         <div className="resource-head">
-          <span className="resource-title">{t('resourceTitle')}</span>
+          <h1 className="resource-title">{t('resourceTitle')}</h1>
         </div>
         <oas-empty data-testid="resource-empty" description={t('resourceEmpty')} />
       </div>
@@ -228,7 +228,7 @@ export function ResourceView({
   return (
     <div className="resource-page" data-testid="resource-view">
       <div className="resource-head">
-        <span className="resource-title">{t('resourceTitle')}</span>
+        <h1 className="resource-title">{t('resourceTitle')}</h1>
         {overloaded > 0 && (
           <oas-badge type="danger" data-testid="resource-overload-count">
             {t('resourceOverload').replace('{n}', String(overloaded))}

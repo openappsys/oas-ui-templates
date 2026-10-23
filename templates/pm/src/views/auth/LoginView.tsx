@@ -74,7 +74,7 @@ export function LoginView({
   }
 
   return (
-    <div className="login-page" data-testid="login-page">
+    <main className="login-page" data-testid="login-page" aria-label={t('loginTitle')}>
       <div
         className="login-card"
         onKeyDown={(e) => {
@@ -129,6 +129,6 @@ export function LoginView({
           ))}
         </div>
       </div>
-    </div>
+    </main>
   )
 }

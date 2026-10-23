@@ -1,6 +1,7 @@
 import type { Cycle, Issue, Project, Member } from './types'
 import { db } from './db/schema'
 import { demoCycleIdFor, demoDoneAt } from './lib/cycles'
+import { AVATAR_PALETTE } from './lib/colors'
 import { mulberry32 } from './lib/prng'
 import { SEED_SIZE_KEY, parseSeedSize } from './lib/seed-size'
 
@@ -48,16 +49,7 @@ export async function seedDatabase(): Promise<void> {
     id: `member-${i + 1}`,
     name,
     email: `user${i + 1}@oas.dev`,
-    avatarColor: [
-      '#0b6cff',
-      '#7c3aed',
-      '#059669',
-      '#d97706',
-      '#dc2626',
-      '#0891b2',
-      '#be185d',
-      '#4f46e5',
-    ][i % 8],
+    avatarColor: AVATAR_PALETTE[i % AVATAR_PALETTE.length],
     role: (i === 0 ? 'admin' : i < 3 ? 'member' : 'viewer') as Member['role'],
   }))
   await db.members.bulkPut(members)

@@ -4,6 +4,7 @@ import type { Issue, IssueStatus, Member } from '@/types'
 import { ISSUE_STATUSES } from '@/types'
 import { getLang, statusLabel, t } from '@/i18n'
 import { betweenOrder } from '@/lib/order'
+import { AVATAR_UNASSIGNED } from '@/lib/colors'
 import type { Action, Ctx } from '@/permission/policy'
 
 /* ── 看板（oas-kanban：拖拽/多选/键盘/触屏全部组件库内建） ── */
@@ -97,7 +98,7 @@ export function KanbanBoard({
         av.title = m.name
         av.setAttribute('text', m.name[0])
       } else {
-        av.setAttribute('color', 'var(--oas-color-border-strong)')
+        av.setAttribute('color', AVATAR_UNASSIGNED)
         av.title = t('resourceUnassigned')
       }
       top.appendChild(av)
@@ -150,6 +151,8 @@ export function KanbanBoard({
 
   return (
     <div className="board">
+      {/* 看板自身没有可见标题（列标题来自组件）：给视图补一个只读屏可见的一级标题，避免 main 下无标题 */}
+      <h1 className="sr-only">{t('board')}</h1>
       <oas-kanban ref={boardRef} data-testid="board" />
     </div>
   )

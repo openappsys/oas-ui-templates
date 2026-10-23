@@ -1,24 +1,40 @@
 :root {
-  --pm-status-backlog: #9aa3b8;
+  /* 明色主题：全部取 700 档——正文/小字号文本按 WCAG AA 需 ≥4.5:1（白底），
+     500–600 档（如 #d97706 3.19、#059669 3.77、#9aa3b8 2.53）只够大字或装饰用 */
+  --pm-status-backlog: #64748b;
   --pm-status-todo: #0b6cff;
-  --pm-status-in-progress: #d97706;
-  --pm-status-done: #059669;
+  --pm-status-in-progress: #b45309;
+  --pm-status-done: #047857;
   --pm-status-cancelled: #dc2626;
   --pm-priority-urgent: #dc2626;
-  --pm-priority-high: #d97706;
+  --pm-priority-high: #b45309;
   --pm-priority-medium: #0b6cff;
   --pm-priority-low: #64748b;
 }
 [data-theme="dark"] {
   --pm-status-backlog: var(--oas-color-text-secondary);
-  --pm-status-todo: var(--oas-preset-blue);
+  /* preset-blue（#4096ff）落在卡片底 #3f3f46 上只有 3.49：换成更亮的蓝保证 ≥4.5 */
+  --pm-status-todo: #74b1ff;
   --pm-status-in-progress: var(--oas-preset-gold);
   --pm-status-done: var(--oas-preset-green);
   --pm-status-cancelled: var(--oas-preset-red);
   --pm-priority-urgent: var(--oas-preset-red);
   --pm-priority-high: var(--oas-preset-gold);
-  --pm-priority-medium: var(--oas-preset-blue);
+  --pm-priority-medium: #74b1ff;
   --pm-priority-low: var(--oas-color-text-secondary);
+}
+
+/* 仅供读屏：视觉隐藏但仍在可访问树里（视图标题/行选择名字用） */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 * {
@@ -463,6 +479,7 @@ body {
 }
 
 .resource-title {
+  margin: 0;
   font-size: 15px;
   font-weight: 600;
   color: var(--oas-color-text-primary, #1e293b);
@@ -489,6 +506,9 @@ body {
   display: block;
   flex: 1;
   min-height: 420px;
+  /* 组件用 text-disabled 画「非本月」日期（2.56:1）：宿主改不到 shadow 内规则，
+     但可以改它读的变量——提到 text-secondary（4.83:1），过期格仍需可读 */
+  --oas-color-text-disabled: var(--oas-color-text-secondary, #6b7280);
 }
 
 .schedule-head {
@@ -499,6 +519,7 @@ body {
 }
 
 .schedule-title {
+  margin: 0;
   font-size: 15px;
   font-weight: 600;
   color: var(--oas-color-text-primary, #1e293b);
@@ -709,7 +730,7 @@ body {
 
 .issue-toolbar-label {
   font-size: 12px;
-  color: var(--oas-color-text-disabled, #94a3b8);
+  color: var(--oas-color-text-secondary, #6b7280);
 }
 
 .issue-toolbar select {
@@ -823,7 +844,7 @@ body {
 .dash-note {
   margin: 0;
   font-size: 12px;
-  color: var(--oas-color-text-disabled, #94a3b8);
+  color: var(--oas-color-text-secondary, #6b7280);
 }
 
 /* ── 看板卡头像行 ── */
@@ -854,7 +875,7 @@ body {
 
 .detail-desc-block > span {
   font-size: 12px;
-  color: var(--oas-color-text-disabled, #94a3b8);
+  color: var(--oas-color-text-secondary, #6b7280);
 }
 
 .detail-desc-block textarea {
@@ -893,7 +914,7 @@ body {
 
 .detail-dates {
   font-size: 11px;
-  color: var(--oas-color-text-disabled, #94a3b8);
+  color: var(--oas-color-text-secondary, #6b7280);
 }
 
 .detail-delete {
@@ -960,7 +981,7 @@ body {
   border: 1px solid var(--oas-color-border, #e2e8f0);
   border-radius: 999px;
   background: var(--oas-color-bg-hover, #f1f5f9);
-  color: var(--oas-color-text-secondary, #64748b);
+  color: var(--oas-color-text-primary, #1f2329);
   font-family: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
   font-size: 11px;
   font-weight: 600;
@@ -1043,7 +1064,7 @@ body {
 
 .detail-labels-block > span {
   font-size: 12px;
-  color: var(--oas-color-text-disabled, #94a3b8);
+  color: var(--oas-color-text-secondary, #6b7280);
 }
 
 .detail-labels {
@@ -1102,7 +1123,7 @@ body {
 
 .comments-block > span {
   font-size: 12px;
-  color: var(--oas-color-text-disabled, #94a3b8);
+  color: var(--oas-color-text-secondary, #6b7280);
 }
 
 .comments-list {
@@ -1129,7 +1150,7 @@ body {
 .comment-meta {
   margin: 4px 0 0;
   font-size: 11px;
-  color: var(--oas-color-text-disabled, #94a3b8);
+  color: var(--oas-color-text-secondary, #6b7280);
 }
 
 .comment-input-row {
@@ -1258,7 +1279,7 @@ body {
 .user-pick-role {
   margin-left: auto;
   font-size: 11px;
-  color: var(--oas-color-text-disabled, #94a3b8);
+  color: var(--oas-color-text-secondary, #6b7280);
 }
 
 /* ── 批量选择 ── */
@@ -1348,7 +1369,7 @@ body {
 
 .activities-block > span {
   font-size: 12px;
-  color: var(--oas-color-text-disabled, #94a3b8);
+  color: var(--oas-color-text-secondary, #6b7280);
 }
 
 .activities-list {
@@ -1382,7 +1403,7 @@ body {
 .activity-time {
   margin-left: auto;
   font-size: 11px;
-  color: var(--oas-color-text-disabled, #94a3b8);
+  color: var(--oas-color-text-secondary, #6b7280);
   flex-shrink: 0;
 }
 
@@ -1508,7 +1529,7 @@ body {
 .notify-time {
   margin: 0;
   font-size: 11px;
-  color: var(--oas-color-text-disabled, #94a3b8);
+  color: var(--oas-color-text-secondary, #6b7280);
 }
 
 .notify-dot {
@@ -1881,7 +1902,7 @@ oas-drawer::part(close):focus-visible {
 
 .sub-item .sub-done {
   text-decoration: line-through;
-  color: var(--oas-color-text-disabled, #94a3b8);
+  color: var(--oas-color-text-secondary, #6b7280);
 }
 
 .detail-body oas-input,
@@ -1936,7 +1957,7 @@ oas-drawer::part(close):focus-visible {
   flex-shrink: 0;
   white-space: nowrap;
   font-size: 12px;
-  color: var(--oas-color-text-disabled, #94a3b8);
+  color: var(--oas-color-text-secondary, #6b7280);
 }
 .detail-meta > div > oas-select,
 .detail-meta > div > select,

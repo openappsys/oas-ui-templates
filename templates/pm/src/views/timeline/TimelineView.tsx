@@ -124,6 +124,7 @@ export function TimelineView({
 
   return (
     <div className="timeline-page">
+      <h1 className="sr-only">{t('timeline')}</h1>
       <oas-gantt
         ref={ganttRef}
         data-testid="gantt"

@@ -144,7 +144,7 @@ export function ScheduleView({
     return (
       <div className="schedule-page" data-testid="schedule-view">
         <div className="schedule-head">
-          <span className="schedule-title">{t('schedule')}</span>
+          <h1 className="schedule-title">{t('schedule')}</h1>
         </div>
         <oas-empty data-testid="schedule-empty" description={t('scheduleEmpty')} />
       </div>
@@ -154,7 +154,7 @@ export function ScheduleView({
   return (
     <div className="schedule-page" data-testid="schedule-view">
       <div className="schedule-head">
-        <span className="schedule-title">{t('schedule')}</span>
+        <h1 className="schedule-title">{t('schedule')}</h1>
       </div>
       <oas-scheduler
         ref={calRef}

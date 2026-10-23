@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import type { Issue, Member } from '@/types'
 import { statusLabel, t } from '@/i18n'
-import { PRIORITY_TEXT, STATUS_TEXT } from '@/lib/colors'
+import { AVATAR_UNASSIGNED, PRIORITY_TEXT, STATUS_TEXT } from '@/lib/colors'
 
 /** 行样式注入所在 shadow root（每次渲染幂等）：light CSS 不穿透，inline grid 在该容器不稳 */
 function ensureRowStyles(root: ShadowRoot | null): void {
@@ -180,7 +180,7 @@ function renderIssueRow(
     av.title = m.name
     av.setAttribute('text', m.name[0])
   } else {
-    av.setAttribute('color', 'var(--oas-color-border-strong)')
+    av.setAttribute('color', AVATAR_UNASSIGNED)
     av.title = t('resourceUnassigned')
   }
   row.appendChild(av)
@@ -195,12 +195,19 @@ function renderIssueRow(
     if (e.key === 'Enter' || e.key === ' ') onSelect(issue.id)
   })
   if (showCheckbox) {
-    // 行首多选框：点击不触发行打开
+    // 行首多选框：点击不触发行打开。
+    // 行在 shadow 内，`.sr-only` 这类 light DOM 样式表不生效——可访问名用内联样式做到视觉隐藏，
+    // 否则 200 个行内 checkbox 在可访问树里全是无名控件。
     const check = document.createElement('oas-checkbox')
     check.className = 'row-check'
     check.setAttribute('data-testid', 'row-check')
     check.setAttribute('size', 'small')
     check.toggleAttribute('checked', selectedIds.has(issue.id))
+    const name = document.createElement('span')
+    name.textContent = t('rowSelect').replace('{key}', issue.key)
+    name.style.cssText =
+      'position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0'
+    check.appendChild(name)
     check.addEventListener('click', (e) => {
       e.stopPropagation()
     })

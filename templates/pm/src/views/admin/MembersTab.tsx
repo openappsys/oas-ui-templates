@@ -4,6 +4,7 @@ import { useRepositories } from '@/data/context'
 import { useObservable } from '@/data/use-observable'
 import { t } from '@/i18n'
 import type { MemberRole } from '@/types'
+import { AVATAR_PALETTE } from '@/lib/colors'
 import { OSelect } from '@/components/oas-wrappers'
 
 type Col = {
@@ -22,16 +23,8 @@ type SelectEl = HTMLElement & {
 }
 
 const ROLES: MemberRole[] = ['admin', 'member', 'viewer']
-const PALETTE = [
-  '#0b6cff',
-  '#7c3aed',
-  '#059669',
-  '#d97706',
-  '#dc2626',
-  '#0891b2',
-  '#be185d',
-  '#4f46e5',
-]
+/** 头像色板与 seed 同源（src/lib/colors.ts：700 档保证白字 ≥4.5） */
+const PALETTE = AVATAR_PALETTE
 
 export function MembersTab({
   currentUser,
