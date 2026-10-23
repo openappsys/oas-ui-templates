@@ -303,12 +303,15 @@ export function OSegmented({
   testid,
   value,
   options,
+  ariaLabel,
   disabled,
   onChange,
 }: {
   testid: string
   value: string
   options: Array<{ label: string; value: string }>
+  /** 可访问名：radiogroup 在 shadow 内，不转发宿主 aria-label——显式写到内部 group 上 */
+  ariaLabel?: string
   disabled?: boolean
   onChange: (v: string) => void
 }) {
@@ -326,6 +329,13 @@ export function OSegmented({
     if (!el) return
     el.setAttribute('value', value)
   }, [value])
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    if (el.shadowRoot && ariaLabel) {
+      el.shadowRoot.querySelector('[part="group"]')?.setAttribute('aria-label', ariaLabel)
+    }
+  }, [ariaLabel])
   useEffect(() => {
     const el = ref.current
     if (!el) return

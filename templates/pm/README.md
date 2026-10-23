@@ -8,7 +8,7 @@
 ## 功能
 
 - **仪表盘**：全局统计 / 状态分布 / 成员负载 Top / 近 30 天趋势
-- **列表**：10W+ Issue 虚拟化渲染 + 触底续载（500 起步）、多维度筛选（项目/视图/状态/成员/迭代/搜索）、排序与分组、批量操作
+- **列表**：10W+ Issue 虚拟化渲染 + 触底续载（500 起步）、多维度筛选（项目/视图/状态/成员/迭代/搜索，筛选位置可选**侧栏 / 顶部 / 两者**，同一份状态两处同步）、排序与分组、批量操作
 - **看板**：状态列拖拽（权限门禁 + 回弹）
 - **时间线**：甘特图（项目分组 / 进度 / 里程碑 / 逾期约束 / 拖拽改期写回）
 - **资源**：成员负载泳道 / 超载高亮 / 拖拽改期与转派 / **一键均载**（levelResources reassign，admin）
@@ -59,7 +59,7 @@ A production-grade frontend baseline: Repository data layer (REST-adapter ready)
 ## Features
 
 - **Dashboard**: global stats / status distribution / top member workloads / 30-day trend
-- **List**: 100K+ virtualized issues with infinite scroll (500-row window), multi-facet filters (project / view / status / member / cycle / search), sorting & grouping, bulk operations
+- **List**: 100K+ virtualized issues with infinite scroll (500-row window), multi-facet filters (project / view / status / member / cycle / search) with a **sidebar / top bar / both** placement preference (one filter state, mirrored in both places), sorting & grouping, bulk operations
 - **Board**: status-column drag & drop (permission-gated, bounce-back on deny)
 - **Timeline**: gantt (project groups / progress / milestones / overdue constraints / drag-reschedule writeback)
 - **Resource**: member workload swimlanes / overload highlighting / drag reschedule & reassign / **one-click load leveling** (levelResources reassign mode, admin)

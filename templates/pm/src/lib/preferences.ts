@@ -1,6 +1,17 @@
 export type ThemePreference = 'light' | 'dark' | 'system'
 
+/** 筛选控件的位置偏好：侧栏 / 内容区顶部 / 两处都显示（同一份筛选状态） */
+export type FilterPlacement = 'sidebar' | 'topbar' | 'both'
+
 const THEME_KEY = 'oas-pm-theme'
+const PLACEMENT_KEY = 'oas-pm-filters-placement'
+
+/** 缺省侧栏：老用户的观感不变，也让既有 e2e 的侧栏入口继续成立 */
+export const DEFAULT_FILTER_PLACEMENT: FilterPlacement = 'sidebar'
+
+export function isFilterPlacement(v: unknown): v is FilterPlacement {
+  return v === 'sidebar' || v === 'topbar' || v === 'both'
+}
 
 export function loadTheme(): ThemePreference {
   const v = localStorage.getItem(THEME_KEY)
@@ -9,4 +20,24 @@ export function loadTheme(): ThemePreference {
 
 export function storeTheme(p: ThemePreference): void {
   localStorage.setItem(THEME_KEY, p)
+}
+
+/** 非法/缺失（旧版本没有这个键）一律回落默认，不抛错 */
+export function loadFilterPlacement(): FilterPlacement {
+  const v = localStorage.getItem(PLACEMENT_KEY)
+  return isFilterPlacement(v) ? v : DEFAULT_FILTER_PLACEMENT
+}
+
+export function storeFilterPlacement(p: FilterPlacement): void {
+  localStorage.setItem(PLACEMENT_KEY, p)
+}
+
+/** 侧栏是否显示筛选组（状态/优先级/迭代行 + 成员控件） */
+export function showsSidebarFilters(p: FilterPlacement): boolean {
+  return p !== 'topbar'
+}
+
+/** 内容区顶部是否显示筛选栏（列表/看板/时间线/资源/日程） */
+export function showsTopbarFilters(p: FilterPlacement): boolean {
+  return p !== 'sidebar'
 }

@@ -1,12 +1,13 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
-import type { Cycle, Issue, IssuePriority, IssueStatus, Member, Project } from './types'
+import type { Cycle, IssuePriority, IssueStatus, Member, Project } from './types'
 import { ISSUE_PRIORITIES, ISSUE_STATUSES } from './types'
-import { OSelect, OTabs } from './components/oas-wrappers'
+import { OMultiSelect, OSelect, OSegmented, OTabs } from './components/oas-wrappers'
+import { FilterBar } from './components/FilterBar'
 import { t, loadLang, setLang, statusLabel, priorityLabel, type Lang } from './i18n'
 import { useSavedViews } from './components/BulkBar'
 import { PRIORITY_TEXT, STATUS_COLOR } from './lib/colors'
 import { buildAssigneeOptions } from './lib/assignee-options'
-import { CYCLE_SIDEBAR_LIMIT, CURRENT_CYCLE, currentCycleIds } from './lib/cycles'
+import { CYCLE_SIDEBAR_LIMIT, CURRENT_CYCLE, NO_CYCLE, currentCycleIds } from './lib/cycles'
 import {
   ALL_PROJECTS,
   DEFAULT_FILTERS,
@@ -14,11 +15,21 @@ import {
   LIST_WINDOW_STEP,
   parseFilters,
   toggleIn,
+  UNASSIGNED,
   type Filters,
   type Grouping,
 } from './lib/filters'
 import { useProjectCounts } from './lib/hooks'
-import { loadTheme, storeTheme, type ThemePreference } from './lib/preferences'
+import {
+  loadFilterPlacement,
+  loadTheme,
+  showsSidebarFilters,
+  showsTopbarFilters,
+  storeFilterPlacement,
+  storeTheme,
+  type FilterPlacement,
+  type ThemePreference,
+} from './lib/preferences'
 import { applyTheme } from './lib/theme'
 import { isOverlayOpen, registerKey } from './lib/keyboard'
 import { useRepositories } from './data/context'
@@ -113,15 +124,23 @@ function useCycleCountTotals(projectId: string) {
   }, [rows])
 }
 
-/** 成员在当前窗口内的计数（窗口 500 内，展示用） */
-function useWindowAssigneeCounts(issues: Issue[] | undefined) {
+/** 成员全量计数（项目全量，不随列表窗口截断）：成员 id → 条数，UNASSIGNED 键为未分配。
+ *  项目总量来自 liveCounts（索引计数），各成员来自 liveAssigneeWorkload（跳过未分配），
+ *  两者都排除软删行——未分配 = 总量 − 已分配之和，不需要为此再扫一遍分配索引。 */
+function useFullAssigneeCounts(projectId: string, total: number | undefined) {
+  const { issues } = useRepositories()
+  const workload = useObservable(() => issues.liveAssigneeWorkload(projectId), [issues, projectId])
   return useMemo(() => {
     const map = new Map<string, number>()
-    for (const i of issues ?? []) {
-      if (i.assigneeId) map.set(i.assigneeId, (map.get(i.assigneeId) ?? 0) + 1)
+    if (!workload) return map
+    let assigned = 0
+    for (const w of workload) {
+      map.set(w.memberId, w.count)
+      assigned += w.count
     }
+    map.set(UNASSIGNED, Math.max(0, (total ?? assigned) - assigned))
     return map
-  }, [issues])
+  }, [workload, total])
 }
 
 /** 数据源徽标：DEV 下可点切换（写 localStorage + reload）；构建产物只读，
@@ -239,6 +258,14 @@ function Workspace({
     setLang(next)
   }, [lang])
   const [themePref, setThemePref] = useState<ThemePreference>(loadTheme())
+  // 筛选位置：偏好持久化在 localStorage，切换即时生效（同一份 Filters，两处渲染天然同步）
+  const [placement, setPlacement] = useState<FilterPlacement>(loadFilterPlacement)
+  const changePlacement = useCallback((next: FilterPlacement) => {
+    setPlacement(next)
+    storeFilterPlacement(next)
+  }, [])
+  const sidebarFilters = showsSidebarFilters(placement)
+  const topbarFilters = showsTopbarFilters(placement)
   const applyThemeAndStore = useCallback((next: ThemePreference) => {
     setThemePref(next)
     storeTheme(next)
@@ -338,7 +365,7 @@ function Workspace({
   const projects = useProjects()
   const cycles = useCycles(filters.projectId)
   const cycleCounts = useCycleCountTotals(filters.projectId)
-  const memberCounts = useWindowAssigneeCounts(issues)
+  const memberCounts = useFullAssigneeCounts(filters.projectId, counts?.total)
   const memberMap = useMemo(() => new Map((members ?? []).map((m) => [m.id, m])), [members])
   const can = useCallback(
     (action: Action, ctx?: Ctx) =>
@@ -399,11 +426,42 @@ function Workspace({
     ],
     [members, lang],
   )
-  // 工具条成员多选：成员名 + 当前窗口计数后缀，「未分配」哨兵与 assigneeFilter / SavedView 直接对接
+  // 工具条成员多选：成员名 + 全量计数后缀（项目全量，不随窗口变），「未分配」置首
   // biome-ignore lint/correctness/useExhaustiveDependencies: t() 读模块级语言态，lang 是语言切换时的重算触发器
   const assigneeFilterOptions = useMemo(
     () => buildAssigneeOptions(members, memberCounts, { unassigned: t('unassignedMember') }),
     [members, memberCounts, lang],
+  )
+  // 顶部筛选栏/侧栏共用同一批选项（含全量计数后缀）：两处控件文案必须同源，
+  // 否则「同一筛选两处看」会读到不同计数
+  // biome-ignore lint/correctness/useExhaustiveDependencies: lang 是语言切换时的重算触发器
+  const statusFilterOptions = useMemo(
+    () =>
+      ISSUE_STATUSES.map((s) => ({
+        label: `${statusLabel(s)} (${counts?.byStatus[s] ?? 0})`,
+        value: s,
+      })),
+    [counts, lang],
+  )
+  // biome-ignore lint/correctness/useExhaustiveDependencies: lang 是语言切换时的重算触发器
+  const priorityFilterOptions = useMemo(
+    () =>
+      ISSUE_PRIORITIES.map((p) => ({
+        label: `${priorityLabel(p)} (${counts?.byPriority[p] ?? 0})`,
+        value: p,
+      })),
+    [counts, lang],
+  )
+  // 迭代下拉：全部 / 当前迭代（派生，无周期时不列）/ 各周期 / 无迭代（哨兵与 cycleFilter 直接对接）
+  // biome-ignore lint/correctness/useExhaustiveDependencies: lang 是语言切换时的重算触发器
+  const cycleFilterOptions = useMemo(
+    () => [
+      { label: t('allCycles'), value: 'all' },
+      ...((cycles ?? []).length > 0 ? [{ label: t('currentCycle'), value: CURRENT_CYCLE }] : []),
+      ...(cycles ?? []).map((c) => ({ label: c.name, value: c.id })),
+      { label: t('noCycle'), value: NO_CYCLE },
+    ],
+    [cycles, lang],
   )
   // 新建 Issue 的项目下拉：只列真实项目（「全部项目」不是可写入作用域）
   const projectOptions = useMemo(
@@ -450,74 +508,79 @@ function Workspace({
       id: 'my',
       label: t('myView').replace('{name}', memberMap.get(currentUser)?.name ?? ''),
     },
-    {
+  )
+  // 筛选组只在侧栏承载筛选时出现（位置 = 顶部时由内容区顶部筛选栏接管；两处同源）
+  if (sidebarFilters) {
+    sideRows.push({
       group: t('status'),
       kind: 'status',
       value: 'status:all',
       id: 'all',
       label: t('allStatuses'),
       count: counts?.total.toLocaleString() ?? '…',
-    },
-  )
-  for (const s of ISSUE_STATUSES) {
-    sideRows.push({
-      group: t('status'),
-      kind: 'status',
-      value: `status:${s}`,
-      id: s,
-      label: statusLabel(s),
-      statusColor: STATUS_COLOR[s],
-      count: counts?.byStatus[s]?.toLocaleString() ?? '…',
     })
-  }
-  sideRows.push({
-    group: t('priority'),
-    kind: 'priority',
-    value: 'priority:all',
-    id: 'all',
-    label: t('allPriorities'),
-  })
-  for (const p of ISSUE_PRIORITIES) {
+    for (const s of ISSUE_STATUSES) {
+      sideRows.push({
+        group: t('status'),
+        kind: 'status',
+        value: `status:${s}`,
+        id: s,
+        label: statusLabel(s),
+        statusColor: STATUS_COLOR[s],
+        count: counts?.byStatus[s]?.toLocaleString() ?? '…',
+      })
+    }
     sideRows.push({
       group: t('priority'),
       kind: 'priority',
-      value: `priority:${p}`,
-      id: p,
-      label: priorityLabel(p),
-      iconColor: PRIORITY_TEXT[p],
+      value: 'priority:all',
+      id: 'all',
+      label: t('allPriorities'),
+      count: counts?.total.toLocaleString() ?? '…',
     })
-  }
-  // 迭代组：单选（周期有序，多选无交集意义）。行 = 全部迭代 / 当前迭代（派生）/
-  // 本项目周期（startAt 倒序，最多 CYCLE_SIDEBAR_LIMIT 个）。项目无周期时只留「全部迭代」，
-  // 「当前迭代」指向必然为空的集合，不列入
-  sideRows.push({
-    group: t('cycles'),
-    kind: 'cycle',
-    value: 'cycle:all',
-    id: 'all',
-    label: t('allCycles'),
-  })
-  if ((cycles ?? []).length > 0) {
-    const currentIds = currentCycleIds(cycles ?? [], Date.now())
-    const currentTotal = [...currentIds].reduce((n, id) => n + (cycleCounts.get(id) ?? 0), 0)
+    for (const p of ISSUE_PRIORITIES) {
+      sideRows.push({
+        group: t('priority'),
+        kind: 'priority',
+        value: `priority:${p}`,
+        id: p,
+        label: priorityLabel(p),
+        iconColor: PRIORITY_TEXT[p],
+        count: counts?.byPriority[p]?.toLocaleString() ?? '…',
+      })
+    }
+    // 迭代组：单选（周期有序，多选无交集意义）。行 = 全部迭代 / 当前迭代（派生）/
+    // 本项目周期（startAt 倒序，最多 CYCLE_SIDEBAR_LIMIT 个）。项目无周期时只留「全部迭代」，
+    // 「当前迭代」指向必然为空的集合，不列入
     sideRows.push({
       group: t('cycles'),
       kind: 'cycle',
-      value: `cycle:${CURRENT_CYCLE}`,
-      id: CURRENT_CYCLE,
-      label: t('currentCycle'),
-      count: currentTotal.toLocaleString(),
+      value: 'cycle:all',
+      id: 'all',
+      label: t('allCycles'),
     })
-  }
-  for (const c of (cycles ?? []).slice(0, CYCLE_SIDEBAR_LIMIT)) {
-    sideRows.push({
-      group: t('cycles'),
-      kind: 'cycle',
-      value: `cycle:${c.id}`,
-      id: c.id,
-      label: c.name,
-      count: (cycleCounts.get(c.id) ?? 0).toLocaleString(),
-    })
+    if ((cycles ?? []).length > 0) {
+      const currentIds = currentCycleIds(cycles ?? [], Date.now())
+      const currentTotal = [...currentIds].reduce((n, id) => n + (cycleCounts.get(id) ?? 0), 0)
+      sideRows.push({
+        group: t('cycles'),
+        kind: 'cycle',
+        value: `cycle:${CURRENT_CYCLE}`,
+        id: CURRENT_CYCLE,
+        label: t('currentCycle'),
+        count: currentTotal.toLocaleString(),
+      })
+    }
+    for (const c of (cycles ?? []).slice(0, CYCLE_SIDEBAR_LIMIT)) {
+      sideRows.push({
+        group: t('cycles'),
+        kind: 'cycle',
+        value: `cycle:${c.id}`,
+        id: c.id,
+        label: c.name,
+        count: (cycleCounts.get(c.id) ?? 0).toLocaleString(),
+      })
+    }
   }
   for (const v of savedViews ?? []) {
     sideRows.push({
@@ -533,13 +596,15 @@ function Workspace({
   const sideActive: Record<string, string | string[]> = {
     [t('projects')]: `project:${filters.projectId}`,
     [t('views')]: filters.myOnly ? 'view:my' : 'view:all',
-    [t('status')]: filters.statusFilter.length
+  }
+  if (sidebarFilters) {
+    sideActive[t('status')] = filters.statusFilter.length
       ? filters.statusFilter.map((s) => `status:${s}`)
-      : ['status:all'],
-    [t('priority')]: filters.priorityFilter.length
+      : ['status:all']
+    sideActive[t('priority')] = filters.priorityFilter.length
       ? filters.priorityFilter.map((p) => `priority:${p}`)
-      : ['priority:all'],
-    [t('cycles')]: `cycle:${filters.cycleFilter ?? 'all'}`,
+      : ['priority:all']
+    sideActive[t('cycles')] = `cycle:${filters.cycleFilter ?? 'all'}`
   }
 
   const handleSideRowClick = useCallback(
@@ -780,6 +845,20 @@ function Workspace({
           data-testid="toolbar-search"
           placeholder={t('search')}
         />
+        {/* 筛选位置偏好：紧凑 segmented，切换即时生效并持久化（label 走 title，视觉只留三项） */}
+        <span className="tb-placement" title={t('filterPlacement')}>
+          <OSegmented
+            testid="filters-placement"
+            ariaLabel={t('filterPlacement')}
+            value={placement}
+            options={[
+              { label: t('placementSidebar'), value: 'sidebar' },
+              { label: t('placementTopbar'), value: 'topbar' },
+              { label: t('placementBoth'), value: 'both' },
+            ]}
+            onChange={(v) => changePlacement(v as FilterPlacement)}
+          />
+        </span>
         <span className="tb-spacer" />
         <oas-button
           type="text"
@@ -860,6 +939,22 @@ function Workspace({
                   onChange={(v) => setView(v as View)}
                 />
               </div>
+              {/* 侧栏成员筛选：一行可搜索多选（不再占 8 行成员条目）；与工具条/顶栏共用 assigneeFilter */}
+              {sidebarFilters && (
+                <div className="side-filters" data-testid="side-filters">
+                  <span className="side-filters-label">{t('members')}</span>
+                  <OMultiSelect
+                    testid="side-filter-assignee"
+                    label={t('members')}
+                    searchLabel={t('searchMembers')}
+                    placeholder={t('allMembers')}
+                    maxTagCount={1}
+                    value={filters.assigneeFilter}
+                    options={assigneeFilterOptions}
+                    onChange={(v) => setF('assigneeFilter', v)}
+                  />
+                </div>
+              )}
               <SideList
                 rows={sideRows}
                 activeByGroup={sideActive}
@@ -867,7 +962,20 @@ function Workspace({
                 onDeleteSavedView={handleDeleteSavedView}
               />
             </aside>
-            <main className="content">
+            <main
+              className={`content${topbarFilters && view !== 'dashboard' ? ' has-filter-bar' : ''}`}
+            >
+              {/* 顶部筛选栏：位置偏好含顶部时接管四个筛选维度（列表/看板/时间线/资源/日程；仪表盘无筛选） */}
+              {topbarFilters && view !== 'dashboard' && (
+                <FilterBar
+                  filters={filters}
+                  setFilters={setFilters}
+                  statusOptions={statusFilterOptions}
+                  priorityOptions={priorityFilterOptions}
+                  assigneeOptions={assigneeFilterOptions}
+                  cycleOptions={cycleFilterOptions}
+                />
+              )}
               {view === 'dashboard' && (
                 <ErrorBoundary key={view}>
                   <DashboardView
@@ -889,7 +997,6 @@ function Workspace({
                     grouping={grouping}
                     setGrouping={setGrouping}
                     memberMap={memberMap}
-                    assigneeOptions={assigneeFilterOptions}
                     onSelect={setSelectedId}
                     onSaveView={() => saveViewRef.current?.setAttribute('visible', '')}
                     currentUser={currentUser}

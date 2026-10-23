@@ -774,6 +774,88 @@ body {
   cursor: pointer;
 }
 
+/* ── 顶部筛选栏（内容区顶部：列表/看板/时间线/资源/日程） ── */
+.filter-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  /* 控件多时换行而不是裁切（窄视口/长语言文案） */
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--oas-color-border, #e2e8f0);
+  background: color-mix(in srgb, var(--oas-color-bg-elevated, #fff) 70%, transparent);
+}
+
+.filter-bar-label {
+  font-size: 12px;
+  color: var(--oas-color-text-secondary, #6b7280);
+}
+
+.filter-bar oas-select {
+  width: 150px;
+}
+
+/* 成员多选稍宽，容纳两个已选 chip（chip 只留名字，计数后缀见 OMultiSelect） */
+.filter-bar oas-select[data-testid="filters-assignee"] {
+  width: 180px;
+}
+
+.filter-bar-clear {
+  appearance: none;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  color: var(--oas-color-primary, #0b6cff);
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+/* 无生效筛选时置灰但仍在位：位置稳定，读屏不会因行数变化丢焦点 */
+.filter-bar-clear:disabled {
+  color: var(--oas-color-text-secondary, #6b7280);
+  cursor: default;
+}
+
+.filter-bar-clear:focus-visible {
+  outline: 2px solid var(--oas-color-primary, #0b6cff);
+  outline-offset: 1px;
+}
+
+/* 筛选栏占掉内容区高度：时间线/资源的高度预算按 300px 基准再减去栏高（44px + 1px 边框） */
+.content.has-filter-bar .timeline-page oas-gantt {
+  --oas-gantt-height: calc(100vh - 344px);
+}
+
+.content.has-filter-bar .resource-page oas-resource {
+  --oas-resource-height: calc(100vh - 344px);
+}
+
+/* ── 侧栏成员筛选（一行可搜索多选） ── */
+.side-filters {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px 2px;
+}
+
+.side-filters-label {
+  font-size: 12px;
+  color: var(--oas-color-text-secondary, #6b7280);
+}
+
+.side-filters oas-select {
+  width: 100%;
+}
+
+/* 折叠 rail（56px）放不下控件：与视图切换同样收起 */
+.side-panel:has(oas-sidebar[collapsed]) .side-filters {
+  display: none;
+}
+
 /* ── 分组 ── */
 .issue-group-title {
   margin: 0;
@@ -1034,11 +1116,22 @@ body {
   outline-offset: 1px;
 }
 
+/* 筛选位置切换（顶栏常驻紧凑 segmented）：右侧设置区之前，不抢动作按钮的宽度 */
+.tb-placement {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: 4px;
+}
+
+.tb-placement oas-segmented {
+  font-size: 12px;
+}
+
 /* ── 视图切换（侧栏顶部，垂直 oas-tabs） ── */
 .side-view-seg {
   padding: 8px 10px 0;
 }
-
 .side-view-seg oas-tabs {
   display: block;
   width: 100%;
@@ -1583,6 +1676,10 @@ oas-drawer::part(close):focus-visible {
     display: none;
   }
   .side-view-seg oas-tabs {
+    display: none;
+  }
+  /* 窄屏侧栏收成 rail：成员控件无处安放（与视图切换同样收起） */
+  .side-filters {
     display: none;
   }
   .toolbar-search {
