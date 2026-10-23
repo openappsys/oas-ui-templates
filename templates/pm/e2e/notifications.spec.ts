@@ -44,11 +44,11 @@ async function setOSelect(page: Page, testid: string, value: string) {
   )
 }
 
-/** 工具条成员多选（oas-select multiple）：value 为数组，detail.value 同为数组
- *  （侧栏成员组已移除，成员筛选的主入口在工具条） */
+/** 侧栏成员多选（oas-select multiple）：value 为数组，detail.value 同为数组
+ *  （成员筛选的主入口在侧栏控件，位置=顶部时换到内容区顶部筛选栏） */
 async function setAssigneeFilter(page: Page, ids: string[]) {
   await page.evaluate((values) => {
-    const el = document.querySelector('[data-testid="filter-assignee"]') as
+    const el = document.querySelector('[data-testid="side-filter-assignee"]') as
       | (HTMLElement & { value?: string[] })
       | null
     if (!el) return

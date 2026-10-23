@@ -32,8 +32,8 @@ const sideItem = (page: Page, value: string) =>
 /** 列表渲染行的状态文案集合 */
 const rowStatuses = (page: Page) => page.locator('.issue-row .issue-status').allTextContents()
 
-/** 工具条成员多选（oas-select multiple+searchable+clearable）：trigger / 选项行都在 shadow 内 */
-const assigneeSelect = (page: Page) => page.getByTestId('filter-assignee')
+/** 侧栏成员多选（oas-select multiple+searchable+clearable）：trigger / 选项行都在 shadow 内 */
+const assigneeSelect = (page: Page) => page.getByTestId('side-filter-assignee')
 const assigneeDropdown = (page: Page) => assigneeSelect(page).locator('.dropdown')
 
 async function openAssignee(page: Page) {
@@ -117,10 +117,10 @@ test('S2 状态多选：组内 OR 并集，再点取消，「全部」清空', a
     .toBe(true)
 })
 
-test('S3 工具栏成员多选：点两项取并集（chips 回显），再点取消', async ({ page }) => {
+test('S3 侧栏成员多选：点两项取并集（chips 回显），再点取消', async ({ page }) => {
   await waitForSeed(page)
   await openAssignee(page)
-  // 选项 label 带窗口计数后缀，而计数会随窗口加载变化——点击与断言只用成员名（去掉 " (n)"）
+  // 选项 label 带全量计数后缀（与列表窗口无关）；点击与断言只用成员名（去掉 " (n)"）
   const labels = await assigneeSelect(page).evaluate((el) => {
     const opts = (el as { options?: Array<{ label: string; value: string }> }).options ?? []
     return opts.filter((o) => o.value !== '__none__').map((o) => o.label)
@@ -140,8 +140,13 @@ test('S3 工具栏成员多选：点两项取并集（chips 回显），再点�
     })
     .toBe(true)
 
+  // 侧栏只有一行宽度：max-tag-count=1，第二项折叠成 +1（选中集仍读 property）
   await pickAssignee(page, second)
-  await expect(assigneeSelect(page).locator('.chip:not(.chip-plus)')).toHaveCount(2)
+  expect(await assigneeSelect(page).evaluate((el) => (el as { value?: string[] }).value)).toEqual([
+    expect.any(String),
+    expect.any(String),
+  ])
+  await expect(assigneeSelect(page).locator('.chip-plus')).toHaveText('+1', { timeout: 5000 })
   // 并集：渲染行只含这两位成员
   await expect
     .poll(async () => {
@@ -153,6 +158,7 @@ test('S3 工具栏成员多选：点两项取并集（chips 回显），再点�
   // 再点已选项 = 取消该值，仅剩另一位
   await pickAssignee(page, first)
   await expect(assigneeSelect(page).locator('.chip:not(.chip-plus)')).toHaveCount(1)
+  await expect(assigneeSelect(page).locator('.chip-plus')).toHaveCount(0)
   await expect
     .poll(async () => {
       const list = await rowAssignees(page)
@@ -233,7 +239,7 @@ test('S6 折叠 rail：56px 收窄、行存活、badge 角标，再展开恢复'
   const panel = page.getByTestId('side-panel')
   const toggle = sidebar.locator('[part="toggle"]')
   await expect(toggle).toBeVisible()
-  // 侧栏不再有成员组（成员筛选已移到列表工具条）：优先级组是最后一个可折叠分组的代表
+  // 成员筛选是侧栏顶部的一行控件（不是行组）：行组只剩项目/视图/状态/优先级/迭代
   await expect(sideItem(page, 'priority:all')).toBeVisible()
   await expect(sidebar.locator('[part="item"][data-value^="member:"]')).toHaveCount(0)
   const barWidth = () => sidebar.evaluate((el) => Math.round(el.getBoundingClientRect().width))
@@ -261,7 +267,7 @@ test('S6 折叠 rail：56px 收窄、行存活、badge 角标，再展开恢复'
   })
 })
 
-test('S8 工具栏成员多选：搜索过滤选项、+N 折叠、清空回全部', async ({ page }) => {
+test('S8 侧栏成员多选：搜索过滤选项、+N 折叠、清空回全部', async ({ page }) => {
   await waitForSeed(page)
   await openAssignee(page)
   // 搜索：输入姓「李」只剩李娜一项（选项按 label 本地过滤）
@@ -273,7 +279,7 @@ test('S8 工具栏成员多选：搜索过滤选项、+N 折叠、清空回全�
   await pickAssignee(page, '李娜')
   await expect(assigneeSelect(page).locator('.option').filter({ hasText: '张伟' })).toHaveCount(1)
 
-  // 三选：max-tag-count=2 → 折叠出 +N（数字随可用宽度浮动，只断言形态）
+  // 三选：max-tag-count=1（侧栏一行放不下更多 chip）→ 折叠出 +N（数字随宽度浮动，只断言形态）
   await pickAssignee(page, '张伟')
   await pickAssignee(page, '王强')
   await expect(assigneeSelect(page).locator('.chip-plus')).toHaveText(/^\+\d+$/, {

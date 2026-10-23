@@ -49,10 +49,12 @@ async function switchUser(page: Page, id: string) {
   })
 }
 
-/** 工具条成员多选（oas-select multiple）：value 为数组，detail.value 同为数组 */
+/** 侧栏成员多选（oas-select multiple）：value 为数组，detail.value 同为数组。
+ *  位置偏好默认侧栏，所以控件在 side-filter-assignee；切到顶部时同一状态由 filters-assignee 承载 */
 async function setAssigneeFilter(page: Page, ids: string[]) {
   await page.evaluate((values) => {
-    const el = document.querySelector('[data-testid="filter-assignee"]') as
+    const el = (document.querySelector('[data-testid="side-filter-assignee"]') ??
+      document.querySelector('[data-testid="filters-assignee"]')) as
       | (HTMLElement & { value?: string[] })
       | null
     if (!el) return
@@ -438,6 +440,41 @@ async function captureFilterSelection(page: Page, suffix: string) {
     .screenshot({ path: `shots/pm-filters-sidebar-bottom${suffix}.png` })
 }
 
+/** 筛选位置偏好：segmented 的 value/options 都走 attribute，change 与 tabs 同契约 */
+async function setPlacement(page: Page, value: string) {
+  await page.evaluate((v) => {
+    const el = document.querySelector('[data-testid=filters-placement]') as HTMLElement & {
+      value?: string
+    }
+    el.value = v
+    el.dispatchEvent(new CustomEvent('oas-change', { bubbles: true, detail: { value: v } }))
+  }, value)
+}
+
+/** 三态（侧栏/顶部/两者）+ 四个视图的顶栏筛选控件，供目检「同一筛选两处同源」 */
+async function captureFilterPlacement(page: Page, suffix: string) {
+  await page.waitForTimeout(1200)
+  await page.screenshot({ path: `shots/pm-placement-sidebar${suffix}.png` })
+
+  await setPlacement(page, 'topbar')
+  await page.waitForTimeout(1200)
+  await page.screenshot({ path: `shots/pm-placement-topbar${suffix}.png` })
+
+  await setPlacement(page, 'both')
+  await page.waitForTimeout(1200)
+  await page.screenshot({ path: `shots/pm-placement-both${suffix}.png` })
+
+  // 顶部模式下逐视图复核筛选栏在场（仪表盘不在筛选视图内）
+  await setPlacement(page, 'topbar')
+  for (const view of ['board', 'timeline', 'resource', 'schedule']) {
+    await setView(page, view)
+    await page.waitForTimeout(1500)
+    await page.screenshot({ path: `shots/pm-placement-topbar-${view}${suffix}.png` })
+  }
+  await setView(page, 'issues')
+  await page.waitForTimeout(600)
+}
+
 /** 迭代组：当前迭代筛选 + 侧栏迭代组（分组在优先级之后，滚动到可见再截图） */
 async function captureCycles(page: Page, suffix: string) {
   await sideItem(page, 'cycle:__current__').click()
@@ -562,7 +599,7 @@ test('shots schedule same moment', async ({ page }) => {
 
 /** 工具栏成员多选（展开 / 搜索过滤 / 已选 chips + +N）：双主题目检 */
 async function captureAssigneeFilter(page: Page, suffix: string) {
-  const sel = page.getByTestId('filter-assignee')
+  const sel = page.getByTestId('side-filter-assignee')
   await sel.locator('button.trigger').click()
   await expect(sel.locator('.dropdown')).toHaveClass(/open/, { timeout: 5000 })
   await page.waitForTimeout(600)
@@ -572,17 +609,16 @@ async function captureAssigneeFilter(page: Page, suffix: string) {
   await page.waitForTimeout(500)
   await page.screenshot({ path: `shots/pm-assignee-search${suffix}.png` })
 
-  // 选中搜索命中的第一项，再清空搜索多选两项 → 折叠出 +N
+  // 选中搜索命中的第一项（搜索自动清空），再按名字多选两项 → 折叠出 +N
   await sel.locator('.option').first().click()
-  await sel.locator('input.search-input').fill('')
-  await page.waitForTimeout(400)
-  await sel.locator('.option').nth(1).click()
-  await sel.locator('.option').nth(2).click()
+  for (const name of ['李娜', '王强']) {
+    await sel.locator('.option').filter({ hasText: name }).first().click()
+  }
+  await expect(sel.locator('.chip-plus')).toHaveText(/^\+\d+$/, { timeout: 5000 })
   // 点工具条外关闭下拉（Esc 被全局快捷键吞掉），只看触发器的 chips 回显
   await page.locator('.issue-header h1').click()
   await expect(sel.locator('.dropdown')).not.toHaveClass(/open/, { timeout: 5000 })
   await page.waitForTimeout(400)
-  await expect(sel.locator('.chip-plus')).toBeVisible({ timeout: 5000 })
   await page.screenshot({ path: `shots/pm-assignee-chips${suffix}.png` })
 }
 
@@ -652,6 +688,22 @@ test('shots filters multi dark', async ({ page }) => {
   await expectDarkTheme(page)
   await captureFilterSelection(page, '-dark')
   console.log('shots filters multi dark done')
+})
+
+test('shots filter placement', async ({ page }) => {
+  test.setTimeout(240_000)
+  await openApp(page)
+  await captureFilterPlacement(page, '')
+  console.log('shots filter placement done')
+})
+
+test('shots filter placement dark', async ({ page }) => {
+  test.setTimeout(240_000)
+  await page.addInitScript(() => localStorage.setItem('oas-pm-theme', 'dark'))
+  await openApp(page)
+  await expectDarkTheme(page)
+  await captureFilterPlacement(page, '-dark')
+  console.log('shots filter placement dark done')
 })
 
 test('shots dark', async ({ page }) => {

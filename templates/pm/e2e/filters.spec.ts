@@ -77,9 +77,9 @@ test('F2 状态 × 成员 AND：行同时满足两个维度', async ({ page }) =
     )
     .toBe(true)
 
-  // 成员筛选在工具条多选里（侧栏已无成员组）：从带计数的选项里挑一个当前窗口内仍有行的成员，
-  // 避免挑到空集（计数后缀即窗口内条数）
-  const assignee = page.getByTestId('filter-assignee')
+  // 成员筛选在侧栏（一行可搜索多选）：从带计数的选项里挑一个当前仍有行的成员，
+  // 避免挑到空集（计数后缀即全量条数）
+  const assignee = page.getByTestId('side-filter-assignee')
   await assignee.locator('button.trigger').click()
   await expect(assignee.locator('.dropdown')).toHaveClass(/open/, { timeout: 5000 })
   const target = await assignee.evaluate((el) => {
@@ -123,40 +123,42 @@ test('F2 状态 × 成员 AND：行同时满足两个维度', async ({ page }) =
   await expect(assignee.locator('.value')).toHaveText('全部成员')
 })
 
-test('F3 工具条优先级单值入口：与侧栏多选互通', async ({ page }) => {
+test('F3 优先级两处同源：侧栏多选 ↔ 顶部筛选栏多选（位置=两者）', async ({ page }) => {
   await waitForSeed(page)
-  const pickPriority = (value: string) =>
-    page.evaluate((val) => {
-      const el = document.querySelector('[data-testid="filter-priority"]') as
-        | (HTMLElement & { value?: string })
-        | null
-      if (!el) return
-      el.value = val
-      el.dispatchEvent(new CustomEvent('oas-change', { bubbles: true, detail: { value: val } }))
-    }, value)
+  // 默认侧栏：优先级由侧栏组承载，内容区没有顶部筛选栏
+  await expect(sideItem(page, 'priority:all')).toBeVisible()
+  await expect(page.getByTestId('topbar-filters')).toHaveCount(0)
 
-  await pickPriority('urgent')
+  // 侧栏选两个优先级（组内 OR）
+  await sideItem(page, 'priority:urgent').click()
   await expect(sideItem(page, 'priority:urgent')).toHaveAttribute('aria-pressed', 'true')
-  await expect(sideItem(page, 'priority:all')).toHaveAttribute('aria-pressed', 'false')
-
-  // 侧栏再点一个 → 变成多选，工具条回落到「已选 2 项」占位项
   await sideItem(page, 'priority:low').click()
-  await expect
-    .poll(() =>
-      page.getByTestId('filter-priority').evaluate((el) => (el as { value?: string }).value ?? ''),
-    )
-    .toBe('multi')
-  expect(
-    await page.getByTestId('filter-priority').evaluate((el) => {
-      const opts = (el as { options?: Array<{ label: string; value: string }> }).options ?? []
-      return opts.find((o) => o.value === 'multi')?.label ?? ''
-    }),
-  ).toBe('已选 2 项')
+  await expect(sideItem(page, 'priority:low')).toHaveAttribute('aria-pressed', 'true')
 
-  // 工具条选「全部」→ 清空该组
-  await pickPriority('all')
-  await expect(sideItem(page, 'priority:all')).toHaveAttribute('aria-pressed', 'true')
+  // 切「两者」：顶部筛选栏的优先级多选回显同样两项（同一份 Filters）
+  await page
+    .getByTestId('filters-placement')
+    .locator('label.item')
+    .filter({ hasText: '两者' })
+    .first()
+    .click()
+  const topPriority = page.getByTestId('filters-priority')
+  await expect(topPriority).toBeVisible()
+  await expect(topPriority.locator('.chip:not(.chip-plus)').first()).toBeVisible()
+  expect(await topPriority.evaluate((el) => (el as { value?: string[] }).value ?? [])).toEqual([
+    'urgent',
+    'low',
+  ])
+
+  // 顶部栏清掉优先级 → 侧栏高亮同步回落「全部优先级」
+  await topPriority.locator('button.trigger').click()
+  await expect(topPriority.locator('.dropdown')).toHaveClass(/open/, { timeout: 5000 })
+  await topPriority.locator('.option').filter({ hasText: '紧急' }).first().click()
+  await expect(sideItem(page, 'priority:urgent')).toHaveAttribute('aria-pressed', 'false')
+  await expect(sideItem(page, 'priority:low')).toHaveAttribute('aria-pressed', 'true')
+  await topPriority.locator('.option').filter({ hasText: '低' }).first().click()
   await expect(sideItem(page, 'priority:low')).toHaveAttribute('aria-pressed', 'false')
+  await expect(sideItem(page, 'priority:all')).toHaveAttribute('aria-pressed', 'true')
 })
 
 test('F4 优先级多选与状态 AND：两个维度同时生效', async ({ page }) => {

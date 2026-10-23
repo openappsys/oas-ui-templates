@@ -939,7 +939,7 @@ function Workspace({
                   onChange={(v) => setView(v as View)}
                 />
               </div>
-              {/* 侧栏成员筛选：一行可搜索多选（不再占 8 行成员条目）；与工具条/顶栏共用 assigneeFilter */}
+              {/* 侧栏成员筛选：一行可搜索多选（不再把每个成员铺成一行）；与顶部筛选栏共用 assigneeFilter */}
               {sidebarFilters && (
                 <div className="side-filters" data-testid="side-filters">
                   <span className="side-filters-label">{t('members')}</span>
