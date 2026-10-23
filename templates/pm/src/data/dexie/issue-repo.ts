@@ -2,7 +2,7 @@ import Dexie from 'dexie'
 import { nanoid } from 'nanoid'
 import type { PMDatabase } from '@/db/schema'
 import type { Issue, IssuePriority, IssueStatus } from '@/types'
-import { ISSUE_STATUSES } from '@/types'
+import { ISSUE_PRIORITIES, ISSUE_STATUSES } from '@/types'
 import { fromLiveQuery, type Observable } from '@/data/observable'
 import { cycleFilterPredicate, CURRENT_CYCLE, NO_CYCLE } from '@/lib/cycles'
 import { ALL_PROJECTS, LIST_WINDOW, UNASSIGNED } from '@/lib/filters'
@@ -243,20 +243,36 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
               : db.issues.where('[projectId+status]').equals([projectId, s]).count(),
           ),
         ])
+        // 优先级计数同口径（[projectId+priority] / priority 索引），一处查询里并行取
+        const byPriorityRows = await Promise.all(
+          ISSUE_PRIORITIES.map((p: IssuePriority) =>
+            allProjects
+              ? db.issues.where('priority').equals(p).count()
+              : db.issues.where('[projectId+priority]').equals([projectId, p]).count(),
+          ),
+        )
         // 索引计数含软删行：从 deletedAt 索引取回软删行（只有这一小撮）再逐状态扣减，
         // 比逐状态 filter 全表便宜两个数量级（10W 行）
         const deleted = (await db.issues.where('deletedAt').above(0).toArray()).filter(
           (i) => allProjects || i.projectId === projectId,
         )
         const deletedByStatus = new Map<IssueStatus, number>()
+        const deletedByPriority = new Map<IssuePriority, number>()
         for (const i of deleted) {
           deletedByStatus.set(i.status, (deletedByStatus.get(i.status) ?? 0) + 1)
+          deletedByPriority.set(i.priority, (deletedByPriority.get(i.priority) ?? 0) + 1)
         }
         return {
           total: total - deleted.length,
           byStatus: Object.fromEntries(
             ISSUE_STATUSES.map((s, i) => [s, byStatus[i] - (deletedByStatus.get(s) ?? 0)]),
           ) as Record<IssueStatus, number>,
+          byPriority: Object.fromEntries(
+            ISSUE_PRIORITIES.map((p, i) => [
+              p,
+              byPriorityRows[i] - (deletedByPriority.get(p) ?? 0),
+            ]),
+          ) as Record<IssuePriority, number>,
         }
       })
     },

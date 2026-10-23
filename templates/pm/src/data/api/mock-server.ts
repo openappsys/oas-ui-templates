@@ -14,6 +14,7 @@ import {
 import { PRIORITY_WEIGHT } from '../../lib/order.ts'
 import { mulberry32 } from '../../lib/prng.ts'
 import {
+  ISSUE_PRIORITIES,
   ISSUE_STATUSES,
   type Activity,
   type Comment,
@@ -516,14 +517,20 @@ function issueCounts(store: MockStore, projectId: string) {
     IssueStatus,
     number
   >
+  // 优先级计数与 byStatus 同口径（全量、跳过软删、按项目作用域）
+  const byPriority = Object.fromEntries(ISSUE_PRIORITIES.map((p) => [p, 0])) as Record<
+    IssuePriority,
+    number
+  >
   let total = 0
   for (const issue of store.issues) {
     if (!notDeleted(issue)) continue
     if (!allProjects && issue.projectId !== projectId) continue
     total += 1
     byStatus[issue.status] += 1
+    byPriority[issue.priority] += 1
   }
-  return { total, byStatus }
+  return { total, byStatus, byPriority }
 }
 
 function nextId(store: MockStore, prefix: string): string {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ISSUE_STATUSES, type Cycle, type Issue } from '@/types'
+import { ISSUE_PRIORITIES, ISSUE_STATUSES, type Cycle, type Issue } from '@/types'
 import {
   MOCK_ISSUE_COUNT,
   createMockHandler,
@@ -554,17 +554,27 @@ describe('issue 写路径', () => {
 })
 
 describe('派生查询与聚合', () => {
-  it('counts 统计全项目各状态', () => {
+  it('counts 统计全项目各状态与各优先级', () => {
     const store = createMockStore({ now: FIXED })
     const body = call(store, 'GET', '/api/issues/counts', {
       query: { projectId: 'project-1' },
-    }).body as { total: number; byStatus: Record<string, number> }
+    }).body as {
+      total: number
+      byStatus: Record<string, number>
+      byPriority: Record<string, number>
+    }
     const rows = store.issues.filter((i) => i.projectId === 'project-1')
     expect(body.total).toBe(rows.length)
     expect(Object.keys(body.byStatus)).toEqual(ISSUE_STATUSES)
     for (const s of ISSUE_STATUSES) {
       expect(body.byStatus[s]).toBe(rows.filter((i) => i.status === s).length)
     }
+    // 优先级同口径（全量、按项目作用域），Dexie 侧 liveCounts.byPriority 与之一致
+    expect(Object.keys(body.byPriority)).toEqual(ISSUE_PRIORITIES)
+    for (const p of ISSUE_PRIORITIES) {
+      expect(body.byPriority[p]).toBe(rows.filter((i) => i.priority === p).length)
+    }
+    expect(Object.values(body.byPriority).reduce((a, b) => a + b, 0)).toBe(body.total)
   })
 
   it('workload 按成员计数且跳过未分配', () => {

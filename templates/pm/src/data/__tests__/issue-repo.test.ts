@@ -123,25 +123,29 @@ describe('dexie issue repository', () => {
 
   it('liveCounts 统计全项目各状态计数', async () => {
     await db.issues.bulkAdd([
-      seedIssue(db, { id: 'a', status: 'todo' }),
-      seedIssue(db, { id: 'b', status: 'todo' }),
-      seedIssue(db, { id: 'c', status: 'done' }),
-      seedIssue(db, { id: 'd', status: 'done', projectId: 'p2' }),
+      seedIssue(db, { id: 'a', status: 'todo', priority: 'medium' }),
+      seedIssue(db, { id: 'b', status: 'todo', priority: 'urgent' }),
+      seedIssue(db, { id: 'c', status: 'done', priority: 'low' }),
+      seedIssue(db, { id: 'd', status: 'done', projectId: 'p2', priority: 'high' }),
     ])
     const repo = createDexieIssueRepository(db)
-    const counts = await new Promise<{ total: number; byStatus: Record<string, number> }>(
-      (resolve) => {
-        const unsub = repo.liveCounts('p1').subscribe({
-          next: (v) => {
-            resolve(v)
-            unsub()
-          },
-        })
-      },
-    )
+    const counts = await new Promise<{
+      total: number
+      byStatus: Record<string, number>
+      byPriority: Record<string, number>
+    }>((resolve) => {
+      const unsub = repo.liveCounts('p1').subscribe({
+        next: (v) => {
+          resolve(v)
+          unsub()
+        },
+      })
+    })
     expect(counts.total).toBe(3)
     expect(counts.byStatus.todo).toBe(2)
     expect(counts.byStatus.done).toBe(1)
+    // 优先级计数与状态同口径：只算本项目、全量（与列表窗口无关）
+    expect(counts.byPriority).toEqual({ urgent: 1, high: 0, medium: 1, low: 1 })
   })
 
   it('liveWindow 无状态筛选走 [projectId+updatedAt] 窗口且 myOnly/优先级筛选生效', async () => {
@@ -699,27 +703,30 @@ describe('dexie issue repository — 全部项目作用域', () => {
 
   it('liveCounts 聚合全项目计数', async () => {
     await db.issues.bulkAdd([
-      seedIssue(db, { id: 'c1', projectId: 'p1', status: 'todo' }),
-      seedIssue(db, { id: 'c2', projectId: 'p2', status: 'todo' }),
-      seedIssue(db, { id: 'c3', projectId: 'p3', status: 'done' }),
-      seedIssue(db, { id: 'c4', projectId: 'p2', status: 'cancelled' }),
+      seedIssue(db, { id: 'c1', projectId: 'p1', status: 'todo', priority: 'urgent' }),
+      seedIssue(db, { id: 'c2', projectId: 'p2', status: 'todo', priority: 'medium' }),
+      seedIssue(db, { id: 'c3', projectId: 'p3', status: 'done', priority: 'low' }),
+      seedIssue(db, { id: 'c4', projectId: 'p2', status: 'cancelled', priority: 'urgent' }),
     ])
     const repo = createDexieIssueRepository(db)
-    const counts = await new Promise<{ total: number; byStatus: Record<string, number> }>(
-      (resolve) => {
-        const unsub = repo.liveCounts(ALL_PROJECTS).subscribe({
-          next: (v) => {
-            resolve(v)
-            unsub()
-          },
-        })
-      },
-    )
+    const counts = await new Promise<{
+      total: number
+      byStatus: Record<string, number>
+      byPriority: Record<string, number>
+    }>((resolve) => {
+      const unsub = repo.liveCounts(ALL_PROJECTS).subscribe({
+        next: (v) => {
+          resolve(v)
+          unsub()
+        },
+      })
+    })
     expect(counts.total).toBe(4)
     expect(counts.byStatus.todo).toBe(2)
     expect(counts.byStatus.done).toBe(1)
     expect(counts.byStatus.cancelled).toBe(1)
     expect(counts.byStatus.in_progress).toBe(0)
+    expect(counts.byPriority).toEqual({ urgent: 2, high: 0, medium: 1, low: 1 })
   })
 
   it('liveAssigneeWorkload 聚合全项目（仪表盘不因全部项目而空图）', async () => {
@@ -1129,6 +1136,8 @@ describe('dexie issue repository — 软删除与回收站', () => {
     expect(counts.total).toBe(1)
     expect(counts.byStatus.done).toBe(0)
     expect(counts.byStatus.todo).toBe(1)
+    // 软删行的优先级计数同样被扣掉（删除行是 done；保留行 priority 取 seed 默认 medium）
+    expect(Object.values(counts.byPriority).reduce((a, b) => a + b, 0)).toBe(1)
 
     expect(await first(repo.liveSubIssues('keep'))).toEqual([])
     expect((await first(repo.liveRelationCandidates('p1', 100))).map((r) => r.id)).toEqual(['keep'])

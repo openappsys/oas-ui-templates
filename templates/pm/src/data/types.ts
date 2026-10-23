@@ -30,6 +30,8 @@ export interface IssueWindowFilters {
 export interface ProjectCounts {
   total: number
   byStatus: Record<IssueStatus, number>
+  /** 全量优先级计数：筛选选项的计数后缀走全量口径（不受列表窗口截断影响） */
+  byPriority: Record<IssuePriority, number>
 }
 
 /** 单个周期的工作项计数；cycleId = null 是「未入迭代」桶（管理端结转与侧栏角标用） */
