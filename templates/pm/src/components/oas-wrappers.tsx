@@ -55,6 +55,108 @@ export function OSelect({
   return <oas-select ref={ref} data-testid={testid} aria-label={ariaLabel} />
 }
 
+/** oas-select 多选包装（multiple + searchable + clearable）：options / value 走 property
+ *  （多选时 setter 把数组转 JSON 写 value attribute）；`multiple` 决定 setter 语义，
+ *  必须在写 value 之前就在场——由 JSX attribute 保证（property 写入是 effect 的事）。
+ *  oas-change detail.value 为数组，clearable 清空路径回调空数组 = 该维度不限；
+ *  max-tag-count 让已选项折叠成 +N，避免 chips 把工具条撑开。 */
+export function OMultiSelect({
+  testid,
+  value,
+  options,
+  placeholder,
+  label,
+  searchLabel,
+  disabled,
+  maxTagCount = 2,
+  onChange,
+}: {
+  testid: string
+  value: string[]
+  options: Array<{ label: string; value: string }>
+  placeholder?: string
+  /** 可访问名：同时写宿主 aria-label 与 `label` attribute（oas-select 的 combobox 只认后者） */
+  label?: string
+  /** 下拉搜索框的可访问名与占位提示：组件自身按库内 i18n 命名且每次 update 重置 aria-label，
+   *  故在展开时覆盖一次（此后不再被 update 触碰，直到下次 rebuild） */
+  searchLabel?: string
+  disabled?: boolean
+  maxTagCount?: number
+  onChange: (v: string[]) => void
+}) {
+  const ref = useRef<HTMLElement>(null)
+  const onChangeRef = useRef(onChange)
+  onChangeRef.current = onChange
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    ;(el as unknown as { options: unknown }).options = options
+  }, [options])
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    el.toggleAttribute('disabled', disabled ?? false)
+  }, [disabled])
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    ;(el as unknown as { value: string | string[] }).value = value
+  }, [value])
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const h = (e: Event) => {
+      const v = (e as CustomEvent<{ value?: unknown }>).detail?.value
+      if (Array.isArray(v)) onChangeRef.current(v.map(String))
+      // 单选契约的兜底（组件在非 multiple 形态下 detail.value 是字符串）
+      else if (typeof v === 'string') onChangeRef.current(v === '' ? [] : [v])
+    }
+    el.addEventListener('oas-change', h)
+    return () => el.removeEventListener('oas-change', h)
+  }, [])
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    if (label) el.setAttribute('label', label)
+    else el.removeAttribute('label')
+  }, [label])
+  useEffect(() => {
+    const el = ref.current
+    if (!el || !searchLabel) return
+    const h = (e: Event) => {
+      if (!(e as CustomEvent<{ open?: boolean }>).detail?.open) return
+      const input = el.shadowRoot?.querySelector('.search-input')
+      input?.setAttribute('aria-label', searchLabel)
+      input?.setAttribute('placeholder', searchLabel)
+    }
+    el.addEventListener('oas-open-change', h)
+    return () => el.removeEventListener('oas-open-change', h)
+  }, [searchLabel])
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    // 选项 label 的计数后缀只服务于「挑人」；触发器 chip 是已选身份，剥掉后缀把宽度留给更多 chip
+    const h = (e: Event) => {
+      const d = (e as CustomEvent<{ label?: string; element?: HTMLElement }>).detail
+      if (d?.element && d.label) d.element.textContent = d.label.replace(/\s*\(\d+\)$/, '')
+    }
+    el.addEventListener('oas-tag-render', h)
+    return () => el.removeEventListener('oas-tag-render', h)
+  }, [])
+  return (
+    <oas-select
+      ref={ref}
+      multiple=""
+      searchable=""
+      clearable=""
+      max-tag-count={String(maxTagCount)}
+      placeholder={placeholder}
+      aria-label={label}
+      data-testid={testid}
+    />
+  )
+}
+
 export function OCheckbox({
   testid,
   className,

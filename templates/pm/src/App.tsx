@@ -5,6 +5,7 @@ import { OSelect, OTabs } from './components/oas-wrappers'
 import { t, loadLang, setLang, statusLabel, priorityLabel, type Lang } from './i18n'
 import { useSavedViews } from './components/BulkBar'
 import { PRIORITY_TEXT, STATUS_COLOR } from './lib/colors'
+import { buildAssigneeOptions } from './lib/assignee-options'
 import { CYCLE_SIDEBAR_LIMIT, CURRENT_CYCLE, currentCycleIds } from './lib/cycles'
 import {
   ALL_PROJECTS,
@@ -398,6 +399,12 @@ function Workspace({
     ],
     [members, lang],
   )
+  // 工具条成员多选：成员名 + 当前窗口计数后缀，「未分配」哨兵与 assigneeFilter / SavedView 直接对接
+  // biome-ignore lint/correctness/useExhaustiveDependencies: t() 读模块级语言态，lang 是语言切换时的重算触发器
+  const assigneeFilterOptions = useMemo(
+    () => buildAssigneeOptions(members, memberCounts, { unassigned: t('unassignedMember') }),
+    [members, memberCounts, lang],
+  )
   // 新建 Issue 的项目下拉：只列真实项目（「全部项目」不是可写入作用域）
   const projectOptions = useMemo(
     () => (projects ?? []).map((p) => ({ label: p.name, value: p.id })),
@@ -523,18 +530,6 @@ function Workspace({
       deletable: canDeleteView,
     })
   }
-  for (const m of members ?? []) {
-    sideRows.push({
-      group: t('members'),
-      kind: 'member',
-      value: `member:${m.id}`,
-      id: m.id,
-      label: m.name,
-      avatarColor: m.avatarColor,
-      avatarText: m.name[0],
-      count: String(memberCounts.get(m.id) ?? 0),
-    })
-  }
   const sideActive: Record<string, string | string[]> = {
     [t('projects')]: `project:${filters.projectId}`,
     [t('views')]: filters.myOnly ? 'view:my' : 'view:all',
@@ -545,7 +540,6 @@ function Workspace({
       ? filters.priorityFilter.map((p) => `priority:${p}`)
       : ['priority:all'],
     [t('cycles')]: `cycle:${filters.cycleFilter ?? 'all'}`,
-    [t('members')]: filters.assigneeFilter.map((a) => `member:${a}`),
   }
 
   const handleSideRowClick = useCallback(
@@ -592,15 +586,6 @@ function Workspace({
         case 'savedview':
           if (row.savedFilters) applySavedView(row.savedFilters)
           break
-        case 'member': {
-          const memberId = row.id
-          if (!memberId) break
-          setFilters((prev) => ({
-            ...prev,
-            assigneeFilter: toggleIn(prev.assigneeFilter, memberId),
-          }))
-          break
-        }
       }
     },
     [setF, applySavedView],
@@ -904,6 +889,7 @@ function Workspace({
                     grouping={grouping}
                     setGrouping={setGrouping}
                     memberMap={memberMap}
+                    assigneeOptions={assigneeFilterOptions}
                     onSelect={setSelectedId}
                     onSaveView={() => saveViewRef.current?.setAttribute('visible', '')}
                     currentUser={currentUser}

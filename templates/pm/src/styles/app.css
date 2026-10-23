@@ -723,7 +723,9 @@ body {
 .issue-toolbar {
   display: flex;
   align-items: center;
-  gap: 8px;
+  /* 控件多（排序/分组/优先级/成员）时允许换行，避免窄视口溢出裁切 */
+  flex-wrap: wrap;
+  gap: 8px 8px;
   padding: 8px 16px;
   border-bottom: 1px solid var(--oas-color-border, #e2e8f0);
 }
@@ -731,6 +733,24 @@ body {
 .issue-toolbar-label {
   font-size: 12px;
   color: var(--oas-color-text-secondary, #6b7280);
+}
+
+/* 工具条控件统一收窄（oas-select 默认 220px 对两字选项过宽）：四个控件 + 动作组在 1440 视口一行放下 */
+.issue-toolbar oas-select {
+  width: 168px;
+}
+
+/* 成员多选稍宽，容纳两个已选 chip（chip 只留成员名，计数后缀见 OMultiSelect 的 tag-render） */
+.issue-toolbar oas-select[data-testid="filter-assignee"] {
+  width: 200px;
+}
+
+/* 动作按钮组：靠右；换行时整组一起换行，避免每个带 auto margin 的按钮各自占一行 */
+.issue-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
 }
 
 .issue-toolbar select {
@@ -748,7 +768,6 @@ body {
   appearance: none;
   border: none;
   background: none;
-  margin-left: auto;
   font: inherit;
   font-size: 12px;
   color: var(--oas-color-primary, #0b6cff);

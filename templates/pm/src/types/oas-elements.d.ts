@@ -142,6 +142,11 @@ declare module 'react' {
         value?: string
         placeholder?: string
         multiple?: boolean | string
+        searchable?: boolean | string
+        clearable?: boolean | string
+        disabled?: boolean | string
+        /** 已选项折叠上限（超出显示 +N 徽标） */
+        'max-tag-count'?: number | string
       }
       'oas-checkbox': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
         checked?: boolean | string

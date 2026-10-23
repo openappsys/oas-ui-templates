@@ -5,7 +5,7 @@ import { t } from '@/i18n'
 export interface SideRow {
   group: string
   value: string
-  kind: 'project' | 'view' | 'status' | 'priority' | 'savedview' | 'member' | 'cycle'
+  kind: 'project' | 'view' | 'status' | 'priority' | 'savedview' | 'cycle'
   id?: string
   label: string
   count?: string
@@ -14,8 +14,6 @@ export interface SideRow {
   iconColor?: string
   deletable?: boolean
   savedFilters?: string
-  avatarColor?: string
-  avatarText?: string
 }
 
 interface SidebarItemLike {
@@ -25,8 +23,6 @@ interface SidebarItemLike {
   icon?: string
   iconColor?: string
   badge?: string | number
-  avatarText?: string
-  avatarColor?: string
   actions?: { icon?: string; value: string; label: string }[]
 }
 
@@ -110,10 +106,6 @@ export function SideList({
       } else if (row.kind === 'cycle') {
         // refresh = 周期循环；当前迭代与具体周期同一图标，靠分组内高亮区分
         item.icon = 'refresh'
-      }
-      if (row.avatarColor) {
-        item.avatarText = row.avatarText ?? ''
-        item.avatarColor = row.avatarColor
       }
       if (row.deletable && row.id) {
         item.actions = [

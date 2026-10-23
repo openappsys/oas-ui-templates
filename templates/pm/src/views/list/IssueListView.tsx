@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import type { Issue, IssuePriority, Member } from '@/types'
 import { ISSUE_PRIORITIES } from '@/types'
-import { OSelect, OCheckbox } from '@/components/oas-wrappers'
+import { OSelect, OCheckbox, OMultiSelect } from '@/components/oas-wrappers'
 import { t, getLang, priorityLabel, statusLabel } from '@/i18n'
 import { BulkBar } from '@/components/BulkBar'
 import { Avatar } from '@/components/Avatar'
@@ -22,6 +22,7 @@ export function IssueListView({
   grouping,
   setGrouping,
   memberMap,
+  assigneeOptions,
   onSelect,
   onSaveView,
   currentUser,
@@ -40,6 +41,8 @@ export function IssueListView({
   grouping: Grouping
   setGrouping: (g: Grouping) => void
   memberMap: Map<string, Member>
+  /** 成员多选下拉的选项（成员名 + 窗口计数，「未分配」哨兵）：筛选逻辑与 SavedView 共用 assigneeFilter */
+  assigneeOptions: Array<{ label: string; value: string }>
   onSelect: (id: string) => void
   onSaveView: () => void
   currentUser: string
@@ -260,39 +263,53 @@ export function IssueListView({
             }))
           }}
         />
-        {(filters.search ||
-          filters.assigneeFilter.length > 0 ||
-          filters.priorityFilter.length > 0 ||
-          filters.cycleFilter !== null ||
-          filters.myOnly) && (
-          <button
-            className="issue-toolbar-clear"
-            type="button"
-            data-testid="filter-clear"
-            onClick={() =>
-              setFilters((prev) => ({
-                ...prev,
-                search: '',
-                assigneeFilter: [],
-                priorityFilter: [],
-                cycleFilter: null,
-                myOnly: false,
-              }))
-            }
-          >
-            {t('clearFilters')}
-          </button>
-        )}
-        {can('view:save') && (
-          <button
-            className="issue-toolbar-clear"
-            type="button"
-            data-testid="save-view-btn"
-            onClick={onSaveView}
-          >
-            {t('saveView')}
-          </button>
-        )}
+        {/* 成员筛选的主入口（侧栏不再有成员组）：可搜索、可多选，空数组 = 全部成员 */}
+        <span className="issue-toolbar-label">{t('members')}</span>
+        <OMultiSelect
+          testid="filter-assignee"
+          label={t('members')}
+          searchLabel={t('searchMembers')}
+          placeholder={t('allMembers')}
+          value={filters.assigneeFilter}
+          options={assigneeOptions}
+          onChange={(v) => setFilters((prev) => ({ ...prev, assigneeFilter: v }))}
+        />
+        {/* 动作按钮合成一组：容器吃掉 margin-left:auto，换行时整组一起换行（不留竖排按钮） */}
+        <div className="issue-toolbar-actions">
+          {(filters.search ||
+            filters.assigneeFilter.length > 0 ||
+            filters.priorityFilter.length > 0 ||
+            filters.cycleFilter !== null ||
+            filters.myOnly) && (
+            <button
+              className="issue-toolbar-clear"
+              type="button"
+              data-testid="filter-clear"
+              onClick={() =>
+                setFilters((prev) => ({
+                  ...prev,
+                  search: '',
+                  assigneeFilter: [],
+                  priorityFilter: [],
+                  cycleFilter: null,
+                  myOnly: false,
+                }))
+              }
+            >
+              {t('clearFilters')}
+            </button>
+          )}
+          {can('view:save') && (
+            <button
+              className="issue-toolbar-clear"
+              type="button"
+              data-testid="save-view-btn"
+              onClick={onSaveView}
+            >
+              {t('saveView')}
+            </button>
+          )}
+        </div>
       </div>
       {!failed && (
         <div className="issue-thead">
