@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_FILTERS, parseFilters } from './filters'
+import { DEFAULT_FILTERS, parseFilters, type Filters } from './filters'
 import {
   DEMO_SAVED_VIEWS,
   byCreatedDesc,
   demoSavedViewFilters,
   demoSavedViewRows,
+  findActiveSavedView,
+  sameFilters,
 } from './saved-views'
 
 const NOW = 1_700_000_000_000
@@ -56,5 +58,39 @@ describe('byCreatedDesc', () => {
     byCreatedDesc(input)
     expect(input.map((r) => r.id)).toEqual(['view-demo-1', 'view-demo-2'])
     expect(byCreatedDesc(undefined)).toEqual([])
+  })
+})
+
+describe('「当前保存视图」判定（侧栏强高亮依据）', () => {
+  const base: Filters = { ...DEFAULT_FILTERS, search: '' }
+
+  it('数组顺序不影响比较，search 不参与', () => {
+    expect(
+      sameFilters(
+        { ...base, statusFilter: ['todo', 'done'], search: '' },
+        { ...base, statusFilter: ['done', 'todo'], search: 'abc' },
+      ),
+    ).toBe(true)
+  })
+
+  it('任一维度不同即不相等（含迭代与排序）', () => {
+    expect(sameFilters(base, { ...base, myOnly: true })).toBe(false)
+    expect(sameFilters(base, { ...base, sortBy: 'priority' })).toBe(false)
+    expect(sameFilters(base, { ...base, cycleFilter: 'cycle-1' })).toBe(false)
+    expect(sameFilters(base, { ...base, assigneeFilter: ['member-2'] })).toBe(false)
+    expect(sameFilters(base, { ...base, projectId: 'project-2' })).toBe(false)
+  })
+
+  it('按视图 filters 找出与当前筛选一致的那条', () => {
+    const rows = demoSavedViewRows(NOW)
+    const mine = parseFilters(rows[0]!.filters)
+    expect(mine).not.toBeNull()
+    expect(findActiveSavedView(rows, { ...mine!, search: 'x' })).toBe('view-demo-1')
+  })
+
+  it('没有匹配 / 视图未就绪返回 null', () => {
+    const rows = demoSavedViewRows(NOW)
+    expect(findActiveSavedView(rows, DEFAULT_FILTERS)).toBeNull()
+    expect(findActiveSavedView(undefined, DEFAULT_FILTERS)).toBeNull()
   })
 })

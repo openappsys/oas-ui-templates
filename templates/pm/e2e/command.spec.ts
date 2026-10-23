@@ -98,6 +98,7 @@ test('C4 Esc 关闭命令面板', async ({ page }) => {
 test('C5 viewer 身份不出现新建/保存视图命令', async ({ page }) => {
   await waitForSeed(page)
   await page.getByTestId('tb-user').click()
+  await page.getByTestId('user-menu').getByRole('menuitem', { name: '切换身份' }).click()
   await expect(page.getByTestId('modal-user')).toHaveAttribute('visible', /.*/, { timeout: 5000 })
   await page.getByTestId('pick-user-member-4').click()
   await expect(page.getByTestId('modal-user')).not.toHaveAttribute('visible', /.*/, {

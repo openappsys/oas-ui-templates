@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { openSettings, settingsAction } from './menus'
 
 /** e2e 播种规模（产品默认 10 万；M1 架构用例单独传 100_000） */
 const E2E_SEED_SIZE = 5_000
@@ -47,7 +48,8 @@ const sideRow = (page: Page, name: string) =>
 const sideItem = (page: Page, value: string) =>
   page.getByTestId('side-list').locator(`[part="item"][data-value="${value}"]`)
 
-/** 等待 seed 完成并以列表行出现（e2e 默认 5K；seed 走后台 bulkPut，故预算留余量） */
+/** 等待 seed 完成并以列表行出现（e2e 默认 5K）。
+ *  种子现在写完后才挂载界面（启动页），所以 toolbar 出现的等待预算要覆盖 100K 写入。 */
 async function waitForSeed(page: Page, size = E2E_SEED_SIZE) {
   test.setTimeout(240_000)
   // 播种规模：e2e 默认 5K（产品默认仍 10 万）。每个用例都是新上下文、都要重播种子，
@@ -55,7 +57,7 @@ async function waitForSeed(page: Page, size = E2E_SEED_SIZE) {
   await page.addInitScript((n) => localStorage.setItem('oas-pm-seed-size', String(n)), size)
 
   await page.goto('/')
-  await expect(page.getByTestId('pm-toolbar')).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByTestId('pm-toolbar')).toBeVisible({ timeout: 120_000 })
   // seed 完成的确定性信号：SEED_VER 标记写入（播完才 set）
   await expect
     .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-seed-v11')), {
@@ -300,8 +302,9 @@ test('M5 工具栏：新建 Issue 全流程 + CSV 导出 + 关于弹窗', async 
   const download = await dl
   expect(download.suggestedFilename()).toMatch(/^oas-pm-issues-\d+\.csv$/)
 
-  // 关于弹窗开合
-  await page.getByTestId('toolbar-about').click()
+  // 关于弹窗开合（入口在设置菜单里：开菜单 → 点「关于」→ 弹窗打开）
+  await openSettings(page)
+  await settingsAction(page, '关于').click()
   const about = page.getByTestId('modal-about')
   await expect(about).toHaveAttribute('visible', /.*/, { timeout: 5000 })
   await expect(page.locator('.about-name')).toContainText('OAS PM')
@@ -787,6 +790,7 @@ test('M18 通知：他人变更我负责的 Issue → 切回后动态出现', as
 
   // 1) 切到李娜（member）：她新建「负责人=张伟」的 Issue——reporter 身份创建/编辑均合法（can(issue:edit) 放行）
   await page.getByTestId('tb-user').click()
+  await page.getByTestId('user-menu').getByRole('menuitem', { name: '切换身份' }).click()
   await expect(page.getByTestId('modal-user')).toHaveAttribute('visible', /.*/, { timeout: 5000 })
   await page.getByTestId('pick-user-member-2').click()
   await page.waitForTimeout(800)
@@ -853,6 +857,7 @@ test('M18 通知：他人变更我负责的 Issue → 切回后动态出现', as
 
   // 4) 切回张伟 → 负责的 Issue 被他人合法变更 → 动态角标出现
   await page.getByTestId('tb-user').click()
+  await page.getByTestId('user-menu').getByRole('menuitem', { name: '切换身份' }).click()
   await expect(page.getByTestId('modal-user')).toHaveAttribute('visible', /.*/, { timeout: 5000 })
   await page.getByTestId('pick-user-member-1').click()
   await expect(page.getByTestId('notify-badge')).toBeVisible({ timeout: 15_000 })

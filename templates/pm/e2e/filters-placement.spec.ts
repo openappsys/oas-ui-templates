@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { closeSettings, openSettings, settingsRadio } from './menus'
 
 /** e2e 播种规模（产品默认 10 万；M1 架构用例单独传 100_000） */
 const E2E_SEED_SIZE = 5_000
@@ -25,14 +26,16 @@ const setView = (page: Page, v: string) =>
     el.dispatchEvent(new CustomEvent('oas-change', { bubbles: true, detail: { value: view } }))
   }, v)
 
-/** 筛选位置 segmented：点 shadow 内的选项 label（真实点击路径，不走程序性派发） */
-const pickPlacement = (page: Page, label: string) =>
-  page
-    .getByTestId('filters-placement')
-    .locator('label.item')
-    .filter({ hasText: label })
-    .first()
-    .click()
+/** 筛选位置在设置菜单里（oas-dropdown 单选组）：开菜单 → 点选项 → Esc 收起 */
+async function pickPlacement(page: Page, label: string) {
+  await openSettings(page)
+  await settingsRadio(page, label).click()
+  await closeSettings(page)
+}
+
+/** 偏好落库值（设置菜单里的单选组是数据载体，读偏好比读属性更贴近「真正生效」） */
+const placementPref = (page: Page) =>
+  page.evaluate(() => localStorage.getItem('oas-pm-filters-placement'))
 
 /** 侧栏行（按分组 data-value 定位，不依赖行文案） */
 const sideItem = (page: Page, value: string) =>
@@ -61,11 +64,14 @@ const boardColumns = (page: Page) =>
 
 test('P1 默认侧栏：筛选组与成员控件在侧栏，内容区无顶部筛选栏', async ({ page }) => {
   await waitForSeed(page)
-  await expect(page.getByTestId('filters-placement')).toHaveAttribute('value', 'sidebar')
-  // 侧栏：状态 / 优先级 / 迭代 组 + 一行成员控件
+  // 偏好缺省 = sidebar（localStorage 没有生效键）
+  await expect.poll(() => placementPref(page)).toBe(null)
+  // 侧栏：状态 / 优先级 / 迭代 组 + 一行成员控件，筛选区带小标题与清除链接
   await expect(sideItem(page, 'status:all')).toBeVisible()
   await expect(sideItem(page, 'priority:all')).toBeVisible()
   await expect(sideItem(page, 'cycle:all')).toBeVisible()
+  // 无生效筛选时「清除筛选」行不出现
+  await expect(sideItem(page, 'filter:clear')).toHaveCount(0)
   await expect(page.getByTestId('side-filters')).toBeVisible()
   await expect(page.getByTestId('side-filter-assignee')).toBeVisible()
   // 内容区顶部没有任何筛选控件；列表工具条只留排序/分组/已保存视图（筛选不在第三处复制）
@@ -78,10 +84,11 @@ test('P2 切顶部：侧栏筛选组隐藏、四控件在内容区顶部，且�
 }) => {
   await waitForSeed(page)
   await pickPlacement(page, '顶部')
-  await expect(page.getByTestId('filters-placement')).toHaveAttribute('value', 'topbar')
+  await expect.poll(() => placementPref(page)).toBe('topbar')
 
-  // 侧栏筛选组与成员控件消失（项目/视图/保存视图仍在）
+  // 侧栏筛选组、成员控件、筛选区小标题与清除链接一起消失（项目/视图/保存视图仍在）
   await expect(page.getByTestId('side-filters')).toHaveCount(0)
+  await expect(sideItem(page, 'filter:clear')).toHaveCount(0)
   await expect(sideItem(page, 'status:all')).toHaveCount(0)
   await expect(sideItem(page, 'priority:all')).toHaveCount(0)
   await expect(sideItem(page, 'cycle:all')).toHaveCount(0)
@@ -107,12 +114,13 @@ test('P2 切顶部：侧栏筛选组隐藏、四控件在内容区顶部，且�
   await expect(page.locator('.issue-row').first()).toBeVisible({ timeout: 60_000 })
   await expect(topBar(page)).toBeVisible()
   await expect(page.getByTestId('side-filters')).toHaveCount(0)
+  await expect(sideItem(page, 'filter:clear')).toHaveCount(0)
 })
 
 test('P3 两者：侧栏筛选组与内容区顶部筛选栏同时在场', async ({ page }) => {
   await waitForSeed(page)
   await pickPlacement(page, '两者')
-  await expect(page.getByTestId('filters-placement')).toHaveAttribute('value', 'both')
+  await expect.poll(() => placementPref(page)).toBe('both')
   await expect(sideItem(page, 'status:all')).toBeVisible()
   await expect(sideItem(page, 'priority:all')).toBeVisible()
   await expect(sideItem(page, 'cycle:all')).toBeVisible()
@@ -186,8 +194,10 @@ test('P5 顶栏改状态/成员 → 列表与看板同步过滤；清除筛选�
 
   // 切回侧栏：筛选组回归，顶部栏撤除
   await pickPlacement(page, '侧栏')
-  await expect(page.getByTestId('filters-placement')).toHaveAttribute('value', 'sidebar')
+  await expect.poll(() => placementPref(page)).toBe('sidebar')
   await expect(topBar(page)).toHaveCount(0)
   await expect(sideItem(page, 'status:all')).toBeVisible()
   await expect(page.getByTestId('side-filters')).toBeVisible()
+  // 上面已清除筛选：清除行不出现
+  await expect(sideItem(page, 'filter:clear')).toHaveCount(0)
 })

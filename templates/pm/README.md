@@ -30,7 +30,7 @@ pnpm build      # tsc6 类型检查 + vite 产物
 
 ## 数据
 
-IndexedDB（Dexie）本地持久化；首启自动 seed 演示数据（10 万 Issue、8 成员、3 项目、3 个迭代、2 个示例保存视图，清 localStorage `oas-pm-seed-v11` 重播）。数据层为 Repository 接口 + React Context 注入，默认 Dexie 实现，可替换为 REST 适配器。
+IndexedDB（Dexie）本地持久化；首启自动 seed 演示数据（10 万 Issue、8 成员、3 项目、3 个迭代、2 个示例保存视图，清 localStorage `oas-pm-seed-v11` 重播）。10 万行种子期间先显示启动页（约数秒）再挂载界面——否则 liveQuery 会被持续写入反复重启，计数/保存视图长时间停在空态。数据层为 Repository 接口 + React Context 注入，默认 Dexie 实现，可替换为 REST 适配器。
 
 **REST 示范（API 模式）**：同一套 Repository 接口另有一份 HTTP 实现（`src/data/api/client.ts`），后端由零依赖 Vite 中间件承载（`src/data/api/mock-server.ts`：2K Issue 确定性种子、revision 轮询推送、`/api/admin/reset` 复位）。开发模式下点页头数据源徽标可在「本地 / API」间切换（`localStorage 'oas-pm-data'`）；构建产物固定本地模式。`PATCH /api/issues/:id` 等写操作对同一进程内所有标签页实时可见。
 
@@ -59,7 +59,7 @@ A production-grade frontend baseline: Repository data layer (REST-adapter ready)
 ## Features
 
 - **Dashboard**: global stats / status distribution / top member workloads / 30-day trend
-- **List**: 100K+ virtualized issues with infinite scroll (500-row window), multi-facet filters (project / view / status / member / cycle / search) with a **sidebar / top bar / both** placement preference (one filter state, mirrored in both places), sorting & grouping, bulk operations
+- **List**: 100K+ virtualized issues with infinite scroll (200-row window), multi-facet filters (project / view / status / member / cycle / search) with a **sidebar / top bar / both** placement preference (one filter state, mirrored in both places), sorting & grouping, bulk operations
 - **Board**: status-column drag & drop (permission-gated, bounce-back on deny)
 - **Timeline**: gantt (project groups / progress / milestones / overdue constraints / drag-reschedule writeback)
 - **Resource**: member workload swimlanes / overload highlighting / drag reschedule & reassign / **one-click load leveling** (levelResources reassign mode, admin)
@@ -82,7 +82,7 @@ pnpm build      # tsc6 typecheck + vite build
 
 ## Data
 
-Local persistence in IndexedDB (Dexie); demo data is seeded on first launch (100K issues, 8 members, 3 projects, 3 cycles, 2 demo saved views — clear the `oas-pm-seed-v11` localStorage key to reseed). The data layer is a Repository interface injected via React Context, with Dexie as the default implementation.
+Local persistence in IndexedDB (Dexie); demo data is seeded on first launch (100K issues, 8 members, 3 projects, 3 cycles, 2 demo saved views — clear the `oas-pm-seed-v11` localStorage key to reseed). The first launch shows a preparation screen while seeding (~a few seconds), then mounts the app; mounting earlier would starve live queries and leave counts/saved views empty. The data layer is a Repository interface injected via React Context, with Dexie as the default implementation.
 
 **REST demo (API mode)**: a second implementation of the same Repository interface talks HTTP (`src/data/api/client.ts`). A zero-dependency Vite middleware serves the mock backend (`src/data/api/mock-server.ts`: 2K deterministic issues, revision polling, `/api/admin/reset`). In development, click the data-source badge in the header to switch between Local and API (`localStorage 'oas-pm-data'`). The built site always runs in local mode. Writes such as `PATCH /api/issues/:id` reach every open tab in the same process.
 

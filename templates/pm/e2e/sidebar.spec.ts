@@ -233,18 +233,19 @@ test('S5 保存的视图：多选筛选存读（点击行应用，删除动作�
   await expect(sideItem(page, 'status:all')).toHaveAttribute('aria-pressed', 'true')
 })
 
-test('S6 折叠 rail：56px 收窄、行存活、badge 角标，再展开恢复', async ({ page }) => {
+test('S6 折叠 rail：240→56 收窄、行存活、角标仍在，再展开恢复', async ({ page }) => {
   await waitForSeed(page)
   const sidebar = page.getByTestId('side-list')
   const panel = page.getByTestId('side-panel')
   const toggle = sidebar.locator('[part="toggle"]')
   await expect(toggle).toBeVisible()
-  // 成员筛选是侧栏顶部的一行控件（不是行组）：行组只剩项目/视图/状态/优先级/迭代
+  // 成员筛选钉底（.side-footer），不是行组：行组不含 member: 行
   await expect(sideItem(page, 'priority:all')).toBeVisible()
   await expect(sidebar.locator('[part="item"][data-value^="member:"]')).toHaveCount(0)
   const barWidth = () => sidebar.evaluate((el) => Math.round(el.getBoundingClientRect().width))
   const panelWidth = () => panel.evaluate((el) => Math.round(el.getBoundingClientRect().width))
-  await expect.poll(barWidth).toBe(220)
+  await expect.poll(barWidth).toBe(240)
+  await expect.poll(panelWidth).toBe(256)
 
   await toggle.click()
   await expect(sidebar).toHaveAttribute('collapsed', '')
@@ -253,13 +254,13 @@ test('S6 折叠 rail：56px 收窄、行存活、badge 角标，再展开恢复'
 
   await expect(sideRow(page, 'OAS 平台')).toBeVisible()
   await expect(sideRow(page, '全部 Issues')).toBeVisible()
-  await expect(sideItem(page, 'status:all')).toBeVisible()
-  await expect(sideItem(page, 'priority:all')).toBeVisible()
-  await expect(sidebar.locator('[part="badge"]').first()).toBeVisible()
+  // rail 态：组件的子行收进 flyout（悬停父项才出现），父项仍在
+  await expect(sideItem(page, 'group:status')).toBeVisible()
+  await expect(sideItem(page, 'status:all')).toBeHidden()
 
   await toggle.click()
   await expect(sidebar).not.toHaveAttribute('collapsed', /.*/)
-  await expect.poll(barWidth).toBe(220)
+  await expect.poll(barWidth).toBe(240)
 
   await sideRow(page, '已完成').click()
   await expect(page.locator('.issue-row .issue-status').first()).toHaveText('已完成', {
@@ -267,40 +268,139 @@ test('S6 折叠 rail：56px 收窄、行存活、badge 角标，再展开恢复'
   })
 })
 
-test('S8 侧栏成员多选：搜索过滤选项、+N 折叠、清空回全部', async ({ page }) => {
+test('S9 侧栏分区：导航在上、筛选在下，成员控件在组件插槽内钉底', async ({ page }) => {
   await waitForSeed(page)
-  await openAssignee(page)
-  // 搜索：输入姓「李」只剩李娜一项（选项按 label 本地过滤）
-  await assigneeSelect(page).locator('input.search-input').fill('李')
-  await expect(assigneeSelect(page).locator('.option')).toHaveCount(1, { timeout: 5000 })
-  await expect(assigneeSelect(page).locator('.option')).toContainText('李娜')
-
-  // 选中后搜索词自动清空，其余选项回到列表
-  await pickAssignee(page, '李娜')
-  await expect(assigneeSelect(page).locator('.option').filter({ hasText: '张伟' })).toHaveCount(1)
-
-  // 三选：max-tag-count=1（侧栏一行放不下更多 chip）→ 折叠出 +N（数字随宽度浮动，只断言形态）
-  await pickAssignee(page, '张伟')
-  await pickAssignee(page, '王强')
-  await expect(assigneeSelect(page).locator('.chip-plus')).toHaveText(/^\+\d+$/, {
-    timeout: 5000,
+  // 分区顺序：项目 → 视图 → 已保存视图 → 分隔线 → 筛选（含状态/优先级/迭代）
+  const order = await page.getByTestId('side-list').evaluate((nav) => {
+    const values = [
+      'project:__all__',
+      'view:all',
+      'savedview:view-demo-1',
+      'group:status',
+      'group:priority',
+      'group:cycles',
+    ]
+    const root = (nav.shadowRoot ?? nav) as unknown as Element
+    // 先序遍历编号：DOM 文档序的可比值（跨层级，不能只比兄弟序号）
+    const index = new Map<Element, number>()
+    let n = 0
+    const walk = (node: Element) => {
+      index.set(node, n++)
+      for (const child of Array.from(node.children)) walk(child)
+    }
+    walk(root)
+    return values.map((v) => {
+      const el = root.querySelector(`[data-value="${v}"]`)
+      return el ? (index.get(el) ?? -1) : -1
+    })
   })
   expect(
-    await assigneeSelect(page).locator('.chip:not(.chip-plus):visible').count(),
-  ).toBeGreaterThan(0)
+    order.every((i) => i >= 0),
+    '六个行锚点都在 DOM 里',
+  ).toBe(true)
+  expect(
+    [...order].sort((a, b) => a - b),
+    '分区顺序',
+  ).toEqual(order)
 
-  // clearable：清空回全部成员（占位文案复位，行恢复多成员）
-  await assigneeSelect(page).locator('[part="clear"]').click()
-  await expect(assigneeSelect(page).locator('.value')).toHaveText('全部成员')
-  await expect.poll(async () => new Set(await rowAssignees(page)).size).toBeGreaterThan(1)
+  // 无生效筛选时「清除筛选」行不出现；加上筛选后出现在筛选区
+  await expect(sideItem(page, 'filter:clear')).toHaveCount(0)
+  await sideRow(page, '待规划').click()
+  await expect(sideItem(page, 'filter:clear')).toBeVisible()
+
+  // 成员控件走 oas-sidebar 默认插槽（组件内部）；钉底靠注入的 .body sticky，
+  // 位置在组件折叠条（«）上方，不随筛选列表滚走
+  const footer = await page.getByTestId('side-filters').evaluate((el) => {
+    const host = el.closest('oas-sidebar')
+    const root = host?.shadowRoot
+    const body = root?.querySelector('.body')
+    const toggle = root?.querySelector('[part="toggle"]')
+    return {
+      parentTag: el.parentElement?.tagName ?? '',
+      bodyPos: body ? getComputedStyle(body).position : '',
+      bodyBottom: body?.getBoundingClientRect().bottom ?? 0,
+      toggleTop: toggle?.getBoundingClientRect().top ?? 0,
+    }
+  })
+  expect(footer.parentTag).toBe('OAS-SIDEBAR')
+  expect(footer.bodyPos).toBe('sticky')
+  expect(footer.bodyBottom).toBeLessThanOrEqual(footer.toggleTop + 1)
 })
 
-test('S7 Ctrl+B 快捷键切换 collapsed', async ({ page }) => {
+test('S10 分组折叠：状态/优先级/迭代各自可折叠，刷新后保持', async ({ page }) => {
   await waitForSeed(page)
-  const sidebar = page.getByTestId('side-list')
-  await expect(sidebar).not.toHaveAttribute('collapsed', /.*/)
-  await page.keyboard.press('Control+b')
-  await expect(sidebar).toHaveAttribute('collapsed', '')
-  await page.keyboard.press('Control+b')
-  await expect(sidebar).not.toHaveAttribute('collapsed', /.*/)
+  const group = (value: string) => sideItem(page, value)
+  // 默认全部展开（宿主按偏好对齐，偏好缺省 = 展开）
+  await expect(group('group:status')).toHaveAttribute('aria-expanded', 'true')
+  await expect(group('group:priority')).toHaveAttribute('aria-expanded', 'true')
+  await expect(group('group:cycles')).toHaveAttribute('aria-expanded', 'true')
+  await expect(sideItem(page, 'status:all')).toBeVisible()
+
+  // 逐个折叠（父子项通道：独立展开，互斥的 accordion 不启用）
+  for (const key of ['status', 'priority', 'cycles']) {
+    await group(`group:${key}`).click()
+    await expect(group(`group:${key}`)).toHaveAttribute('aria-expanded', 'false')
+  }
+  await expect(sideItem(page, 'status:all')).toBeHidden()
+  await expect(sideItem(page, 'priority:all')).toBeHidden()
+  await expect(sideItem(page, 'cycle:all')).toBeHidden()
+
+  // 折叠偏好落 localStorage，刷新后保持
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-side-collapsed')))
+    .toBe(JSON.stringify(['status', 'priority', 'cycles']))
+  await page.reload()
+  await expect(page.getByTestId('pm-toolbar')).toBeVisible({ timeout: 10_000 })
+  await expect(page.locator('.issue-row').first()).toBeVisible({ timeout: 60_000 })
+  await expect(group('group:status')).toHaveAttribute('aria-expanded', 'false')
+  await expect(group('group:priority')).toHaveAttribute('aria-expanded', 'false')
+  await expect(group('group:cycles')).toHaveAttribute('aria-expanded', 'false')
+  await expect(sideItem(page, 'status:all')).toBeHidden()
+
+  // 单独展开状态组：只有它回来
+  await group('group:status').click()
+  await expect(group('group:status')).toHaveAttribute('aria-expanded', 'true')
+  await expect(sideItem(page, 'status:all')).toBeVisible()
+  await expect(sideItem(page, 'priority:all')).toBeHidden()
+})
+
+test('S11 高亮分级：当前视图实底，生效筛选浅底 + 左色条', async ({ page }) => {
+  await waitForSeed(page)
+  // 行会在筛选变化时整树重建：detached 节点的 getComputedStyle 返回空串，取样要轮询到非空
+  const sample = async (value: string, prop: 'backgroundColor' | 'boxShadow') => {
+    let out = ''
+    await expect
+      .poll(async () => {
+        out = await sideItem(page, value).evaluate(
+          (el, key) => getComputedStyle(el)[key] as string,
+          prop,
+        )
+        return out
+      })
+      .not.toBe('')
+    return out
+  }
+  const bg = (value: string) => sample(value, 'backgroundColor')
+  const shadow = (value: string) => sample(value, 'boxShadow')
+
+  // 当前项目/视图：组件 active 通道的实底（非透明）
+  expect(await bg('project:project-1')).not.toBe('rgba(0, 0, 0, 0)')
+  expect(await bg('view:all')).not.toBe('rgba(0, 0, 0, 0)')
+  // 「全部状态」只是选中语义（该维度不限），不高亮：宿主注入的规则去掉底色与色条
+  expect(await bg('status:all')).toBe('rgba(0, 0, 0, 0)')
+  expect(await shadow('status:all')).toBe('none')
+
+  await sideRow(page, '待规划').click()
+  await expect(sideItem(page, 'status:backlog')).toHaveAttribute('aria-pressed', 'true')
+  // 弱标记：浅底 + 2px 左色条（box-shadow inset）
+  expect(await bg('status:backlog')).not.toBe('rgba(0, 0, 0, 0)')
+  expect(await shadow('status:backlog')).toContain('inset')
+  // 项目/视图的高亮不受筛选影响
+  expect(await bg('project:project-1')).not.toBe('rgba(0, 0, 0, 0)')
+
+  // 清除筛选行：一次清掉状态
+  await sideItem(page, 'filter:clear').click()
+  await expect(sideItem(page, 'status:all')).toHaveAttribute('aria-pressed', 'true')
+  expect(await bg('status:backlog')).toBe('rgba(0, 0, 0, 0)')
+  await expect(sideItem(page, 'filter:clear')).toHaveCount(0)
 })

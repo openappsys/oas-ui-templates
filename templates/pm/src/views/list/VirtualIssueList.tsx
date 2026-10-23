@@ -357,6 +357,21 @@ export function VirtualIssueList({
     scheduleRowFocusRestore(el, snap)
   }, [memberMap, showCheckbox])
 
+  // 选中集是受控数据（表头全选一次改一批）：行 DOM 只在 oas-item 时创建，勾选态不会自己跟随。
+  // 这里按行 key 就地同步 checked 属性（不重建行，避免打断连续勾选与焦点）
+  useEffect(() => {
+    const root = listRef.current?.shadowRoot
+    if (!root) return
+    const byKey = new Map(issues.map((i) => [i.key, i.id]))
+    for (const row of root.querySelectorAll<HTMLElement>('.issue-row')) {
+      const id = byKey.get(row.dataset.key ?? '')
+      const check = row.querySelector<HTMLElement>('.row-check')
+      if (!check || id === undefined) continue
+      const want = selectedIds.has(id)
+      if (check.hasAttribute('checked') !== want) check.toggleAttribute('checked', want)
+    }
+  }, [selectedIds, issues])
+
   // 渲染窗高 = height 属性（缺省 320，不测宿主布局）——ResizeObserver 把宿主实际
   // 高度实时写入，虚拟窗口随视口伸缩（修「只渲染 9 行后大片空白」）
   useEffect(() => {

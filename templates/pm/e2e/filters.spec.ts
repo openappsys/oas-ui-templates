@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { closeSettings, openSettings, settingsRadio } from './menus'
 
 /** e2e 播种规模（产品默认 10 万；M1 架构用例单独传 100_000） */
 const E2E_SEED_SIZE = 5_000
@@ -135,13 +136,11 @@ test('F3 优先级两处同源：侧栏多选 ↔ 顶部筛选栏多选（位置
   await sideItem(page, 'priority:low').click()
   await expect(sideItem(page, 'priority:low')).toHaveAttribute('aria-pressed', 'true')
 
-  // 切「两者」：顶部筛选栏的优先级多选回显同样两项（同一份 Filters）
-  await page
-    .getByTestId('filters-placement')
-    .locator('label.item')
-    .filter({ hasText: '两者' })
-    .first()
-    .click()
+  // 切「两者」：顶部筛选栏的优先级多选回显同样两项（同一份 Filters）。
+  // 筛选位置收在设置菜单里（oas-dropdown 单选组）：开菜单 → 点选项 → Esc 收起
+  await openSettings(page)
+  await settingsRadio(page, '两者').click()
+  await closeSettings(page)
   const topPriority = page.getByTestId('filters-priority')
   await expect(topPriority).toBeVisible()
   await expect(topPriority.locator('.chip:not(.chip-plus)').first()).toBeVisible()

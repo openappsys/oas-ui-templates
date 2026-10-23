@@ -523,7 +523,8 @@ test('A10 焦点：登录页 Tab 顺序与 focus-visible', async ({ page }) => {
 test('A10b 焦点：列表 Tab 顺序 + 键盘开抽屉后焦点进入抽屉', async ({ page }) => {
   test.setTimeout(240_000)
   await openApp(page)
-  await page.getByTestId('pm-toolbar').click()
+  // 中性落点：不要点 app-bar 中心（顶栏中部现在是视图切换，会切走列表）
+  await page.locator('.tb-brand').click()
   const mainTrace: string[] = []
   for (let i = 0; i < 12; i++) {
     await page.keyboard.press('Tab')

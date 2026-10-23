@@ -21,6 +21,28 @@ export function bootText(): { title: string; hint: string } {
       }
 }
 
+/** 首次进入的种子提示：10W 行写入需数秒，先给明确反馈再挂载 React */
+export function seedingText(): string {
+  return bootLang() === 'zh'
+    ? '正在准备示例数据（首次进入约需数秒）…'
+    : 'Preparing demo data (a few seconds on first load)…'
+}
+
+/** 种子期间的启动页；沿用失败页的配色与字体，减少两套观感 */
+export function loadingPage(text: string): void {
+  const app = document.querySelector('#app')
+  if (!app) return
+  app.innerHTML = `
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;gap:14px;font-family:system-ui,sans-serif;color:#475569;background:#f5f7fa">
+      <div class="boot-spinner" style="width:28px;height:28px;border:3px solid #dbe3ee;border-top-color:#0b6cff;border-radius:50%;animation:oas-boot-spin .8s linear infinite"></div>
+      <p style="margin:0;font-size:13px">${text}</p>
+      <style>
+        @keyframes oas-boot-spin{to{transform:rotate(360deg)}}
+        @media (prefers-reduced-motion: reduce){.boot-spinner{animation:none !important}}
+      </style>
+    </div>`
+}
+
 export function resultPage(title: string, detail: string): void {
   const app = document.querySelector('#app')
   if (app) {

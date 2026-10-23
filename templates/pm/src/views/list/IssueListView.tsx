@@ -6,8 +6,15 @@ import { BulkBar } from '@/components/BulkBar'
 import { Avatar } from '@/components/Avatar'
 import { ListSkeleton } from '@/components/skeletons/ListSkeleton'
 import type { Action, Ctx } from '@/permission/policy'
-import { GROUP_PREVIEW, type Filters, type SortBy, type Grouping } from '@/lib/filters'
+import {
+  GROUP_PREVIEW,
+  hasActiveFilters,
+  type Filters,
+  type SortBy,
+  type Grouping,
+} from '@/lib/filters'
 import { isOverlayOpen, registerKey } from '@/lib/keyboard'
+import { selectionState, toggleAll } from '@/lib/selection'
 import { VirtualIssueList } from './VirtualIssueList'
 
 /* ── Issue 列表（筛选/排序/分组工具条） ── */
@@ -60,13 +67,7 @@ export function IssueListView({
   // 三重态：有错误且无数据 → 错误态；无数据 → 加载中；有数据 → 表格（错误只进 console，不闪空表）
   const failed = error !== undefined && issues === undefined
   const loading = issues === undefined && !failed
-  const hasActiveFilter =
-    filters.statusFilter.length > 0 ||
-    filters.assigneeFilter.length > 0 ||
-    filters.priorityFilter.length > 0 ||
-    filters.cycleFilter !== null ||
-    filters.search !== '' ||
-    filters.myOnly
+  const hasActiveFilter = hasActiveFilters(filters)
   const emptyText = hasActiveFilter ? t('emptyNoMatch') : t('emptyNoData')
   const canBulk = can('bulk:apply')
   const savedViewSelectRef = useRef<HTMLElement>(null)
@@ -93,6 +94,13 @@ export function IssueListView({
     })
   }, [])
   const clearSelection = useCallback(() => setSelectedIds(new Set()), [])
+  // 表头全选：口径是「已加载窗口」（list），部分选中时表头显示 indeterminate；
+  // 全选/取消只作用于这批 id（窗口外既有选择保留，避免滚动续载后越选越多）
+  const loadedIds = useMemo(() => list.map((i) => i.id), [list])
+  const selectState = selectionState(loadedIds, selectedIds)
+  const toggleSelectAll = useCallback(() => {
+    setSelectedIds((prev) => toggleAll(loadedIds, prev))
+  }, [loadedIds])
 
   const navRef = useRef({ navActive, issues: list, cursorIndex, onSelect, can, toggleSelect })
   navRef.current = { navActive, issues: list, cursorIndex, onSelect, can, toggleSelect }
@@ -313,7 +321,16 @@ export function IssueListView({
       </div>
       {!failed && (
         <div className={`issue-thead${canBulk ? ' with-check' : ''}`}>
-          {canBulk && <span />}
+          {canBulk && (
+            <OCheckbox
+              className="thead-check"
+              testid="select-all"
+              ariaLabel={t('selectAll')}
+              checked={selectState === 'all'}
+              indeterminate={selectState === 'partial'}
+              onChange={toggleSelectAll}
+            />
+          )}
           <span>{t('key')}</span>
           <span>{t('title')}</span>
           <span>{t('assignee')}</span>

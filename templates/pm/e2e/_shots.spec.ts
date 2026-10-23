@@ -42,6 +42,7 @@ async function openFirstDrawer(page: Page) {
 
 async function switchUser(page: Page, id: string) {
   await page.getByTestId('tb-user').click()
+  await page.getByTestId('user-menu').getByRole('menuitem', { name: '切换身份' }).click()
   await expect(page.getByTestId('modal-user')).toHaveAttribute('visible', /.*/, { timeout: 5000 })
   await page.getByTestId(`pick-user-${id}`).click()
   await expect(page.getByTestId('modal-user')).not.toHaveAttribute('visible', /.*/, {
@@ -412,6 +413,51 @@ async function captureSidebarCollapsed(page: Page, suffix: string) {
 const sideItem = (page: Page, value: string) =>
   page.getByTestId('side-list').locator(`[part="item"][data-value="${value}"]`)
 
+/** 定稿布局：顶栏三段 / 设置菜单 / 用户菜单 / 侧栏分区 / 表头全选（双主题各截一组） */
+async function captureLayout(page: Page, suffix: string) {
+  await page.waitForTimeout(1500)
+  await page.screenshot({ path: `shots/pm-layout${suffix}.png` })
+  await page.getByTestId('pm-toolbar').screenshot({ path: `shots/pm-topbar${suffix}.png` })
+
+  await page.getByTestId('settings-trigger').click()
+  await expect(page.getByTestId('settings-menu')).toHaveAttribute('open', /.*/, { timeout: 10_000 })
+  await page.waitForTimeout(500)
+  await page.screenshot({ path: `shots/pm-settings-menu${suffix}.png` })
+  await page.keyboard.press('Escape')
+  await expect(page.getByTestId('settings-menu')).not.toHaveAttribute('open', /.*/, {
+    timeout: 5_000,
+  })
+
+  // 用户菜单（oas-dropdown）：先截展开态，再点「切换身份」截既有身份弹窗
+  await page.getByTestId('tb-user').click()
+  await expect(page.getByTestId('user-menu')).toHaveAttribute('open', /.*/, { timeout: 10_000 })
+  await page.waitForTimeout(500)
+  await page.screenshot({ path: `shots/pm-user-menu${suffix}.png` })
+  await page.getByTestId('user-menu').getByRole('menuitem', { name: '切换身份' }).click()
+  await expect(page.getByTestId('modal-user')).toHaveAttribute('visible', /.*/, { timeout: 5000 })
+  await page.waitForTimeout(500)
+  await page.screenshot({ path: `shots/pm-user-picker${suffix}.png` })
+  await page.keyboard.press('Escape')
+  await expect(page.getByTestId('modal-user')).not.toHaveAttribute('visible', /.*/, {
+    timeout: 5000,
+  })
+
+  // 侧栏分区 + 折叠态
+  await captureSidebar(page, suffix)
+  await page.getByTestId('side-list').locator('[part="item"][data-value="group:status"]').click()
+  await page.waitForTimeout(500)
+  await page.getByTestId('side-panel').screenshot({ path: `shots/pm-sidebar-folded${suffix}.png` })
+  await page.getByTestId('side-list').locator('[part="item"][data-value="group:status"]').click()
+
+  // 表头全选（批量栏计数 = 已加载数）
+  await page.getByTestId('select-all').click()
+  await expect(page.getByTestId('bulk-bar')).toBeVisible({ timeout: 10_000 })
+  await page.waitForTimeout(800)
+  await page.screenshot({ path: `shots/pm-select-all${suffix}.png` })
+  await page.getByTestId('bulk-cancel').click()
+  await expect(page.getByTestId('bulk-bar')).toHaveCount(0, { timeout: 5_000 })
+}
+
 /** 多选筛选态：两状态并集 + 成员（工具条多选 chips）+ 两优先级（组内 OR / 组间 AND）。
  *  侧栏内容超出视口：分「顶部（状态组）」与「底部（优先级组 + 迭代组）」两张，供目检多高亮 */
 async function captureFilterSelection(page: Page, suffix: string) {
@@ -440,15 +486,23 @@ async function captureFilterSelection(page: Page, suffix: string) {
     .screenshot({ path: `shots/pm-filters-sidebar-bottom${suffix}.png` })
 }
 
-/** 筛选位置偏好：segmented 的 value/options 都走 attribute，change 与 tabs 同契约 */
+/** 筛选位置：设置菜单 → oas-dropdown 单选组（menuitemradio）→ Esc 收起 */
+const PLACEMENT_LABEL: Record<string, string> = {
+  sidebar: '侧栏',
+  topbar: '顶部',
+  both: '两者',
+}
 async function setPlacement(page: Page, value: string) {
-  await page.evaluate((v) => {
-    const el = document.querySelector('[data-testid=filters-placement]') as HTMLElement & {
-      value?: string
-    }
-    el.value = v
-    el.dispatchEvent(new CustomEvent('oas-change', { bubbles: true, detail: { value: v } }))
-  }, value)
+  await page.getByTestId('settings-trigger').click()
+  await expect(page.getByTestId('settings-menu')).toHaveAttribute('open', /.*/, { timeout: 10_000 })
+  await page
+    .getByTestId('settings-menu')
+    .getByRole('menuitemradio', { name: PLACEMENT_LABEL[value] ?? value })
+    .click()
+  await page.keyboard.press('Escape')
+  await expect(page.getByTestId('settings-menu')).not.toHaveAttribute('open', /.*/, {
+    timeout: 5_000,
+  })
 }
 
 /** 三态（侧栏/顶部/两者）+ 四个视图的顶栏筛选控件，供目检「同一筛选两处同源」 */
@@ -654,6 +708,24 @@ test('shots sidebar', async ({ page }) => {
   await captureSidebarCollapsed(page, '')
 
   console.log('shots sidebar done')
+})
+
+test('shots layout', async ({ page }) => {
+  test.setTimeout(240_000)
+  await openApp(page)
+  await captureLayout(page, '')
+
+  console.log('shots layout done')
+})
+
+test('shots layout dark', async ({ page }) => {
+  test.setTimeout(240_000)
+  await page.addInitScript(() => localStorage.setItem('oas-pm-theme', 'dark'))
+  await openApp(page)
+  await expectDarkTheme(page)
+  await captureLayout(page, '-dark')
+
+  console.log('shots layout dark done')
 })
 
 test('shots sidebar dark', async ({ page }) => {

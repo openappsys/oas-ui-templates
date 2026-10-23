@@ -3,6 +3,7 @@ import { CURRENT_CYCLE, NO_CYCLE } from './cycles'
 import {
   ALL_PROJECTS,
   DEFAULT_FILTERS,
+  hasActiveFilters,
   normalizeFilters,
   parseFilters,
   toggleIn,
@@ -124,5 +125,24 @@ describe('toggleIn', () => {
     const b = toggleIn(a, 'done')
     expect(b).toEqual(['todo', 'done'])
     expect(toggleIn(b, 'todo')).toEqual(['done'])
+  })
+})
+
+describe('hasActiveFilters', () => {
+  it('默认筛选（仅作用域）不算生效筛选', () => {
+    expect(hasActiveFilters(DEFAULT_FILTERS)).toBe(false)
+  })
+
+  it('任一维度非空即生效', () => {
+    expect(hasActiveFilters({ ...DEFAULT_FILTERS, statusFilter: ['todo'] })).toBe(true)
+    expect(hasActiveFilters({ ...DEFAULT_FILTERS, priorityFilter: ['urgent'] })).toBe(true)
+    expect(hasActiveFilters({ ...DEFAULT_FILTERS, assigneeFilter: ['member-1'] })).toBe(true)
+    expect(hasActiveFilters({ ...DEFAULT_FILTERS, cycleFilter: 'cycle-1' })).toBe(true)
+    expect(hasActiveFilters({ ...DEFAULT_FILTERS, search: 'x' })).toBe(true)
+    expect(hasActiveFilters({ ...DEFAULT_FILTERS, myOnly: true })).toBe(true)
+  })
+
+  it('项目作用域不是筛选（换项目不清筛选高亮）', () => {
+    expect(hasActiveFilters({ ...DEFAULT_FILTERS, projectId: ALL_PROJECTS })).toBe(false)
   })
 })

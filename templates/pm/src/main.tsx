@@ -37,6 +37,9 @@ import '@oas-ui/ui/data/list'
 import '@oas-ui/ui/feedback/drawer'
 import '@oas-ui/ui/feedback/popconfirm'
 import '@oas-ui/ui/feedback/tooltip'
+// 顶栏 / 侧栏用到的导航组件：app-bar（三段式容器）、dropdown（设置/用户菜单，含内层 menu）
+import '@oas-ui/ui/navigation/app-bar'
+import '@oas-ui/ui/navigation/dropdown'
 import '@oas-ui/ui/form/select'
 import '@oas-ui/ui/form/date-picker'
 import '@oas-ui/ui/form/time-picker'
@@ -58,7 +61,7 @@ import { initTheme } from './lib/theme'
 import { bindKeys } from './lib/keyboard'
 
 // 启动兜底：IndexedDB 不可用/配额满/隐私模式 → 错误页而非白屏
-import { resultPage, bootText } from './boot-fallback'
+import { resultPage, bootText, loadingPage, seedingText } from './boot-fallback'
 import { loadLang, setLang } from './i18n'
 
 /**
@@ -80,14 +83,14 @@ async function boot(): Promise<void> {
   const dataSource = activeDataSource()
   if (dataSource === 'dexie') {
     try {
-      // seed 后台跑（不阻塞首屏渲染）；Dexie liveQuery 数据到了自动推送
-      seedDatabase().catch((e) => {
-        console.error(e)
-        resultPage(bootText().title, String(e?.message ?? e))
-      })
+      // 种子必须早于挂载：10W 行写入期间若已挂载，liveQuery 会被持续写入反复重启，
+      // 侧栏计数/总数长期停在 0（且看不到保存的视图）；启动页给明确反馈，写完再渲染。
+      loadingPage(seedingText())
+      await seedDatabase()
     } catch (e) {
       console.error(e)
       resultPage(bootText().title, String((e as Error)?.message ?? e))
+      return
     }
   }
 

@@ -1,19 +1,20 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import type { Cycle, IssuePriority, IssueStatus, Member, Project } from './types'
 import { ISSUE_PRIORITIES, ISSUE_STATUSES } from './types'
-import { OMultiSelect, OSelect, OSegmented, OTabs } from './components/oas-wrappers'
+import { OMultiSelect, OSelect, OTabs } from './components/oas-wrappers'
 import { FilterBar } from './components/FilterBar'
 import { t, loadLang, setLang, statusLabel, priorityLabel, type Lang } from './i18n'
 import { useSavedViews } from './components/BulkBar'
 import { PRIORITY_TEXT, STATUS_COLOR } from './lib/colors'
 import { buildAssigneeOptions } from './lib/assignee-options'
 import { CYCLE_SIDEBAR_LIMIT, CURRENT_CYCLE, NO_CYCLE, currentCycleIds } from './lib/cycles'
-import { byCreatedDesc } from './lib/saved-views'
+import { byCreatedDesc, findActiveSavedView } from './lib/saved-views'
 import {
   ALL_PROJECTS,
   DEFAULT_FILTERS,
   LIST_WINDOW,
   LIST_WINDOW_STEP,
+  hasActiveFilters,
   parseFilters,
   toggleIn,
   UNASSIGNED,
@@ -40,7 +41,8 @@ import { fetchMe, logout as logoutSession, type LoginResult } from './data/api/a
 import { getToken, onApiError, onSessionExpired } from './data/api/session'
 import { can as policyCan, type Action, type Ctx } from './permission/policy'
 import { Avatar } from './components/Avatar'
-import { SideList, type SideRow } from './components/SideList'
+import { SideList, type SideRow, type SideSection } from './components/SideList'
+import { SettingsMenu, UserMenu } from './components/TopbarMenus'
 import { ShortcutsHelp } from './components/ShortcutsHelp'
 import { CommandPalette } from './components/CommandPalette'
 import { ErrorBoundary } from './components/ErrorBoundary'
@@ -477,137 +479,216 @@ function Workspace({
   }, [])
 
   const canDeleteView = can('view:delete')
-  const sideRows: SideRow[] = [
-    // Projects 组保持单选（项目 = 作用域）：首行「全部项目」是 workspace 级作用域
-    {
-      group: t('projects'),
-      kind: 'project',
-      value: `project:${ALL_PROJECTS}`,
-      id: ALL_PROJECTS,
-      label: t('allProjects'),
-    },
-  ]
-  for (const p of projects ?? []) {
-    sideRows.push({
-      group: t('projects'),
-      kind: 'project',
-      value: `project:${p.id}`,
-      id: p.id,
-      label: p.name,
-    })
-  }
-  sideRows.push(
-    {
-      group: t('views'),
-      kind: 'view',
-      value: 'view:all',
-      id: 'all',
-      label: t('allIssues'),
-    },
-    {
-      group: t('views'),
-      kind: 'view',
-      value: 'view:my',
-      id: 'my',
-      label: t('myView').replace('{name}', memberMap.get(currentUser)?.name ?? ''),
-    },
+  // 当前生效的保存视图：按筛选等价推导（用户手改筛选后高亮自然回落，不会留下名不副实的高亮）
+  const activeSavedViewId = useMemo(
+    () => findActiveSavedView(savedViews, filters),
+    [savedViews, filters],
   )
-  // 筛选组只在侧栏承载筛选时出现（位置 = 顶部时由内容区顶部筛选栏接管；两处同源）
-  if (sidebarFilters) {
-    sideRows.push({
-      group: t('status'),
-      kind: 'status',
+  const filtersActive = hasActiveFilters(filters)
+  const clearFilters = useCallback(() => {
+    setFilters((prev) => ({
+      ...prev,
+      statusFilter: [],
+      assigneeFilter: [],
+      priorityFilter: [],
+      cycleFilter: null,
+      search: '',
+      myOnly: false,
+    }))
+  }, [])
+
+  // 侧栏分区：导航（项目/视图/保存视图）在上，筛选（状态/优先级/迭代）在下。
+  // 高亮分级：当前视图 = 实底（strong）；生效筛选 = 浅底 + 左色条（weak）；
+  // 「全部 X」行有选中语义（aria-pressed）但不高亮——它表达的是「该维度不限」
+  const statusRows: SideRow[] = [
+    {
       value: 'status:all',
+      kind: 'status',
       id: 'all',
       label: t('allStatuses'),
       count: counts?.total.toLocaleString() ?? '…',
-    })
-    for (const s of ISSUE_STATUSES) {
-      sideRows.push({
-        group: t('status'),
-        kind: 'status',
+      selected: filters.statusFilter.length === 0,
+    },
+    ...ISSUE_STATUSES.map(
+      (s): SideRow => ({
         value: `status:${s}`,
+        kind: 'status',
         id: s,
         label: statusLabel(s),
         statusColor: STATUS_COLOR[s],
         count: counts?.byStatus[s]?.toLocaleString() ?? '…',
-      })
-    }
-    sideRows.push({
-      group: t('priority'),
-      kind: 'priority',
+        selected: filters.statusFilter.includes(s),
+        highlight: 'weak',
+      }),
+    ),
+  ]
+  const priorityRows: SideRow[] = [
+    {
       value: 'priority:all',
+      kind: 'priority',
       id: 'all',
       label: t('allPriorities'),
       count: counts?.total.toLocaleString() ?? '…',
-    })
-    for (const p of ISSUE_PRIORITIES) {
-      sideRows.push({
-        group: t('priority'),
-        kind: 'priority',
+      selected: filters.priorityFilter.length === 0,
+    },
+    ...ISSUE_PRIORITIES.map(
+      (p): SideRow => ({
         value: `priority:${p}`,
+        kind: 'priority',
         id: p,
         label: priorityLabel(p),
         iconColor: PRIORITY_TEXT[p],
         count: counts?.byPriority[p]?.toLocaleString() ?? '…',
-      })
-    }
-    // 迭代组：单选（周期有序，多选无交集意义）。行 = 全部迭代 / 当前迭代（派生）/
-    // 本项目周期（startAt 倒序，最多 CYCLE_SIDEBAR_LIMIT 个）。项目无周期时只留「全部迭代」，
-    // 「当前迭代」指向必然为空的集合，不列入
-    sideRows.push({
-      group: t('cycles'),
-      kind: 'cycle',
+        selected: filters.priorityFilter.includes(p),
+        highlight: 'weak',
+      }),
+    ),
+  ]
+  // 迭代组：单选（周期有序，多选无交集意义）。行 = 全部迭代 / 当前迭代（派生）/
+  // 本项目周期（startAt 倒序，最多 CYCLE_SIDEBAR_LIMIT 个）。项目无周期时只留「全部迭代」，
+  // 「当前迭代」指向必然为空的集合，不列入
+  const currentCycleIdsNow = currentCycleIds(cycles ?? [], Date.now())
+  const currentCycleTotal = [...currentCycleIdsNow]
+    .reduce((n, id) => n + (cycleCounts.get(id) ?? 0), 0)
+    .toLocaleString()
+  const cycleRows: SideRow[] = [
+    {
       value: 'cycle:all',
+      kind: 'cycle',
       id: 'all',
       label: t('allCycles'),
-    })
-    if ((cycles ?? []).length > 0) {
-      const currentIds = currentCycleIds(cycles ?? [], Date.now())
-      const currentTotal = [...currentIds].reduce((n, id) => n + (cycleCounts.get(id) ?? 0), 0)
-      sideRows.push({
-        group: t('cycles'),
-        kind: 'cycle',
-        value: `cycle:${CURRENT_CYCLE}`,
-        id: CURRENT_CYCLE,
-        label: t('currentCycle'),
-        count: currentTotal.toLocaleString(),
-      })
-    }
-    for (const c of (cycles ?? []).slice(0, CYCLE_SIDEBAR_LIMIT)) {
-      sideRows.push({
-        group: t('cycles'),
-        kind: 'cycle',
+      selected: filters.cycleFilter === null,
+    },
+    ...((cycles ?? []).length > 0
+      ? [
+          {
+            value: `cycle:${CURRENT_CYCLE}`,
+            kind: 'cycle' as const,
+            id: CURRENT_CYCLE,
+            label: t('currentCycle'),
+            count: currentCycleTotal,
+            selected: filters.cycleFilter === CURRENT_CYCLE,
+            highlight: 'strong' as const,
+          },
+        ]
+      : []),
+    ...(cycles ?? []).slice(0, CYCLE_SIDEBAR_LIMIT).map(
+      (c): SideRow => ({
         value: `cycle:${c.id}`,
+        kind: 'cycle',
         id: c.id,
         label: c.name,
         count: (cycleCounts.get(c.id) ?? 0).toLocaleString(),
-      })
-    }
-  }
-  for (const v of savedViews ?? []) {
-    sideRows.push({
-      group: t('savedViews'),
-      kind: 'savedview',
-      value: `savedview:${v.id}`,
-      id: v.id,
-      label: v.name,
-      savedFilters: v.filters,
-      deletable: canDeleteView,
+        selected: filters.cycleFilter === c.id,
+        highlight: 'strong',
+      }),
+    ),
+  ]
+
+  const sideSections: SideSection[] = [
+    {
+      key: 'projects',
+      title: t('projects'),
+      rows: [
+        // Projects 组保持单选（项目 = 作用域）：首行「全部项目」是 workspace 级作用域
+        {
+          value: `project:${ALL_PROJECTS}`,
+          kind: 'project',
+          id: ALL_PROJECTS,
+          label: t('allProjects'),
+          selected: filters.projectId === ALL_PROJECTS,
+          highlight: 'strong',
+        },
+        ...(projects ?? []).map(
+          (p): SideRow => ({
+            value: `project:${p.id}`,
+            kind: 'project',
+            id: p.id,
+            label: p.name,
+            selected: filters.projectId === p.id,
+            highlight: 'strong',
+          }),
+        ),
+      ],
+    },
+    {
+      key: 'views',
+      title: t('views'),
+      rows: [
+        {
+          value: 'view:all',
+          kind: 'view',
+          id: 'all',
+          label: t('allIssues'),
+          selected: !filters.myOnly,
+          highlight: 'strong',
+        },
+        {
+          value: 'view:my',
+          kind: 'view',
+          id: 'my',
+          label: t('myView').replace('{name}', memberMap.get(currentUser)?.name ?? ''),
+          selected: filters.myOnly,
+          highlight: 'strong',
+        },
+      ],
+    },
+  ]
+  // 保存的视图：有才显示（空组连标题一起不出）
+  if ((savedViews ?? []).length > 0) {
+    sideSections.push({
+      key: 'saved',
+      title: t('savedViews'),
+      rows: (savedViews ?? []).map(
+        (v): SideRow => ({
+          value: `savedview:${v.id}`,
+          kind: 'savedview',
+          id: v.id,
+          label: v.name,
+          savedFilters: v.filters,
+          deletable: canDeleteView,
+          selected: activeSavedViewId === v.id,
+          highlight: 'strong',
+        }),
+      ),
     })
   }
-  const sideActive: Record<string, string | string[]> = {
-    [t('projects')]: `project:${filters.projectId}`,
-    [t('views')]: filters.myOnly ? 'view:my' : 'view:all',
-  }
+  // 筛选段：只在侧栏承载筛选时出现（位置 = 顶部时由内容区顶部筛选栏接管；两处同源）。
+  // 「筛选」是分区标题（不折叠），状态/优先级/迭代三组各自独立折叠——避免两层折叠
+  // 造成双重缩进与两个 chevron。末尾「清除筛选」仅在生效时出现。
   if (sidebarFilters) {
-    sideActive[t('status')] = filters.statusFilter.length
-      ? filters.statusFilter.map((s) => `status:${s}`)
-      : ['status:all']
-    sideActive[t('priority')] = filters.priorityFilter.length
-      ? filters.priorityFilter.map((p) => `priority:${p}`)
-      : ['priority:all']
-    sideActive[t('cycles')] = `cycle:${filters.cycleFilter ?? 'all'}`
+    sideSections.push({
+      key: 'filters',
+      title: t('filtersGroup'),
+      divider: true,
+      rows: [
+        {
+          value: 'group:status',
+          kind: 'group',
+          label: t('status'),
+          collapseKey: 'status',
+          children: statusRows,
+        },
+        {
+          value: 'group:priority',
+          kind: 'group',
+          label: t('priority'),
+          collapseKey: 'priority',
+          children: priorityRows,
+        },
+        {
+          value: 'group:cycles',
+          kind: 'group',
+          label: t('cycles'),
+          collapseKey: 'cycles',
+          children: cycleRows,
+        },
+        // 「清除筛选」只在有生效筛选时出现（无筛选可清就不占位）
+        ...(filtersActive
+          ? [{ value: 'filter:clear', kind: 'clear' as const, label: t('clearFilters') }]
+          : []),
+      ],
+    })
   }
 
   const handleSideRowClick = useCallback(
@@ -654,9 +735,16 @@ function Workspace({
         case 'savedview':
           if (row.savedFilters) applySavedView(row.savedFilters)
           break
+        case 'clear':
+          // 侧栏筛选区的「清除筛选」行：清掉全部筛选维度（项目作用域保留）
+          clearFilters()
+          break
+        case 'group':
+          // 分组头由 oas-sidebar 自己处理展开/收起，点行不改变筛选
+          break
       }
     },
-    [setF, applySavedView],
+    [setF, applySavedView, clearFilters],
   )
 
   const handleDeleteSavedView = useCallback(
@@ -785,109 +873,109 @@ function Workspace({
 
   return (
     <div className="app-frame">
-      <header className="topbar" data-testid="pm-toolbar">
-        <span className="tb-brand">
-          <span className="tb-logo">OAS</span> PM
-        </span>
-        <DataSourceBadge />
-        {apiMode ? (
-          <>
-            {/* API 模式的身份来自会话（token 决定），不能就地切换：换人 = 换 token */}
-            <span className="tb-user tb-user-static" data-testid="tb-user">
-              <Avatar member={memberMap.get(currentUser)} size={22} />
-              <span>{memberMap.get(currentUser)?.name ?? session?.name ?? ''}</span>
-            </span>
-            <oas-button type="text" size="small" data-testid="tb-logout" onClick={onSignOut}>
-              {t('logout')}
+      {/* 顶栏三段式：左（品牌 + 数据源）/ 中（弹性搜索）/ 右（主操作 + 低频设置菜单 + 身份）。
+          主题/语言/筛选位置/关于都收进设置菜单，常驻控件只留主路径 */}
+      {/* 顶栏三段式（oas-app-bar）：leading 品牌 + 数据源 / title 弹性搜索 /
+          actions 主操作 / trailing 设置与用户菜单（低频设置收进菜单） */}
+      <oas-app-bar className="topbar" data-testid="pm-toolbar" elevated="">
+        <div slot="leading" className="tb-left">
+          <span className="tb-brand">
+            <span className="tb-logo">OAS</span> PM
+          </span>
+          <DataSourceBadge />
+        </div>
+        <div slot="title" className="tb-mid">
+          <div className="tb-search">
+            <oas-input
+              ref={searchRef}
+              className="toolbar-search"
+              data-testid="toolbar-search"
+              placeholder={t('search')}
+            />
+          </div>
+          {/* 视图切换是全局页面切换，放顶栏空档（侧栏只留导航/筛选）；testid 不变 */}
+          <div className="tb-views">
+            <OTabs
+              testid="view-seg"
+              ariaLabel={t('viewNav')}
+              value={view}
+              options={[
+                { label: t('dashboard'), value: 'dashboard' },
+                { label: t('list'), value: 'issues' },
+                { label: t('board'), value: 'board' },
+                { label: t('timeline'), value: 'timeline' },
+                { label: t('resource'), value: 'resource' },
+                { label: t('schedule'), value: 'schedule' },
+              ]}
+              onChange={(v) => setView(v as View)}
+            />
+          </div>
+        </div>
+        <div slot="actions" className="tb-actions">
+          {canCreateIssue && (
+            <oas-button type="primary" data-testid="toolbar-new" onClick={openCreate}>
+              {t('newIssue')}
             </oas-button>
-          </>
-        ) : (
-          <button
-            className="tb-user"
-            type="button"
-            data-testid="tb-user"
-            title={t('paletteSwitchUser')}
-            onClick={() => userPickRef.current?.setAttribute('visible', '')}
-          >
-            <Avatar member={memberMap.get(currentUser)} size={22} />
-            <span>{memberMap.get(currentUser)?.name ?? ''}</span>
-          </button>
-        )}
-        {canManage && (
+          )}
+          {/* 导出：图标按钮 + title 提示（原 CSV 导出能力与 testid 不变） */}
           <oas-button
             type="text"
             size="small"
-            data-testid="admin-entry"
-            onClick={() => setView('admin')}
+            className="tb-icon-btn"
+            data-testid="toolbar-export"
+            title={t('exportCsv')}
+            aria-label={t('exportCsv')}
+            onClick={exportCsv}
           >
-            <oas-icon name="gear" size={14} />
-            {t('adminEntry')}
+            <oas-icon name="download" size={15} />
           </oas-button>
-        )}
-        {canCreateIssue && (
-          <oas-button type="primary" data-testid="toolbar-new" onClick={openCreate}>
-            {t('newIssue')}
+          <oas-button
+            type="text"
+            size="small"
+            className="tb-icon-btn"
+            data-testid="command-open"
+            title={t('shortcutPalette')}
+            aria-label={t('shortcutPalette')}
+            onClick={() => setPaletteOpen(true)}
+          >
+            <oas-icon name="search" size={15} />
           </oas-button>
-        )}
-        <oas-button type="text" size="small" data-testid="toolbar-export" onClick={exportCsv}>
-          {t('exportCsv')}
-        </oas-button>
-        <oas-button
-          type="text"
-          size="small"
-          data-testid="command-open"
-          title={t('shortcutPalette')}
-          aria-label={t('shortcutPalette')}
-          onClick={() => setPaletteOpen(true)}
-        >
-          <oas-icon name="search" size={14} />
-        </oas-button>
-        <oas-input
-          ref={searchRef}
-          className="toolbar-search"
-          data-testid="toolbar-search"
-          placeholder={t('search')}
-        />
-        {/* 筛选位置偏好：紧凑 segmented，切换即时生效并持久化（label 走 title，视觉只留三项） */}
-        <span className="tb-placement" title={t('filterPlacement')}>
-          <OSegmented
-            testid="filters-placement"
-            ariaLabel={t('filterPlacement')}
-            value={placement}
-            options={[
-              { label: t('placementSidebar'), value: 'sidebar' },
-              { label: t('placementTopbar'), value: 'topbar' },
-              { label: t('placementBoth'), value: 'both' },
-            ]}
-            onChange={(v) => changePlacement(v as FilterPlacement)}
+          <NotificationBell
+            currentUser={currentUser}
+            onOpen={() => notifyRef.current?.setAttribute('visible', '')}
           />
-        </span>
-        <span className="tb-spacer" />
-        <oas-button
-          type="text"
-          size="small"
-          data-testid="theme-toggle"
-          title={themeLabel}
-          onClick={cycleTheme}
-        >
-          {themeLabel}
-        </oas-button>
-        <oas-button type="text" size="small" data-testid="lang-toggle" onClick={toggleLang}>
-          {lang === 'zh' ? 'EN' : '中'}
-        </oas-button>
-        <NotificationBell
-          currentUser={currentUser}
-          onOpen={() => notifyRef.current?.setAttribute('visible', '')}
-        />
-        <oas-button
-          type="text"
-          size="small"
-          data-testid="toolbar-about"
-          onClick={() => aboutRef.current?.setAttribute('visible', '')}
-        >
-          {t('about')}
-        </oas-button>
-      </header>
+          {canManage && (
+            <oas-button
+              type="text"
+              size="small"
+              data-testid="admin-entry"
+              onClick={() => setView('admin')}
+            >
+              {t('adminEntry')}
+            </oas-button>
+          )}
+        </div>
+        <div slot="trailing" className="tb-trailing">
+          {/* 设置菜单（oas-dropdown）：主题 / 语言 / 筛选位置 / 关于 */}
+          <SettingsMenu
+            themeLabel={themeLabel}
+            onCycleTheme={cycleTheme}
+            lang={lang}
+            onToggleLang={toggleLang}
+            placement={placement}
+            onPlacement={changePlacement}
+            onAbout={() => aboutRef.current?.setAttribute('visible', '')}
+          />
+          {/* 用户菜单（oas-dropdown）：Dexie 模式切换身份，API 模式只给登出 */}
+          <UserMenu
+            member={memberMap.get(currentUser)}
+            name={memberMap.get(currentUser)?.name ?? session?.name ?? ''}
+            apiMode={apiMode}
+            onSwitchUser={() => userPickRef.current?.setAttribute('visible', '')}
+            onSignOut={onSignOut}
+          />
+        </div>
+      </oas-app-bar>
       {apiNotice && (
         <oas-alert type="error" className="api-notice" data-testid="api-forbidden">
           {apiNotice}
@@ -926,43 +1014,29 @@ function Workspace({
         ) : (
           <>
             <aside className="side-panel" data-testid="side-panel">
-              <div className="side-view-seg">
-                <OTabs
-                  testid="view-seg"
-                  ariaLabel={t('viewNav')}
-                  value={view}
-                  options={[
-                    { label: t('dashboard'), value: 'dashboard' },
-                    { label: t('list'), value: 'issues' },
-                    { label: t('board'), value: 'board' },
-                    { label: t('timeline'), value: 'timeline' },
-                    { label: t('resource'), value: 'resource' },
-                    { label: t('schedule'), value: 'schedule' },
-                  ]}
-                  onChange={(v) => setView(v as View)}
-                />
-              </div>
-              {/* 侧栏成员筛选：一行可搜索多选（不再把每个成员铺成一行）；与顶部筛选栏共用 assigneeFilter */}
-              {sidebarFilters && (
-                <div className="side-filters" data-testid="side-filters">
-                  <span className="side-filters-label">{t('members')}</span>
-                  <OMultiSelect
-                    testid="side-filter-assignee"
-                    label={t('members')}
-                    searchLabel={t('searchMembers')}
-                    placeholder={t('allMembers')}
-                    maxTagCount={1}
-                    value={filters.assigneeFilter}
-                    options={assigneeFilterOptions}
-                    onChange={(v) => setF('assigneeFilter', v)}
-                  />
-                </div>
-              )}
               <SideList
-                rows={sideRows}
-                activeByGroup={sideActive}
+                sections={sideSections}
                 onRowClick={handleSideRowClick}
                 onDeleteSavedView={handleDeleteSavedView}
+                trailing={
+                  // 成员筛选在筛选区末尾（一项可搜索多选，不铺成每个成员一行）；
+                  // 与顶部筛选栏共用 assigneeFilter
+                  sidebarFilters ? (
+                    <div className="side-filters" data-testid="side-filters">
+                      <span className="side-filters-label">{t('members')}</span>
+                      <OMultiSelect
+                        testid="side-filter-assignee"
+                        label={t('members')}
+                        searchLabel={t('searchMembers')}
+                        placeholder={t('allMembers')}
+                        maxTagCount={1}
+                        value={filters.assigneeFilter}
+                        options={assigneeFilterOptions}
+                        onChange={(v) => setF('assigneeFilter', v)}
+                      />
+                    </div>
+                  ) : null
+                }
               />
             </aside>
             <main

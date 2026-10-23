@@ -86,7 +86,7 @@ test('P2 全部项目 + 我的 Issues：只显示当前用户且跨项目', asyn
     .toBe(true)
   // 个人工作台跨项目：窗口内同时有 OAS 与 APP 前缀
   await expect
-    .poll(async () => (await keyPrefixes(page)).join(','), { timeout: 15_000 })
+    .poll(async () => (await keyPrefixes(page)).join(','), { timeout: 30_000 })
     .toBe('APP,OAS')
 })
 

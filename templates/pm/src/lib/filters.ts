@@ -113,3 +113,15 @@ export function parseFilters(json: string): Filters | null {
     return null
   }
 }
+
+/** 是否有生效筛选（项目作用域不算）：侧栏「筛选」区的清除链接与高亮开关共用 */
+export function hasActiveFilters(f: Filters): boolean {
+  return (
+    f.statusFilter.length > 0 ||
+    f.assigneeFilter.length > 0 ||
+    f.priorityFilter.length > 0 ||
+    f.cycleFilter !== null ||
+    f.search !== '' ||
+    f.myOnly
+  )
+}

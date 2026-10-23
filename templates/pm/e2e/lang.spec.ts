@@ -1,9 +1,17 @@
 import { expect, test, type Page } from '@playwright/test'
+import { closeSettings, openSettings, settingsAction } from './menus'
 
 // 播种规模：本 spec 只验文案，不验数据量——e2e 统一 5K（产品默认仍是 10 万），避免每用例重播 10 万条
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('oas-pm-seed-size', '5000'))
 })
+
+/** 语言开关在设置菜单里：开菜单 → 点「语言」项 → Esc 收起（面板会盖住右上内容区） */
+async function toggleLang(page: Page) {
+  await openSettings(page)
+  await settingsAction(page, /语言|Language/).click()
+  await closeSettings(page)
+}
 
 async function setView(page: Page, v: string) {
   await page.evaluate((view) => {
@@ -65,8 +73,10 @@ test('L2 切换英文：文案变英文 + localStorage 持久化 + reload 保持
   test.setTimeout(120_000)
   await page.goto('/')
   await expect(page.getByTestId('pm-toolbar')).toBeVisible({ timeout: 10_000 })
-  await page.getByTestId('lang-toggle').click()
-  await expect(page.getByTestId('lang-toggle')).toHaveText('中')
+  await toggleLang(page)
+  await openSettings(page)
+  await expect(settingsAction(page, /语言|Language/)).toContainText('English')
+  await closeSettings(page)
   await expect(page.getByTestId('view-seg')).toHaveAttribute('items', /List/)
   await expect.poll(() => viewSegTabLabels(page)).toContain('List')
   await expect(page.getByTestId('toolbar-new')).toContainText('New Issue')
@@ -108,10 +118,9 @@ test('L3 切回中文：文案恢复且结束时 lang=zh', async ({ page }) => {
   test.setTimeout(60_000)
   await page.goto('/')
   await expect(page.getByTestId('pm-toolbar')).toBeVisible({ timeout: 10_000 })
-  await page.getByTestId('lang-toggle').click()
-  await expect(page.getByTestId('lang-toggle')).toHaveText('中')
-  await page.getByTestId('lang-toggle').click()
-  await expect(page.getByTestId('lang-toggle')).toHaveText('EN')
+  // 两次切换：en → zh，验证菜单内的开关可反复切换且落库回 zh
+  await toggleLang(page)
+  await toggleLang(page)
   await expect.poll(() => page.evaluate(() => localStorage.getItem('oas-pm-lang'))).toBe('zh')
   await expect(page.getByTestId('view-seg')).toHaveAttribute('items', /列表/)
   await expect.poll(() => viewSegTabLabels(page)).toContain('列表')

@@ -1,7 +1,7 @@
 // 相对路径而非 @ 别名：vite.config.ts 直接加载 mock-server.ts，进而解析本模块——
 // 配置加载阶段的别名尚未注册（同 lib/filters、lib/cycles）
 import type { SavedView } from '../types/index.ts'
-import { DEFAULT_FILTERS, type Filters } from './filters.ts'
+import { DEFAULT_FILTERS, parseFilters, type Filters } from './filters.ts'
 
 /** 一天的毫秒数（示例视图的创建时刻按天回推） */
 const DAY_MS = 86_400_000
@@ -51,4 +51,32 @@ export function demoSavedViewRows(now: number): SavedView[] {
  *  侧栏组保持仓库的按名排序，不受此函数影响 */
 export function byCreatedDesc(rows: readonly SavedView[] | undefined): SavedView[] {
   return [...(rows ?? [])].sort((a, b) => b.createdAt - a.createdAt)
+}
+
+/** 两个筛选集是否等价：忽略 search（视图不存搜索词）与多选数组顺序 */
+export function sameFilters(a: Filters, b: Filters): boolean {
+  const sameSet = (x: readonly string[], y: readonly string[]) =>
+    x.length === y.length && [...x].sort().join('\u0000') === [...y].sort().join('\u0000')
+  return (
+    a.projectId === b.projectId &&
+    a.myOnly === b.myOnly &&
+    a.sortBy === b.sortBy &&
+    (a.cycleFilter ?? null) === (b.cycleFilter ?? null) &&
+    sameSet(a.statusFilter, b.statusFilter) &&
+    sameSet(a.priorityFilter, b.priorityFilter) &&
+    sameSet(a.assigneeFilter, b.assigneeFilter)
+  )
+}
+
+/** 当前生效的保存视图 id（侧栏强高亮依据）：不额外存「最后应用了哪个视图」，
+ *  而是按筛选等价推导——用户手改筛选后高亮自然回落，不会出现「视图名亮着但筛选已变」 */
+export function findActiveSavedView(
+  views: readonly SavedView[] | undefined,
+  current: Filters,
+): string | null {
+  for (const v of views ?? []) {
+    const f = parseFilters(v.filters)
+    if (f && sameFilters(f, current)) return v.id
+  }
+  return null
 }

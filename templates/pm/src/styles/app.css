@@ -107,37 +107,6 @@ body {
   background: color-mix(in srgb, var(--oas-color-primary, #0b6cff) 12%, transparent);
 }
 
-.side-panel {
-  width: 236px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-  padding: 10px 8px;
-  background: color-mix(in srgb, var(--oas-color-bg-elevated, #fff) 65%, transparent);
-  border-right: 1px solid var(--oas-color-border, #e2e8f0);
-}
-
-.side-panel oas-sidebar {
-  flex: 1;
-  min-height: 0;
-  --oas-sidebar-bg: transparent;
-  --oas-sidebar-width: 220px;
-  --oas-sidebar-collapsed-width: 56px;
-}
-
-.side-panel oas-sidebar:not([drawer-open])::part(head) {
-  display: none;
-}
-
-.side-panel:has(oas-sidebar[collapsed]) {
-  width: 72px;
-}
-
-.side-panel:has(oas-sidebar[collapsed]) .side-view-seg {
-  display: none;
-}
-
 .content {
   flex: 1;
   min-width: 0;
@@ -593,7 +562,6 @@ body {
 .tb-spacer {
   flex: 1;
 }
-
 .toolbar-btn {
   appearance: none;
   border: none;
@@ -689,11 +657,10 @@ body {
   color: var(--oas-color-danger-text, #dc2626);
 }
 
-/* ── 工具栏搜索 ── */
+/* ── 工具栏搜索（顶栏中段：弹性宽度，独立边框，不夹按钮） ── */
 .toolbar-search {
   height: 32px;
-  width: 240px;
-  margin-left: 8px;
+  width: 100%;
   --_pad-x: 10px;
   font: inherit;
   font-size: 13px;
@@ -842,18 +809,60 @@ body {
   --oas-resource-height: calc(100vh - 344px);
 }
 
-/* ── 侧栏成员筛选（一行可搜索多选） ── */
-.side-filters {
+/* ── 侧栏（oas-sidebar 承载全部行；宽度 240） ── */
+.side-panel {
+  /* 240px 导航宽 + 左右 8px 内边距：项目/保存视图名（中文）在 220px 下会被截断 */
+  width: 256px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
+  min-height: 0;
+  padding: 10px 8px;
+  background: color-mix(in srgb, var(--oas-color-bg-elevated, #fff) 65%, transparent);
+  border-right: 1px solid var(--oas-color-border, #e2e8f0);
+}
+
+.side-panel oas-sidebar {
+  flex: 1;
+  min-height: 0;
+  --oas-sidebar-bg: transparent;
+  --oas-sidebar-width: 240px;
+  --oas-sidebar-collapsed-width: 56px;
+}
+
+/* 组件自带的头（移动抽屉关闭按钮等）在桌面不占位 */
+.side-panel oas-sidebar:not([drawer-open])::part(head) {
+  display: none;
+}
+
+/* 折叠 rail：只剩图标条（56px），面板同步收窄 */
+.side-panel:has(oas-sidebar[collapsed]) {
+  width: 72px;
+}
+
+/* 成员筛选：走 oas-sidebar 默认插槽 + sticky 钉底（在组件折叠条上方），
+   滚动时始终可见；折叠成 rail 时隐藏 */
+.side-panel:has(oas-sidebar[collapsed]) .side-filters {
+  display: none;
+}
+
+/* 侧栏成员筛选（sticky 由 SideList 注入到组件 .body，见 TIER_STYLES） */
+.side-filters {
+  background: var(--oas-color-bg-elevated, #ffffff);
+  display: flex;
+  flex-direction: column;
   gap: 4px;
-  padding: 8px 10px 2px;
+  margin: 6px 8px 8px;
+  padding: 8px 2px 2px;
+  border-top: 1px solid var(--oas-color-border, #e2e8f0);
 }
 
 .side-filters-label {
-  font-size: 12px;
-  color: var(--oas-color-text-secondary, #6b7280);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--oas-color-text-secondary, #64748b);
 }
 
 .side-filters oas-select {
@@ -1045,16 +1054,18 @@ body {
   color: var(--oas-color-text-on-danger);
 }
 
-/* ── 顶栏（品牌 + 动作 + 搜索，Linear 式单条） ── */
-.topbar {
-  height: 44px;
-  flex-shrink: 0;
+/* ── 顶栏（oas-app-bar 三段式：leading 品牌 / title 搜索 / actions / trailing 菜单） ── */
+oas-app-bar.topbar {
+  /* 48px：比默认 56 更紧凑，列表页多得一行内容 */
+  --oas-app-bar-height: 48px;
+  font-family: inherit;
+}
+
+/* 左段：品牌 + 数据源徽标（徽标弱化成小号胶囊） */
+.tb-left {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 0 14px;
-  background: var(--oas-color-bg-elevated, #fff);
-  border-bottom: 1px solid var(--oas-color-border, #e2e8f0);
+  gap: 8px;
 }
 
 .tb-brand {
@@ -1063,7 +1074,6 @@ body {
   gap: 6px;
   font-size: 14px;
   font-weight: 700;
-  margin-right: 6px;
 }
 
 .tb-logo {
@@ -1082,27 +1092,27 @@ body {
   letter-spacing: 0.5px;
 }
 
-/* 数据源徽标：胶囊贴标签，等宽字（技术标识），明暗都走 token */
+/* 数据源徽标：小号胶囊 + 弱化色（保留可读性，不与主操作争视觉重量） */
 .tb-source {
   display: inline-flex;
   align-items: center;
-  height: 20px;
-  padding: 0 8px;
+  height: 18px;
+  padding: 0 7px;
   border: 1px solid var(--oas-color-border, #e2e8f0);
   border-radius: 999px;
-  background: var(--oas-color-bg-hover, #f1f5f9);
-  color: var(--oas-color-text-primary, #1f2329);
+  background: transparent;
+  color: var(--oas-color-text-secondary, #64748b);
   font-family: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
-  letter-spacing: 0.4px;
+  letter-spacing: 0.3px;
   line-height: 1;
   white-space: nowrap;
 }
 
 .tb-source-api {
   border-color: var(--oas-color-primary, #0b6cff);
-  color: var(--oas-color-primary, #0b6cff);
+  color: var(--oas-color-primary-text, #0b52c0);
 }
 
 .tb-source-btn {
@@ -1117,7 +1127,7 @@ body {
 
 .tb-source-btn:hover.tb-source-api {
   border-color: var(--oas-color-primary, #0b6cff);
-  color: var(--oas-color-primary, #0b6cff);
+  color: var(--oas-color-primary-text, #0b52c0);
 }
 
 .tb-source-btn:focus-visible {
@@ -1125,54 +1135,74 @@ body {
   outline-offset: 1px;
 }
 
-/* 筛选位置切换（顶栏常驻紧凑 segmented）：右侧设置区之前，不抢动作按钮的宽度 */
-.tb-placement {
-  display: inline-flex;
+/* 中段：搜索弹性伸展 + 视图切换（视图是全局页面切换，占顶栏空档） */
+.tb-mid {
+  display: flex;
   align-items: center;
-  flex-shrink: 0;
-  margin-left: 4px;
-}
-
-.tb-placement oas-segmented {
-  font-size: 12px;
-}
-
-/* ── 视图切换（侧栏顶部，垂直 oas-tabs） ── */
-.side-view-seg {
-  padding: 8px 10px 0;
-}
-.side-view-seg oas-tabs {
-  display: block;
+  gap: 12px;
+  min-width: 0;
   width: 100%;
 }
-
-.view-seg {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 2px;
-  padding: 4px;
-  margin-bottom: 6px;
-  background: var(--oas-color-bg-hover, #f1f5f9);
-  border-radius: 8px;
+.tb-search {
+  flex: 1 1 280px;
+  min-width: 240px;
+  max-width: 560px;
+  display: flex;
+  align-items: center;
+}
+.tb-views {
+  flex: none;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.tb-views oas-tabs {
+  --oas-tabs-height: 32px;
 }
 
-.view-seg-btn {
+/* 右段操作：主操作 → 常用图标 → 低频（管理） */
+.tb-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 末端：设置菜单 + 用户菜单 */
+.tb-trailing {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 图标按钮：与文字按钮同高 */
+.tb-icon-btn {
+  min-width: 30px;
+  padding: 0 6px;
+}
+
+/* 菜单触发器（oas-dropdown 默认插槽里的按钮） */
+.tb-menu-trigger {
   appearance: none;
   border: none;
   background: none;
-  padding: 5px 0;
-  border-radius: 6px;
-  font: inherit;
-  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
   color: var(--oas-color-text-secondary, #64748b);
   cursor: pointer;
 }
 
-.view-seg-btn.is-active {
-  background: var(--oas-color-bg-elevated, #fff);
-  color: var(--oas-color-text-primary, #0f172a);
-  font-weight: 600;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+.tb-menu-trigger:hover {
+  background: var(--oas-color-bg-hover, #f1f5f9);
+  color: var(--oas-color-text-primary, #1f2329);
+}
+
+.tb-menu-trigger:focus-visible {
+  outline: 2px solid var(--oas-color-primary, #0b6cff);
+  outline-offset: 1px;
 }
 
 /* ── 标签 ── */
@@ -1345,7 +1375,7 @@ body {
   -webkit-box-orient: vertical;
 }
 
-/* ── 顶栏身份 ── */
+/* ── 顶栏身份（用户菜单入口：头像 + 姓名 + 展开箭头） ── */
 .tb-user {
   appearance: none;
   border: none;
@@ -1353,12 +1383,25 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  max-width: 180px;
   padding: 3px 8px;
   border-radius: 8px;
   cursor: pointer;
   font: inherit;
   font-size: 13px;
   color: inherit;
+}
+
+.tb-user-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tb-user-caret {
+  flex-shrink: 0;
+  color: var(--oas-color-text-secondary, #64748b);
 }
 
 .tb-user:hover {
@@ -1412,6 +1455,18 @@ body {
 }
 
 .row-check::part(box) {
+  margin-block-start: 0;
+}
+
+/* 表头全选：与行内勾选框同尺寸并垂直居中（grid 单元格默认拉伸） */
+.thead-check {
+  width: 14px;
+  height: 14px;
+  align-self: center;
+  cursor: pointer;
+}
+
+.thead-check::part(box) {
   margin-block-start: 0;
 }
 
@@ -1673,26 +1728,28 @@ oas-drawer::part(close):focus-visible {
 /* ── 移动端适配（≤900px） ── */
 @media (max-width: 900px) {
   .side-panel {
-    width: 64px;
+    width: 72px;
     padding: 8px 4px;
     overflow-x: hidden;
   }
+  /* 窄屏侧栏恒为 rail：只留图标（组件折叠态同一套规则），成员控件无处安放 */
   .side-panel oas-sidebar {
     --oas-sidebar-width: 56px;
   }
-  .side-panel oas-sidebar::part(badge),
-  .side-panel oas-sidebar::part(group) {
+  .side-panel oas-sidebar::part(group),
+  .side-panel oas-sidebar::part(badge) {
     display: none;
   }
-  .side-view-seg oas-tabs {
-    display: none;
-  }
-  /* 窄屏侧栏收成 rail：成员控件无处安放（与视图切换同样收起） */
   .side-filters {
     display: none;
   }
-  .toolbar-search {
-    width: 140px;
+  .tb-search {
+    min-width: 140px;
+    flex: 1 1 140px;
+    max-width: none;
+  }
+  .tb-brand {
+    display: none;
   }
   .dash-cards {
     grid-template-columns: repeat(2, 1fr);

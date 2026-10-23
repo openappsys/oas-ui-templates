@@ -5,6 +5,59 @@ declare module 'react' {
   namespace JSX {
     interface IntrinsicElements {
       'oas-icon': HTMLAttributes<HTMLElement> & { name: string; size?: number | string }
+      'oas-app-bar': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        heading?: string
+        position?: string
+        elevated?: boolean | string
+        'menu-button'?: boolean | string
+      }
+      'oas-dropdown': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        open?: boolean | string
+        value?: string
+        placement?: string
+        trigger?: string
+        arrow?: boolean | string
+        split?: boolean | string
+        disabled?: boolean | string
+        /** 选中后是否关闭：false 用于「连点多项」的设置菜单 */
+        'hide-on-click'?: string
+        size?: string
+      }
+      'oas-dropdown-item': React.DetailedHTMLProps<
+        React.HTMLAttributes<HTMLElement>,
+        HTMLElement
+      > & {
+        value?: string
+        icon?: string
+        kind?: string
+        disabled?: boolean | string
+        danger?: boolean | string
+      }
+      'oas-dropdown-group': React.DetailedHTMLProps<
+        React.HTMLAttributes<HTMLElement>,
+        HTMLElement
+      > & {
+        label?: string
+        value?: string
+      }
+      'oas-dropdown-divider': React.DetailedHTMLProps<
+        React.HTMLAttributes<HTMLElement>,
+        HTMLElement
+      >
+      'oas-popover': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        open?: boolean | string
+        /** 触发方式（空格分隔多选）：click / hover / focus / contextmenu / manual */
+        trigger?: string
+        placement?: string
+        /** 面板宽度：数字(px) / "trigger" / 任意 CSS 值 */
+        width?: string | number
+        arrow?: boolean | string
+        closable?: boolean | string
+        'focus-on-open'?: boolean | string
+        'hide-when-detached'?: boolean | string
+        'auto-adjust-overflow'?: boolean | string
+        'append-to'?: string
+      }
       'oas-tag': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
         size?: 'small' | 'medium' | 'large'
         type?: string

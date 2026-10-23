@@ -58,7 +58,8 @@ test('B3 密码正确：进入工作台，顶栏显示成员并带登出；登�
   const token = await page.evaluate(() => localStorage.getItem('oas-pm-token'))
   expect(token).toMatch(/^mock-/)
 
-  await page.getByTestId('tb-logout').click()
+  await page.getByTestId('tb-user').click()
+  await page.getByTestId('user-menu').getByRole('menuitem', { name: '登出' }).click()
   await expect(page.getByTestId('login-page')).toBeVisible({ timeout: 15_000 })
   expect(await page.evaluate(() => localStorage.getItem('oas-pm-token'))).toBeNull()
   // 服务端 token 已作废：再用旧 token 请求 /api/auth/me 是 401

@@ -180,6 +180,7 @@ export function OCheckbox({
   className,
   checked,
   disabled,
+  indeterminate,
   ariaLabel,
   onChange,
 }: {
@@ -187,6 +188,9 @@ export function OCheckbox({
   className?: string
   checked: boolean
   disabled?: boolean
+  /** 半选（表头全选）：宿主同步 indeterminate 属性，组件再把内部 input.indeterminate 与
+   *  aria-checked="mixed" 一起写掉——两个通道缺一个，读屏与视觉就会不一致 */
+  indeterminate?: boolean
   /** 可访问名：走默认 slot（shadow 内的 <label><slot> 即名字来源），视觉上由 .sr-only 隐藏 */
   ariaLabel?: string
   onChange: () => void
@@ -199,6 +203,11 @@ export function OCheckbox({
     if (!el) return
     el.toggleAttribute('checked', checked)
   }, [checked])
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    el.toggleAttribute('indeterminate', indeterminate ?? false)
+  }, [indeterminate])
   useEffect(() => {
     const el = ref.current
     if (!el) return
@@ -413,14 +422,7 @@ export function OTabs({
     return () => el.removeEventListener('oas-change', h)
   }, [])
   return (
-    <oas-tabs
-      ref={ref}
-      tab-position="left"
-      size="small"
-      hide-content=""
-      aria-label={ariaLabel}
-      data-testid={testid}
-    />
+    <oas-tabs ref={ref} size="small" hide-content="" aria-label={ariaLabel} data-testid={testid} />
   )
 }
 

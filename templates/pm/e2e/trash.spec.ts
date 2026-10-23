@@ -104,6 +104,7 @@ async function confirmPop(btn: Locator) {
 
 async function switchUser(page: Page, id: string) {
   await page.getByTestId('tb-user').click()
+  await page.getByTestId('user-menu').getByRole('menuitem', { name: '切换身份' }).click()
   await expect(page.getByTestId('modal-user')).toHaveAttribute('visible', /.*/, { timeout: 5000 })
   await page.getByTestId(`pick-user-${id}`).click()
   await expect(page.getByTestId('modal-user')).not.toHaveAttribute('visible', /.*/, {
