@@ -39,7 +39,8 @@ describe('示例保存视图', () => {
     const rows = demoSavedViewRows(NOW)
     expect(rows[0]!.createdAt).toBe(NOW - 2 * 86_400_000)
     expect(rows[1]!.createdAt).toBe(NOW - 86_400_000)
-    expect(DEMO_SAVED_VIEWS.every((v) => v.name.includes(' / '))).toBe(true)
+    // 名称纯中文（与其它 seed 数据一致，避免侧栏截断）
+    expect(DEMO_SAVED_VIEWS.every((v) => v.name.length > 0 && !v.name.includes(' / '))).toBe(true)
   })
 })
 

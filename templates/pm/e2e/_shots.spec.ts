@@ -5,7 +5,7 @@ async function openApp(page: Page) {
   await page.addInitScript(() => localStorage.setItem('oas-pm-seed-size', '5000'))
   await page.goto('/')
   // 预算沿用 10 万口径：与主用例保持同一口径
-  await page.waitForFunction(() => localStorage.getItem('oas-pm-seed-v10') === '1', {
+  await page.waitForFunction(() => localStorage.getItem('oas-pm-seed-v11') === '1', {
     timeout: 180_000,
   })
   await page.waitForSelector('.issue-row', { timeout: 20_000 })

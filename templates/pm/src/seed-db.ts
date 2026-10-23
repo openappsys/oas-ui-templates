@@ -34,7 +34,7 @@ const LABELS = ['frontend', 'backend', 'design', 'bug', 'feature', 'tech-debt', 
 export async function seedDatabase(): Promise<void> {
   // seed 版本标记：调整 seed 逻辑后 bump。标记 + 数据双验证——
   // 单看标记会在「上次 seed 中断」时永久跳过，留下空库
-  const SEED_VER = 'oas-pm-seed-v10'
+  const SEED_VER = 'oas-pm-seed-v11'
   const marked = localStorage.getItem(SEED_VER)
   const issueCount = await db.issues.count()
   if (marked && issueCount > 0) return

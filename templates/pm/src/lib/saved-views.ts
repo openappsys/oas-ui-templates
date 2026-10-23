@@ -15,17 +15,17 @@ export interface DemoSavedView {
   filters: Partial<Filters>
 }
 
-/** 名称中英并列：保存视图名是数据不是文案，不随界面语言切换，两种语言都要读得懂 */
+/** 名称纯中文：与其它 seed 数据一致；双语名在 220px 侧栏会被截断 */
 export const DEMO_SAVED_VIEWS: readonly DemoSavedView[] = [
   {
     id: 'view-demo-1',
-    name: '我的进行中 / My in-progress',
+    name: '我的进行中',
     ageMs: 2 * DAY_MS,
     filters: { myOnly: true, statusFilter: ['in_progress'] },
   },
   {
     id: 'view-demo-2',
-    name: '高优先级待办 / High-priority to-do',
+    name: '高优先级待办',
     ageMs: DAY_MS,
     filters: { priorityFilter: ['urgent', 'high'], statusFilter: ['todo', 'backlog'] },
   },

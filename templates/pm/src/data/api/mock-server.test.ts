@@ -856,8 +856,8 @@ describe('设置与评论/活动/视图', () => {
   it('saved-views 创建按名排序、可删除（示例视图随 seed 预置）', () => {
     const store = createMockStore({ now: FIXED })
     const seeded = items<{ name: string }>(call(store, 'GET', '/api/saved-views'))
-    expect(seeded.map((v) => v.name)).toContain('我的进行中 / My in-progress')
-    expect(seeded.map((v) => v.name)).toContain('高优先级待办 / High-priority to-do')
+    expect(seeded.map((v) => v.name)).toContain('我的进行中')
+    expect(seeded.map((v) => v.name)).toContain('高优先级待办')
     call(store, 'POST', '/api/saved-views', { body: { name: 'b-view', filters: { a: 1 } } })
     call(store, 'POST', '/api/saved-views', { body: { name: 'a-view', filters: { b: 2 } } })
     const all = items<{ id: string; name: string; filters: string }>(

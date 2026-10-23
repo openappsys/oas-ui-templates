@@ -4,8 +4,8 @@ import { expect, test, type Page } from '@playwright/test'
 const E2E_SEED_SIZE = 5_000
 
 /** seed v10 预置的示例保存视图（名称中英并列，见 src/lib/saved-views.ts） */
-const MY_VIEW = '我的进行中 / My in-progress'
-const HIGH_VIEW = '高优先级待办 / High-priority to-do'
+const MY_VIEW = '我的进行中'
+const HIGH_VIEW = '高优先级待办'
 /** 下拉按创建时间倒序：高优先级视图更晚创建，排在前面 */
 const SEEDED_ORDER = [HIGH_VIEW, MY_VIEW]
 
@@ -16,7 +16,7 @@ async function waitForSeed(page: Page, size = E2E_SEED_SIZE) {
   await expect(page.getByTestId('pm-toolbar')).toBeVisible({ timeout: 10_000 })
   // seed 完成的确定性信号：SEED_VER 标记写入（播完才 set）
   await expect
-    .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-seed-v10')), {
+    .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-seed-v11')), {
       timeout: 180_000,
       intervals: [1000, 3000, 5000],
     })
