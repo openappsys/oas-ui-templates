@@ -79,10 +79,8 @@ test('C3 导航：搜索看板 → Enter 切换看板视图', async ({ page }) =
     .poll(async () => (await readItems(page)).some((i) => i.value === 'nav:board'))
     .toBe(true)
   await page.keyboard.press('Enter')
-  await expect(async () => {
-    await page.keyboard.press('Enter')
-    await expect(page.getByTestId('board')).toBeVisible()
-  }).toPass({ timeout: 15_000 })
+  // 不再「盲按第二次 Enter」：面板已关闭时再按不会重试导航，只会把真实失败拖成 15s 超时
+  await expect(page.getByTestId('board')).toBeVisible({ timeout: 10_000 })
 })
 
 test('C4 Esc 关闭命令面板', async ({ page }) => {

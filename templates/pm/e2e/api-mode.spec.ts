@@ -68,9 +68,9 @@ test('A1 引导：reset 端点 + mock 2K 数据渲染 + 徽标 API + 不跑 Dexi
   await expect(page.locator('.issue-row').first()).toBeVisible({ timeout: 15_000 })
 
   // mock 种子规模：项目内 1K 级（不是 10W 级），虚拟列表只渲染窗口行
-  const total = await issueTotal(page)
-  expect(total).toBeGreaterThan(900)
-  expect(total).toBeLessThan(2000)
+  // 计数在首个窗口渲染后仍有一次异步汇聚（未就绪时表头回落到「已加载 200」），轮询到稳定值再断言
+  await expect.poll(() => issueTotal(page), { timeout: 15_000 }).toBeGreaterThan(900)
+  expect(await issueTotal(page)).toBeLessThan(2000)
   const rows = await page.locator('.issue-row').count()
   expect(rows).toBeGreaterThan(10)
   expect(rows).toBeLessThan(200)

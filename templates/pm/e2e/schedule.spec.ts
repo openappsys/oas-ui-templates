@@ -160,7 +160,15 @@ test('S1 映射渲染：events.date 与 dueAt 的 getUTC* 派生一致；桶展�
   const gantt = page.getByTestId('schedule-gantt')
   await page.waitForTimeout(600)
   if ((await gantt.locator('.chip').count()) === 0) {
-    await gantt.locator('[part="next"]').click()
+    // 兜底只在本月无事件时走。按钮在组件 shadow 内且会被重渲染替换：用 evaluate 直派点击，
+    // 避免 actionability 轮询把「元素被替换」表现成整条用例 240s 超时（跨浏览器更明显）
+    const clicked = await gantt.evaluate((el) => {
+      const btn = (el as Element).shadowRoot?.querySelector<HTMLElement>('[part="next"]')
+      if (!btn) return false
+      btn.click()
+      return true
+    })
+    expect(clicked, 'calendar next button available').toBe(true)
     await page.waitForTimeout(400)
   }
   await expect

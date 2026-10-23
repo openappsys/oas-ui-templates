@@ -126,7 +126,9 @@ test('S3 成员多选 toggle：点两行取并集，再点清除', async ({ page
 test('S4 优先级组多选：紧急+高 并集，全部清空', async ({ page }) => {
   await waitForSeed(page)
   await expect(sideItem(page, 'priority:all')).toHaveAttribute('aria-pressed', 'true')
+  // 两次点击之间必须等状态落地：侧栏数据重挂会整树重建，连点两次会打在被替换的旧节点上
   await sideRow(page, '紧急').click()
+  await expect(sideItem(page, 'priority:urgent')).toHaveAttribute('aria-pressed', 'true')
   await sideRow(page, '高').click()
   await expect(sideItem(page, 'priority:urgent')).toHaveAttribute('aria-pressed', 'true')
   await expect(sideItem(page, 'priority:high')).toHaveAttribute('aria-pressed', 'true')

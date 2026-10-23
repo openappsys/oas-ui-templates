@@ -24,6 +24,7 @@ pnpm install
 pnpm dev        # 开发（vite）
 pnpm test       # 单测（vitest + fake-indexeddb）
 pnpm test:e2e   # e2e（playwright，需本地 Chromium）
+PW_BROWSER=firefox pnpm test:e2e   # 同一套用例跑 Firefox（需 pnpm exec playwright install firefox）
 pnpm build      # tsc6 类型检查 + vite 产物
 ```
 
@@ -75,6 +76,7 @@ pnpm install
 pnpm dev        # dev server (vite)
 pnpm test       # unit tests (vitest + fake-indexeddb)
 pnpm test:e2e   # e2e (playwright, requires local Chromium)
+PW_BROWSER=firefox pnpm test:e2e   # same suite on Firefox (needs pnpm exec playwright install firefox)
 pnpm build      # tsc6 typecheck + vite build
 ```
 
