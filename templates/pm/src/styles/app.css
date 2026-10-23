@@ -751,7 +751,7 @@ body {
 
 /* 已保存视图下拉：示例视图名中英并列（较长），留出能读到中文名的宽度，超出交给触发器省略 */
 .issue-toolbar oas-select[data-testid="saved-view-select"] {
-  width: 240px;
+  width: 300px;
 }
 
 /* 动作按钮组：靠右；换行时整组一起换行，避免每个带 auto margin 的按钮各自占一行 */

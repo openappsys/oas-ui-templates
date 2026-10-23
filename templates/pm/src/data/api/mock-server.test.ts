@@ -853,17 +853,23 @@ describe('设置与评论/活动/视图', () => {
     )
   })
 
-  it('saved-views 创建按名排序、可删除', () => {
+  it('saved-views 创建按名排序、可删除（示例视图随 seed 预置）', () => {
     const store = createMockStore({ now: FIXED })
+    const seeded = items<{ name: string }>(call(store, 'GET', '/api/saved-views'))
+    expect(seeded.map((v) => v.name)).toContain('我的进行中 / My in-progress')
+    expect(seeded.map((v) => v.name)).toContain('高优先级待办 / High-priority to-do')
     call(store, 'POST', '/api/saved-views', { body: { name: 'b-view', filters: { a: 1 } } })
     call(store, 'POST', '/api/saved-views', { body: { name: 'a-view', filters: { b: 2 } } })
     const all = items<{ id: string; name: string; filters: string }>(
       call(store, 'GET', '/api/saved-views'),
     )
-    expect(all.map((v) => v.name)).toEqual(['a-view', 'b-view'])
-    expect(all[0].filters).toBe(JSON.stringify({ b: 2 }))
-    call(store, 'DELETE', `/api/saved-views/${all[0].id}`)
-    expect(items(call(store, 'GET', '/api/saved-views')).length).toBe(1)
+    expect(all).toHaveLength(seeded.length + 2)
+    // 创建的两条按名相邻（a-view 在 b-view 前），示例视图不干扰该次序
+    const created = all.filter((v) => v.name === 'a-view' || v.name === 'b-view')
+    expect(created.map((v) => v.name)).toEqual(['a-view', 'b-view'])
+    expect(created[0]?.filters).toBe(JSON.stringify({ b: 2 }))
+    call(store, 'DELETE', `/api/saved-views/${created[0]?.id}`)
+    expect(items(call(store, 'GET', '/api/saved-views'))).toHaveLength(seeded.length + 1)
   })
 })
 

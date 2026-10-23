@@ -28,6 +28,7 @@ import {
   type Project,
   type SavedView,
 } from '../../types/index.ts'
+import { demoSavedViewRows } from '../../lib/saved-views.ts'
 import type { CycleIssueCount } from '../types.ts'
 
 export interface SettingRow {
@@ -303,7 +304,8 @@ function buildSeed(seed: number, now: number): SeedTables {
     projects,
     members,
     comments,
-    savedViews: [],
+    // 示例保存视图：与 Dexie seed 共用 lib/saved-views 的定义（两种数据源首屏入口同形）
+    savedViews: demoSavedViewRows(now),
     activities,
     settings: [{ key: 'labels', value: LABELS, updatedAt: now }],
     cycles,

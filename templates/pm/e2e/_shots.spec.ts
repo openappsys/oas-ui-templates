@@ -5,7 +5,7 @@ async function openApp(page: Page) {
   await page.addInitScript(() => localStorage.setItem('oas-pm-seed-size', '5000'))
   await page.goto('/')
   // 预算沿用 10 万口径：与主用例保持同一口径
-  await page.waitForFunction(() => localStorage.getItem('oas-pm-seed-v9') === '1', {
+  await page.waitForFunction(() => localStorage.getItem('oas-pm-seed-v10') === '1', {
     timeout: 180_000,
   })
   await page.waitForSelector('.issue-row', { timeout: 20_000 })
@@ -622,6 +622,31 @@ async function captureAssigneeFilter(page: Page, suffix: string) {
   await page.screenshot({ path: `shots/pm-assignee-chips${suffix}.png` })
 }
 
+/** 已保存视图：工具栏下拉展开 / 选中应用后列表与侧栏同步 / 侧栏组（双主题） */
+async function captureSavedViews(page: Page, suffix: string) {
+  const sel = page.getByTestId('saved-view-select')
+  await sel.locator('button.trigger').click()
+  await expect(sel.locator('.dropdown')).toHaveClass(/open/, { timeout: 5000 })
+  await page.waitForTimeout(600)
+  await page.screenshot({ path: `shots/pm-saved-views-open${suffix}.png` })
+
+  // 选中「高优先级待办」：列表收敛为 紧急+高 × 待办+积压，控件回占位
+  await sel.locator('.option').filter({ hasText: '高优先级待办' }).first().click()
+  await expect(sel.locator('.dropdown')).not.toHaveClass(/open/, { timeout: 5000 })
+  await page.waitForTimeout(1500)
+  await page.screenshot({ path: `shots/pm-saved-views-applied${suffix}.png` })
+
+  await page.getByTestId('side-list').evaluate((el) => {
+    el.shadowRoot
+      ?.querySelector('[part="item"][data-value="savedview:view-demo-1"]')
+      ?.scrollIntoView({ block: 'center' })
+  })
+  await page.waitForTimeout(400)
+  await page
+    .getByTestId('side-panel')
+    .screenshot({ path: `shots/pm-saved-views-sidebar${suffix}.png` })
+}
+
 test('shots sidebar', async ({ page }) => {
   test.setTimeout(240_000)
   await openApp(page)
@@ -656,6 +681,22 @@ test('shots assignee filter dark', async ({ page }) => {
   await expectDarkTheme(page)
   await captureAssigneeFilter(page, '-dark')
   console.log('shots assignee filter dark done')
+})
+
+test('shots saved views', async ({ page }) => {
+  test.setTimeout(240_000)
+  await openApp(page)
+  await captureSavedViews(page, '')
+  console.log('shots saved views done')
+})
+
+test('shots saved views dark', async ({ page }) => {
+  test.setTimeout(240_000)
+  await page.addInitScript(() => localStorage.setItem('oas-pm-theme', 'dark'))
+  await openApp(page)
+  await expectDarkTheme(page)
+  await captureSavedViews(page, '-dark')
+  console.log('shots saved views dark done')
 })
 
 test('shots cycles', async ({ page }) => {

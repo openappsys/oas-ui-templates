@@ -58,7 +58,7 @@ async function waitForSeed(page: Page, size = E2E_SEED_SIZE) {
   await expect(page.getByTestId('pm-toolbar')).toBeVisible({ timeout: 10_000 })
   // seed 完成的确定性信号：SEED_VER 标记写入（播完才 set）
   await expect
-    .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-seed-v9')), {
+    .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-seed-v10')), {
       timeout: 180_000,
       intervals: [1000, 3000, 5000],
     })
@@ -916,7 +916,7 @@ test('M20 看板：卡片点击打开详情抽屉', async ({ page }) => {
   test.setTimeout(240_000)
   await page.goto('/')
   await expect
-    .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-seed-v9')), { timeout: 180_000 })
+    .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-seed-v10')), { timeout: 180_000 })
     .toBe('1')
   await expect(page.locator('.issue-row').first()).toBeVisible({ timeout: 45_000 })
   // 「我的」视图首张卡（张伟负责），记 key——先等首行负责人落定为张伟
@@ -970,7 +970,7 @@ test('M22 触底续载：滚动到底部计数持续增加（行高与阈值一�
   await page.goto('/')
   await expect(page.getByTestId('pm-toolbar')).toBeVisible({ timeout: 10_000 })
   await expect
-    .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-seed-v9')), {
+    .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-seed-v10')), {
       timeout: 180_000,
       intervals: [1000, 3000, 5000],
     })

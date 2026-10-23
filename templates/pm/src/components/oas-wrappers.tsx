@@ -7,33 +7,43 @@ export function OSelect({
   options,
   onChange,
   ariaLabel,
+  placeholder,
+  title,
   disabled,
+  elRef,
 }: {
   testid: string
   value: string
   options: Array<{ label: string; value: string }>
   onChange: (v: string) => void
   ariaLabel?: string
+  /** 空值态提示（触发器的可见文案） */
+  placeholder?: string
+  /** 悬停提示：宿主 title 走 attribute（React 19 对 HTMLElement 命中的全局属性走 property，不落 attribute） */
+  title?: string
   disabled?: boolean
+  /** 需要程序性复位显示（如「选完即清回占位」）时由调用方持有宿主引用 */
+  elRef?: React.RefObject<HTMLElement | null>
 }) {
-  const ref = useRef<HTMLElement>(null)
+  const innerRef = useRef<HTMLElement>(null)
+  const ref = elRef ?? innerRef
   const onChangeRef = useRef(onChange)
   onChangeRef.current = onChange
   useEffect(() => {
     const el = ref.current
     if (!el) return
     ;(el as unknown as { options: unknown }).options = options
-  }, [options])
+  }, [options, ref])
   useEffect(() => {
     const el = ref.current
     if (!el) return
     el.toggleAttribute('disabled', disabled ?? false)
-  }, [disabled])
+  }, [disabled, ref])
   useEffect(() => {
     const el = ref.current
     if (!el) return
     ;(el as unknown as { value: string }).value = value
-  }, [value])
+  }, [value, ref])
   useEffect(() => {
     const el = ref.current
     if (!el) return
@@ -43,7 +53,7 @@ export function OSelect({
     }
     el.addEventListener('oas-change', h)
     return () => el.removeEventListener('oas-change', h)
-  }, [])
+  }, [ref])
   // oas-select 只在内部 trigger 上写 aria-label（来源是 `label` attribute，placeholder 兜底）；
   // 宿主 aria-label 不会穿过 shadow，所以要显式写 attribute 才真正命名 combobox
   useEffect(() => {
@@ -51,8 +61,16 @@ export function OSelect({
     if (!el) return
     if (ariaLabel) el.setAttribute('label', ariaLabel)
     else el.removeAttribute('label')
-  }, [ariaLabel])
-  return <oas-select ref={ref} data-testid={testid} aria-label={ariaLabel} />
+  }, [ariaLabel, ref])
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    if (title) el.setAttribute('title', title)
+    else el.removeAttribute('title')
+  }, [title, ref])
+  return (
+    <oas-select ref={ref} placeholder={placeholder} data-testid={testid} aria-label={ariaLabel} />
+  )
 }
 
 /** oas-select 多选包装（multiple + searchable + clearable）：options / value 走 property

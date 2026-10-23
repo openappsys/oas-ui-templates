@@ -9,7 +9,7 @@ async function waitForSeed(page: Page, size = E2E_SEED_SIZE) {
   await page.goto('/')
   await expect(page.getByTestId('pm-toolbar')).toBeVisible({ timeout: 10_000 })
   await expect
-    .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-seed-v9')), {
+    .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-seed-v10')), {
       timeout: 180_000,
       intervals: [1000, 3000, 5000],
     })
@@ -68,9 +68,9 @@ test('P1 默认侧栏：筛选组与成员控件在侧栏，内容区无顶部�
   await expect(sideItem(page, 'cycle:all')).toBeVisible()
   await expect(page.getByTestId('side-filters')).toBeVisible()
   await expect(page.getByTestId('side-filter-assignee')).toBeVisible()
-  // 内容区顶部没有任何筛选控件；列表工具条只留排序/分组（筛选不在第三处复制）
+  // 内容区顶部没有任何筛选控件；列表工具条只留排序/分组/已保存视图（筛选不在第三处复制）
   await expect(topBar(page)).toHaveCount(0)
-  await expect(page.getByTestId('issue-toolbar').locator('oas-select')).toHaveCount(2)
+  await expect(page.getByTestId('issue-toolbar').locator('oas-select')).toHaveCount(3)
 })
 
 test('P2 切顶部：侧栏筛选组隐藏、四控件在内容区顶部，且工具条不再重复，偏好落库', async ({
@@ -94,8 +94,8 @@ test('P2 切顶部：侧栏筛选组隐藏、四控件在内容区顶部，且�
   await expect(page.getByTestId('filters-assignee')).toBeVisible()
   await expect(page.getByTestId('filters-cycle')).toBeVisible()
   await expect(page.getByTestId('filters-clear')).toBeDisabled()
-  // 列表工具条不再承载筛选项：只有排序 / 分组两个下拉（筛选不在第三处复制）
-  await expect(page.getByTestId('issue-toolbar').locator('oas-select')).toHaveCount(2)
+  // 列表工具条不再承载筛选项：只有排序 / 分组 / 已保存视图三个下拉（筛选不在第三处复制）
+  await expect(page.getByTestId('issue-toolbar').locator('oas-select')).toHaveCount(3)
   await expect(page.getByTestId('sort-by')).toBeVisible()
 
   // 偏好持久化：刷新后仍是顶部

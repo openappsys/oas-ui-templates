@@ -8,6 +8,7 @@ import { useSavedViews } from './components/BulkBar'
 import { PRIORITY_TEXT, STATUS_COLOR } from './lib/colors'
 import { buildAssigneeOptions } from './lib/assignee-options'
 import { CYCLE_SIDEBAR_LIMIT, CURRENT_CYCLE, NO_CYCLE, currentCycleIds } from './lib/cycles'
+import { byCreatedDesc } from './lib/saved-views'
 import {
   ALL_PROJECTS,
   DEFAULT_FILTERS,
@@ -287,6 +288,8 @@ function Workspace({
         ? t('themeDark')
         : t('themeSystem')
   const savedViews = useSavedViews()
+  // 工具栏下拉的选项序：创建时间倒序（侧栏组保持仓库的按名排序）
+  const savedViewOptions = useMemo(() => byCreatedDesc(savedViews), [savedViews])
   const saveViewNameRef = useRef<HTMLElement & { value?: string }>(null)
   // 403 提示条：非 admin 触到管理端点时由服务端拒绝，前端给可见反馈（6s 自动收起）
   const [apiNotice, setApiNotice] = useState('')
@@ -999,6 +1002,8 @@ function Workspace({
                     memberMap={memberMap}
                     onSelect={setSelectedId}
                     onSaveView={() => saveViewRef.current?.setAttribute('visible', '')}
+                    savedViews={savedViewOptions}
+                    onApplySavedView={applySavedView}
                     currentUser={currentUser}
                     can={can}
                     navActive={view === 'issues' && selectedId === null}

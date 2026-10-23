@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import type { Issue, Member, SavedView } from '@/types'
 import { OSelect, OCheckbox } from '@/components/oas-wrappers'
-import { t, getLang, statusLabel } from '@/i18n'
+import { t, getLang, priorityLabel, statusLabel } from '@/i18n'
 import { BulkBar } from '@/components/BulkBar'
 import { Avatar } from '@/components/Avatar'
 import { ListSkeleton } from '@/components/skeletons/ListSkeleton'

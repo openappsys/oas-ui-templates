@@ -306,7 +306,7 @@ async function openApp(page: Page) {
   await page.goto('/')
   await expect(page.getByTestId('pm-toolbar')).toBeVisible({ timeout: 15_000 })
   await expect
-    .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-seed-v9')), { timeout: 180_000 })
+    .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-seed-v10')), { timeout: 180_000 })
     .toBe('1')
   await expect(page.locator('.issue-row').first()).toBeVisible({ timeout: 60_000 })
 }

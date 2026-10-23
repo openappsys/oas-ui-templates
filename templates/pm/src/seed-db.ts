@@ -3,6 +3,7 @@ import { db } from './db/schema'
 import { demoCycleIdFor, demoDoneAt } from './lib/cycles'
 import { AVATAR_PALETTE } from './lib/colors'
 import { mulberry32 } from './lib/prng'
+import { demoSavedViewRows } from './lib/saved-views'
 import { SEED_SIZE_KEY, parseSeedSize } from './lib/seed-size'
 
 const NAMES = ['张伟', '李娜', '王强', '赵敏', '刘洋', '陈静', '杨帆', '周琳']
@@ -33,7 +34,7 @@ const LABELS = ['frontend', 'backend', 'design', 'bug', 'feature', 'tech-debt', 
 export async function seedDatabase(): Promise<void> {
   // seed 版本标记：调整 seed 逻辑后 bump。标记 + 数据双验证——
   // 单看标记会在「上次 seed 中断」时永久跳过，留下空库
-  const SEED_VER = 'oas-pm-seed-v9'
+  const SEED_VER = 'oas-pm-seed-v10'
   const marked = localStorage.getItem(SEED_VER)
   const issueCount = await db.issues.count()
   if (marked && issueCount > 0) return
@@ -230,5 +231,8 @@ export async function seedDatabase(): Promise<void> {
   }
   console.timeEnd(`seed:${ISSUE_COUNT}`)
   await db.settings.put({ key: 'labels', value: LABELS, updatedAt: Date.now() })
+  // v10：示例保存视图。此前 savedViews 只有用户自建、seed 后为空——首屏侧栏「已保存视图」组与
+  // 工具条下拉都没有内容，入口不可发现。定义与 API mock 共用 lib/saved-views，两源首屏一致
+  await db.savedViews.bulkPut(demoSavedViewRows(now))
   localStorage.setItem(SEED_VER, '1')
 }

@@ -13,7 +13,7 @@ async function waitForSeed(page: Page, size = E2E_SEED_SIZE) {
   await page.goto('/')
   await expect(page.getByTestId('pm-toolbar')).toBeVisible({ timeout: 10_000 })
   await expect
-    .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-seed-v9')), {
+    .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-seed-v10')), {
       timeout: 180_000,
       intervals: [1000, 3000, 5000],
     })
@@ -175,14 +175,17 @@ test('F4 优先级多选与状态 AND：两个维度同时生效', async ({ page
     .poll(
       async () => {
         const st = await rowStatuses(page)
+        // 优先级列文案已本地化（priorityLabel），断言改读类名（语言无关）
         const pri = await page
           .locator('.issue-row .issue-priority')
-          .evaluateAll((els) => els.map((el) => el.textContent ?? ''))
+          .evaluateAll((els) =>
+            els.map((el) => [...el.classList].find((c) => c.startsWith('pri-')) ?? ''),
+          )
         return (
           st.length > 0 &&
           st.every((s) => s === '待办') &&
           pri.length > 0 &&
-          pri.every((p) => p === 'urgent' || p === 'high')
+          pri.every((p) => p === 'pri-urgent' || p === 'pri-high')
         )
       },
       { timeout: 10_000 },
