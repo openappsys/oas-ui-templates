@@ -47,9 +47,20 @@ export default defineConfig({
   server: {
     port: Number(process.env.PORT) || 5300,
     strictPort: true,
-    proxy: Object.fromEntries(
-      templates.map((t) => [`${t.subpath}/`, { target: `http://localhost:${t.port}`, ws: true }]),
-    ),
+    proxy: {
+      ...Object.fromEntries(
+        templates.map((t) => [`${t.subpath}/`, { target: `http://localhost:${t.port}`, ws: true }]),
+      ),
+      // pm 的 mock REST 在模板 dev server 内（/api/*）。门户下访问时 API 客户端用绝对路径，
+      // 必须把 /api 转发到 pm 模板端口，否则登录/数据请求全部 404
+      ...(templates.some((t) => t.name === 'pm')
+        ? {
+            '/api': {
+              target: `http://localhost:${templates.find((t) => t.name === 'pm')!.port}`,
+            },
+          }
+        : {}),
+    },
   },
   plugins: [
     {
