@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
-import type { Issue, Member } from '@/types'
+import type { Issue, Member, SavedView } from '@/types'
 import { OSelect, OCheckbox } from '@/components/oas-wrappers'
 import { t, getLang, statusLabel } from '@/i18n'
 import { BulkBar } from '@/components/BulkBar'
@@ -23,6 +23,8 @@ export function IssueListView({
   memberMap,
   onSelect,
   onSaveView,
+  savedViews,
+  onApplySavedView,
   currentUser,
   can,
   navActive,
@@ -41,6 +43,10 @@ export function IssueListView({
   memberMap: Map<string, Member>
   onSelect: (id: string) => void
   onSaveView: () => void
+  /** 保存视图（已按创建时间倒序，由宿主排序） */
+  savedViews: SavedView[]
+  /** 应用保存视图：宿主负责归一旧结构 JSON 并落 Filters */
+  onApplySavedView: (filtersJson: string) => void
   currentUser: string
   can: (action: Action, ctx?: Ctx) => boolean
   navActive: boolean
@@ -63,6 +69,21 @@ export function IssueListView({
     filters.myOnly
   const emptyText = hasActiveFilter ? t('emptyNoMatch') : t('emptyNoData')
   const canBulk = can('bulk:apply')
+  const savedViewSelectRef = useRef<HTMLElement>(null)
+  const savedViewOptions = useMemo(
+    () => savedViews.map((v) => ({ label: v.name, value: v.id })),
+    [savedViews],
+  )
+  const noSavedViews = savedViews.length === 0
+  const applySavedViewPick = (id: string) => {
+    const view = savedViews.find((v) => v.id === id)
+    if (!view) return
+    onApplySavedView(view.filters)
+    // 复位到占位：选中态由 oas-select 自己维护，受控 value 恒为空不会再次写回；
+    // 不复位就会一直显示刚应用的视图名，与用户随后手动改筛选的「自定义」状态矛盾
+    const el = savedViewSelectRef.current
+    if (el) (el as unknown as { value: string }).value = ''
+  }
   const toggleSelect = useCallback((id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev)
@@ -163,8 +184,8 @@ export function IssueListView({
       style={{
         display: 'grid',
         gridTemplateColumns: canBulk
-          ? '22px 110px minmax(0, 1fr) 24px 70px 90px'
-          : '110px minmax(0, 1fr) 24px 70px 90px',
+          ? '22px 110px minmax(0, 1fr) 96px 70px 90px'
+          : '110px minmax(0, 1fr) 96px 70px 90px',
         alignItems: 'center',
         gap: 12,
         height: 44,
@@ -186,8 +207,13 @@ export function IssueListView({
       )}
       <span className="issue-key">{i.key}</span>
       <span className="issue-title">{i.title}</span>
-      <Avatar member={memberMap.get(i.assigneeId ?? '')} size={18} />
-      <span className={`issue-priority pri-${i.priority}`}>{i.priority}</span>
+      <span className="issue-assignee">
+        <Avatar member={memberMap.get(i.assigneeId ?? '')} size={18} />
+        <span className="issue-assignee-name">
+          {memberMap.get(i.assigneeId ?? '')?.name ?? t('resourceUnassigned')}
+        </span>
+      </span>
+      <span className={`issue-priority pri-${i.priority}`}>{priorityLabel(i.priority)}</span>
       <span className={`issue-status st-${i.status}`}>{statusLabel(i.status)}</span>
     </div>
   )
@@ -237,6 +263,19 @@ export function IssueListView({
             内容区顶部筛选栏（位置=顶部/两者）承载，同一份 Filters。工具条只留排序/分组/动作 */}
         {/* 动作按钮合成一组：容器吃掉 margin-left:auto，换行时整组一起换行（不留竖排按钮） */}
         <div className="issue-toolbar-actions">
+          {/* 已保存视图入口：与侧栏组同源（同一批 savedViews），与「保存视图」按钮相邻，
+              让「保存 → 再点开」成对出现。无视图时禁用并给悬停提示，避免点了没反应 */}
+          <OSelect
+            testid="saved-view-select"
+            elRef={savedViewSelectRef}
+            ariaLabel={t('savedViews')}
+            placeholder={noSavedViews ? t('savedViewsEmpty') : t('savedViews')}
+            title={noSavedViews ? t('saveViewFirst') : t('savedViewsHint')}
+            disabled={noSavedViews}
+            value=""
+            options={savedViewOptions}
+            onChange={applySavedViewPick}
+          />
           {(filters.search ||
             filters.assigneeFilter.length > 0 ||
             filters.priorityFilter.length > 0 ||
@@ -273,7 +312,8 @@ export function IssueListView({
         </div>
       </div>
       {!failed && (
-        <div className="issue-thead">
+        <div className={`issue-thead${canBulk ? ' with-check' : ''}`}>
+          {canBulk && <span />}
           <span>{t('key')}</span>
           <span>{t('title')}</span>
           <span>{t('assignee')}</span>

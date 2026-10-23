@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import type { Issue, Member } from '@/types'
-import { statusLabel, t } from '@/i18n'
+import { priorityLabel, statusLabel, t } from '@/i18n'
 import { AVATAR_UNASSIGNED, PRIORITY_TEXT, STATUS_TEXT } from '@/lib/colors'
 
 /** 行样式注入所在 shadow root（每次渲染幂等）：light CSS 不穿透，inline grid 在该容器不稳 */
@@ -11,7 +11,7 @@ function ensureRowStyles(root: ShadowRoot | null): void {
   st.textContent = `
     .issue-row {
       display: grid;
-      grid-template-columns: 22px 110px minmax(0, 1fr) 24px 70px 90px;
+      grid-template-columns: 22px 110px minmax(0, 1fr) 96px 70px 90px;
       align-items: center;
       gap: 12px;
       height: 44px;
@@ -54,13 +54,26 @@ function ensureRowStyles(root: ShadowRoot | null): void {
       margin-block-start: 0;
     }
     .issue-row.no-check {
-      grid-template-columns: 110px minmax(0, 1fr) 24px 70px 90px;
+      grid-template-columns: 110px minmax(0, 1fr) 96px 70px 90px;
     }
     .issue-row .issue-priority,
     .issue-row .issue-status {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+    .issue-row .issue-assignee {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+    }
+    .issue-row .issue-assignee-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 12px;
+      color: var(--oas-color-text-secondary, #6b7280);
     }
   `
   root.appendChild(st)
@@ -183,8 +196,15 @@ function renderIssueRow(
     av.setAttribute('color', AVATAR_UNASSIGNED)
     av.title = t('resourceUnassigned')
   }
-  row.appendChild(av)
-  add(`issue-priority pri-${issue.priority}`, issue.priority, {
+  const asg = document.createElement('span')
+  asg.className = 'issue-assignee'
+  asg.appendChild(av)
+  const asgName = document.createElement('span')
+  asgName.className = 'issue-assignee-name'
+  asgName.textContent = m?.name ?? t('resourceUnassigned')
+  asg.appendChild(asgName)
+  row.appendChild(asg)
+  add(`issue-priority pri-${issue.priority}`, priorityLabel(issue.priority), {
     color: PRIORITY_TEXT[issue.priority],
   })
   add(`issue-status st-${issue.status}`, statusLabel(issue.status), {

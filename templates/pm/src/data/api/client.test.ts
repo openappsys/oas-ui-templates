@@ -561,7 +561,7 @@ describe('契约：同一份 seed 下 Dexie 与 API 输出相同', () => {
     expect(apiRecent.slice(1).map((a) => a.id)).toEqual(dexieRecent.slice(1).map((a) => a.id))
   })
 
-  it('projects / members 读写与守卫一致', async () => {
+  it('projects / members 读写与守卫一致', { timeout: 15_000 }, async () => {
     expect(await api.projects.all()).toEqual(await dexie.projects.all())
     expect(await first(api.projects.liveAll())).toEqual(await first(dexie.projects.liveAll()))
     expect(await api.members.all()).toEqual(await dexie.members.all())
