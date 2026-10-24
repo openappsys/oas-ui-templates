@@ -141,14 +141,16 @@ export function MembersTab({
       try {
         await membersRepo.update(id, { role })
         const target = listRef.current?.find((m) => m.id === id)?.name ?? id
-        void auditRepo.add({
-          id: nanoid(),
-          at: Date.now(),
-          actorId: currentUser,
-          action: 'member.role',
-          target,
-          detail: roleLabel(role),
-        })
+        void auditRepo
+          .add({
+            id: nanoid(),
+            at: Date.now(),
+            actorId: currentUser,
+            action: 'member.role',
+            target,
+            detail: roleLabel(role),
+          })
+          .catch((e) => console.error('[audit] member.role', target, e))
       } catch {
         sel.value = prev
         showError(t('adminRoleDemoteFailed'))

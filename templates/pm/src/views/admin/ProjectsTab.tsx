@@ -86,14 +86,16 @@ export function ProjectsTab({
     if (!memberProject) return
     try {
       await projectMembersRepo.setMembers(memberProject.id, selectedMembers)
-      void auditRepo.add({
-        id: nanoid(),
-        at: Date.now(),
-        actorId: currentUser,
-        action: 'projectMember.set',
-        target: memberProject.name,
-        detail: String(selectedMembers.length),
-      })
+      void auditRepo
+        .add({
+          id: nanoid(),
+          at: Date.now(),
+          actorId: currentUser,
+          action: 'projectMember.set',
+          target: memberProject.name,
+          detail: String(selectedMembers.length),
+        })
+        .catch((e) => console.error('[audit] projectMember.set', e))
       memberModalRef.current?.removeAttribute('visible')
     } catch (e) {
       showError(e instanceof Error ? e.message : String(e))

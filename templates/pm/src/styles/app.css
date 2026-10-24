@@ -2048,6 +2048,11 @@ oas-drawer::part(close):focus-visible {
   --oas-color-text-secondary: #cbd5e1;
 }
 
+.perm-own {
+  font-size: 11px;
+  color: var(--oas-color-text-secondary, #64748b);
+}
+
 .admin-field-row {
   display: flex;
   align-items: center;

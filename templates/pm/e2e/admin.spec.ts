@@ -335,7 +335,9 @@ test('A9 标签集：工作项配置新增标签 → 抽屉快捷按钮可见并
     .toBe(false)
 })
 
-test('A10 权限矩阵：行数与 ACTIONS 一致，viewer×新建只读为 —，admin 列全 ✓', async ({ page }) => {
+test('A10 权限矩阵：行数与 ACTIONS 一致，viewer×新建只读为 —，member 条件动作标注仅本人，admin 列全 ✓', async ({
+  page,
+}) => {
   await waitForSeed(page)
   await page.getByTestId('admin-entry').click()
   await page.getByTestId('admin-nav-permissions').click()
@@ -345,11 +347,16 @@ test('A10 权限矩阵：行数与 ACTIONS 一致，viewer×新建只读为 —�
   await expect(rows).toHaveCount(15, { timeout: 10_000 })
   const viewerCell = rows.filter({ hasText: '新建 Issue' }).first().locator('td').nth(1)
   await expect(viewerCell).toHaveText('—')
+  // member 的条件动作（编辑 Issue）如实标注「仅本人」
+  const memberCell = rows.filter({ hasText: '编辑 Issue' }).first().locator('td').nth(2)
+  await expect(memberCell).toHaveText(/仅本人|Own only/)
   const adminCells = matrix.locator('tbody tr:not(.group-header) td:nth-child(4)')
   await expect(adminCells).toHaveCount(15)
   for (const cell of await adminCells.all()) {
     expect(await cell.textContent()).toContain('✓')
   }
+  // 「仅本人」图例说明可见
+  await expect(page.getByTestId('perm-own-note')).toBeVisible()
 })
 
 test('A11 数据闭环：导出 JSON（含权限表）→ 清空保留管理员 → 刷新不重播 → 导入恢复 → 统计回归', async ({

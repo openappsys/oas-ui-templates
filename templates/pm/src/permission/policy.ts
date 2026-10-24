@@ -52,6 +52,19 @@ export function isWorkspaceAction(action: Action): boolean {
   return WORKSPACE_ACTIONS.includes(action)
 }
 
+/** 「仅本人」条件动作：内置成员只在操作对象属于自己时放行（ctx 提供 issue/comment） */
+export const CONDITIONAL_ACTIONS: Action[] = [
+  'issue:edit',
+  'issue:change-status',
+  'issue:change-assignee',
+  'comment:edit',
+  'comment:delete',
+]
+
+export function isConditionalAction(action: Action): boolean {
+  return CONDITIONAL_ACTIONS.includes(action)
+}
+
 function isOwnIssue(subject: Subject, issue: Ctx['issue']): boolean {
   if (!issue) return false
   return issue.assigneeId === subject.id || issue.reporterId === subject.id

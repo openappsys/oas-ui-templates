@@ -2,7 +2,13 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { nanoid } from 'nanoid'
 import { dateLocale, getLang, t, type DictKey } from '@/i18n'
 import type { MemberRole, Role } from '@/types'
-import { can, builtinPermissions, isWorkspaceAction, type Action } from '@/permission/policy'
+import {
+  can,
+  builtinPermissions,
+  isConditionalAction,
+  isWorkspaceAction,
+  type Action,
+} from '@/permission/policy'
 import { useRepositories } from '@/data/context'
 import { useObservable } from '@/data/use-observable'
 import { OCheckbox, OMultiSelect, OSelect, OTabs } from '@/components/oas-wrappers'
@@ -81,7 +87,7 @@ function builtinLabel(id: string): string {
   return id === 'admin' || id === 'member' || id === 'viewer' ? roleLabel(id) : id
 }
 
-/** 内置三角色只读对比矩阵（一张表 group-by，列宽跨组对齐） */
+/** 内置三角色只读对比矩阵（一张表 group-by，列宽跨组对齐；member 条件动作显示「仅本人」） */
 function BuiltinMatrix() {
   const ref = useRef<TableHost>(null)
   // biome-ignore lint/correctness/useExhaustiveDependencies: 语言切换需要重建权限矩阵
@@ -93,7 +99,13 @@ function BuiltinMatrix() {
           action: t(PERM_LABEL[action]),
           category: t(group.key),
           ...Object.fromEntries(
-            MATRIX_ROLES.map((role) => [role, can({ id: 'matrix', role }, action) ? '✓' : '—']),
+            MATRIX_ROLES.map((role) => {
+              if (role === 'admin') return [role, '✓']
+              if (can({ id: 'matrix', role }, action)) return [role, '✓']
+              // member 的「仅本人」条件动作：矩阵如实标注，而不是显示成无权限
+              if (role === 'member' && isConditionalAction(action)) return [role, 'own']
+              return [role, '—']
+            }),
           ),
         })),
       ),
@@ -108,10 +120,16 @@ function BuiltinMatrix() {
         title: roleLabel(role),
         align: 'center' as const,
         render: (row: Record<string, unknown>) => {
-          const ok = String(row[role] ?? '') === '✓'
+          const v = String(row[role] ?? '—')
           const span = document.createElement('span')
-          span.setAttribute('aria-label', ok ? t('permAllowed') : t('permDenied'))
-          span.textContent = ok ? '✓' : '—'
+          if (v === 'own') {
+            span.setAttribute('aria-label', t('permOwnOnly'))
+            span.className = 'perm-own'
+            span.textContent = t('permOwnOnly')
+            return span
+          }
+          span.setAttribute('aria-label', v === '✓' ? t('permAllowed') : t('permDenied'))
+          span.textContent = v
           return span
         },
       })),
@@ -125,13 +143,18 @@ function BuiltinMatrix() {
     el.data = rows
   }, [columns, rows])
   return (
-    <oas-table
-      ref={ref}
-      className="admin-perm-table"
-      row-key="id"
-      group-by="category"
-      data-testid="admin-permissions-matrix"
-    />
+    <div>
+      <oas-table
+        ref={ref}
+        className="admin-perm-table"
+        row-key="id"
+        group-by="category"
+        data-testid="admin-permissions-matrix"
+      />
+      <p className="admin-hint" data-testid="perm-own-note">
+        {t('permOwnOnlyNote')}
+      </p>
+    </div>
   )
 }
 
@@ -289,14 +312,16 @@ export function PermissionsTab({
   }, [ovProject, ovMember, accessMemberIds, members])
 
   const log = (action: string, target: string, detail?: string) => {
-    void auditRepo.add({
-      id: nanoid(),
-      at: Date.now(),
-      actorId: currentUser,
-      action,
-      target,
-      detail,
-    })
+    auditRepo
+      .add({
+        id: nanoid(),
+        at: Date.now(),
+        actorId: currentUser,
+        action,
+        target,
+        detail,
+      })
+      .catch((e) => console.error('[audit]', action, target, e))
   }
 
   const select = (role: Role) => {
@@ -741,6 +766,7 @@ export function PermissionsTab({
                   </div>
                   <oas-button
                     size="small"
+                    title={t('permDuplicateHint')}
                     data-testid="perm-role-duplicate"
                     onClick={() => void duplicateBuiltin(selected)}
                   >

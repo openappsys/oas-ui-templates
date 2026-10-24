@@ -315,6 +315,11 @@ const dict = {
     permWorkspaceManage: '管理工作区',
     permAllowed: '允许',
     permDenied: '不允许',
+    permOwnOnly: '仅本人',
+    permOwnOnlyNote:
+      '「仅本人」= 内置成员只能编辑/变更自己负责或报告的 Issue、删改自己的评论；复制内置角色不会包含条件动作（自定义角色一律无条件授予）。',
+    permDuplicateHint:
+      '复制内置角色为无条件授予的自定义角色：内置成员的「仅本人」条件动作不会包含在副本中。',
     permRoleNameRequired: '角色名称不能为空',
     permRoleSaved: '已保存',
     permRoleInUse: '该角色正在被成员或项目覆盖使用，不能删除',
@@ -787,6 +792,11 @@ const dict = {
     permWorkspaceManage: 'Manage workspace',
     permAllowed: 'Allowed',
     permDenied: 'Denied',
+    permOwnOnly: 'Own only',
+    permOwnOnlyNote:
+      '"Own only" = the built-in member can only edit/status/reassign issues they report or are assigned to, and edit/delete their own comments. Duplicating a built-in role does not include conditional actions (custom roles always grant unconditionally).',
+    permDuplicateHint:
+      'Duplicates a built-in role as an unconditional custom role: the built-in member\'s "own only" conditional actions are not included in the copy.',
     permRoleNameRequired: 'Role name is required',
     permRoleSaved: 'Saved',
     permRoleInUse: 'This role is assigned to members or project overrides and cannot be deleted.',
