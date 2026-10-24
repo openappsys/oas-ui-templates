@@ -119,18 +119,21 @@ export function UserMenu({
   member,
   name,
   apiMode,
+  onProfile,
   onSwitchUser,
   onSignOut,
 }: {
   member: Member | undefined
   name: string
   apiMode: boolean
+  onProfile: () => void
   onSwitchUser: () => void
   onSignOut: () => void
 }) {
   const ref = useRef<HTMLElement>(null)
   useDropdownSelect(ref, (value) => {
-    if (value === 'switch-user') onSwitchUser()
+    if (value === 'profile') onProfile()
+    else if (value === 'switch-user') onSwitchUser()
     else if (value === 'logout') onSignOut()
   })
   return (
@@ -153,6 +156,10 @@ export function UserMenu({
         <span className="tb-user-name">{name}</span>
         <oas-icon name="chevron-down" size={12} className="tb-user-caret" />
       </button>
+      <oas-dropdown-item value="profile" kind="action" icon="user" data-testid="tb-profile">
+        {t('profile')}
+      </oas-dropdown-item>
+      <oas-dropdown-divider />
       {apiMode ? (
         <oas-dropdown-item value="logout" kind="action" icon="close" data-testid="tb-logout">
           {t('logout')}

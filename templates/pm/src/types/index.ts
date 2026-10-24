@@ -62,6 +62,9 @@ export interface Member {
   email: string
   avatarColor: string
   role: MemberRole
+  /** 个人资料补充字段（可选，旧数据缺省为空） */
+  title?: string
+  timezone?: string
 }
 
 export interface Comment {

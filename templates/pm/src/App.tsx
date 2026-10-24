@@ -56,6 +56,7 @@ import { IssueDetailDrawer } from './views/issue/IssueDetailDrawer'
 import { AdminView, type AdminTab } from './views/admin/AdminView'
 import { LoginView } from './views/auth/LoginView'
 import { NotificationBell, NotificationPanel } from './components/NotificationCenter'
+import { ProfileDrawer } from './components/ProfileDrawer'
 
 type View = 'dashboard' | 'issues' | 'board' | 'timeline' | 'resource' | 'schedule' | 'admin'
 
@@ -249,6 +250,7 @@ function Workspace({
     issues: issuesRepo,
     activities: activitiesRepo,
     savedViews: savedViewsRepo,
+    members: membersRepo,
   } = useRepositories()
   // 当前登录身份：API 模式取会话成员；Dexie 模式沿用 localStorage 演示身份（默认张伟，头像点击切换）
   const [currentUser, setCurrentUser] = useState(
@@ -496,6 +498,20 @@ function Workspace({
       myOnly: false,
     }))
   }, [])
+
+  // 个人资料：账号级自助（姓名/职位/时区/头像色），走 MemberRepository（Dexie/API 同接口）
+  const [profileOpen, setProfileOpen] = useState(false)
+  const saveProfile = useCallback(
+    async (changes: Partial<Member>) => {
+      await membersRepo.update(currentUser, changes)
+    },
+    [membersRepo, currentUser],
+  )
+  const openMyIssues = useCallback(() => {
+    setView('issues')
+    setF('myOnly', true)
+    setProfileOpen(false)
+  }, [setF])
 
   // 侧栏分区：导航（项目/视图/保存视图）在上，筛选（状态/优先级/迭代）在下。
   // 高亮分级：当前视图 = 实底（strong）；生效筛选 = 浅底 + 左色条（weak）；
@@ -967,6 +983,7 @@ function Workspace({
             member={memberMap.get(currentUser)}
             name={memberMap.get(currentUser)?.name ?? session?.name ?? ''}
             apiMode={apiMode}
+            onProfile={() => setProfileOpen(true)}
             onSwitchUser={() => userPickRef.current?.setAttribute('visible', '')}
             onSignOut={onSignOut}
           />
@@ -1244,6 +1261,15 @@ function Workspace({
           </div>
         </div>
       </oas-modal>
+
+      {/* 个人资料（账号级自助：资料 / 我的 Issues） */}
+      <ProfileDrawer
+        open={profileOpen}
+        member={memberMap.get(currentUser)}
+        onClose={() => setProfileOpen(false)}
+        onSave={saveProfile}
+        onMyIssues={openMyIssues}
+      />
 
       {/* 通知中心（右侧面板：列表点击标已读并打开 Issue 详情） */}
       <NotificationPanel

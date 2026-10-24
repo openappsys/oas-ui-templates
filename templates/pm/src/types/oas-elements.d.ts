@@ -140,6 +140,7 @@ declare module 'react' {
       'oas-drawer': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
         visible?: boolean | string
         placement?: string
+        width?: string
       }
       'oas-textarea': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
         value?: string

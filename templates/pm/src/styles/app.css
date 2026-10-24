@@ -2468,3 +2468,86 @@ oas-drawer::part(close):focus-visible {
 .tb-user-static:hover {
   background: none;
 }
+
+/* ── 个人资料抽屉 ── */
+.profile-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 4px 2px 10px;
+}
+.profile-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--oas-color-text-secondary, #64748b);
+}
+.profile-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--oas-color-border, #e2e8f0);
+  border-radius: 10px;
+  background: var(--oas-color-bg-hover, #f1f5f9);
+}
+.profile-head-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--oas-color-text-secondary, #64748b);
+}
+.profile-head-meta strong {
+  font-size: 15px;
+  color: var(--oas-color-text-primary, #1f2329);
+}
+.profile-head-meta span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.profile-role {
+  margin-top: 2px;
+}
+.profile-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.profile-field > label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--oas-color-text-secondary, #64748b);
+}
+.profile-field oas-input,
+.profile-field oas-select {
+  width: 100%;
+}
+.profile-colors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.profile-color {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.profile-color.is-active {
+  outline: 2px solid var(--oas-color-primary, #0b6cff);
+  outline-offset: 2px;
+}
+.profile-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--oas-color-border, #e2e8f0);
+}
+.profile-actions-gap {
+  flex: 1;
+}
