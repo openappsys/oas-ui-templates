@@ -433,6 +433,9 @@ importers:
 
   templates/pm:
     dependencies:
+      '@oas-ui/i18n':
+        specifier: ^2.6.3
+        version: 2.6.3
       '@oas-ui/icons':
         specifier: ^2.6.3
         version: 2.6.3

@@ -19,7 +19,7 @@
 - **管理台（7 页签，按权限过滤）**：总览 / 项目 / 成员 / 迭代 / 配置（标签·状态·优先级·回收站）/ 权限（角色·访问·审计）/ 设置
 - **数据管理**：全库 JSON 备份导出/导入（信封 v10，13 张表）、清空（保留内置角色 + 当前管理员，不重播）、重置演示数据
 - **个人资料**：姓名 / 职位 / 时区 / 头像色 / 语言自助修改；资料内的邮箱与角色只读
-- **通用**：中英双语一键切换、明暗双主题、Cmd+K 命令面板、快捷键、a11y 结构基线
+- **通用**：中英双语一键切换（应用文案 + 组件内建文案随语言切换）、明暗双主题、Cmd+K 命令面板、快捷键、a11y 结构基线
 
 ## 运行
 
@@ -109,11 +109,11 @@ A production-grade frontend baseline: Repository data layer (REST-adapter ready)
 - **Admin console (7 tabs, permission-filtered)**: overview / projects / members / cycles / config (labels, statuses, priorities, trash) / permissions (roles, access, audit) / settings
 - **Data management**: full JSON backup export/import (envelope v10, 13 tables), wipe (keeps built-in roles + the current admin, does not reseed), reset demo data
 - **Profile**: self-service name / job title / timezone / avatar color / language; email and role are read-only in the profile drawer
-- **General**: zh-en switch, light/dark themes, Cmd+K command palette, keyboard shortcuts, a11y structure baseline
+- **General**: zh-en switch (app copy **and** component built-in copy follow the language), light/dark themes, Cmd+K command palette, keyboard shortcuts, a11y structure baseline
 
 ## Run
 
-**Dependency prerequisite**: `@oas-ui/ui`, `@oas-ui/theme` and `@oas-ui/icons` are `link:` dependencies pointing at a local oas-ui checkout (`D:/dev/oas-ui/packages/*`, currently 2.6.3); build its `dist` first. `templates/pm/package.json` and the lockfile intentionally keep the local link state and are **not committed** (stage explicit paths only, excluding those two files).
+**Dependency prerequisite**: `@oas-ui/ui`, `@oas-ui/theme` and `@oas-ui/icons` are `link:` dependencies pointing at a local oas-ui checkout (`D:/dev/oas-ui/packages/*`, currently 2.6.3); build its `dist` first. Also depends on the published `@oas-ui/i18n ^2.6.3` (built-in component copy). `templates/pm/package.json` and the lockfile intentionally keep the local link state and are **not committed** (stage explicit paths only, excluding those two files).
 
 ```bash
 pnpm install

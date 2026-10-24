@@ -791,7 +791,13 @@ export function IssueDetailDrawer({
               .replace('{created}', new Date(issue.createdAt).toLocaleDateString(dateLocale()))
               .replace('{updated}', new Date(issue.updatedAt).toLocaleString(dateLocale()))}
           </span>
-          <oas-popconfirm ref={popRef} title={t('adminDeleteConfirm')} data-testid="detail-delete">
+          <oas-popconfirm
+            ref={popRef}
+            title={t('adminDeleteConfirm')}
+            ok-text={t('confirm')}
+            cancel-text={t('cancel')}
+            data-testid="detail-delete"
+          >
             {canDelete && (
               <oas-button type="danger" data-testid="detail-delete-btn">
                 {t('delete')}

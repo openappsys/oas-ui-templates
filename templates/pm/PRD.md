@@ -285,7 +285,7 @@ v14 的 `issues` 索引：
 | 性能 | 10 万 Issue 播种 | 实测 44–134s（随机器负载波动）；分块 5000 `bulkPut`；期间显示准备屏 |
 | 可用性 | 离线可用 | 除开发期 API 模式外不依赖网络 |
 | 可用性 | 窄屏降级 | 侧栏折叠、抽屉全屏；**无独立移动端 Playwright 工程** |
-| 国际化 | 中英双语 | 核心 UI 文案覆盖（非全量） |
+| 国际化 | 中英双语 | 应用文案全覆盖；组件内建文案（确认/取消/占位/关闭）经 `@oas-ui/i18n` 随语言切换 |
 | 可访问性 | 键盘可达 | 行 Enter/Space 打开、`Esc` 关闭、`/` 搜索、`?` 帮助 |
 | 健壮性 | 启动兜底 | IndexedDB 异常/配额满展示错误页 |
 | 数据安全 | 管理操作可追溯 | 角色/分配变更写审计；审计可筛选导出 CSV |
@@ -303,9 +303,9 @@ v14 的 `issues` 索引：
 | ❌ SSO / SCIM | 无企业身份源、无目录同步 |
 | ❌ 自定义工作流状态 / 字段 | 状态固定 5 态、字段集固定；仅标签可配置 |
 | ❌ 附件 | 无文件/图片上传 |
-| ❌ 富文本 / Markdown | 描述与评论为纯文本；`@提及` 为文本约定高亮，无选择器/自动补全 |
-| ❌ 实时协作 | 无 WebSocket / 多人编辑冲突处理；API mock 仅轮询 revision |
-| ❌ 评论线程 | 无回复嵌套、无表情/点赞 |
+| ❌ 富文本 / Markdown | 描述与评论为纯文本（`@提及` 文本约定高亮）；规划接入独立 oas-editor 项目，模板内不做实现 |
+| ❌ 实时协作 | 无 WebSocket / 多人编辑冲突处理；同源多标签页经 revision 轮询近实时，真实多端同步随后端走 |
+| ❌ 评论线程 | 暂缓且非基线必需：保持 Linear 式扁平评论；未来可加 `comment.parentId` 演进嵌套 |
 | ❌ 服务端 / 云端同步 | 无持久后端；API mock 仅开发模式、内存态、重启即失 |
 | ❌ 真实多租户认证 | 本地身份切换 / 演示登录，无组织隔离与真实鉴权 |
 | ❌ 审计留存治理 | 无保留策略、无合规归档；导出仅当前筛选的 CSV |
@@ -354,7 +354,7 @@ v14 的 `issues` 索引：
 | 框架 | React 19.3 |
 | 数据层 | Dexie 4.4（IndexedDB）+ 自研 Observable（`useObservable`；未使用 dexie-react-hooks） |
 | 状态 | React state + localStorage 偏好；`src/stores/ui-store.ts` 是一个**未被引用**的 zustand 外壳（无消费者，可删） |
-| 组件 | `@oas-ui/ui` 2.6.3（Web Components，React 侧 property/事件桥接）+ `@oas-ui/icons` + `@oas-ui/theme` |
+| 组件 | `@oas-ui/ui` 2.6.3（Web Components，React 侧 property/事件桥接）+ `@oas-ui/icons` + `@oas-ui/theme` + `@oas-ui/i18n`（组件内建文案 locale） |
 | 构建 | Vite 8 + TypeScript 6（`typescript` 别名 `@typescript/typescript6`） |
 | 测试 | Vitest 5 + fake-indexeddb；Playwright 1.64（Chromium 默认，可切 Firefox） |
 | 本地优先 | IndexedDB 为唯一持久数据源；API 实现仅开发期可切换 |

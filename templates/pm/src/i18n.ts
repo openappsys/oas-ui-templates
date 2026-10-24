@@ -1,4 +1,8 @@
-/** PM 轻量 i18n：核心 UI 文案 zh/en，语言偏好 localStorage 持久化 */
+/** PM 轻量 i18n：核心 UI 文案 zh/en，语言偏好 localStorage 持久化。
+ *  组件内建文案（确认/取消/占位/关闭等）走 @oas-ui/i18n 的 locale registry，随应用语言一起切换 */
+import { en as enLocale } from '@oas-ui/i18n/en'
+import { registerLocale, setLocale } from '@oas-ui/i18n'
+
 export type Lang = 'zh' | 'en'
 
 const dict = {
@@ -91,6 +95,8 @@ const dict = {
     descSave: '保存描述',
     delete: '删除',
     cancel: '取消',
+    confirm: '确定',
+    selectPlaceholder: '请选择',
     create: '创建',
     save: '保存',
     know: '知道了',
@@ -553,6 +559,8 @@ const dict = {
     descSave: 'Save description',
     delete: 'Delete',
     cancel: 'Cancel',
+    confirm: 'OK',
+    selectPlaceholder: 'Select',
     create: 'Create',
     save: 'Save',
     know: 'Got it',
@@ -940,12 +948,20 @@ export type DictKey = keyof (typeof dict)['zh']
 
 let currentLang: Lang = 'zh'
 
+let oasLocaleReady = false
+
 export function setLang(l: Lang): void {
   currentLang = l
   storeLang(l)
   if (typeof document !== 'undefined') {
     document.documentElement.lang = l === 'zh' ? 'zh-CN' : 'en'
   }
+  // 组件内建文案跟随应用语言：默认只有 zh-CN，en 语言包需注册一次
+  if (!oasLocaleReady) {
+    registerLocale(enLocale)
+    oasLocaleReady = true
+  }
+  setLocale(l === 'zh' ? 'zh-CN' : 'en')
 }
 
 export function getLang(): Lang {

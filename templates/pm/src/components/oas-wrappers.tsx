@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 import { useEffect, useRef } from 'react'
 
 /** oas-* 表单类组件的 React 包装：value/options 走 property，oas-change 走 addEventListener */
@@ -77,7 +78,12 @@ export function OSelect({
     else el.removeAttribute('title')
   }, [title, ref])
   return (
-    <oas-select ref={ref} placeholder={placeholder} data-testid={testid} aria-label={ariaLabel} />
+    <oas-select
+      ref={ref}
+      placeholder={placeholder ?? t('selectPlaceholder')}
+      data-testid={testid}
+      aria-label={ariaLabel}
+    />
   )
 }
 
@@ -176,7 +182,7 @@ export function OMultiSelect({
       searchable=""
       clearable=""
       max-tag-count={String(maxTagCount)}
-      placeholder={placeholder}
+      placeholder={placeholder ?? t('selectPlaceholder')}
       aria-label={label}
       data-testid={testid}
     />

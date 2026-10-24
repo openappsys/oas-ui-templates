@@ -209,6 +209,8 @@ export function SettingsTab({
           <oas-popconfirm
             ref={resetPopRef}
             title={t('adminResetDemoConfirm')}
+            ok-text={t('confirm')}
+            cancel-text={t('cancel')}
             data-testid="admin-reset-demo-pop"
           >
             <oas-button data-testid="admin-reset-demo" disabled={busy}>
@@ -218,6 +220,8 @@ export function SettingsTab({
           <oas-popconfirm
             ref={wipePopRef}
             title={t('adminWipeAllConfirm')}
+            ok-text={t('confirm')}
+            cancel-text={t('cancel')}
             data-testid="admin-wipe-all-pop"
           >
             <oas-button type="danger" data-testid="admin-wipe-all" disabled={busy}>
