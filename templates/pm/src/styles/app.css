@@ -854,7 +854,7 @@ body {
   content: "";
   position: absolute;
   left: 24px;
-  top: 2px;
+  top: 32px; /* 从组标题下方开始，避免竖线穿过漏斗图标 */
   bottom: 6px;
   width: 1px;
   background: var(--oas-color-border, #e2e8f0);
