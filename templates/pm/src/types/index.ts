@@ -68,12 +68,33 @@ export interface Member {
   timezone?: string
 }
 
+/** 审计：角色/分配等管理变更（只追加） */
+export interface AuditEntry {
+  id: string
+  at: number
+  actorId: string
+  /** role.create / role.update / role.delete / member.role */
+  action: string
+  target: string
+  detail?: string
+}
+
+/** 项目级角色覆盖：成员在某项目内使用该角色（缺省继承工作区角色） */
+export interface ProjectRoleAssignment {
+  id: string
+  projectId: string
+  memberId: string
+  roleId: string
+}
+
 /** 角色：内置角色只读；自定义角色可编辑权限矩阵 */
 export interface Role {
   id: string
   name: string
   description: string
   builtin: boolean
+  /** 作用域：workspace（工作区，缺省）| project（项目级，只用于项目成员覆盖） */
+  scope?: 'workspace' | 'project'
   /** 无条件授予的动作集合（内置 member 的「仅本人」条件仍由 policy 处理） */
   permissions: string[]
 }

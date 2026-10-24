@@ -5,7 +5,7 @@ import type { MemberRole, Role } from '@/types'
 import { ACTIONS, can, type Action } from '@/permission/policy'
 import { useRepositories } from '@/data/context'
 import { useObservable } from '@/data/use-observable'
-import { OCheckbox } from '@/components/oas-wrappers'
+import { OCheckbox, OSelect } from '@/components/oas-wrappers'
 
 type Col = {
   key: string
@@ -37,6 +37,15 @@ const PERM_LABEL: Record<Action, DictKey> = {
 
 const MATRIX_ROLES: MemberRole[] = ['viewer', 'member', 'admin']
 
+const AUDIT_LABEL: Record<string, DictKey> = {
+  'role.create': 'auditRoleCreate',
+  'role.update': 'auditRoleUpdate',
+  'role.delete': 'auditRoleDelete',
+  'member.role': 'auditMemberRole',
+  'projectRole.set': 'auditProjectRole',
+  'projectRole.clear': 'auditProjectRoleClear',
+}
+
 function roleLabel(role: MemberRole): string {
   if (role === 'admin') return t('adminRoleAdmin')
   if (role === 'member') return t('adminRoleMember')
@@ -44,30 +53,69 @@ function roleLabel(role: MemberRole): string {
 }
 
 /**
- * 权限页：上半「自定义角色」编辑（名称/描述/权限矩阵），下半内置三角色只读矩阵。
- * 内置角色只读；自定义角色可分配给成员（成员页的角色下拉取自同一张 roles 表）。
+ * 权限页：自定义角色编辑（名称/描述/作用域/权限矩阵）、项目级角色覆盖、最近变更（审计），
+ * 底部内置三角色只读矩阵。内置角色只读；自定义角色可分配给成员。
  */
-export function PermissionsTab() {
-  const { roles: rolesRepo } = useRepositories()
+export function PermissionsTab({ currentUser }: { currentUser: string }) {
+  const {
+    roles: rolesRepo,
+    audit: auditRepo,
+    projectRoles: projectRolesRepo,
+    projects: projectsRepo,
+    members: membersRepo,
+  } = useRepositories()
   const tableRef = useRef<TableHost>(null)
   const roles = useObservable(() => rolesRepo.liveAll(), [rolesRepo])
+  const audit = useObservable(() => auditRepo.liveRecent(12), [auditRepo])
+  const assignments = useObservable(() => projectRolesRepo.liveAll(), [projectRolesRepo])
+  const projects = useObservable(() => projectsRepo.liveAll(), [projectsRepo])
+  const members = useObservable(() => membersRepo.liveAll(), [membersRepo])
+  const memberMap = useMemo(() => new Map((members ?? []).map((m) => [m.id, m])), [members])
+  const projectMap = useMemo(() => new Map((projects ?? []).map((p) => [p.id, p])), [projects])
 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draft, setDraft] = useState(false)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
+  const [scope, setScope] = useState<'workspace' | 'project'>('workspace')
   const [perms, setPerms] = useState<Set<Action>>(new Set())
   const [error, setError] = useState('')
   const [saved, setSaved] = useState('')
   const [busy, setBusy] = useState(false)
 
+  // 项目角色覆盖表单
+  const [ovProject, setOvProject] = useState('')
+  const [ovMember, setOvMember] = useState('')
+  const [ovRole, setOvRole] = useState('')
+
   const custom = useMemo(() => (roles ?? []).filter((r) => !r.builtin), [roles])
+  const projectRoles = useMemo(
+    () => (roles ?? []).filter((r) => r.scope === 'project' && !r.builtin),
+    [roles],
+  )
+
+  useEffect(() => {
+    if (!ovProject && projects?.length) setOvProject(projects[0].id)
+    if (!ovMember && members?.length) setOvMember(members[0].id)
+  }, [projects, members, ovProject, ovMember])
+
+  const log = (action: string, target: string, detail?: string) => {
+    void auditRepo.add({
+      id: nanoid(),
+      at: Date.now(),
+      actorId: currentUser,
+      action,
+      target,
+      detail,
+    })
+  }
 
   const load = (role: Role) => {
     setEditingId(role.id)
     setDraft(false)
     setName(role.name)
     setDescription(role.description)
+    setScope(role.scope === 'project' ? 'project' : 'workspace')
     setPerms(new Set(role.permissions as Action[]))
     setError('')
     setSaved('')
@@ -78,6 +126,7 @@ export function PermissionsTab() {
     setDraft(true)
     setName(t('permNewRole'))
     setDescription('')
+    setScope('workspace')
     setPerms(new Set())
     setError('')
     setSaved('')
@@ -108,16 +157,20 @@ export function PermissionsTab() {
           id: editingId,
           name: clean,
           description: description.trim(),
+          scope,
           builtin: false,
           permissions: [...perms],
         })
         setDraft(false)
+        log('role.create', clean)
       } else {
         await rolesRepo.update(editingId, {
           name: clean,
           description: description.trim(),
+          scope,
           permissions: [...perms],
         })
+        log('role.update', clean)
       }
       setSaved(t('permRoleSaved'))
     } catch (e) {
@@ -133,6 +186,7 @@ export function PermissionsTab() {
     setError('')
     try {
       await rolesRepo.delete(editingId)
+      log('role.delete', name.trim() || editingId)
       setEditingId(null)
       setName('')
       setDescription('')
@@ -140,6 +194,22 @@ export function PermissionsTab() {
       setSaved('')
     } catch {
       setError(t('permRoleInUse'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const applyProjectRole = async () => {
+    if (!ovProject || !ovMember || busy) return
+    setBusy(true)
+    try {
+      await projectRolesRepo.set(ovProject, ovMember, ovRole || null)
+      const target = `${projectMap.get(ovProject)?.name ?? ovProject} / ${memberMap.get(ovMember)?.name ?? ovMember}`
+      log(
+        ovRole ? 'projectRole.set' : 'projectRole.clear',
+        target,
+        ovRole ? (roles?.find((r) => r.id === ovRole)?.name ?? ovRole) : undefined,
+      )
     } finally {
       setBusy(false)
     }
@@ -198,6 +268,9 @@ export function PermissionsTab() {
               onClick={() => load(role)}
             >
               {role.name}
+              {role.scope === 'project' && (
+                <span className="perm-role-scope">{t('roleScopeProject')}</span>
+              )}
             </button>
           ))}
           <button
@@ -233,6 +306,19 @@ export function PermissionsTab() {
                   onInput={(e) =>
                     setDescription((e.target as HTMLElement & { value?: string }).value ?? '')
                   }
+                />
+              </div>
+              <div className="perm-field">
+                <span>{t('roleScope')}</span>
+                <OSelect
+                  testid="perm-role-scope"
+                  ariaLabel={t('roleScope')}
+                  value={scope}
+                  options={[
+                    { label: t('roleScopeWorkspace'), value: 'workspace' },
+                    { label: t('roleScopeProject'), value: 'project' },
+                  ]}
+                  onChange={(v) => setScope(v === 'project' ? 'project' : 'workspace')}
                 />
               </div>
             </div>
@@ -289,6 +375,110 @@ export function PermissionsTab() {
         ) : (
           <p className="admin-hint" data-testid="perm-empty">
             {custom.length === 0 ? t('permNoCustomRoles') : t('permSelectRole')}
+          </p>
+        )}
+      </div>
+
+      <div className="admin-panel" data-testid="admin-project-roles">
+        <p className="admin-panel-title">{t('projRoleTitle')}</p>
+        <p className="admin-hint">{t('projRoleHint')}</p>
+        <div className="proj-role-form">
+          <div className="perm-field">
+            <span>{t('projRoleProject')}</span>
+            <OSelect
+              testid="proj-role-project"
+              ariaLabel={t('projRoleProject')}
+              value={ovProject}
+              options={(projects ?? []).map((p) => ({ label: p.name, value: p.id }))}
+              onChange={setOvProject}
+            />
+          </div>
+          <div className="perm-field">
+            <span>{t('projRoleMember')}</span>
+            <OSelect
+              testid="proj-role-member"
+              ariaLabel={t('projRoleMember')}
+              value={ovMember}
+              options={(members ?? []).map((m) => ({ label: m.name, value: m.id }))}
+              onChange={setOvMember}
+            />
+          </div>
+          <div className="perm-field">
+            <span>{t('projRoleRole')}</span>
+            <OSelect
+              testid="proj-role-role"
+              ariaLabel={t('projRoleRole')}
+              value={ovRole}
+              options={[
+                { label: t('projRoleInherit'), value: '' },
+                ...projectRoles.map((r) => ({ label: r.name, value: r.id })),
+              ]}
+              onChange={setOvRole}
+            />
+          </div>
+          <oas-button
+            type="primary"
+            size="small"
+            data-testid="proj-role-apply"
+            onClick={() => void applyProjectRole()}
+          >
+            {t('projRoleApply')}
+          </oas-button>
+        </div>
+
+        {(assignments ?? []).length > 0 ? (
+          <ul className="proj-role-list" data-testid="proj-role-list">
+            {assignments?.map((a) => (
+              <li key={a.id}>
+                <span>
+                  {projectMap.get(a.projectId)?.name ?? a.projectId} /{' '}
+                  {memberMap.get(a.memberId)?.name ?? a.memberId}
+                </span>
+                <span className="proj-role-name">
+                  {roles?.find((r) => r.id === a.roleId)?.name ?? a.roleId}
+                </span>
+                <button
+                  type="button"
+                  className="proj-role-remove"
+                  data-testid={`proj-role-remove-${a.id}`}
+                  onClick={() => void projectRolesRepo.set(a.projectId, a.memberId, null)}
+                >
+                  {t('delete')}
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="admin-hint">{t('projRoleEmpty')}</p>
+        )}
+      </div>
+
+      <div className="admin-panel" data-testid="admin-audit">
+        <p className="admin-panel-title">{t('auditTitle')}</p>
+        {(audit ?? []).length > 0 ? (
+          <ul className="audit-list">
+            {audit?.map((e) => (
+              <li key={e.id}>
+                <span className="audit-time">
+                  {new Date(e.at).toLocaleString(undefined, {
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </span>
+                <span className="audit-actor">{memberMap.get(e.actorId)?.name ?? e.actorId}</span>
+                <span className="audit-action">
+                  {AUDIT_LABEL[e.action] ? t(AUDIT_LABEL[e.action]) : e.action}
+                </span>
+                <span className="audit-target">{e.target}</span>
+                {e.detail && <span className="audit-detail">{e.detail}</span>}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="admin-hint" data-testid="audit-empty">
+            {t('auditEmpty')}
           </p>
         )}
       </div>

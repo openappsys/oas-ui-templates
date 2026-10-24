@@ -9,6 +9,8 @@ import type {
   Notification,
   Project,
   Role,
+  AuditEntry,
+  ProjectRoleAssignment,
   SavedView,
 } from '@/types'
 import { ApiError, errorMessage } from './errors'
@@ -34,6 +36,8 @@ import type {
   ProjectRepository,
   Repositories,
   RoleRepository,
+  AuditRepository,
+  ProjectRoleRepository,
   SavedViewRepository,
   SettingsRepository,
 } from '@/data/types'
@@ -408,6 +412,32 @@ export function createApiRepositories(options: ApiClientOptions = {}): Repositor
     },
   }
 
+  const audit: AuditRepository = {
+    liveRecent: (limit) =>
+      live(async () =>
+        asItems<AuditEntry>(
+          await send<{ items: AuditEntry[] }>('GET', '/api/audit', buildQuery({ limit })),
+        ),
+      ),
+    add: async (entry) => {
+      await send('POST', '/api/audit', undefined, entry)
+      poke()
+    },
+  }
+
+  const projectRoles: ProjectRoleRepository = {
+    liveAll: () =>
+      live(async () =>
+        asItems<ProjectRoleAssignment>(
+          await send<{ items: ProjectRoleAssignment[] }>('GET', '/api/project-roles'),
+        ),
+      ),
+    set: async (projectId, memberId, roleId) => {
+      await send('PUT', '/api/project-roles', undefined, { projectId, memberId, roleId })
+      poke()
+    },
+  }
+
   const comments: CommentRepository = {
     liveByIssue: (issueId) =>
       live(async () =>
@@ -572,6 +602,8 @@ export function createApiRepositories(options: ApiClientOptions = {}): Repositor
     projects,
     members,
     roles,
+    audit,
+    projectRoles,
     comments,
     activities,
     savedViews,

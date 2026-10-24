@@ -84,7 +84,7 @@ export function AdminView({
         ) : tab === 'config' ? (
           <ConfigTab />
         ) : tab === 'permissions' ? (
-          <PermissionsTab />
+          <PermissionsTab currentUser={currentUser} />
         ) : (
           <SettingsTab
             themePref={themePref}

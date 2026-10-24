@@ -50,12 +50,19 @@ async function switchUser(page: Page, id: string) {
   })
 }
 
-/** 侧栏成员多选（oas-select multiple）：value 为数组，detail.value 同为数组。
- *  位置偏好默认侧栏，所以控件在 side-filter-assignee；切到顶部时同一状态由 filters-assignee 承载 */
+/** 侧栏成员组：先「全部成员」清空，再逐个点选；顶部筛选栏模式回退到多选控件 */
 async function setAssigneeFilter(page: Page, ids: string[]) {
+  const nav = page.getByTestId('side-list')
+  const all = nav.locator('[part="item"][data-value="assignee:all"]')
+  if (await all.count()) {
+    await all.click()
+    for (const id of ids) {
+      await nav.locator(`[part="item"][data-value="assignee:${id}"]`).click()
+    }
+    return
+  }
   await page.evaluate((values) => {
-    const el = (document.querySelector('[data-testid="side-filter-assignee"]') ??
-      document.querySelector('[data-testid="filters-assignee"]')) as
+    const el = document.querySelector('[data-testid="filters-assignee"]') as
       | (HTMLElement & { value?: string[] })
       | null
     if (!el) return
@@ -651,28 +658,17 @@ test('shots schedule same moment', async ({ page }) => {
   console.log('shots schedule same moment done')
 })
 
-/** 工具栏成员多选（展开 / 搜索过滤 / 已选 chips + +N）：双主题目检 */
+/** 侧栏成员组：多选回显 + 列表联动（双主题目检） */
 async function captureAssigneeFilter(page: Page, suffix: string) {
-  const sel = page.getByTestId('side-filter-assignee')
-  await sel.locator('button.trigger').click()
-  await expect(sel.locator('.dropdown')).toHaveClass(/open/, { timeout: 5000 })
-  await page.waitForTimeout(600)
-  await page.screenshot({ path: `shots/pm-assignee-open${suffix}.png` })
-
-  await sel.locator('input.search-input').fill('张')
-  await page.waitForTimeout(500)
-  await page.screenshot({ path: `shots/pm-assignee-search${suffix}.png` })
-
-  // 选中搜索命中的第一项（搜索自动清空），再按名字多选两项 → 折叠出 +N
-  await sel.locator('.option').first().click()
-  for (const name of ['李娜', '王强']) {
-    await sel.locator('.option').filter({ hasText: name }).first().click()
+  const nav = page.getByTestId('side-list')
+  await nav.locator('[part="item"][data-value="assignee:all"]').click()
+  for (const id of ['member-1', 'member-2']) {
+    await nav.locator(`[part="item"][data-value="assignee:${id}"]`).click()
   }
-  await expect(sel.locator('.chip-plus')).toHaveText(/^\+\d+$/, { timeout: 5000 })
-  // 点工具条外关闭下拉（Esc 被全局快捷键吞掉），只看触发器的 chips 回显
-  await page.locator('.issue-header h1').click()
-  await expect(sel.locator('.dropdown')).not.toHaveClass(/open/, { timeout: 5000 })
-  await page.waitForTimeout(400)
+  await page.waitForTimeout(600)
+  await page.locator('aside.side-panel').screenshot({
+    path: `shots/pm-assignee-open${suffix}.png`,
+  })
   await page.screenshot({ path: `shots/pm-assignee-chips${suffix}.png` })
 }
 

@@ -12,6 +12,7 @@ import { createDexieSettingsRepository } from './settings-repo'
 import { createDexieNotificationRepository } from './notification-repo'
 import { createDexieAdminRepository } from './admin-repo'
 import { createDexieRoleRepository } from './role-repo'
+import { createDexieAuditRepository, createDexieProjectRoleRepository } from './audit-repo'
 
 export function createDexieRepositories(database: PMDatabase): Repositories {
   return {
@@ -25,6 +26,8 @@ export function createDexieRepositories(database: PMDatabase): Repositories {
     settings: createDexieSettingsRepository(database),
     notifications: createDexieNotificationRepository(database),
     roles: createDexieRoleRepository(database),
+    audit: createDexieAuditRepository(database),
+    projectRoles: createDexieProjectRoleRepository(database),
     admin: createDexieAdminRepository(database),
   }
 }

@@ -15,6 +15,7 @@ export type SideKind =
   | 'priority'
   | 'savedview'
   | 'cycle'
+  | 'assignee'
   | 'group'
   | 'clear'
 
@@ -26,6 +27,9 @@ export interface SideRow {
   label: string
   count?: string
   statusColor?: string
+  /** 成员行的头像：首字母 + 颜色（与 Avatar 组件同源）；有头像时不再渲染 icon */
+  avatarText?: string
+  avatarColor?: string
   /** 非状态行的图标颜色（优先级行用优先级色） */
   iconColor?: string
   deletable?: boolean
@@ -58,6 +62,8 @@ interface SidebarItemLike {
   group?: string
   icon?: string
   iconColor?: string
+  avatarText?: string
+  avatarColor?: string
   badge?: string | number
   disabled?: boolean
   actions?: { icon?: string; value: string; label: string }[]
@@ -98,6 +104,8 @@ function rowIcon(row: SideRow): string {
     case 'cycle':
       // refresh = 周期循环；当前迭代与具体周期同一图标，靠分组内高亮区分
       return 'refresh'
+    case 'assignee':
+      return 'user'
     case 'group':
       return 'filter'
     case 'clear':
@@ -112,19 +120,22 @@ function rowIcon(row: SideRow): string {
  *  （AGENTS 记录的集成模式：宿主自绘行样式需注入 shadow stylesheet） */
 const TIER_STYLES = `
   .item[data-value^='status:'].active,
-  .item[data-value^='priority:'].active {
+  .item[data-value^='priority:'].active,
+  .item[data-value^='assignee:'].active {
     background: color-mix(in srgb, var(--oas-color-primary) 7%, transparent);
     color: var(--oas-color-text-primary);
     font-weight: 400;
     box-shadow: inset 2px 0 0 var(--oas-color-primary);
   }
   .item[data-value^='status:'].active .icon,
-  .item[data-value^='priority:'].active .icon {
+  .item[data-value^='priority:'].active .icon,
+  .item[data-value^='assignee:'].active .icon {
     color: var(--oas-color-primary-text);
   }
   .item[data-value='status:all'].active,
   .item[data-value='priority:all'].active,
-  .item[data-value='cycle:all'].active {
+  .item[data-value='cycle:all'].active,
+  .item[data-value='assignee:all'].active {
     background: none;
     color: var(--oas-color-text-primary);
     font-weight: 400;
@@ -151,7 +162,12 @@ function toItem(row: SideRow, group: string): SidebarItemLike {
   const itemGroup = row.group ?? group
   if (itemGroup) item.group = itemGroup
   if (row.count != null) item.badge = row.count
-  item.icon = rowIcon(row)
+  if (row.avatarText) {
+    item.avatarText = row.avatarText
+    if (row.avatarColor) item.avatarColor = row.avatarColor
+  } else {
+    item.icon = rowIcon(row)
+  }
   if (row.statusColor) item.iconColor = row.statusColor
   else if (row.iconColor) item.iconColor = row.iconColor
   if (row.deletable && row.id) {

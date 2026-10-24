@@ -48,8 +48,18 @@ async function setOSelect(page: Page, testid: string, value: string) {
 /** 侧栏成员多选（oas-select multiple）：value 为数组，detail.value 同为数组
  *  （成员筛选的主入口在侧栏控件，位置=顶部时换到内容区顶部筛选栏） */
 async function setAssigneeFilter(page: Page, ids: string[]) {
+  // 侧栏成员组：先「全部成员」清空，再逐个点选；顶部筛选栏模式回退到多选控件
+  const nav = page.getByTestId('side-list')
+  const all = nav.locator('[part="item"][data-value="assignee:all"]')
+  if (await all.count()) {
+    await all.click()
+    for (const id of ids) {
+      await nav.locator(`[part="item"][data-value="assignee:${id}"]`).click()
+    }
+    return
+  }
   await page.evaluate((values) => {
-    const el = document.querySelector('[data-testid="side-filter-assignee"]') as
+    const el = document.querySelector('[data-testid="filters-assignee"]') as
       | (HTMLElement & { value?: string[] })
       | null
     if (!el) return

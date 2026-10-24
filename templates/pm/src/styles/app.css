@@ -840,29 +840,6 @@ body {
   width: 72px;
 }
 
-/* 成员筛选：筛选区最后一个组（oas-sidebar 默认插槽，紧接迭代/清除之后）。
-   组件组标题/子行都是 40px、组间距 4px；这里用同样的行高与间距，
-   缩进对齐组标题（图标 x=28 / 文案 x=72），下拉对齐子项（x≈51） */
-.side-filters {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  /* 与组件 nav 的行间距/行高同源：组间距 --oas-space-1、行高 --oas-control-height-lg */
-  gap: var(--oas-space-1, 4px);
-  /* 抵消 .body 顶部 12px padding + nav 底部 8px，让成员组距上组 4px（与组间距一致） */
-  margin-top: -16px;
-}
-.side-filters::before {
-  content: "";
-  position: absolute;
-  left: 24px;
-  top: var(--oas-control-height-lg, 40px); /* 从组标题行下方开始，避免竖线穿过漏斗图标 */
-  bottom: 4px;
-  width: 1px;
-  background: var(--oas-color-border, #e2e8f0);
-  pointer-events: none;
-}
-
 /* 滚动区底部渐隐（« 上方），提示筛选还有内容；rail / 窄屏不显示 */
 .side-panel {
   position: relative;
@@ -879,30 +856,6 @@ body {
 }
 .side-panel:has(oas-sidebar[collapsed])::after {
   display: none;
-}
-
-.side-filters-label {
-  display: flex;
-  align-items: center;
-  height: var(--oas-control-height-lg, 40px);
-  padding-left: 8px;
-  font-size: var(--oas-font-size-sm, 13px);
-  font-weight: 400;
-  color: var(--oas-color-text-secondary, #64748b);
-}
-.side-filters-icon {
-  display: flex;
-  justify-content: center;
-  width: 32px;
-  flex: none;
-}
-.side-filters-text {
-  margin-left: 12px;
-}
-
-.side-filters oas-select {
-  width: calc(100% - 31px);
-  margin-left: 31px;
 }
 
 /* 清除全部筛选：筛选区末尾的一行（不属于任何单个组），只在一项筛选生效时出现 */
@@ -1806,8 +1759,8 @@ oas-drawer::part(close):focus-visible {
   .side-panel oas-sidebar::part(badge) {
     display: none;
   }
-  /* 窄屏 rail 放不下成员控件；底部渐隐也不显示 */
-  .side-filters {
+  /* 窄屏 rail 放不下清除行；底部渐隐也不显示 */
+  .side-clear {
     display: none;
   }
   .side-panel::after {
@@ -2635,4 +2588,80 @@ oas-drawer::part(close):focus-visible {
 }
 .perm-actions-gap {
   flex: 1;
+}
+
+.profile-title {
+  margin: 0;
+  font-size: var(--oas-font-size-lg, 18px);
+  font-weight: 600;
+  color: var(--oas-color-text-primary, #1f2329);
+}
+
+/* ── 项目角色覆盖与审计 ── */
+.perm-role-scope {
+  margin-left: 6px;
+  padding: 0 5px;
+  font-size: 10px;
+  color: var(--oas-color-text-secondary, #64748b);
+  border: 1px solid var(--oas-color-border, #e2e8f0);
+  border-radius: 999px;
+}
+.proj-role-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr auto;
+  gap: 12px;
+  align-items: end;
+  margin: 10px 0 12px;
+}
+.proj-role-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.proj-role-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.proj-role-name {
+  margin-left: auto;
+  color: var(--oas-color-text-secondary, #64748b);
+}
+.proj-role-remove {
+  border: none;
+  background: none;
+  padding: 2px 4px;
+  font-size: 12px;
+  color: var(--oas-color-danger, #dc2626);
+  cursor: pointer;
+}
+.audit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.audit-list li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--oas-color-text-secondary, #64748b);
+}
+.audit-time {
+  font-variant-numeric: tabular-nums;
+  color: var(--oas-color-text-tertiary, #94a3b8);
+}
+.audit-actor {
+  color: var(--oas-color-text-primary, #1f2329);
+}
+.audit-target {
+  font-weight: 600;
+  color: var(--oas-color-text-primary, #1f2329);
 }

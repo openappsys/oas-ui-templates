@@ -31,7 +31,7 @@ export function MembersTab({
   currentUser: string
   onMemberDeleted: (id: string) => void
 }) {
-  const { members: membersRepo, roles: rolesRepo, admin } = useRepositories()
+  const { members: membersRepo, roles: rolesRepo, audit: auditRepo, admin } = useRepositories()
   const tableRef = useRef<TableHost>(null)
   const modalRef = useRef<HTMLElement>(null)
   const nameRef = useRef<HTMLElement & { value?: string }>(null)
@@ -118,12 +118,21 @@ export function MembersTab({
     async (id: string, role: string, sel: SelectEl, prev: string) => {
       try {
         await membersRepo.update(id, { role })
+        const target = listRef.current?.find((m) => m.id === id)?.name ?? id
+        void auditRepo.add({
+          id: nanoid(),
+          at: Date.now(),
+          actorId: currentUser,
+          action: 'member.role',
+          target,
+          detail: roleLabel(role),
+        })
       } catch {
         sel.value = prev
         showError(t('adminRoleDemoteFailed'))
       }
     },
-    [membersRepo, showError],
+    [membersRepo, auditRepo, currentUser, roleLabel, showError],
   )
   const changeRoleRef = useRef(changeRole)
   changeRoleRef.current = changeRole

@@ -70,10 +70,10 @@ test('P1 默认侧栏：筛选组与成员控件在侧栏，内容区无顶部�
   await expect(sideItem(page, 'status:all')).toBeVisible()
   await expect(sideItem(page, 'priority:all')).toBeVisible()
   await expect(sideItem(page, 'cycle:all')).toBeVisible()
-  // 无生效筛选时「清除筛选」行不出现
-  await expect(page.getByTestId('filter-clear')).toHaveCount(0)
-  await expect(page.getByTestId('side-filters')).toBeVisible()
-  await expect(page.getByTestId('side-filter-assignee')).toBeVisible()
+  // 无生效筛选时「清除全部筛选」不出现
+  await expect(page.getByTestId('side-filter-clear')).toHaveCount(0)
+  await expect(sideItem(page, 'group:members')).toBeVisible()
+  await expect(sideItem(page, 'assignee:all')).toBeVisible()
   // 内容区顶部没有任何筛选控件；列表工具条只留排序/分组/已保存视图（筛选不在第三处复制）
   await expect(topBar(page)).toHaveCount(0)
   await expect(page.getByTestId('issue-toolbar').locator('oas-select')).toHaveCount(3)
@@ -86,9 +86,9 @@ test('P2 切顶部：侧栏筛选组隐藏、四控件在内容区顶部，且�
   await pickPlacement(page, '顶部')
   await expect.poll(() => placementPref(page)).toBe('topbar')
 
-  // 侧栏筛选组、成员控件、筛选区小标题与清除链接一起消失（项目/视图/保存视图仍在）
-  await expect(page.getByTestId('side-filters')).toHaveCount(0)
-  await expect(page.getByTestId('filter-clear')).toHaveCount(0)
+  // 侧栏筛选组（含成员组）、筛选区小标题与清除链接一起消失（项目/视图/保存视图仍在）
+  await expect(sideItem(page, 'group:members')).toHaveCount(0)
+  await expect(page.getByTestId('side-filter-clear')).toHaveCount(0)
   await expect(sideItem(page, 'status:all')).toHaveCount(0)
   await expect(sideItem(page, 'priority:all')).toHaveCount(0)
   await expect(sideItem(page, 'cycle:all')).toHaveCount(0)
@@ -113,8 +113,8 @@ test('P2 切顶部：侧栏筛选组隐藏、四控件在内容区顶部，且�
   await expect(page.getByTestId('pm-toolbar')).toBeVisible({ timeout: 10_000 })
   await expect(page.locator('.issue-row').first()).toBeVisible({ timeout: 60_000 })
   await expect(topBar(page)).toBeVisible()
-  await expect(page.getByTestId('side-filters')).toHaveCount(0)
-  await expect(page.getByTestId('filter-clear')).toHaveCount(0)
+  await expect(sideItem(page, 'group:members')).toHaveCount(0)
+  await expect(page.getByTestId('side-filter-clear')).toHaveCount(0)
 })
 
 test('P3 两者：侧栏筛选组与内容区顶部筛选栏同时在场', async ({ page }) => {
@@ -124,7 +124,7 @@ test('P3 两者：侧栏筛选组与内容区顶部筛选栏同时在场', async
   await expect(sideItem(page, 'status:all')).toBeVisible()
   await expect(sideItem(page, 'priority:all')).toBeVisible()
   await expect(sideItem(page, 'cycle:all')).toBeVisible()
-  await expect(page.getByTestId('side-filters')).toBeVisible()
+  await expect(sideItem(page, 'group:members')).toBeVisible()
   await expect(topBar(page)).toBeVisible()
   await expect(page.getByTestId('filters-status')).toBeVisible()
 })
@@ -197,7 +197,7 @@ test('P5 顶栏改状态/成员 → 列表与看板同步过滤；清除筛选�
   await expect.poll(() => placementPref(page)).toBe('sidebar')
   await expect(topBar(page)).toHaveCount(0)
   await expect(sideItem(page, 'status:all')).toBeVisible()
-  await expect(page.getByTestId('side-filters')).toBeVisible()
+  await expect(sideItem(page, 'group:members')).toBeVisible()
   // 上面已清除筛选：清除行不出现
-  await expect(page.getByTestId('filter-clear')).toHaveCount(0)
+  await expect(page.getByTestId('side-filter-clear')).toHaveCount(0)
 })

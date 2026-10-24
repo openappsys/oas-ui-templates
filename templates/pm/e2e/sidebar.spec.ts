@@ -32,19 +32,6 @@ const sideItem = (page: Page, value: string) =>
 /** 列表渲染行的状态文案集合 */
 const rowStatuses = (page: Page) => page.locator('.issue-row .issue-status').allTextContents()
 
-/** 侧栏成员多选（oas-select multiple+searchable+clearable）：trigger / 选项行都在 shadow 内 */
-const assigneeSelect = (page: Page) => page.getByTestId('side-filter-assignee')
-const assigneeDropdown = (page: Page) => assigneeSelect(page).locator('.dropdown')
-
-async function openAssignee(page: Page) {
-  await assigneeSelect(page).locator('button.trigger').click()
-  await expect(assigneeDropdown(page)).toHaveClass(/open/, { timeout: 5000 })
-}
-
-/** 点某个选项（label 含计数后缀，如「李娜 (58)」） */
-const pickAssignee = (page: Page, label: string) =>
-  assigneeSelect(page).locator('.option').filter({ hasText: label }).first().click()
-
 /** 行头像姓名集合（oas-avatar 的 title 属性随成员名） */
 const rowAssignees = (page: Page) =>
   page
@@ -117,53 +104,71 @@ test('S2 状态多选：组内 OR 并集，再点取消，「全部」清空', a
     .toBe(true)
 })
 
-test('S3 侧栏成员多选：点两项取并集（chips 回显），再点取消', async ({ page }) => {
+test('S3 侧栏成员组：点两项取并集，再点取消', async ({ page }) => {
   await waitForSeed(page)
-  await openAssignee(page)
-  // 选项 label 带全量计数后缀（与列表窗口无关）；点击与断言只用成员名（去掉 " (n)"）
-  const labels = await assigneeSelect(page).evaluate((el) => {
-    const opts = (el as { options?: Array<{ label: string; value: string }> }).options ?? []
-    return opts.filter((o) => o.value !== '__none__').map((o) => o.label)
+  const picks = await page.getByTestId('side-list').evaluate((nav) => {
+    const rows = [
+      ...(nav.shadowRoot?.querySelectorAll('[part="item"][data-value^="assignee:"]') ?? []),
+    ]
+    return rows
+      .map((el) => ({
+        value: el.getAttribute('data-value') ?? '',
+        name: el.querySelector('.label')?.textContent ?? '',
+        count: parseInt(
+          (el.querySelector('[part="badge"]')?.textContent ?? '0').replace(/[^\d]/g, ''),
+          10,
+        ),
+      }))
+      .filter(
+        (r) =>
+          r.value &&
+          r.value !== 'assignee:all' &&
+          r.value !== 'assignee:__none__' &&
+          r.name &&
+          r.count > 0,
+      )
+      .slice(0, 2)
   })
-  expect(labels.length).toBeGreaterThanOrEqual(2)
-  const plain = (label: string) => label.replace(/\s*\(\d+\)$/, '')
-  const names = labels.map(plain).slice(0, 2) as [string, string]
-  const [first, second] = names
+  expect(picks.length, '至少两位有 Issue 的成员').toBe(2)
+  const [a, b] = picks
 
-  await expect(assigneeSelect(page).locator('.value')).toHaveText('全部成员')
-  await pickAssignee(page, first)
-  await expect(assigneeSelect(page).locator('.chip:not(.chip-plus)').first()).toContainText(first)
+  await expect(sideItem(page, 'assignee:all')).toHaveAttribute('aria-pressed', 'true')
+  await sideItem(page, a.value).click()
+  await expect(sideItem(page, a.value)).toHaveAttribute('aria-pressed', 'true')
   await expect
-    .poll(async () => {
-      const list = await rowAssignees(page)
-      return list.length > 0 && list.every((n) => n === first)
-    })
+    .poll(
+      async () => {
+        const list = await rowAssignees(page)
+        return list.length > 0 && list.every((n) => n === a.name)
+      },
+      { timeout: 10_000 },
+    )
     .toBe(true)
 
-  // 侧栏只有一行宽度：max-tag-count=1，第二项折叠成 +1（选中集仍读 property）
-  await pickAssignee(page, second)
-  expect(await assigneeSelect(page).evaluate((el) => (el as { value?: string[] }).value)).toEqual([
-    expect.any(String),
-    expect.any(String),
-  ])
-  await expect(assigneeSelect(page).locator('.chip-plus')).toHaveText('+1', { timeout: 5000 })
-  // 并集：渲染行只含这两位成员
+  // 并集：只含这两位成员
+  await sideItem(page, b.value).click()
+  await expect(sideItem(page, b.value)).toHaveAttribute('aria-pressed', 'true')
   await expect
-    .poll(async () => {
-      const list = await rowAssignees(page)
-      return list.length > 0 && list.every((n) => n === first || n === second)
-    })
+    .poll(
+      async () => {
+        const list = await rowAssignees(page)
+        return list.length > 0 && list.every((n) => n === a.name || n === b.name)
+      },
+      { timeout: 10_000 },
+    )
     .toBe(true)
 
   // 再点已选项 = 取消该值，仅剩另一位
-  await pickAssignee(page, first)
-  await expect(assigneeSelect(page).locator('.chip:not(.chip-plus)')).toHaveCount(1)
-  await expect(assigneeSelect(page).locator('.chip-plus')).toHaveCount(0)
+  await sideItem(page, a.value).click()
+  await expect(sideItem(page, a.value)).toHaveAttribute('aria-pressed', 'false')
   await expect
-    .poll(async () => {
-      const list = await rowAssignees(page)
-      return list.length > 0 && list.every((n) => n === second)
-    })
+    .poll(
+      async () => {
+        const list = await rowAssignees(page)
+        return list.length > 0 && list.every((n) => n === b.name)
+      },
+      { timeout: 10_000 },
+    )
     .toBe(true)
 })
 
@@ -254,9 +259,13 @@ test('S6 折叠 rail：240→56 收窄、行存活、角标仍在，再展开恢
 
   await expect(sideRow(page, 'OAS 平台')).toBeVisible()
   await expect(sideRow(page, '全部 Issues')).toBeVisible()
-  // rail 态：组件的子行收进 flyout（悬停父项才出现），父项仍在
+  // rail 态：4 个筛选组都在（状态/优先级/迭代/成员），子行收进 flyout
   await expect(sideItem(page, 'group:status')).toBeVisible()
+  await expect(sideItem(page, 'group:priority')).toBeVisible()
+  await expect(sideItem(page, 'group:cycles')).toBeVisible()
+  await expect(sideItem(page, 'group:members')).toBeVisible()
   await expect(sideItem(page, 'status:all')).toBeHidden()
+  await expect(sideItem(page, 'assignee:all')).toBeHidden()
 
   await toggle.click()
   await expect(sidebar).not.toHaveAttribute('collapsed', /.*/)
@@ -268,9 +277,9 @@ test('S6 折叠 rail：240→56 收窄、行存活、角标仍在，再展开恢
   })
 })
 
-test('S9 侧栏分区：导航在上、筛选在下，成员控件在筛选区末尾', async ({ page }) => {
+test('S9 侧栏分区：导航在上、筛选在下，成员是筛选区第 4 个组', async ({ page }) => {
   await waitForSeed(page)
-  // 分区顺序：项目 → 视图 → 已保存视图 → 分隔线 → 筛选（含状态/优先级/迭代）
+  // 分区顺序：项目 → 视图 → 已保存视图 → 分隔线 → 筛选（状态/优先级/迭代/成员）
   const order = await page.getByTestId('side-list').evaluate((nav) => {
     const values = [
       'project:__all__',
@@ -279,6 +288,7 @@ test('S9 侧栏分区：导航在上、筛选在下，成员控件在筛选区�
       'group:status',
       'group:priority',
       'group:cycles',
+      'group:members',
     ]
     const root = (nav.shadowRoot ?? nav) as unknown as Element
     // 先序遍历编号：DOM 文档序的可比值（跨层级，不能只比兄弟序号）
@@ -296,47 +306,27 @@ test('S9 侧栏分区：导航在上、筛选在下，成员控件在筛选区�
   })
   expect(
     order.every((i) => i >= 0),
-    '六个行锚点都在 DOM 里',
+    '七个行锚点都在 DOM 里',
   ).toBe(true)
   expect(
     [...order].sort((a, b) => a - b),
     '分区顺序',
   ).toEqual(order)
 
-  // 无生效筛选时「清除全部筛选」不出现；加上筛选后出现在筛选区末尾（成员组之后）
-  await expect(page.getByTestId('filter-clear')).toHaveCount(0)
-  await sideRow(page, '待规划').click()
-  await expect(page.getByTestId('filter-clear')).toBeVisible()
-  expect(
-    await page.getByTestId('filter-clear').evaluate((el) => {
-      const member = document.querySelector('[data-testid=side-filters]')
-      return !!(member && member.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING)
-    }),
-    '清除全部筛选在成员组之后',
-  ).toBe(true)
+  // 成员组与状态/优先级/迭代同构：全部成员 / 未分配 / 每位成员一行
+  await expect(sideItem(page, 'assignee:all')).toBeVisible()
+  await expect(sideItem(page, 'assignee:__none__')).toBeVisible()
+  await sideItem(page, 'assignee:member-2').click()
+  await expect(sideItem(page, 'assignee:member-2')).toHaveAttribute('aria-pressed', 'true')
 
-  // 成员控件是筛选区最后一项：走组件默认插槽（.body），排在 nav（含迭代/清除）之后，
-  // 不再使用 footer slot，也不钉底——和筛选保持同一组织
-  const member = await page.getByTestId('side-filters').evaluate((el) => {
-    const host = el.closest('oas-sidebar')
-    const root = host?.shadowRoot
-    const body = root?.querySelector<HTMLElement>('[part="body"]')
-    const slot = (el as HTMLElement).assignedSlot
-    const foot = root?.querySelector<HTMLElement>('[part="foot"]')
-    const prev = body?.previousElementSibling
-    return {
-      parentTag: el.parentElement?.tagName ?? '',
-      slotName: slot?.getAttribute('name') ?? 'default',
-      slotParentClass: slot?.parentElement?.className ?? '',
-      bodyAfterNav: prev?.tagName === 'NAV' || prev?.className === 'nav',
-      footHidden: foot?.hasAttribute('hidden') ?? false,
-    }
+  // 无生效筛选时「清除全部筛选」不出现；加上筛选后出现在 nav（含成员组）之后
+  await expect(page.getByTestId('side-filter-clear')).toBeVisible()
+  const clearBelowMembers = await page.getByTestId('side-filter-clear').evaluate((el) => {
+    const nav = document.querySelector('[data-testid=side-list]')
+    const member = nav?.shadowRoot?.querySelector('[part="item"][data-value="group:members"]')
+    return !!member && el.getBoundingClientRect().top >= member.getBoundingClientRect().bottom - 1
   })
-  expect(member.parentTag).toBe('OAS-SIDEBAR')
-  expect(member.slotName).toBe('default')
-  expect(member.slotParentClass).toBe('body')
-  expect(member.bodyAfterNav).toBe(true)
-  expect(member.footHidden).toBe(true)
+  expect(clearBelowMembers, '清除全部筛选在成员组之后').toBe(true)
 })
 
 test('S10 分组折叠：状态/优先级/迭代各自可折叠，刷新后保持', async ({ page }) => {
@@ -411,8 +401,8 @@ test('S11 高亮分级：当前视图实底，生效筛选浅底 + 左色条', a
   expect(await bg('project:project-1')).not.toBe('rgba(0, 0, 0, 0)')
 
   // 清除全部筛选：一次清掉状态
-  await page.getByTestId('filter-clear').click()
+  await page.getByTestId('side-filter-clear').click()
   await expect(sideItem(page, 'status:all')).toHaveAttribute('aria-pressed', 'true')
   expect(await bg('status:backlog')).toBe('rgba(0, 0, 0, 0)')
-  await expect(page.getByTestId('filter-clear')).toHaveCount(0)
+  await expect(page.getByTestId('side-filter-clear')).toHaveCount(0)
 })

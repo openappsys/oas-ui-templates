@@ -10,6 +10,8 @@ import type {
   Project,
   SavedView,
   Role,
+  AuditEntry,
+  ProjectRoleAssignment,
 } from '@/types'
 import type { Observable } from './observable'
 
@@ -215,6 +217,17 @@ export interface RoleRepository {
   delete(id: string): Promise<void>
 }
 
+export interface AuditRepository {
+  liveRecent(limit: number): Observable<AuditEntry[]>
+  add(entry: AuditEntry): Promise<void>
+}
+
+export interface ProjectRoleRepository {
+  liveAll(): Observable<ProjectRoleAssignment[]>
+  /** roleId = null 表示清除项目覆盖（继承工作区角色） */
+  set(projectId: string, memberId: string, roleId: string | null): Promise<void>
+}
+
 export interface Repositories {
   issues: IssueRepository
   projects: ProjectRepository
@@ -226,5 +239,7 @@ export interface Repositories {
   settings: SettingsRepository
   notifications: NotificationRepository
   roles: RoleRepository
+  audit: AuditRepository
+  projectRoles: ProjectRoleRepository
   admin: AdminRepository
 }

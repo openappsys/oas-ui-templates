@@ -78,27 +78,31 @@ test('F2 状态 × 成员 AND：行同时满足两个维度', async ({ page }) =
     )
     .toBe(true)
 
-  // 成员筛选在侧栏（一行可搜索多选）：从带计数的选项里挑一个当前仍有行的成员，
-  // 避免挑到空集（计数后缀即全量条数）
-  const assignee = page.getByTestId('side-filter-assignee')
-  await assignee.locator('button.trigger').click()
-  await expect(assignee.locator('.dropdown')).toHaveClass(/open/, { timeout: 5000 })
-  const target = await assignee.evaluate((el) => {
-    const opts =
-      (el as { options?: Array<{ label: string; value: string }> }).options?.filter(
-        (o) => o.value !== '__none__',
-      ) ?? []
-    for (const o of opts) {
-      const count = Number(o.label.match(/\((\d+)\)$/)?.[1] ?? '0')
-      if (count > 0) return { label: o.label, name: o.label.replace(/\s*\(\d+\)$/, '') }
+  // 成员筛选改为侧栏「成员」组（与状态/优先级/迭代同构），行就是成员
+  const nav = page.getByTestId('side-list')
+  const picked = await nav.evaluate((el) => {
+    const rows = [
+      ...(el.shadowRoot?.querySelectorAll('[part="item"][data-value^="assignee:"]') ?? []),
+    ]
+    for (const row of rows) {
+      const value = row.getAttribute('data-value') ?? ''
+      if (value === 'assignee:all' || value === 'assignee:__none__') continue
+      const count = parseInt(
+        (row.querySelector('[part="badge"]')?.textContent ?? '0').replace(/[^\d]/g, ''),
+        10,
+      )
+      const name = row.querySelector('.label')?.textContent ?? ''
+      if (count > 0 && name) return { value, name }
     }
     return null
   })
-  expect(target).not.toBeNull()
-  const picked = target as { label: string; name: string }
-
-  await assignee.locator('.option').filter({ hasText: picked.label }).first().click()
-  await expect(assignee.locator('.chip').first()).toContainText(picked.name)
+  expect(picked).not.toBeNull()
+  const target = picked as { value: string; name: string }
+  await nav.locator(`[part="item"][data-value="${target.value}"]`).click()
+  await expect(nav.locator(`[part="item"][data-value="${target.value}"]`)).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
 
   await expect
     .poll(
@@ -111,7 +115,7 @@ test('F2 状态 × 成员 AND：行同时满足两个维度', async ({ page }) =
           st.length > 0 &&
           names.length > 0 &&
           st.every((s) => s === '待规划' || s === '进行中') &&
-          names.every((n) => n === picked.name)
+          names.every((n) => n === target.name)
         )
       },
       { timeout: 10_000 },
@@ -119,9 +123,11 @@ test('F2 状态 × 成员 AND：行同时满足两个维度', async ({ page }) =
     .toBe(true)
 
   // 再点已选项 = 取消，回到只有状态维度
-  await assignee.locator('.option').filter({ hasText: picked.label }).first().click()
-  await expect(assignee.locator('.chip')).toHaveCount(0)
-  await expect(assignee.locator('.value')).toHaveText('全部成员')
+  await nav.locator(`[part="item"][data-value="${target.value}"]`).click()
+  await expect(nav.locator(`[part="item"][data-value="${target.value}"]`)).toHaveAttribute(
+    'aria-pressed',
+    'false',
+  )
 })
 
 test('F3 优先级两处同源：侧栏多选 ↔ 顶部筛选栏多选（位置=两者）', async ({ page }) => {

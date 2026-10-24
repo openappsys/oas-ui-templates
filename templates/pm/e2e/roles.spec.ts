@@ -41,7 +41,7 @@ test('RL1 自定义角色：新建 + 勾权限 + 分配给成员后按权限生�
   await page.getByTestId('perm-role-new').click()
   await page.getByTestId('perm-role-name').locator('input').fill('项目负责人')
   // 只给「管理项目」：可进管理，不能新建 Issue
-  await page.getByTestId('perm-project:manage').click()
+  await page.getByTestId('perm-member:manage').click()
   await page.getByTestId('perm-role-save').click()
   await expect(page.getByTestId('perm-saved')).toBeVisible({ timeout: 10_000 })
 
@@ -98,4 +98,75 @@ test('RL2 角色守卫：被成员占用的自定义角色不能删除', async (
   await expect(page.getByTestId('perm-error')).toContainText(/使用|assigned/i, {
     timeout: 10_000,
   })
+})
+
+test('RL3 项目级角色：项目内覆盖生效、项目外继承工作区，变更写审计', async ({ page }) => {
+  await waitForSeed(page)
+  await openPermissions(page)
+
+  // 建项目作用域角色：只给「新建 Issue」
+  await page.getByTestId('perm-role-new').click()
+  await page.getByTestId('perm-role-name').locator('input').fill('项目创建者')
+  await page.getByTestId('perm-role-scope').evaluate((el) => {
+    el.value = 'project'
+    el.dispatchEvent(new CustomEvent('oas-change', { bubbles: true, detail: { value: 'project' } }))
+  })
+  await page.getByTestId('perm-issue:create').click()
+  await page.getByTestId('perm-role-save').click()
+  await expect(page.getByTestId('perm-saved')).toBeVisible({ timeout: 10_000 })
+  const chip = page.locator('.perm-role-chip').filter({ hasText: '项目创建者' })
+  const rid = ((await chip.getAttribute('data-testid')) ?? '').replace('perm-role-', '')
+  expect(rid).not.toBe('')
+
+  // 李娜工作区角色降为只读
+  await page.getByTestId('admin-nav-members').click()
+  const ws = page.getByTestId('admin-member-role-member-2')
+  await ws.waitFor({ timeout: 10_000 })
+  await ws.evaluate((el) => {
+    el.value = 'viewer'
+    el.dispatchEvent(new CustomEvent('oas-change', { bubbles: true, detail: { value: 'viewer' } }))
+  })
+
+  // 项目-2 覆盖为「项目创建者」
+  await openPermissions(page)
+  await page.getByTestId('proj-role-project').waitFor({ timeout: 10_000 })
+  await page.getByTestId('proj-role-project').evaluate((el) => {
+    el.value = 'project-2'
+    el.dispatchEvent(
+      new CustomEvent('oas-change', { bubbles: true, detail: { value: 'project-2' } }),
+    )
+  })
+  await page.getByTestId('proj-role-member').evaluate((el) => {
+    el.value = 'member-2'
+    el.dispatchEvent(
+      new CustomEvent('oas-change', { bubbles: true, detail: { value: 'member-2' } }),
+    )
+  })
+  await page.getByTestId('proj-role-role').evaluate((el, id) => {
+    el.value = id
+    el.dispatchEvent(new CustomEvent('oas-change', { bubbles: true, detail: { value: id } }))
+  }, rid)
+  await page.getByTestId('proj-role-apply').click()
+  await expect(page.getByTestId('proj-role-list')).toContainText('项目创建者', {
+    timeout: 10_000,
+  })
+
+  // 审计：建角色 + 调成员角色 + 项目覆盖都留痕
+  const audit = page.getByTestId('admin-audit')
+  await expect(audit).toContainText(/新建角色|Created role/)
+  await expect(audit).toContainText(/调整成员角色|Changed member role/)
+  await expect(audit).toContainText(/设置项目角色|Set project role/)
+
+  // 切到李娜：项目-2 有新建 Issue（项目角色），项目-1 没有（工作区只读）
+  await switchUser(page, 'member-2')
+  await page
+    .getByTestId('side-list')
+    .locator('[part="item"][data-value="project:project-2"]')
+    .click()
+  await expect(page.getByTestId('toolbar-new')).toBeVisible({ timeout: 10_000 })
+  await page
+    .getByTestId('side-list')
+    .locator('[part="item"][data-value="project:project-1"]')
+    .click()
+  await expect(page.getByTestId('toolbar-new')).toHaveCount(0)
 })

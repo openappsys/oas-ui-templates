@@ -27,6 +27,8 @@ import {
   type Notification,
   type Project,
   type Role,
+  type AuditEntry,
+  type ProjectRoleAssignment,
   type SavedView,
 } from '../../types/index.ts'
 import { demoSavedViewRows } from '../../lib/saved-views.ts'
@@ -50,6 +52,8 @@ export interface SeedTables {
   cycles: Cycle[]
   notifications: Notification[]
   roles: Role[]
+  audit: AuditEntry[]
+  projectRoles: ProjectRoleAssignment[]
 }
 
 export interface MockStore extends SeedTables {
@@ -314,6 +318,8 @@ function buildSeed(seed: number, now: number): SeedTables {
     cycles,
     notifications: [],
     roles: BUILTIN_ROLES.map((r) => ({ ...r, permissions: [...r.permissions] })),
+    audit: [],
+    projectRoles: [],
   }
 }
 
@@ -407,6 +413,8 @@ function sessionMember(store: MockStore, req: ApiRequest): Member {
 function isAdminOnly(method: string, head: string, second?: string, third?: string): boolean {
   if (head === 'admin') return true
   if (head === 'projects' || head === 'members' || head === 'roles') return method !== 'GET'
+  if (head === 'project-roles') return method !== 'GET'
+  if (head === 'audit') return true
   if (head === 'settings') return method === 'PUT'
   if (head === 'issues' && second && (third === 'restore' || third === 'purge')) return true
   return false
@@ -785,6 +793,8 @@ function importEnvelope(store: MockStore, raw: unknown): void {
     cycles: rows('cycles') as Cycle[],
     notifications: rows('notifications') as Notification[],
     roles: rows('roles') as Role[],
+    audit: rows('audit') as AuditEntry[],
+    projectRoles: rows('projectRoles') as ProjectRoleAssignment[],
   })
   Object.assign(store, next)
 }
@@ -805,6 +815,8 @@ function wipeStore(store: MockStore): void {
   store.notifications = []
   // 角色是工作区配置：wipe 业务数据时保留内置角色，避免权限页空表
   store.roles = BUILTIN_ROLES.map((r) => ({ ...r, permissions: [...r.permissions] }))
+  store.audit = []
+  store.projectRoles = []
 }
 
 function globalStats(store: MockStore) {
@@ -1378,6 +1390,56 @@ function routeRoles(
   fail(405, 'method not allowed')
 }
 
+function routeAudit(
+  store: MockStore,
+  method: string,
+  second: string | undefined,
+  q: URLSearchParams,
+  body: unknown,
+): ApiResponse {
+  if (second) fail(404, 'not found')
+  if (method === 'GET') {
+    const limit = numQuery(q, 'limit', 20)
+    return ok({
+      items: [...store.audit].sort((a, b) => b.at - a.at).slice(0, limit),
+    })
+  }
+  if (method === 'POST') {
+    const entry = asRecord(body) as unknown as AuditEntry
+    if (!entry?.id || !entry.action) fail(400, 'audit id/action required')
+    store.audit.push(entry)
+    store.revision += 1
+    return ok({ ok: true }, 201)
+  }
+  fail(405, 'method not allowed')
+}
+
+function routeProjectRoles(
+  store: MockStore,
+  method: string,
+  second: string | undefined,
+  body: unknown,
+): ApiResponse {
+  if (second) fail(404, 'not found')
+  if (method === 'GET') return ok({ items: [...store.projectRoles].sort(byIdAsc) })
+  if (method === 'PUT') {
+    const input = asRecord(body)
+    const projectId = String(input.projectId ?? '')
+    const memberId = String(input.memberId ?? '')
+    const roleId = input.roleId === null || input.roleId === undefined ? null : String(input.roleId)
+    if (!projectId || !memberId) fail(400, 'projectId/memberId required')
+    if (!store.projects.some((p) => p.id === projectId)) fail(404, 'project not found')
+    if (!store.members.some((m) => m.id === memberId)) fail(404, 'member not found')
+    if (roleId !== null && !store.roles.some((r) => r.id === roleId)) fail(400, 'unknown role')
+    const id = `${projectId}:${memberId}`
+    store.projectRoles = store.projectRoles.filter((a) => a.id !== id)
+    if (roleId !== null) store.projectRoles.push({ id, projectId, memberId, roleId })
+    store.revision += 1
+    return ok({ ok: true })
+  }
+  fail(405, 'method not allowed')
+}
+
 function routeSettings(
   store: MockStore,
   method: string,
@@ -1492,6 +1554,10 @@ function route(store: MockStore, req: ApiRequest, member: Member | null): ApiRes
       return routeMembers(store, method, second, third, req.body)
     case 'roles':
       return routeRoles(store, method, second, third, req.body)
+    case 'audit':
+      return routeAudit(store, method, second, q, req.body)
+    case 'project-roles':
+      return routeProjectRoles(store, method, second, req.body)
     case 'comments':
       return routeComments(store, method, second, third, q, req.body)
     case 'activities':

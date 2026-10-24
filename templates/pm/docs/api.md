@@ -80,7 +80,7 @@ Response: `204` with no body.
 | Rule | Effect |
 | --- | --- |
 | Any valid token | Read every resource, write issues, comments, activities, saved views and cycles, and mark own notifications read |
-| `role = "admin"` only | All `/api/admin/*` endpoints, `POST/PATCH/DELETE /api/projects*`, `POST/PATCH/DELETE /api/members*`, `POST/PATCH/DELETE /api/roles*`, `PUT /api/settings/:key` |
+| `role = "admin"` only | All `/api/admin/*` endpoints, `POST/PATCH/DELETE /api/projects*`, `POST/PATCH/DELETE /api/members*`, `POST/PATCH/DELETE /api/roles*`, `PUT /api/project-roles`, `GET|POST /api/audit`, `PUT /api/settings/:key` |
 | No token | `401` |
 
 A valid token with a non-admin role on an admin-only endpoint returns `403` with
@@ -260,8 +260,30 @@ unknown ID returns `{ "ok": true }`.
 
 `permissions` is an array of action ids from `src/permission/policy.ts`. Built-in roles
 (`admin`, `member`, `viewer`) are read-only; custom roles grant permissions unconditionally.
+`scope` is `workspace` (default) or `project` (only offered as a project override).
 Member assignment uses `PATCH /api/members/:id { changes: { role: "<role id>" } }`.
 Writes require an admin token.
+
+## 7c. Project role overrides
+
+| Endpoint | Body / query | Response | Errors |
+| --- | --- | --- | --- |
+| `GET /api/project-roles` | – | `{ items }` (all overrides) | – |
+| `PUT /api/project-roles` | `{ projectId, memberId, roleId }` (`roleId: null` clears) | `{ ok: true }` | `400` unknown role, `404` project/member |
+
+An override applies only inside the given project. Workspace admins are never overridden.
+Reads are open to any authenticated member (the client resolves permissions per project);
+writes require an admin token.
+
+## 7d. Audit log
+
+| Endpoint | Body / query | Response | Errors |
+| --- | --- | --- | --- |
+| `GET /api/audit?limit=20` | – | `{ items }` (newest first) | – |
+| `POST /api/audit` | `{ id, at, actorId, action, target?, detail? }` | `201 { ok: true }` | `400` missing id/action |
+
+Records role and assignment changes (`role.create`, `role.update`, `role.delete`,
+`member.role`, `projectRole.set`, `projectRole.clear`). Admin token required.
 
 ## 8. Comments
 

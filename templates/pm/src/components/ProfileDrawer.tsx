@@ -115,7 +115,7 @@ export function ProfileDrawer({
       data-testid="profile-drawer"
     >
       <div className="profile-body">
-        <h2 className="detail-title">{t('profileTitle')}</h2>
+        <h2 className="profile-title">{t('profileTitle')}</h2>
         <p className="profile-hint">{t('profileHint')}</p>
 
         {member && (

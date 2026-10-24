@@ -111,6 +111,11 @@ function useRoles() {
   return useObservable(() => roles.liveAll(), [roles])
 }
 
+function useProjectRoles() {
+  const { projectRoles } = useRepositories()
+  return useObservable(() => projectRoles.liveAll(), [projectRoles])
+}
+
 function useProjects(): Project[] | undefined {
   const { projects } = useRepositories()
   return useObservable(() => projects.liveAll(), [projects])
@@ -376,6 +381,7 @@ function Workspace({
   const counts = useProjectCounts(filters.projectId)
   const members = useMembers()
   const roles = useRoles()
+  const projectRoles = useProjectRoles()
   const projects = useProjects()
   const cycles = useCycles(filters.projectId)
   const cycleCounts = useCycleCountTotals(filters.projectId)
@@ -384,7 +390,16 @@ function Workspace({
   const can = useCallback(
     (action: Action, ctx?: Ctx) => {
       // 角色取成员表；表被清空/未到时用会话快照，避免 admin 掉成 viewer
-      const roleId = members?.find((m) => m.id === currentUser)?.role ?? session?.role ?? 'viewer'
+      const workspaceRoleId =
+        members?.find((m) => m.id === currentUser)?.role ?? session?.role ?? 'viewer'
+      // 项目级覆盖：只在具体项目内生效；工作区 admin 不被项目角色降级
+      const override =
+        workspaceRoleId === 'admin' || filters.projectId === ALL_PROJECTS
+          ? undefined
+          : projectRoles?.find(
+              (a) => a.projectId === filters.projectId && a.memberId === currentUser,
+            )?.roleId
+      const roleId = override ?? workspaceRoleId
       const stored = roles?.find((r) => r.id === roleId)
       const role =
         stored ??
@@ -393,10 +408,11 @@ function Workspace({
           : undefined)
       return roleCan(role, currentUser, action, ctx)
     },
-    [currentUser, members, roles, session],
+    [currentUser, filters.projectId, members, projectRoles, roles, session],
   )
   const canCreateIssue = can('issue:create')
-  const canManage = can('project:manage')
+  // 管理区入口用 member:manage（最低权限）：只给「管理项目」的自定义角色不会打开全局管理
+  const canManage = can('member:manage')
   useEffect(() => {
     if (view === 'admin' && !canManage) setView('issues')
   }, [view, canManage])
@@ -447,6 +463,45 @@ function Workspace({
     () => buildAssigneeOptions(members, memberCounts, { unassigned: t('unassignedMember') }),
     [members, memberCounts, lang],
   )
+  // 侧栏成员组：行 = 全部成员 / 未分配 / 每位成员（头像 + 计数），与状态/优先级/迭代同构
+  // biome-ignore lint/correctness/useExhaustiveDependencies: lang 是语言切换时的重算触发器
+  const assigneeRows = useMemo<SideRow[]>(() => {
+    const me = filters.assigneeFilter
+    const rows: SideRow[] = [
+      {
+        value: 'assignee:all',
+        kind: 'assignee',
+        id: 'all',
+        label: t('allMembers'),
+        count: counts?.total != null ? counts.total.toLocaleString() : undefined,
+        selected: me.length === 0,
+        group: t('members'),
+      },
+      {
+        value: `assignee:${UNASSIGNED}`,
+        kind: 'assignee',
+        id: UNASSIGNED,
+        label: t('unassignedMember'),
+        count: (memberCounts?.get(UNASSIGNED) ?? 0).toLocaleString(),
+        selected: me.includes(UNASSIGNED),
+        group: t('members'),
+      },
+    ]
+    for (const m of members ?? []) {
+      rows.push({
+        value: `assignee:${m.id}`,
+        kind: 'assignee',
+        id: m.id,
+        label: m.name,
+        count: (memberCounts?.get(m.id) ?? 0).toLocaleString(),
+        avatarText: m.name[0],
+        avatarColor: m.avatarColor,
+        selected: me.includes(m.id),
+        group: t('members'),
+      })
+    }
+    return rows
+  }, [members, memberCounts, filters.assigneeFilter, counts?.total, lang])
   // 顶部筛选栏/侧栏共用同一批选项（含全量计数后缀）：两处控件文案必须同源，
   // 否则「同一筛选两处看」会读到不同计数
   // biome-ignore lint/correctness/useExhaustiveDependencies: lang 是语言切换时的重算触发器
@@ -707,6 +762,13 @@ function Workspace({
           collapseKey: 'cycles',
           children: cycleRows,
         },
+        {
+          value: 'group:members',
+          kind: 'group',
+          label: t('members'),
+          collapseKey: 'members',
+          children: assigneeRows,
+        },
       ],
     })
   }
@@ -741,6 +803,13 @@ function Workspace({
             ...prev,
             priorityFilter:
               row.id === 'all' ? [] : toggleIn(prev.priorityFilter, row.id as IssuePriority),
+          }))
+          break
+        case 'assignee':
+          // 成员多选：组内 OR；「全部成员」清空该维度
+          setFilters((prev) => ({
+            ...prev,
+            assigneeFilter: row.id === 'all' ? [] : toggleIn(prev.assigneeFilter, row.id as string),
           }))
           break
         case 'cycle': {
@@ -1040,42 +1109,19 @@ function Workspace({
                 onRowClick={handleSideRowClick}
                 onDeleteSavedView={handleDeleteSavedView}
                 trailing={
-                  // 成员筛选在筛选区末尾（一项可搜索多选，不铺成每个成员一行）；
-                  // 「清除全部筛选」放在所有筛选组之后，作用于全部维度（不是只清成员）
-                  sidebarFilters ? (
-                    <>
-                      <div className="side-filters" data-testid="side-filters">
-                        <span className="side-filters-label">
-                          <span className="side-filters-icon">
-                            <oas-icon name="filter" size={16} />
-                          </span>
-                          <span className="side-filters-text">{t('members')}</span>
-                        </span>
-                        <OMultiSelect
-                          testid="side-filter-assignee"
-                          label={t('members')}
-                          searchLabel={t('searchMembers')}
-                          placeholder={t('allMembers')}
-                          maxTagCount={1}
-                          value={filters.assigneeFilter}
-                          options={assigneeFilterOptions}
-                          onChange={(v) => setF('assigneeFilter', v)}
-                        />
-                      </div>
-                      {filtersActive && (
-                        <button
-                          type="button"
-                          className="side-clear"
-                          data-testid="filter-clear"
-                          onClick={clearFilters}
-                        >
-                          <span className="side-clear-icon">
-                            <oas-icon name="close" size={16} />
-                          </span>
-                          <span className="side-clear-text">{t('clearFilters')}</span>
-                        </button>
-                      )}
-                    </>
+                  // 「清除全部筛选」放在所有筛选组（含成员组）之后，作用于全部维度
+                  sidebarFilters && filtersActive ? (
+                    <button
+                      type="button"
+                      className="side-clear"
+                      data-testid="side-filter-clear"
+                      onClick={clearFilters}
+                    >
+                      <span className="side-clear-icon">
+                        <oas-icon name="close" size={16} />
+                      </span>
+                      <span className="side-clear-text">{t('clearFilters')}</span>
+                    </button>
                   ) : null
                 }
               />
