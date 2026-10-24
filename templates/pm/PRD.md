@@ -353,7 +353,7 @@ v14 的 `issues` 索引：
 |----|------|
 | 框架 | React 19.3 |
 | 数据层 | Dexie 4.4（IndexedDB）+ 自研 Observable（`useObservable`；未使用 dexie-react-hooks） |
-| 状态 | React state + localStorage 偏好；`src/stores/ui-store.ts` 是一个**未被引用**的 zustand 外壳（无消费者，可删） |
+| 状态 | React state + localStorage 偏好（无外部状态库） |
 | 组件 | `@oas-ui/ui` 2.6.3（Web Components，React 侧 property/事件桥接）+ `@oas-ui/icons` + `@oas-ui/theme` + `@oas-ui/i18n`（组件内建文案 locale） |
 | 构建 | Vite 8 + TypeScript 6（`typescript` 别名 `@typescript/typescript6`） |
 | 测试 | Vitest 5 + fake-indexeddb；Playwright 1.64（Chromium 默认，可切 Firefox） |

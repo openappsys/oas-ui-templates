@@ -82,7 +82,6 @@ src/
 ├── db/           # Dexie schema（v1→v14）
 ├── permission/   # can() / roleCan() 策略（角色 × 动作 × 上下文）
 ├── lib/          # 派生层（resource-data / schedule-data / filters / cycles / notify / seed-size 等，纯函数 + 单测）
-├── stores/       # ui-store.ts（zustand 外壳，当前无消费者）
 ├── i18n.ts       # zh/en 双词典 + t() + 活动日志渲染映射
 └── seed-db.ts    # 演示数据生成（版本号重播）
 ```
@@ -173,7 +172,6 @@ src/
 ├── db/           # Dexie schema (v1→v14)
 ├── permission/   # can() / roleCan() policy (role × action × context)
 ├── lib/          # derivation layer (resource-data / schedule-data / filters / cycles / notify / seed-size; pure + unit-tested)
-├── stores/       # ui-store.ts (zustand shell, currently unused)
 ├── i18n.ts       # zh/en dictionaries + t() + activity-log render mapping
 └── seed-db.ts    # demo data generation (versioned reseed)
 ```
