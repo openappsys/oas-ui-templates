@@ -3,7 +3,6 @@ import { nanoid } from 'nanoid'
 import { useRepositories } from '@/data/context'
 import { useObservable } from '@/data/use-observable'
 import { t } from '@/i18n'
-import type { MemberRole } from '@/types'
 import { AVATAR_PALETTE } from '@/lib/colors'
 import { OSelect } from '@/components/oas-wrappers'
 
@@ -22,7 +21,6 @@ type SelectEl = HTMLElement & {
   options?: Array<{ label: string; value: string }>
 }
 
-const ROLES: MemberRole[] = ['admin', 'member', 'viewer']
 /** 头像色板与 seed 同源（src/lib/colors.ts：700 档保证白字 ≥4.5） */
 const PALETTE = AVATAR_PALETTE
 
@@ -33,18 +31,19 @@ export function MembersTab({
   currentUser: string
   onMemberDeleted: (id: string) => void
 }) {
-  const { members: membersRepo, admin } = useRepositories()
+  const { members: membersRepo, roles: rolesRepo, admin } = useRepositories()
   const tableRef = useRef<TableHost>(null)
   const modalRef = useRef<HTMLElement>(null)
   const nameRef = useRef<HTMLElement & { value?: string }>(null)
   const emailRef = useRef<HTMLElement & { value?: string }>(null)
-  const [newRole, setNewRole] = useState<MemberRole>('member')
+  const [newRole, setNewRole] = useState('member')
   const [fieldError, setFieldError] = useState('')
   const [error, setError] = useState('')
   const errorTimer = useRef<number | undefined>(undefined)
   const inFlightRef = useRef(false)
 
   const list = useObservable(() => membersRepo.liveAll(), [membersRepo])
+  const roles = useObservable(() => rolesRepo.liveAll(), [rolesRepo])
   const workload = useObservable(() => admin.liveMemberWorkload(), [admin])
   const workloadMap = useMemo(
     () => new Map((workload ?? []).map((w) => [w.memberId, w.inProgress])),
@@ -60,18 +59,19 @@ export function MembersTab({
   }, [])
   useEffect(() => () => window.clearTimeout(errorTimer.current), [])
 
+  const roleLabel = useCallback(
+    (id: string) => {
+      if (id === 'admin') return t('adminRoleAdmin')
+      if (id === 'member') return t('adminRoleMember')
+      if (id === 'viewer') return t('adminRoleViewer')
+      return roles?.find((r) => r.id === id)?.name ?? id
+    },
+    [roles],
+  )
+
   const roleOptions = useMemo(
-    () =>
-      ROLES.map((r) => ({
-        label:
-          r === 'admin'
-            ? t('adminRoleAdmin')
-            : r === 'member'
-              ? t('adminRoleMember')
-              : t('adminRoleViewer'),
-        value: r,
-      })),
-    [],
+    () => (roles ?? []).map((r) => ({ label: roleLabel(r.id), value: r.id })),
+    [roles, roleLabel],
   )
 
   const openModal = useCallback(() => {
@@ -117,7 +117,7 @@ export function MembersTab({
   const changeRole = useCallback(
     async (id: string, role: string, sel: SelectEl, prev: string) => {
       try {
-        await membersRepo.update(id, { role: role as MemberRole })
+        await membersRepo.update(id, { role })
       } catch {
         sel.value = prev
         showError(t('adminRoleDemoteFailed'))
@@ -250,7 +250,7 @@ export function MembersTab({
               testid="admin-member-role-new"
               value={newRole}
               options={roleOptions}
-              onChange={(v) => setNewRole(v as MemberRole)}
+              onChange={(v) => setNewRole(v)}
             />
           </div>
           {fieldError && (

@@ -61,10 +61,21 @@ export interface Member {
   name: string
   email: string
   avatarColor: string
-  role: MemberRole
+  /** 角色 id：内置 admin/member/viewer，或自定义角色 id */
+  role: string
   /** 个人资料补充字段（可选，旧数据缺省为空） */
   title?: string
   timezone?: string
+}
+
+/** 角色：内置角色只读；自定义角色可编辑权限矩阵 */
+export interface Role {
+  id: string
+  name: string
+  description: string
+  builtin: boolean
+  /** 无条件授予的动作集合（内置 member 的「仅本人」条件仍由 policy 处理） */
+  permissions: string[]
 }
 
 export interface Comment {

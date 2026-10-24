@@ -80,7 +80,7 @@ Response: `204` with no body.
 | Rule | Effect |
 | --- | --- |
 | Any valid token | Read every resource, write issues, comments, activities, saved views and cycles, and mark own notifications read |
-| `role = "admin"` only | All `/api/admin/*` endpoints, `POST/PATCH/DELETE /api/projects*`, `POST/PATCH/DELETE /api/members*`, `PUT /api/settings/:key` |
+| `role = "admin"` only | All `/api/admin/*` endpoints, `POST/PATCH/DELETE /api/projects*`, `POST/PATCH/DELETE /api/members*`, `POST/PATCH/DELETE /api/roles*`, `PUT /api/settings/:key` |
 | No token | `401` |
 
 A valid token with a non-admin role on an admin-only endpoint returns `403` with
@@ -243,11 +243,25 @@ The `allocate-key` call increases `nextKeyNum` by one and returns the used numbe
 | `GET /api/members` | – | `{ items }` (ID ascending) | – |
 | `POST /api/members` | Member object | `201 { ok: true }` | `409` duplicate ID |
 | `GET /api/members/:id` | – | `{ member }` | `404` |
-| `PATCH /api/members/:id` | `{ changes }` | `{ ok: true }` | `404`, `409` demoting the last admin |
+| `PATCH /api/members/:id` | `{ changes }` | `{ ok: true }` | `400` unknown role, `404`, `409` demoting the last admin |
 | `DELETE /api/members/:id` | – | `{ ok: true }` | `409` removing the last admin |
 
 `DELETE` also clears the deleted member from every issue assignee. The call is idempotent: an
 unknown ID returns `{ "ok": true }`.
+
+## 7b. Roles
+
+| Endpoint | Body / query | Response | Errors |
+| --- | --- | --- | --- |
+| `GET /api/roles` | – | `{ items }` (ID ascending; built-in + custom) | – |
+| `POST /api/roles` | Role object (`id, name, description, permissions`) | `201 { ok: true }` | `400` missing id/name, `409` duplicate ID |
+| `PATCH /api/roles/:id` | `{ changes }` | `{ ok: true }` | `403` built-in role, `404` |
+| `DELETE /api/roles/:id` | – | `{ ok: true }` | `403` built-in role, `404`, `409` role assigned to members |
+
+`permissions` is an array of action ids from `src/permission/policy.ts`. Built-in roles
+(`admin`, `member`, `viewer`) are read-only; custom roles grant permissions unconditionally.
+Member assignment uses `PATCH /api/members/:id { changes: { role: "<role id>" } }`.
+Writes require an admin token.
 
 ## 8. Comments
 

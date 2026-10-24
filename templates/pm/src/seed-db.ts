@@ -5,6 +5,7 @@ import { AVATAR_PALETTE } from './lib/colors'
 import { mulberry32 } from './lib/prng'
 import { demoSavedViewRows } from './lib/saved-views'
 import { SEED_SIZE_KEY, parseSeedSize } from './lib/seed-size'
+import { BUILTIN_ROLES } from './lib/builtin-roles'
 
 const NAMES = ['张伟', '李娜', '王强', '赵敏', '刘洋', '陈静', '杨帆', '周琳']
 const TITLES = [
@@ -37,10 +38,20 @@ export async function seedDatabase(): Promise<void> {
   const SEED_VER = 'oas-pm-seed-v11'
   const marked = localStorage.getItem(SEED_VER)
   const issueCount = await db.issues.count()
-  if (marked && issueCount > 0) return
+  // v12：内置角色补齐——旧库（已有 seed 标记）升级后也要有角色，不重播数据
+  const ensureRoles = async () => {
+    for (const role of BUILTIN_ROLES) {
+      if (!(await db.roles.get(role.id))) await db.roles.put(role)
+    }
+  }
+  if (marked && issueCount > 0) {
+    await ensureRoles()
+    return
+  }
   // 旧 seed 数据（v1 的 updatedAt 走了未来时间戳）/ 中断残留 清表重播；
   // 不用 db.delete()——会关闭模块级 Dexie 单例的连接
   await Promise.all(db.tables.map((t) => t.clear()))
+  await ensureRoles()
 
   const rand = mulberry32(42)
   const now = Date.now()

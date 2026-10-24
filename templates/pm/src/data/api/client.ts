@@ -8,6 +8,7 @@ import type {
   Member,
   Notification,
   Project,
+  Role,
   SavedView,
 } from '@/types'
 import { ApiError, errorMessage } from './errors'
@@ -32,6 +33,7 @@ import type {
   ProjectHealth,
   ProjectRepository,
   Repositories,
+  RoleRepository,
   SavedViewRepository,
   SettingsRepository,
 } from '@/data/types'
@@ -388,6 +390,24 @@ export function createApiRepositories(options: ApiClientOptions = {}): Repositor
     },
   }
 
+  const roles: RoleRepository = {
+    all: async () => asItems<Role>(await send<{ items: Role[] }>('GET', '/api/roles')),
+    liveAll: () =>
+      live(async () => asItems<Role>(await send<{ items: Role[] }>('GET', '/api/roles'))),
+    create: async (role) => {
+      await send('POST', '/api/roles', undefined, role)
+      poke()
+    },
+    update: async (id, changes) => {
+      await send('PATCH', `/api/roles/${encodeURIComponent(id)}`, undefined, { changes })
+      poke()
+    },
+    delete: async (id) => {
+      await send('DELETE', `/api/roles/${encodeURIComponent(id)}`)
+      poke()
+    },
+  }
+
   const comments: CommentRepository = {
     liveByIssue: (issueId) =>
       live(async () =>
@@ -551,6 +571,7 @@ export function createApiRepositories(options: ApiClientOptions = {}): Repositor
     issues,
     projects,
     members,
+    roles,
     comments,
     activities,
     savedViews,

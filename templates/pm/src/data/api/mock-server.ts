@@ -26,9 +26,11 @@ import {
   type MemberRole,
   type Notification,
   type Project,
+  type Role,
   type SavedView,
 } from '../../types/index.ts'
 import { demoSavedViewRows } from '../../lib/saved-views.ts'
+import { BUILTIN_ROLES } from '../../lib/builtin-roles.ts'
 import type { CycleIssueCount } from '../types.ts'
 
 export interface SettingRow {
@@ -47,6 +49,7 @@ export interface SeedTables {
   settings: SettingRow[]
   cycles: Cycle[]
   notifications: Notification[]
+  roles: Role[]
 }
 
 export interface MockStore extends SeedTables {
@@ -310,6 +313,7 @@ function buildSeed(seed: number, now: number): SeedTables {
     settings: [{ key: 'labels', value: LABELS, updatedAt: now }],
     cycles,
     notifications: [],
+    roles: BUILTIN_ROLES.map((r) => ({ ...r, permissions: [...r.permissions] })),
   }
 }
 
@@ -402,7 +406,7 @@ function sessionMember(store: MockStore, req: ApiRequest): Member {
  *  （前端 can() 仍做细粒度门禁） */
 function isAdminOnly(method: string, head: string, second?: string, third?: string): boolean {
   if (head === 'admin') return true
-  if (head === 'projects' || head === 'members') return method !== 'GET'
+  if (head === 'projects' || head === 'members' || head === 'roles') return method !== 'GET'
   if (head === 'settings') return method === 'PUT'
   if (head === 'issues' && second && (third === 'restore' || third === 'purge')) return true
   return false
@@ -780,6 +784,7 @@ function importEnvelope(store: MockStore, raw: unknown): void {
     settings: rows('settings') as SettingRow[],
     cycles: rows('cycles') as Cycle[],
     notifications: rows('notifications') as Notification[],
+    roles: rows('roles') as Role[],
   })
   Object.assign(store, next)
 }
@@ -798,6 +803,8 @@ function wipeStore(store: MockStore): void {
   store.settings = []
   store.cycles = []
   store.notifications = []
+  // 角色是工作区配置：wipe 业务数据时保留内置角色，避免权限页空表
+  store.roles = BUILTIN_ROLES.map((r) => ({ ...r, permissions: [...r.permissions] }))
 }
 
 function globalStats(store: MockStore) {
@@ -1071,7 +1078,10 @@ function routeMembers(
   if (method === 'PATCH') {
     if (!member) fail(404, 'member not found')
     const changes = asRecord(asRecord(body).changes)
-    const role = changes.role as MemberRole | undefined
+    const role = changes.role as string | undefined
+    if (role !== undefined && !store.roles.some((r) => r.id === role)) {
+      fail(400, 'unknown role')
+    }
     if (role !== undefined && role !== member.role && member.role === 'admin') {
       if (store.members.filter((m) => m.role === 'admin').length <= 1) {
         fail(409, 'cannot demote the last admin')
@@ -1327,6 +1337,47 @@ function routeNotifications(
   fail(404, 'not found')
 }
 
+function routeRoles(
+  store: MockStore,
+  method: string,
+  second: string | undefined,
+  third: string | undefined,
+  body: unknown,
+): ApiResponse {
+  if (!second) {
+    if (method === 'GET') return ok({ items: [...store.roles].sort(byIdAsc) })
+    if (method === 'POST') {
+      const role = asRecord(body) as unknown as Role
+      if (!role?.id || !role.name) fail(400, 'role id/name required')
+      if (store.roles.some((r) => r.id === role.id)) fail(409, 'role exists')
+      store.roles.push({ ...role, builtin: false, permissions: [...(role.permissions ?? [])] })
+      store.revision += 1
+      return ok({ ok: true }, 201)
+    }
+    fail(405, 'method not allowed')
+  }
+  if (third) fail(404, 'not found')
+  const role = store.roles.find((r) => r.id === second)
+  if (!role) fail(404, 'role not found')
+  if (method === 'PATCH') {
+    if (role.builtin) fail(403, 'builtin role cannot be edited')
+    const changes = asRecord(asRecord(body).changes) as Partial<Role>
+    Object.assign(role, changes, { id: role.id, builtin: false })
+    store.revision += 1
+    return ok({ ok: true })
+  }
+  if (method === 'DELETE') {
+    if (role.builtin) fail(403, 'builtin role cannot be deleted')
+    if (store.members.some((m) => m.role === role.id)) {
+      fail(409, 'role is assigned to members')
+    }
+    store.roles = store.roles.filter((r) => r.id !== role.id)
+    store.revision += 1
+    return ok({ ok: true })
+  }
+  fail(405, 'method not allowed')
+}
+
 function routeSettings(
   store: MockStore,
   method: string,
@@ -1439,6 +1490,8 @@ function route(store: MockStore, req: ApiRequest, member: Member | null): ApiRes
       return routeProjects(store, method, second, third, req.body)
     case 'members':
       return routeMembers(store, method, second, third, req.body)
+    case 'roles':
+      return routeRoles(store, method, second, third, req.body)
     case 'comments':
       return routeComments(store, method, second, third, q, req.body)
     case 'activities':

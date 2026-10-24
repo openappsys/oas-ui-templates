@@ -8,6 +8,7 @@ import type {
   Project,
   Member,
   SavedView,
+  Role,
 } from '@/types'
 
 export interface SettingRow {
@@ -26,6 +27,7 @@ export class PMDatabase extends Dexie {
   settings!: EntityTable<SettingRow, 'key'>
   cycles!: EntityTable<Cycle, 'id'>
   notifications!: EntityTable<Notification, 'id'>
+  roles!: EntityTable<Role, 'id'>
 
   constructor(name = 'oas-pm') {
     super(name)
@@ -146,6 +148,20 @@ export class PMDatabase extends Dexie {
       settings: 'key',
       cycles: 'id, projectId, [projectId+startAt]',
       notifications: 'id, memberId, createdAt, [memberId+createdAt], [memberId+readAt]',
+    })
+    // v12：角色表。内置 admin/member/viewer 只读；自定义角色存 permissions 集合
+    this.version(12).stores({
+      issues:
+        'id, projectId, key, status, priority, assigneeId, parentId, cycleId, createdAt, updatedAt, deletedAt, [projectId+status], [projectId+priority], [projectId+assigneeId], [projectId+updatedAt], [projectId+status+updatedAt], [assigneeId+status], [status+updatedAt], [projectId+cycleId]',
+      projects: 'id, key',
+      members: 'id, role',
+      comments: 'id, issueId, [issueId+createdAt]',
+      savedViews: 'id, name',
+      activities: 'id, issueId, [issueId+createdAt], createdAt',
+      settings: 'key',
+      cycles: 'id, projectId, [projectId+startAt]',
+      notifications: 'id, memberId, createdAt, [memberId+createdAt], [memberId+readAt]',
+      roles: 'id, name',
     })
   }
 }

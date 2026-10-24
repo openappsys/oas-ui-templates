@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { t, type DictKey } from '@/i18n'
-import type { Member, MemberRole } from '@/types'
+import type { Member } from '@/types'
 import { AVATAR_PALETTE } from '@/lib/colors'
 import { OSelect } from './oas-wrappers'
 
@@ -16,7 +16,7 @@ const TIMEZONES = [
   'UTC',
 ]
 
-const ROLE_LABEL: Record<MemberRole, DictKey> = {
+const ROLE_LABEL: Record<string, DictKey> = {
   admin: 'adminRoleAdmin',
   member: 'adminRoleMember',
   viewer: 'adminRoleViewer',
@@ -24,8 +24,9 @@ const ROLE_LABEL: Record<MemberRole, DictKey> = {
 
 type InputEl = HTMLElement & { value?: string }
 
-function roleText(role: MemberRole): string {
-  return t(ROLE_LABEL[role])
+function roleText(role: string, name?: string): string {
+  const key = ROLE_LABEL[role]
+  return key ? t(key) : (name ?? role)
 }
 
 /**
@@ -35,12 +36,14 @@ function roleText(role: MemberRole): string {
 export function ProfileDrawer({
   open,
   member,
+  roleName,
   onClose,
   onSave,
   onMyIssues,
 }: {
   open: boolean
   member: Member | undefined
+  roleName?: string
   onClose: () => void
   onSave: (changes: Partial<Member>) => Promise<void>
   onMyIssues: () => void
@@ -122,7 +125,7 @@ export function ProfileDrawer({
               <strong>{member.name}</strong>
               <span>{member.email}</span>
               <span className="profile-role" data-testid="profile-role">
-                {t('profileRole')}: {roleText(member.role)}
+                {t('profileRole')}: {roleText(member.role, roleName)}
               </span>
             </div>
           </div>

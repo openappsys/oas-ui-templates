@@ -9,6 +9,7 @@ import type {
   Notification,
   Project,
   SavedView,
+  Role,
 } from '@/types'
 import type { Observable } from './observable'
 
@@ -206,6 +207,14 @@ export interface AdminRepository {
   wipeAll(): Promise<void>
 }
 
+export interface RoleRepository {
+  all(): Promise<Role[]>
+  liveAll(): Observable<Role[]>
+  create(role: Role): Promise<void>
+  update(id: string, changes: Partial<Role>): Promise<void>
+  delete(id: string): Promise<void>
+}
+
 export interface Repositories {
   issues: IssueRepository
   projects: ProjectRepository
@@ -216,5 +225,6 @@ export interface Repositories {
   cycles: CycleRepository
   settings: SettingsRepository
   notifications: NotificationRepository
+  roles: RoleRepository
   admin: AdminRepository
 }

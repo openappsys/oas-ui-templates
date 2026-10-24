@@ -39,7 +39,8 @@ import { useObservable, useObservableState } from './data/use-observable'
 import { activeDataSource, storeDataSource } from './data/source'
 import { fetchMe, logout as logoutSession, type LoginResult } from './data/api/auth'
 import { getToken, onApiError, onSessionExpired } from './data/api/session'
-import { can as policyCan, type Action, type Ctx } from './permission/policy'
+import { roleCan, type Action, type Ctx } from './permission/policy'
+import { isBuiltinRole } from './lib/builtin-roles'
 import { Avatar } from './components/Avatar'
 import { SideList, type SideRow, type SideSection } from './components/SideList'
 import { SettingsMenu, UserMenu } from './components/TopbarMenus'
@@ -103,6 +104,11 @@ function useIssueWindow(f: Filters, currentUser: string, listLimit: number, retr
 function useMembers(): Member[] | undefined {
   const { members } = useRepositories()
   return useObservable(() => members.liveAll(), [members])
+}
+
+function useRoles() {
+  const { roles } = useRepositories()
+  return useObservable(() => roles.liveAll(), [roles])
 }
 
 function useProjects(): Project[] | undefined {
@@ -369,23 +375,25 @@ function Workspace({
   const issues = issueWindow.value
   const counts = useProjectCounts(filters.projectId)
   const members = useMembers()
+  const roles = useRoles()
   const projects = useProjects()
   const cycles = useCycles(filters.projectId)
   const cycleCounts = useCycleCountTotals(filters.projectId)
   const memberCounts = useFullAssigneeCounts(filters.projectId, counts?.total)
   const memberMap = useMemo(() => new Map((members ?? []).map((m) => [m.id, m])), [members])
   const can = useCallback(
-    (action: Action, ctx?: Ctx) =>
-      policyCan(
-        {
-          id: currentUser,
-          // 角色取成员表；表被清空/未到时用会话快照，避免 admin 掉成 viewer
-          role: members?.find((m) => m.id === currentUser)?.role ?? session?.role ?? 'viewer',
-        },
-        action,
-        ctx,
-      ),
-    [currentUser, members, session],
+    (action: Action, ctx?: Ctx) => {
+      // 角色取成员表；表被清空/未到时用会话快照，避免 admin 掉成 viewer
+      const roleId = members?.find((m) => m.id === currentUser)?.role ?? session?.role ?? 'viewer'
+      const stored = roles?.find((r) => r.id === roleId)
+      const role =
+        stored ??
+        (isBuiltinRole(roleId)
+          ? { id: roleId, name: '', description: '', builtin: true, permissions: [] }
+          : undefined)
+      return roleCan(role, currentUser, action, ctx)
+    },
+    [currentUser, members, roles, session],
   )
   const canCreateIssue = can('issue:create')
   const canManage = can('project:manage')
@@ -1266,6 +1274,7 @@ function Workspace({
       <ProfileDrawer
         open={profileOpen}
         member={memberMap.get(currentUser)}
+        roleName={roles?.find((r) => r.id === (memberMap.get(currentUser)?.role ?? ''))?.name}
         onClose={() => setProfileOpen(false)}
         onSave={saveProfile}
         onMyIssues={openMyIssues}
