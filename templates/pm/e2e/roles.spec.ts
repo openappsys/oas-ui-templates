@@ -108,7 +108,7 @@ test('RL3 项目级角色：项目内覆盖生效、项目外继承工作区，�
   await page.getByTestId('perm-role-new').click()
   await page.getByTestId('perm-role-name').locator('input').fill('项目创建者')
   await page.getByTestId('perm-role-scope').evaluate((el) => {
-    el.value = 'project'
+    ;(el as HTMLElement & { value?: string }).value = 'project'
     el.dispatchEvent(new CustomEvent('oas-change', { bubbles: true, detail: { value: 'project' } }))
   })
   await page.getByTestId('perm-issue:create').click()
@@ -123,7 +123,7 @@ test('RL3 项目级角色：项目内覆盖生效、项目外继承工作区，�
   const ws = page.getByTestId('admin-member-role-member-2')
   await ws.waitFor({ timeout: 10_000 })
   await ws.evaluate((el) => {
-    el.value = 'viewer'
+    ;(el as HTMLElement & { value?: string }).value = 'viewer'
     el.dispatchEvent(new CustomEvent('oas-change', { bubbles: true, detail: { value: 'viewer' } }))
   })
 
@@ -131,19 +131,19 @@ test('RL3 项目级角色：项目内覆盖生效、项目外继承工作区，�
   await openPermissions(page)
   await page.getByTestId('proj-role-project').waitFor({ timeout: 10_000 })
   await page.getByTestId('proj-role-project').evaluate((el) => {
-    el.value = 'project-2'
+    ;(el as HTMLElement & { value?: string }).value = 'project-2'
     el.dispatchEvent(
       new CustomEvent('oas-change', { bubbles: true, detail: { value: 'project-2' } }),
     )
   })
   await page.getByTestId('proj-role-member').evaluate((el) => {
-    el.value = 'member-2'
+    ;(el as HTMLElement & { value?: string }).value = 'member-2'
     el.dispatchEvent(
       new CustomEvent('oas-change', { bubbles: true, detail: { value: 'member-2' } }),
     )
   })
   await page.getByTestId('proj-role-role').evaluate((el, id) => {
-    el.value = id
+    ;(el as HTMLElement & { value?: string }).value = id
     el.dispatchEvent(new CustomEvent('oas-change', { bubbles: true, detail: { value: id } }))
   }, rid)
   await page.getByTestId('proj-role-apply').click()
