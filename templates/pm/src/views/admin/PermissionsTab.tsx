@@ -2,10 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { nanoid } from 'nanoid'
 import { t, type DictKey } from '@/i18n'
 import type { MemberRole, Role } from '@/types'
-import { ACTIONS, can, type Action } from '@/permission/policy'
+import { can, builtinPermissions, type Action } from '@/permission/policy'
 import { useRepositories } from '@/data/context'
 import { useObservable } from '@/data/use-observable'
-import { OCheckbox, OSelect } from '@/components/oas-wrappers'
+import { OCheckbox, OSelect, OTabs } from '@/components/oas-wrappers'
 
 type Col = {
   key: string
@@ -17,6 +17,8 @@ type TableHost = HTMLElement & {
   columns?: Col[]
   data?: Array<Record<string, unknown>>
 }
+
+type PermTab = 'roles' | 'access' | 'audit'
 
 const PERM_LABEL: Record<Action, DictKey> = {
   'issue:create': 'permIssueCreate',
@@ -37,7 +39,10 @@ const PERM_LABEL: Record<Action, DictKey> = {
 
 const MATRIX_ROLES: MemberRole[] = ['viewer', 'member', 'admin']
 
-/** 权限按资源分组（编辑区与只读矩阵用同一套；分类列/分节标题） */
+/** 项目覆盖下拉的「继承」哨兵：空字符串会被 oas-select 当成未选占位 */
+const INHERIT = '__inherit__'
+
+/** 权限按资源分组（编辑区、只读矩阵、组级全选共用） */
 const PERM_GROUPS: Array<{ key: DictKey; actions: Action[] }> = [
   {
     key: 'permGroupIssue',
@@ -71,51 +76,14 @@ function roleLabel(role: MemberRole): string {
   return t('adminRoleViewer')
 }
 
-/**
- * 权限页：自定义角色编辑（名称/描述/作用域/权限矩阵）、项目级角色覆盖、最近变更（审计），
- * 底部内置三角色只读矩阵。内置角色只读；自定义角色可分配给成员。
- */
-export function PermissionsTab({ currentUser }: { currentUser: string }) {
-  const {
-    roles: rolesRepo,
-    audit: auditRepo,
-    projectRoles: projectRolesRepo,
-    projects: projectsRepo,
-    members: membersRepo,
-  } = useRepositories()
-  const roles = useObservable(() => rolesRepo.liveAll(), [rolesRepo])
-  const audit = useObservable(() => auditRepo.liveRecent(12), [auditRepo])
-  const assignments = useObservable(() => projectRolesRepo.liveAll(), [projectRolesRepo])
-  const projects = useObservable(() => projectsRepo.liveAll(), [projectsRepo])
-  const members = useObservable(() => membersRepo.liveAll(), [membersRepo])
-  const memberMap = useMemo(() => new Map((members ?? []).map((m) => [m.id, m])), [members])
-  const projectMap = useMemo(() => new Map((projects ?? []).map((p) => [p.id, p])), [projects])
+function builtinLabel(id: string): string {
+  return id === 'admin' || id === 'member' || id === 'viewer' ? roleLabel(id) : id
+}
 
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [draft, setDraft] = useState(false)
-  const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
-  const [scope, setScope] = useState<'workspace' | 'project'>('workspace')
-  const [perms, setPerms] = useState<Set<Action>>(new Set())
-  const [error, setError] = useState('')
-  const [saved, setSaved] = useState('')
-  const [busy, setBusy] = useState(false)
-
-  // 项目角色覆盖表单
-  const [ovProject, setOvProject] = useState('')
-  const [ovMember, setOvMember] = useState('')
-  const [ovMemberQuery, setOvMemberQuery] = useState('')
-  const [ovRole, setOvRole] = useState('')
-
-  const custom = useMemo(() => (roles ?? []).filter((r) => !r.builtin), [roles])
-  const projectRoles = useMemo(
-    () => (roles ?? []).filter((r) => r.scope === 'project' && !r.builtin),
-    [roles],
-  )
-
-  // 只读矩阵：一张表 + group-by（组头行），列宽跨组一致
-  const tableRef = useRef<TableHost>(null)
-  const matrixRows = useMemo(
+/** 内置三角色只读对比矩阵（一张表 group-by，列宽跨组对齐） */
+function BuiltinMatrix() {
+  const ref = useRef<TableHost>(null)
+  const rows = useMemo(
     () =>
       PERM_GROUPS.flatMap((group) =>
         group.actions.map((action) => ({
@@ -129,7 +97,7 @@ export function PermissionsTab({ currentUser }: { currentUser: string }) {
       ),
     [],
   )
-  const matrixColumns = useMemo<Col[]>(
+  const columns = useMemo<Col[]>(
     () => [
       { key: 'action', title: t('adminPermAction') },
       ...MATRIX_ROLES.map((role) => ({
@@ -142,11 +110,96 @@ export function PermissionsTab({ currentUser }: { currentUser: string }) {
     [],
   )
   useEffect(() => {
-    const el = tableRef.current
+    const el = ref.current
     if (!el) return
-    el.columns = matrixColumns
-    el.data = matrixRows
-  }, [matrixColumns, matrixRows])
+    el.columns = columns
+    el.data = rows
+  }, [columns, rows])
+  return (
+    <oas-table
+      ref={ref}
+      className="admin-perm-table"
+      row-key="id"
+      group-by="category"
+      data-testid="admin-permissions-matrix"
+    />
+  )
+}
+
+/**
+ * 权限页：角色（master-detail：内置只读对比 + 自定义编辑，可复制内置）/
+ * 项目访问（项目成员的项目角色覆盖 + 生效预览）/ 审计。
+ */
+export function PermissionsTab({ currentUser }: { currentUser: string }) {
+  const {
+    roles: rolesRepo,
+    audit: auditRepo,
+    projectRoles: projectRolesRepo,
+    projects: projectsRepo,
+    members: membersRepo,
+  } = useRepositories()
+  const roles = useObservable(() => rolesRepo.liveAll(), [rolesRepo])
+  const audit = useObservable(() => auditRepo.liveRecent(20), [auditRepo])
+  const assignments = useObservable(() => projectRolesRepo.liveAll(), [projectRolesRepo])
+  const projects = useObservable(() => projectsRepo.liveAll(), [projectsRepo])
+  const members = useObservable(() => membersRepo.liveAll(), [membersRepo])
+  const memberMap = useMemo(() => new Map((members ?? []).map((m) => [m.id, m])), [members])
+  const projectMap = useMemo(() => new Map((projects ?? []).map((p) => [p.id, p])), [projects])
+
+  const [tab, setTab] = useState<PermTab>('roles')
+  const [selectedId, setSelectedId] = useState('admin')
+  const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
+  const [scope, setScope] = useState<'workspace' | 'project'>('workspace')
+  const [perms, setPerms] = useState<Set<Action>>(new Set())
+  const [roleQuery, setRoleQuery] = useState('')
+  const [error, setError] = useState('')
+  const [saved, setSaved] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  // 项目访问表单
+  const [ovProject, setOvProject] = useState('')
+  const [ovMember, setOvMember] = useState('')
+  const [ovRole, setOvRole] = useState(INHERIT)
+  const [auditQuery, setAuditQuery] = useState('')
+
+  const builtins = useMemo(() => (roles ?? []).filter((r) => r.builtin), [roles])
+  const custom = useMemo(() => (roles ?? []).filter((r) => !r.builtin), [roles])
+  const projectRoles = useMemo(
+    () => (roles ?? []).filter((r) => r.scope === 'project' && !r.builtin),
+    [roles],
+  )
+  const selected = useMemo(
+    () => (roles ?? []).find((r) => r.id === selectedId),
+    [roles, selectedId],
+  )
+  const isBuiltin = selected?.builtin === true
+  const isDraft = selectedId === '__new__'
+
+  const roleFilter = roleQuery.trim().toLowerCase()
+  const matchRole = (role: Role) =>
+    !roleFilter ||
+    (role.builtin ? builtinLabel(role.id) : role.name).toLowerCase().includes(roleFilter)
+  const builtinList = builtins.filter(matchRole)
+  const customList = custom.filter(matchRole)
+
+  // 未保存变更：只对「有基线」的编辑生效；草稿以「填了内容」为脏
+  const dirty = useMemo(() => {
+    if (isDraft) {
+      return (
+        name.trim() !== '' || description.trim() !== '' || scope !== 'workspace' || perms.size > 0
+      )
+    }
+    if (!selected) return false
+    const base = new Set(selected.permissions as Action[])
+    return (
+      name !== selected.name ||
+      description !== selected.description ||
+      scope !== (selected.scope === 'project' ? 'project' : 'workspace') ||
+      base.size !== perms.size ||
+      [...perms].some((a) => !base.has(a))
+    )
+  }, [isDraft, name, description, scope, perms, selected])
 
   useEffect(() => {
     if (!ovProject && projects?.length) setOvProject(projects[0].id)
@@ -164,9 +217,8 @@ export function PermissionsTab({ currentUser }: { currentUser: string }) {
     })
   }
 
-  const load = (role: Role) => {
-    setEditingId(role.id)
-    setDraft(false)
+  const select = (role: Role) => {
+    setSelectedId(role.id)
     setName(role.name)
     setDescription(role.description)
     setScope(role.scope === 'project' ? 'project' : 'workspace')
@@ -176,14 +228,36 @@ export function PermissionsTab({ currentUser }: { currentUser: string }) {
   }
 
   const startDraft = () => {
-    setEditingId(`role-${nanoid(6)}`)
-    setDraft(true)
-    setName(t('permNewRole'))
+    setSelectedId('__new__')
+    setName('')
     setDescription('')
     setScope('workspace')
     setPerms(new Set())
     setError('')
     setSaved('')
+  }
+
+  const duplicateBuiltin = async (builtin: Role) => {
+    const id = `role-${nanoid(6)}`
+    const created: Role = {
+      id,
+      name: `${builtinLabel(builtin.id)} ${t('permRoleCopySuffix')}`,
+      description: builtin.description,
+      scope: 'workspace',
+      builtin: false,
+      permissions: builtinPermissions(builtin.id),
+    }
+    setBusy(true)
+    try {
+      await rolesRepo.create(created)
+      log('role.create', created.name)
+      select(created)
+      setSaved(t('permRoleSaved'))
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setBusy(false)
+    }
   }
 
   const toggle = (action: Action) => {
@@ -196,8 +270,22 @@ export function PermissionsTab({ currentUser }: { currentUser: string }) {
     setSaved('')
   }
 
+  const toggleGroup = (actions: Action[]) => {
+    setPerms((prev) => {
+      const all = actions.every((a) => prev.has(a))
+      const next = new Set(prev)
+      for (const a of actions) {
+        if (all) next.delete(a)
+        else next.add(a)
+      }
+      return next
+    })
+    setSaved('')
+  }
+
   const save = async () => {
-    if (!editingId || busy) return
+    if (!isDraft && !selected) return
+    if (busy) return
     const clean = name.trim()
     if (!clean) {
       setError(t('permRoleNameRequired'))
@@ -206,19 +294,20 @@ export function PermissionsTab({ currentUser }: { currentUser: string }) {
     setBusy(true)
     setError('')
     try {
-      if (draft) {
+      if (isDraft) {
+        const id = `role-${nanoid(6)}`
         await rolesRepo.create({
-          id: editingId,
+          id,
           name: clean,
           description: description.trim(),
           scope,
           builtin: false,
           permissions: [...perms],
         })
-        setDraft(false)
+        setSelectedId(id)
         log('role.create', clean)
-      } else {
-        await rolesRepo.update(editingId, {
+      } else if (selected) {
+        await rolesRepo.update(selected.id, {
           name: clean,
           description: description.trim(),
           scope,
@@ -235,16 +324,13 @@ export function PermissionsTab({ currentUser }: { currentUser: string }) {
   }
 
   const remove = async () => {
-    if (!editingId || draft || busy) return
+    if (!selected || selected.builtin || busy) return
     setBusy(true)
     setError('')
     try {
-      await rolesRepo.delete(editingId)
-      log('role.delete', name.trim() || editingId)
-      setEditingId(null)
-      setName('')
-      setDescription('')
-      setPerms(new Set())
+      await rolesRepo.delete(selected.id)
+      log('role.delete', selected.name)
+      setSelectedId('admin')
       setSaved('')
     } catch {
       setError(t('permRoleInUse'))
@@ -253,298 +339,491 @@ export function PermissionsTab({ currentUser }: { currentUser: string }) {
     }
   }
 
+  const cancelEdit = () => {
+    const back = !isDraft && selected ? selected : builtins.find((r) => r.id === 'admin')
+    if (back) select(back)
+    else setSelectedId('admin')
+    setError('')
+    setSaved('')
+  }
+
   const applyProjectRole = async () => {
     if (!ovProject || !ovMember || busy) return
+    const roleId = ovRole === INHERIT ? null : ovRole
     setBusy(true)
     try {
-      await projectRolesRepo.set(ovProject, ovMember, ovRole || null)
-      const target = `${projectMap.get(ovProject)?.name ?? ovProject} / ${memberMap.get(ovMember)?.name ?? ovMember}`
+      await projectRolesRepo.set(ovProject, ovMember, roleId)
+      const target = `${projectMap.get(ovProject)?.name ?? ovProject} / ${
+        memberMap.get(ovMember)?.name ?? ovMember
+      }`
       log(
-        ovRole ? 'projectRole.set' : 'projectRole.clear',
+        roleId ? 'projectRole.set' : 'projectRole.clear',
         target,
-        ovRole ? (roles?.find((r) => r.id === ovRole)?.name ?? ovRole) : undefined,
+        roleId ? (roles?.find((r) => r.id === roleId)?.name ?? roleId) : undefined,
       )
+      setSaved(t('permRoleSaved'))
     } finally {
       setBusy(false)
     }
   }
 
-  // 内置三角色只读矩阵（保持原有口径：14 行 × 3 列）
+  const clearAssignment = async (a: { projectId: string; memberId: string }) => {
+    await projectRolesRepo.set(a.projectId, a.memberId, null)
+    log(
+      'projectRole.clear',
+      `${projectMap.get(a.projectId)?.name ?? a.projectId} / ${
+        memberMap.get(a.memberId)?.name ?? a.memberId
+      }`,
+    )
+  }
+
+  const assignedTo = useMemo(() => {
+    if (!selected) return { count: 0, names: [] as string[] }
+    if (selected.scope === 'project') {
+      const rows = (assignments ?? []).filter((a) => a.roleId === selected.id)
+      return {
+        count: rows.length,
+        names: rows.map(
+          (a) =>
+            `${projectMap.get(a.projectId)?.name ?? a.projectId} / ${
+              memberMap.get(a.memberId)?.name ?? a.memberId
+            }`,
+        ),
+      }
+    }
+    const rows = (members ?? []).filter((m) => m.role === selected.id)
+    return { count: rows.length, names: rows.map((m) => m.name) }
+  }, [selected, assignments, members, memberMap, projectMap])
+
+  const effectiveRoleId = ovRole || (members ?? []).find((m) => m.id === ovMember)?.role
+  const effectiveRoleName = roles?.find((r) => r.id === effectiveRoleId)?.name
+
+  // 生效权限预览：工作区角色 + 项目覆盖 → 最终角色（内置角色显示本地化名称）
+  const roleDisplay = (role?: Role) =>
+    role ? (role.builtin ? builtinLabel(role.id) : role.name) : t('projRoleInherit')
+  const selectedMember = (members ?? []).find((m) => m.id === ovMember)
+  const workspaceRole = roles?.find((r) => r.id === selectedMember?.role)
+  const override = (assignments ?? []).find(
+    (a) => a.projectId === ovProject && a.memberId === ovMember,
+  )
+  const overrideRole = roles?.find((r) => r.id === override?.roleId)
+  const finalRole = overrideRole ?? workspaceRole
+
+  useEffect(() => {
+    if (!ovProject || !ovMember) return
+    const saved = (assignments ?? []).find(
+      (a) => a.projectId === ovProject && a.memberId === ovMember,
+    )
+    setOvRole(saved?.roleId ?? INHERIT)
+  }, [ovProject, ovMember, assignments])
+
+  const auditFilter = auditQuery.trim().toLowerCase()
+  const auditRows = (audit ?? []).filter((e) => {
+    if (!auditFilter) return true
+    const actor = memberMap.get(e.actorId)?.name ?? e.actorId
+    const action = AUDIT_LABEL[e.action] ? t(AUDIT_LABEL[e.action]) : e.action
+    return `${actor} ${action} ${e.target} ${e.detail ?? ''}`.toLowerCase().includes(auditFilter)
+  })
+
   return (
     <div className="admin-crud-page" data-testid="admin-tab-permissions">
       <h1 className="page-h1">{t('adminPermTitle')}</h1>
 
-      <div className="admin-panel" data-testid="admin-custom-roles">
-        <div className="perm-head">
-          <p className="admin-panel-title">{t('permCustomTitle')}</p>
-          <span className="admin-hint">{t('permCustomHint')}</span>
-        </div>
-
-        <div className="perm-roles">
-          {custom.map((role) => (
-            <button
-              key={role.id}
-              type="button"
-              className={`perm-role-chip${role.id === editingId ? ' is-active' : ''}`}
-              data-testid={`perm-role-${role.id}`}
-              onClick={() => load(role)}
-            >
-              {role.name}
-              <span className="perm-role-scope">
-                {role.scope === 'project' ? t('roleScopeProject') : t('roleScopeWorkspace')}
-              </span>
-            </button>
-          ))}
-          <button
-            type="button"
-            className="perm-role-chip is-new"
-            data-testid="perm-role-new"
-            onClick={startDraft}
-          >
-            {t('permNewRole')}
-          </button>
-        </div>
-
-        {editingId ? (
-          <div className="perm-editor">
-            <div className="perm-fields">
-              <div className="perm-field">
-                <span>{t('permRoleName')}</span>
-                <oas-input
-                  value={name}
-                  aria-label={t('permRoleName')}
-                  data-testid="perm-role-name"
-                  onInput={(e) =>
-                    setName((e.target as HTMLElement & { value?: string }).value ?? '')
-                  }
-                />
-              </div>
-              <div className="perm-field">
-                <span>{t('permRoleDesc')}</span>
-                <oas-input
-                  value={description}
-                  aria-label={t('permRoleDesc')}
-                  data-testid="perm-role-desc"
-                  onInput={(e) =>
-                    setDescription((e.target as HTMLElement & { value?: string }).value ?? '')
-                  }
-                />
-              </div>
-              <div className="perm-field">
-                <span>{t('roleScope')}</span>
-                <OSelect
-                  testid="perm-role-scope"
-                  ariaLabel={t('roleScope')}
-                  value={scope}
-                  options={[
-                    { label: t('roleScopeWorkspace'), value: 'workspace' },
-                    { label: t('roleScopeProject'), value: 'project' },
-                  ]}
-                  onChange={(v) => setScope(v === 'project' ? 'project' : 'workspace')}
-                />
-              </div>
-            </div>
-
-            <p className="perm-matrix-title">{t('permMatrixTitle')}</p>
-            <div className="perm-groups" data-testid="perm-checks">
-              {PERM_GROUPS.map((group) => (
-                <section
-                  key={group.key}
-                  className="perm-group"
-                  data-testid={`perm-group-${group.key}`}
-                >
-                  <p className="perm-group-title">{t(group.key)}</p>
-                  <div className="perm-checks">
-                    {group.actions.map((action) => (
-                      <div key={action} className="perm-check">
-                        <OCheckbox
-                          testid={`perm-${action}`}
-                          ariaLabel={t(PERM_LABEL[action])}
-                          checked={perms.has(action)}
-                          onChange={() => toggle(action)}
-                        />
-                        <span>{t(PERM_LABEL[action])}</span>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              ))}
-            </div>
-
-            {error && (
-              <oas-alert type="error" size="small" data-testid="perm-error">
-                {error}
-              </oas-alert>
-            )}
-            {saved && (
-              <oas-alert type="success" size="small" data-testid="perm-saved">
-                {saved}
-              </oas-alert>
-            )}
-
-            <div className="perm-actions">
-              {!draft && (
-                <oas-button
-                  type="danger"
-                  size="small"
-                  data-testid="perm-role-delete"
-                  onClick={() => void remove()}
-                >
-                  {t('delete')}
-                </oas-button>
-              )}
-              <span className="perm-actions-gap" />
-              <oas-button
-                type="primary"
-                size="small"
-                data-testid="perm-role-save"
-                disabled={busy ? '' : undefined}
-                onClick={() => void save()}
-              >
-                {t('save')}
-              </oas-button>
-            </div>
-          </div>
-        ) : (
-          <p className="admin-hint" data-testid="perm-empty">
-            {custom.length === 0 ? t('permNoCustomRoles') : t('permSelectRole')}
-          </p>
-        )}
+      <div className="perm-tabs">
+        <OTabs
+          testid="perm-tabs"
+          ariaLabel={t('adminPermTitle')}
+          value={tab}
+          options={[
+            { label: t('permTabRoles'), value: 'roles' },
+            { label: t('permTabAccess'), value: 'access' },
+            { label: t('permTabAudit'), value: 'audit' },
+          ]}
+          onChange={(v) => setTab(v as PermTab)}
+        />
       </div>
 
-      <div className="admin-panel" data-testid="admin-project-roles">
-        <p className="admin-panel-title">{t('projRoleTitle')}</p>
-        <p className="admin-hint">{t('projRoleHint')}</p>
-        <div className="proj-role-form">
-          <div className="perm-field">
-            <span>{t('projRoleProject')}</span>
-            <OSelect
-              testid="proj-role-project"
-              ariaLabel={t('projRoleProject')}
-              value={ovProject}
-              options={(projects ?? []).map((p) => ({ label: p.name, value: p.id }))}
-              onChange={setOvProject}
-            />
-          </div>
-          <div className="perm-field">
-            <span>{t('projRoleMember')}</span>
+      {tab === 'roles' && (
+        <div className="perm-layout" data-testid="perm-roles-tab">
+          <aside className="perm-role-list" data-testid="admin-custom-roles">
             <oas-input
-              value={ovMemberQuery}
-              aria-label={t('searchMembers')}
-              placeholder={t('searchMembers')}
-              data-testid="proj-role-member-search"
+              value={roleQuery}
+              aria-label={t('permSearchRoles')}
+              placeholder={t('permSearchRoles')}
+              data-testid="perm-role-search"
               onInput={(e) =>
-                setOvMemberQuery((e.target as HTMLElement & { value?: string }).value ?? '')
+                setRoleQuery((e.target as HTMLElement & { value?: string }).value ?? '')
               }
             />
-            <OSelect
-              testid="proj-role-member"
-              ariaLabel={t('projRoleMember')}
-              value={ovMember}
-              options={(members ?? [])
-                .filter((m) =>
-                  ovMemberQuery.trim()
-                    ? m.name.toLowerCase().includes(ovMemberQuery.trim().toLowerCase())
-                    : true,
-                )
-                .map((m) => ({ label: m.name, value: m.id }))}
-              onChange={setOvMember}
-            />
-          </div>
-          <div className="perm-field">
-            <span>{t('projRoleRole')}</span>
-            <OSelect
-              testid="proj-role-role"
-              ariaLabel={t('projRoleRole')}
-              value={ovRole}
-              options={[
-                { label: t('projRoleInherit'), value: '' },
-                ...projectRoles.map((r) => ({ label: r.name, value: r.id })),
-              ]}
-              onChange={setOvRole}
-            />
-          </div>
-          <oas-button
-            type="primary"
-            size="small"
-            data-testid="proj-role-apply"
-            onClick={() => void applyProjectRole()}
-          >
-            {t('projRoleApply')}
-          </oas-button>
-        </div>
-
-        {(assignments ?? []).length > 0 ? (
-          <ul className="proj-role-list" data-testid="proj-role-list">
-            {assignments?.map((a) => (
-              <li key={a.id}>
-                <span>
-                  {projectMap.get(a.projectId)?.name ?? a.projectId} /{' '}
-                  {memberMap.get(a.memberId)?.name ?? a.memberId}
-                </span>
-                <span className="proj-role-name">
-                  {roles?.find((r) => r.id === a.roleId)?.name ?? a.roleId}
-                </span>
+            {builtinList.length > 0 && (
+              <p className="perm-role-group-label">{t('permBuiltinGroup')}</p>
+            )}
+            {builtinList.map((role) => (
+              <button
+                key={role.id}
+                type="button"
+                className={`perm-role-chip${selectedId === role.id ? ' is-active' : ''}`}
+                data-testid={`perm-role-${role.id}`}
+                onClick={() => select(role)}
+              >
+                {builtinLabel(role.id)}
+                <span className="perm-role-scope">{t('roleScopeWorkspace')}</span>
+                <span className="perm-role-lock">{t('permBuiltin')}</span>
+              </button>
+            ))}
+            <div className="perm-role-list-head">
+              <span className="perm-role-group-label">{t('permCustomGroup')}</span>
+              <button
+                type="button"
+                className="perm-role-add"
+                data-testid="perm-role-new"
+                onClick={startDraft}
+              >
+                + {t('permNewRole')}
+              </button>
+            </div>
+            {customList.length === 0 ? (
+              <p className="perm-role-empty" data-testid="perm-role-empty">
+                {roleFilter ? t('permNoMatch') : t('permNoCustomRoles')}
+              </p>
+            ) : (
+              customList.map((role) => (
                 <button
+                  key={role.id}
                   type="button"
-                  className="proj-role-remove"
-                  data-testid={`proj-role-remove-${a.id}`}
-                  onClick={() => void projectRolesRepo.set(a.projectId, a.memberId, null)}
+                  className={`perm-role-chip${selectedId === role.id ? ' is-active' : ''}`}
+                  data-testid={`perm-role-${role.id}`}
+                  onClick={() => select(role)}
                 >
-                  {t('delete')}
+                  {role.name}
+                  <span className="perm-role-scope">
+                    {role.scope === 'project' ? t('roleScopeProject') : t('roleScopeWorkspace')}
+                  </span>
                 </button>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="admin-hint">{t('projRoleEmpty')}</p>
-        )}
-      </div>
+              ))
+            )}
+          </aside>
 
-      <div className="admin-panel" data-testid="admin-audit">
-        <p className="admin-panel-title">{t('auditTitle')}</p>
-        {(audit ?? []).length > 0 ? (
-          <ul className="audit-list">
-            {audit?.map((e) => (
-              <li key={e.id}>
-                <span className="audit-time">
-                  {new Date(e.at).toLocaleString(undefined, {
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
+          <section className="perm-detail">
+            {isBuiltin && selected ? (
+              <>
+                <div className="perm-detail-head">
+                  <div>
+                    <p className="admin-panel-title">{builtinLabel(selected.id)}</p>
+                    <p className="admin-hint">{t('adminPermBuiltinHint')}</p>
+                    <p className="perm-role-meta" data-testid="perm-assigned">
+                      {t('permAssignedCount').replace('{n}', String(assignedTo.count))}
+                    </p>
+                  </div>
+                  <oas-button
+                    size="small"
+                    data-testid="perm-role-duplicate"
+                    onClick={() => void duplicateBuiltin(selected)}
+                  >
+                    {t('permDuplicate')}
+                  </oas-button>
+                </div>
+                <BuiltinMatrix />
+              </>
+            ) : (
+              <>
+                <div className="perm-detail-head">
+                  <div className="perm-detail-title">
+                    <p className="admin-panel-title">
+                      {isDraft ? t('permNewRole') : t('permEditRole')}
+                    </p>
+                    {dirty && (
+                      <span className="perm-unsaved" data-testid="perm-unsaved">
+                        {t('permUnsaved')}
+                      </span>
+                    )}
+                  </div>
+                  <span className="admin-hint">
+                    {t('permGrantedCount').replace('{n}', String(perms.size))}
+                  </span>
+                </div>
+                <div className="perm-fields">
+                  <div className="perm-field">
+                    <span>{t('permRoleName')}</span>
+                    <oas-input
+                      value={name}
+                      aria-label={t('permRoleName')}
+                      data-testid="perm-role-name"
+                      onInput={(e) =>
+                        setName((e.target as HTMLElement & { value?: string }).value ?? '')
+                      }
+                    />
+                  </div>
+                  <div className="perm-field">
+                    <span>{t('permRoleDesc')}</span>
+                    <oas-input
+                      value={description}
+                      aria-label={t('permRoleDesc')}
+                      data-testid="perm-role-desc"
+                      onInput={(e) =>
+                        setDescription((e.target as HTMLElement & { value?: string }).value ?? '')
+                      }
+                    />
+                  </div>
+                  <div className="perm-field">
+                    <span>{t('roleScope')}</span>
+                    <OSelect
+                      testid="perm-role-scope"
+                      ariaLabel={t('roleScope')}
+                      value={scope}
+                      options={[
+                        { label: t('roleScopeWorkspace'), value: 'workspace' },
+                        { label: t('roleScopeProject'), value: 'project' },
+                      ]}
+                      onChange={(v) => setScope(v === 'project' ? 'project' : 'workspace')}
+                    />
+                  </div>
+                </div>
+
+                <div className="perm-groups" data-testid="perm-checks">
+                  {PERM_GROUPS.map((group) => {
+                    const hit = group.actions.filter((a) => perms.has(a)).length
+                    return (
+                      <section
+                        key={group.key}
+                        className="perm-group"
+                        data-testid={`perm-group-${group.key}`}
+                      >
+                        <div className="perm-group-head">
+                          <OCheckbox
+                            testid={`perm-group-all-${group.key}`}
+                            ariaLabel={`${t(group.key)} ${t('permSelectAll')}`}
+                            checked={hit === group.actions.length}
+                            indeterminate={hit > 0 && hit < group.actions.length}
+                            onChange={() => toggleGroup(group.actions)}
+                          />
+                          <p className="perm-group-title">{t(group.key)}</p>
+                          <span className="perm-group-count">
+                            {hit}/{group.actions.length}
+                          </span>
+                        </div>
+                        <div className="perm-checks">
+                          {group.actions.map((action) => (
+                            <div key={action} className="perm-check">
+                              <OCheckbox
+                                testid={`perm-${action}`}
+                                ariaLabel={t(PERM_LABEL[action])}
+                                checked={perms.has(action)}
+                                onChange={() => toggle(action)}
+                              />
+                              <span>{t(PERM_LABEL[action])}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                    )
                   })}
-                </span>
-                <span className="audit-actor">{memberMap.get(e.actorId)?.name ?? e.actorId}</span>
-                <span className="audit-action">
-                  {AUDIT_LABEL[e.action] ? t(AUDIT_LABEL[e.action]) : e.action}
-                </span>
-                <span className="audit-target">{e.target}</span>
-                {e.detail && <span className="audit-detail">{e.detail}</span>}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="admin-hint" data-testid="audit-empty">
-            {t('auditEmpty')}
-          </p>
-        )}
-      </div>
+                </div>
 
-      <div className="admin-panel">
-        <p className="admin-panel-title">{t('adminPermTitle')}</p>
-        <p className="admin-hint" data-testid="admin-builtin-hint">
-          {t('adminPermBuiltinHint')}
-        </p>
-        <oas-table
-          ref={tableRef}
-          className="admin-perm-table"
-          row-key="id"
-          group-by="category"
-          data-testid="admin-permissions-matrix"
-        />
-        <p className="admin-hint">{t('adminPermNote')}</p>
-      </div>
+                {selected && !isDraft && (
+                  <p className="admin-hint" data-testid="perm-assigned">
+                    {t('permAssignedCount').replace('{n}', String(assignedTo.count))}
+                    {assignedTo.names.length > 0
+                      ? ` · ${assignedTo.names.slice(0, 4).join('、')}`
+                      : ''}
+                  </p>
+                )}
+
+                {error && (
+                  <oas-alert type="error" size="small" data-testid="perm-error">
+                    {error}
+                  </oas-alert>
+                )}
+                {saved && (
+                  <oas-alert type="success" size="small" data-testid="perm-saved">
+                    {saved}
+                  </oas-alert>
+                )}
+
+                <div className="perm-actions">
+                  {selected && !isDraft && (
+                    <oas-button
+                      type="danger"
+                      size="small"
+                      data-testid="perm-role-delete"
+                      onClick={() => void remove()}
+                    >
+                      {t('delete')}
+                    </oas-button>
+                  )}
+                  <span className="perm-actions-gap" />
+                  <oas-button size="small" data-testid="perm-role-cancel" onClick={cancelEdit}>
+                    {t('cancel')}
+                  </oas-button>
+                  <oas-button
+                    type="primary"
+                    size="small"
+                    data-testid="perm-role-save"
+                    disabled={busy || !dirty ? '' : undefined}
+                    onClick={() => void save()}
+                  >
+                    {t('save')}
+                  </oas-button>
+                </div>
+              </>
+            )}
+          </section>
+        </div>
+      )}
+
+      {tab === 'access' && (
+        <div className="admin-panel" data-testid="admin-project-roles">
+          <p className="admin-panel-title">{t('projRoleTitle')}</p>
+          <p className="admin-hint">{t('projRoleHint')}</p>
+          <div className="proj-role-form">
+            <div className="perm-field">
+              <span>{t('projRoleProject')}</span>
+              <OSelect
+                testid="proj-role-project"
+                ariaLabel={t('projRoleProject')}
+                value={ovProject}
+                options={(projects ?? []).map((p) => ({ label: p.name, value: p.id }))}
+                onChange={setOvProject}
+              />
+            </div>
+            <div className="perm-field">
+              <span>{t('projRoleMember')}</span>
+              <OSelect
+                testid="proj-role-member"
+                ariaLabel={t('projRoleMember')}
+                value={ovMember}
+                searchable
+                options={(members ?? []).map((m) => ({ label: m.name, value: m.id }))}
+                onChange={setOvMember}
+              />
+            </div>
+            <div className="perm-field">
+              <span>{t('projRoleRole')}</span>
+              <OSelect
+                testid="proj-role-role"
+                ariaLabel={t('projRoleRole')}
+                value={ovRole}
+                options={[
+                  { label: t('projRoleInherit'), value: INHERIT },
+                  ...projectRoles.map((r) => ({ label: r.name, value: r.id })),
+                ]}
+                onChange={setOvRole}
+              />
+            </div>
+            <oas-button
+              type="primary"
+              size="small"
+              data-testid="proj-role-apply"
+              onClick={() => void applyProjectRole()}
+            >
+              {t('projRoleApply')}
+            </oas-button>
+          </div>
+
+          <div className="proj-role-effective" data-testid="proj-role-effective">
+            <div>
+              <span>{t('projRoleWorkspaceRole')}</span>
+              <strong>{roleDisplay(workspaceRole)}</strong>
+            </div>
+            <div>
+              <span>{t('projRoleOverride')}</span>
+              <strong>{overrideRole ? roleDisplay(overrideRole) : t('projRoleNone')}</strong>
+            </div>
+            <div>
+              <span>{t('projRoleEffectiveLabel')}</span>
+              <strong>{roleDisplay(finalRole)}</strong>
+            </div>
+          </div>
+
+          <p className="admin-panel-title proj-role-list-title">{t('projRoleAssignments')}</p>
+          {(assignments ?? []).length > 0 ? (
+            <ul className="proj-role-list" data-testid="proj-role-list">
+              {assignments?.map((a) => (
+                <li key={a.id}>
+                  <span className="proj-role-target">
+                    {projectMap.get(a.projectId)?.name ?? a.projectId} /{' '}
+                    {memberMap.get(a.memberId)?.name ?? a.memberId}
+                  </span>
+                  <span className="proj-role-name">
+                    {roleDisplay(roles?.find((r) => r.id === a.roleId))}
+                  </span>
+                  <button
+                    type="button"
+                    className="proj-role-remove"
+                    data-testid={`proj-role-remove-${a.id}`}
+                    onClick={() => void clearAssignment(a)}
+                  >
+                    {t('delete')}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="admin-hint">{t('projRoleEmpty')}</p>
+          )}
+        </div>
+      )}
+
+      {tab === 'audit' && (
+        <div className="admin-panel" data-testid="admin-audit">
+          <div className="perm-section-head">
+            <div>
+              <p className="admin-panel-title">{t('auditTitle')}</p>
+              <p className="admin-hint">{t('auditRecentHint')}</p>
+            </div>
+            <oas-input
+              value={auditQuery}
+              aria-label={t('auditFilterPlaceholder')}
+              placeholder={t('auditFilterPlaceholder')}
+              data-testid="audit-filter"
+              onInput={(e) =>
+                setAuditQuery((e.target as HTMLElement & { value?: string }).value ?? '')
+              }
+            />
+          </div>
+          {(audit ?? []).length > 0 ? (
+            auditRows.length > 0 ? (
+              <div className="audit-table" data-testid="audit-table">
+                <div className="audit-row audit-head" aria-hidden="true">
+                  <span>{t('auditColTime')}</span>
+                  <span>{t('auditColActor')}</span>
+                  <span>{t('auditColAction')}</span>
+                  <span>{t('auditColTarget')}</span>
+                  <span>{t('auditColDetail')}</span>
+                </div>
+                {auditRows.map((e) => (
+                  <div key={e.id} className="audit-row">
+                    <span className="audit-time">
+                      {new Date(e.at).toLocaleString(undefined, {
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                    <span className="audit-actor">
+                      {memberMap.get(e.actorId)?.name ?? e.actorId}
+                    </span>
+                    <span className="audit-action">
+                      {AUDIT_LABEL[e.action] ? t(AUDIT_LABEL[e.action]) : e.action}
+                    </span>
+                    <span className="audit-target">{e.target}</span>
+                    <span className="audit-detail">{e.detail ?? '—'}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="admin-hint" data-testid="audit-no-match">
+                {t('auditNoMatch')}
+              </p>
+            )
+          ) : (
+            <p className="admin-hint" data-testid="audit-empty">
+              {t('auditEmpty')}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   )
 }

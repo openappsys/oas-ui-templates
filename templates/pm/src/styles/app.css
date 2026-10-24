@@ -2506,19 +2506,6 @@ oas-drawer::part(close):focus-visible {
 }
 
 /* ── 自定义角色与权限矩阵 ── */
-.perm-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-.perm-roles {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 10px 0 14px;
-}
 .perm-role-chip {
   padding: 4px 12px;
   font: inherit;
@@ -2538,13 +2525,146 @@ oas-drawer::part(close):focus-visible {
   background: color-mix(in srgb, var(--oas-color-primary) 9%, transparent);
   border-color: var(--oas-color-primary, #0b6cff);
 }
-.perm-role-chip.is-new {
-  border-style: dashed;
+/* ── 权限页：Tabs + 主从布局（左角色列表 / 右详情） ── */
+.perm-tabs {
+  margin: 2px 0 14px;
 }
-.perm-editor {
+.perm-layout {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+@media (max-width: 1080px) {
+  .perm-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.perm-role-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  background: var(--oas-color-bg, #fff);
+  border: 1px solid var(--oas-color-border, #e2e8f0);
+  border-radius: 10px;
+}
+.perm-role-list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 10px 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--oas-color-text-secondary, #64748b);
+}
+.perm-role-group-label {
+  margin: 6px 0 2px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--oas-color-text-tertiary, #94a3b8);
+}
+.perm-role-list-head .perm-role-group-label {
+  margin: 0;
+}
+.perm-role-add {
+  padding: 2px 8px;
+  font: inherit;
+  font-size: 11px;
+  color: var(--oas-color-primary-text, #0b52c0);
+  background: transparent;
+  border: 1px dashed var(--oas-color-border-strong, #cbd5e1);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.perm-role-add:hover {
+  border-color: var(--oas-color-primary, #0b6cff);
+}
+.perm-role-empty {
+  margin: 4px 0;
+  font-size: 12px;
+  color: var(--oas-color-text-tertiary, #94a3b8);
+}
+.perm-role-meta {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--oas-color-text-secondary, #64748b);
+}
+.perm-role-list .perm-role-chip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  width: 100%;
+  padding: 7px 10px;
+  font-size: 13px;
+  text-align: left;
+  border-radius: 8px;
+}
+.perm-role-list > oas-input {
+  width: 100%;
+  margin-bottom: 2px;
+}
+.perm-detail-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.perm-unsaved {
+  padding: 1px 6px;
+  font-size: 10px;
+  color: var(--oas-color-warning-text, #92400e);
+  background: color-mix(in srgb, var(--oas-color-warning, #f59e0b) 14%, transparent);
+  border-radius: 999px;
+}
+.perm-role-lock {
+  margin-left: auto;
+  padding: 0 5px;
+  font-size: 10px;
+  color: var(--oas-color-text-tertiary, #94a3b8);
+  background: var(--oas-color-bg-hover, #f1f5f9);
+  border-radius: 999px;
+}
+.perm-detail {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  min-width: 0;
+  padding: 16px;
+  background: var(--oas-color-bg, #fff);
+  border: 1px solid var(--oas-color-border, #e2e8f0);
+  border-radius: 10px;
+}
+.perm-detail-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.perm-detail-head .admin-hint {
+  margin: 4px 0 0;
+}
+.perm-group-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.perm-group-head .perm-group-title {
+  margin: 0;
+}
+.perm-group-count {
+  margin-left: 4px;
+  font-size: 11px;
+  color: var(--oas-color-text-tertiary, #94a3b8);
+  font-variant-numeric: tabular-nums;
+}
+.perm-group {
+  padding: 10px 12px;
+  background: var(--oas-color-bg, #fff);
+  border: 1px solid var(--oas-color-border, #e2e8f0);
+  border-radius: 8px;
 }
 .perm-fields {
   display: grid;
@@ -2560,12 +2680,6 @@ oas-drawer::part(close):focus-visible {
 }
 .perm-field oas-input {
   width: 100%;
-}
-.perm-matrix-title {
-  margin: 4px 0 0;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--oas-color-text-secondary, #64748b);
 }
 .perm-checks {
   display: grid;
@@ -2613,6 +2727,33 @@ oas-drawer::part(close):focus-visible {
   align-items: end;
   margin: 10px 0 12px;
 }
+.proj-role-effective {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  background: var(--oas-color-bg-hover, #f8fafc);
+  border-radius: 8px;
+}
+.proj-role-effective div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.proj-role-effective span {
+  font-size: 11px;
+  color: var(--oas-color-text-tertiary, #94a3b8);
+}
+.proj-role-effective strong {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--oas-color-text-primary, #1f2329);
+}
+.proj-role-list-title {
+  margin: 12px 0 8px;
+  font-size: 12px;
+}
 .proj-role-list {
   display: flex;
   flex-direction: column;
@@ -2625,7 +2766,15 @@ oas-drawer::part(close):focus-visible {
   display: flex;
   align-items: center;
   gap: 10px;
+  padding: 6px 0;
   font-size: 13px;
+  border-bottom: 1px solid var(--oas-color-border, #e2e8f0);
+}
+.proj-role-target {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .proj-role-name {
   margin-left: auto;
@@ -2639,20 +2788,39 @@ oas-drawer::part(close):focus-visible {
   color: var(--oas-color-danger, #dc2626);
   cursor: pointer;
 }
-.audit-list {
+.audit-table {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
 }
-.audit-list li {
-  display: flex;
-  align-items: baseline;
+.audit-row {
+  display: grid;
+  grid-template-columns: 110px 120px 150px minmax(0, 1fr) minmax(0, 1fr);
   gap: 10px;
+  align-items: baseline;
+  padding: 7px 0;
   font-size: 12px;
   color: var(--oas-color-text-secondary, #64748b);
+  border-bottom: 1px solid var(--oas-color-border, #e2e8f0);
+}
+.audit-head {
+  font-weight: 600;
+  color: var(--oas-color-text-tertiary, #94a3b8);
+}
+.audit-detail {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.perm-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.perm-section-head oas-input {
+  width: 280px;
 }
 .audit-time {
   font-variant-numeric: tabular-nums;

@@ -10,6 +10,7 @@ export function OSelect({
   placeholder,
   title,
   disabled,
+  searchable,
   elRef,
 }: {
   testid: string
@@ -22,6 +23,8 @@ export function OSelect({
   /** 悬停提示：宿主 title 走 attribute（React 19 对 HTMLElement 命中的全局属性走 property，不落 attribute） */
   title?: string
   disabled?: boolean
+  /** 面板内搜索（成员等长列表用；>= 1000 条应改为服务端搜索） */
+  searchable?: boolean
   /** 需要程序性复位显示（如「选完即清回占位」）时由调用方持有宿主引用 */
   elRef?: React.RefObject<HTMLElement | null>
 }) {
@@ -39,6 +42,11 @@ export function OSelect({
     if (!el) return
     el.toggleAttribute('disabled', disabled ?? false)
   }, [disabled, ref])
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    el.toggleAttribute('searchable', searchable ?? false)
+  }, [searchable, ref])
   useEffect(() => {
     const el = ref.current
     if (!el) return

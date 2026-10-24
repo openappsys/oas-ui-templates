@@ -36,7 +36,9 @@ test('RL1 自定义角色：新建 + 勾权限 + 分配给成员后按权限生�
   await openPermissions(page)
 
   // 内置矩阵仍是 14 行只读
-  await expect(page.getByTestId('admin-permissions-matrix').locator('tbody tr:not(.group-header)')).toHaveCount(14)
+  await expect(
+    page.getByTestId('admin-permissions-matrix').locator('tbody tr:not(.group-header)'),
+  ).toHaveCount(14)
 
   await page.getByTestId('perm-role-new').click()
   await page.getByTestId('perm-role-name').locator('input').fill('项目负责人')
@@ -129,6 +131,10 @@ test('RL3 项目级角色：项目内覆盖生效、项目外继承工作区，�
 
   // 项目-2 覆盖为「项目创建者」
   await openPermissions(page)
+  await page
+    .getByTestId('perm-tabs')
+    .getByRole('tab', { name: /项目访问|Project access/ })
+    .click()
   await page.getByTestId('proj-role-project').waitFor({ timeout: 10_000 })
   await page.getByTestId('proj-role-project').evaluate((el) => {
     ;(el as HTMLElement & { value?: string }).value = 'project-2'
@@ -152,6 +158,10 @@ test('RL3 项目级角色：项目内覆盖生效、项目外继承工作区，�
   })
 
   // 审计：建角色 + 调成员角色 + 项目覆盖都留痕
+  await page
+    .getByTestId('perm-tabs')
+    .getByRole('tab', { name: /审计|Audit/ })
+    .click()
   const audit = page.getByTestId('admin-audit')
   await expect(audit).toContainText(/新建角色|Created role/)
   await expect(audit).toContainText(/调整成员角色|Changed member role/)
@@ -169,4 +179,43 @@ test('RL3 项目级角色：项目内覆盖生效、项目外继承工作区，�
     .locator('[part="item"][data-value="project:project-1"]')
     .click()
   await expect(page.getByTestId('toolbar-new')).toHaveCount(0)
+})
+
+test('RL4 权限页可用性：复制内置角色、组全选/取消、角色搜索、审计筛选', async ({ page }) => {
+  await waitForSeed(page)
+  await openPermissions(page)
+
+  // 从内置角色复制（最常用的定制路径）
+  await page.getByTestId('perm-role-admin').click()
+  await page.getByTestId('perm-role-duplicate').click()
+  const copyChip = page.locator('.perm-role-chip').filter({ hasText: /副本|copy/ })
+  await expect(copyChip).toBeVisible({ timeout: 10_000 })
+
+  // 角色搜索：只留匹配项，未命中给空态
+  const roleSearch = page.getByTestId('perm-role-search').locator('input')
+  await roleSearch.fill('副本')
+  await expect(page.getByTestId('perm-role-viewer')).toHaveCount(0)
+  await expect(copyChip).toBeVisible()
+  await roleSearch.fill('绝不存在的角色zz')
+  await expect(page.getByTestId('perm-role-empty')).toBeVisible()
+  await roleSearch.fill('')
+
+  // 组全选 → 未保存提示；取消 → 恢复且保存禁用
+  await copyChip.click()
+  await page.getByTestId('perm-group-all-permGroupIssue').click()
+  await expect(page.getByTestId('perm-unsaved')).toBeVisible()
+  await page.getByTestId('perm-role-cancel').click()
+  await expect(page.getByTestId('perm-unsaved')).toHaveCount(0)
+  await expect(page.getByTestId('perm-role-save')).toHaveAttribute('disabled', '')
+
+  // 审计筛选：命中复制记录；无命中给空态
+  await page
+    .getByTestId('perm-tabs')
+    .getByRole('tab', { name: /审计|Audit/ })
+    .click()
+  const auditFilter = page.getByTestId('audit-filter').locator('input')
+  await auditFilter.fill('副本')
+  await expect(page.getByTestId('audit-table')).toContainText(/副本|copy/)
+  await auditFilter.fill('绝不存在的记录zz')
+  await expect(page.getByTestId('audit-no-match')).toBeVisible()
 })
