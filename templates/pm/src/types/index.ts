@@ -79,6 +79,13 @@ export interface AuditEntry {
   detail?: string
 }
 
+/** 项目成员：负责人候选/成员筛选只取当前项目成员（工作区目录仍全量，管理页可搜索） */
+export interface ProjectMember {
+  id: string
+  projectId: string
+  memberId: string
+}
+
 /** 项目级角色覆盖：成员在某项目内使用该角色（缺省继承工作区角色） */
 export interface ProjectRoleAssignment {
   id: string

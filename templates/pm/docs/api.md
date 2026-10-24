@@ -80,7 +80,7 @@ Response: `204` with no body.
 | Rule | Effect |
 | --- | --- |
 | Any valid token | Read every resource, write issues, comments, activities, saved views and cycles, and mark own notifications read |
-| `role = "admin"` only | All `/api/admin/*` endpoints, `POST/PATCH/DELETE /api/projects*`, `POST/PATCH/DELETE /api/members*`, `POST/PATCH/DELETE /api/roles*`, `PUT /api/project-roles`, `GET|POST /api/audit`, `PUT /api/settings/:key` |
+| `role = "admin"` only | All `/api/admin/*` endpoints, `POST/PATCH/DELETE /api/projects*`, `POST/PATCH/DELETE /api/members*`, `POST/PATCH/DELETE /api/roles*`, `PUT /api/project-roles`, `PUT /api/project-members`, `GET|POST /api/audit`, `PUT /api/settings/:key` |
 | No token | `401` |
 
 A valid token with a non-admin role on an admin-only endpoint returns `403` with
@@ -458,3 +458,15 @@ therefore call `reset` again. A new login needs a member row, so `wipe` blocks n
 
 The list view shows an error block (`data-testid="list-error"`) when the first load fails. The
 retry button subscribes again.
+
+## 7e. Project members
+
+| Endpoint | Body / query | Response | Errors |
+| --- | --- | --- | --- |
+| `GET /api/project-members` | – | `{ items }` (projectId + memberId) | – |
+| `PUT /api/project-members` | `{ projectId, memberIds: string[] }` | `{ ok: true }` | `400` unknown member, `404` project |
+
+Project members scope the assignee picker and member filter. The workspace directory
+(`GET /api/members`) stays complete for the admin page. Reads are open to authenticated
+members; writes require an admin token.
+

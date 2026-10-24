@@ -63,6 +63,8 @@ type View = 'dashboard' | 'issues' | 'board' | 'timeline' | 'resource' | 'schedu
 
 /** 删除撤销窗口：提示条存活时长（超时后仍可从管理台回收站恢复） */
 const UNDO_MS = 6000
+/** 侧栏成员组最多铺 20 行；更多走「查看全部成员」可搜索多选 */
+const MEMBER_SIDEBAR_LIMIT = 20
 
 /** 数据窗口：compound index 取项目/状态维度最近 listLimit 条，再内存细筛；
  *  触底续载：滚动近底时 listLimit 递增（每批 LIST_WINDOW_STEP 条）。
@@ -114,6 +116,11 @@ function useRoles() {
 function useProjectRoles() {
   const { projectRoles } = useRepositories()
   return useObservable(() => projectRoles.liveAll(), [projectRoles])
+}
+
+function useProjectMembers() {
+  const { projectMembers } = useRepositories()
+  return useObservable(() => projectMembers.liveAll(), [projectMembers])
 }
 
 function useProjects(): Project[] | undefined {
@@ -358,6 +365,7 @@ function Workspace({
   const [paletteOpen, setPaletteOpen] = useState(false)
   const aboutRef = useRef<HTMLElement>(null)
   const userPickRef = useRef<HTMLElement>(null)
+  const memberPickerRef = useRef<HTMLElement>(null)
   const notifyRef = useRef<HTMLElement>(null)
   const saveViewRef = useRef<HTMLElement>(null)
   const createRef = useRef<HTMLElement>(null)
@@ -382,6 +390,7 @@ function Workspace({
   const members = useMembers()
   const roles = useRoles()
   const projectRoles = useProjectRoles()
+  const projectMembers = useProjectMembers()
   const projects = useProjects()
   const cycles = useCycles(filters.projectId)
   const cycleCounts = useCycleCountTotals(filters.projectId)
@@ -458,12 +467,25 @@ function Workspace({
     [members, lang],
   )
   // 工具条成员多选：成员名 + 全量计数后缀（项目全量，不随窗口变），「未分配」置首
+  // 当前项目的成员子集：负责人候选/成员筛选只看项目成员；全部项目=全量目录
+  const scopedMembers = useMemo(() => {
+    if (!members) return []
+    if (filters.projectId === ALL_PROJECTS) return members
+    const ids = new Set(
+      (projectMembers ?? [])
+        .filter((a) => a.projectId === filters.projectId)
+        .map((a) => a.memberId),
+    )
+    return members.filter((m) => ids.has(m.id))
+  }, [members, projectMembers, filters.projectId])
+  // 顶部筛选栏/侧栏共用同一批选项（含全量计数后缀）：两处控件文案必须同源
   // biome-ignore lint/correctness/useExhaustiveDependencies: t() 读模块级语言态，lang 是语言切换时的重算触发器
   const assigneeFilterOptions = useMemo(
-    () => buildAssigneeOptions(members, memberCounts, { unassigned: t('unassignedMember') }),
-    [members, memberCounts, lang],
+    () => buildAssigneeOptions(scopedMembers, memberCounts, { unassigned: t('unassignedMember') }),
+    [scopedMembers, memberCounts, lang],
   )
-  // 侧栏成员组：行 = 全部成员 / 未分配 / 每位成员（头像 + 计数），与状态/优先级/迭代同构
+  // 侧栏成员组：全部成员 / 未分配 / 前 20 位（按工作量降序）；
+  // 超过 20 位时追加「查看全部成员」，打开可搜索多选（1000 人目录不铺进侧栏）
   // biome-ignore lint/correctness/useExhaustiveDependencies: lang 是语言切换时的重算触发器
   const assigneeRows = useMemo<SideRow[]>(() => {
     const me = filters.assigneeFilter
@@ -487,7 +509,10 @@ function Workspace({
         group: t('members'),
       },
     ]
-    for (const m of members ?? []) {
+    const sorted = [...scopedMembers].sort(
+      (a, b) => (memberCounts?.get(b.id) ?? 0) - (memberCounts?.get(a.id) ?? 0),
+    )
+    for (const m of sorted.slice(0, MEMBER_SIDEBAR_LIMIT)) {
       rows.push({
         value: `assignee:${m.id}`,
         kind: 'assignee',
@@ -500,8 +525,17 @@ function Workspace({
         group: t('members'),
       })
     }
+    if (sorted.length > MEMBER_SIDEBAR_LIMIT) {
+      rows.push({
+        value: 'assignee:more',
+        kind: 'member-more',
+        label: t('viewAllMembers'),
+        count: String(sorted.length),
+        group: t('members'),
+      })
+    }
     return rows
-  }, [members, memberCounts, filters.assigneeFilter, counts?.total, lang])
+  }, [scopedMembers, memberCounts, filters.assigneeFilter, counts?.total, lang])
   // 顶部筛选栏/侧栏共用同一批选项（含全量计数后缀）：两处控件文案必须同源，
   // 否则「同一筛选两处看」会读到不同计数
   // biome-ignore lint/correctness/useExhaustiveDependencies: lang 是语言切换时的重算触发器
@@ -811,6 +845,9 @@ function Workspace({
             ...prev,
             assigneeFilter: row.id === 'all' ? [] : toggleIn(prev.assigneeFilter, row.id as string),
           }))
+          break
+        case 'member-more':
+          memberPickerRef.current?.setAttribute('visible', '')
           break
         case 'cycle': {
           // 单选切换：再点同一行取消（回到全部迭代）；「全部迭代」行直接清空
@@ -1311,6 +1348,35 @@ function Workspace({
             </oas-button>
             <oas-button type="primary" data-testid="save-view-ok" onClick={() => void doSaveView()}>
               {t('save')}
+            </oas-button>
+          </div>
+        </div>
+      </oas-modal>
+
+      {/* 查看全部成员：1000 人目录不铺进侧栏，走可搜索多选 */}
+      <oas-modal ref={memberPickerRef} no-footer data-testid="member-picker-modal">
+        <div className="member-picker">
+          <h2 className="profile-title">{t('viewAllMembers')}</h2>
+          <p className="profile-hint">{t('memberPickerHint')}</p>
+          <OMultiSelect
+            testid="member-picker"
+            label={t('members')}
+            searchLabel={t('searchMembers')}
+            placeholder={t('allMembers')}
+            maxTagCount={4}
+            value={filters.assigneeFilter}
+            options={assigneeFilterOptions}
+            onChange={(v) => setF('assigneeFilter', v)}
+          />
+          <div className="profile-actions">
+            <span className="profile-actions-gap" />
+            <oas-button
+              type="primary"
+              size="small"
+              data-testid="member-picker-done"
+              onClick={() => memberPickerRef.current?.removeAttribute('visible')}
+            >
+              {t('memberPickerDone')}
             </oas-button>
           </div>
         </div>

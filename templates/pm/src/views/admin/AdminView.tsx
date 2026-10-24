@@ -76,7 +76,7 @@ export function AdminView({
         {tab === 'overview' ? (
           <OverviewTab memberMap={memberMap} onOpenProject={onOpenProject} />
         ) : tab === 'projects' ? (
-          <ProjectsTab memberMap={memberMap} />
+          <ProjectsTab memberMap={memberMap} currentUser={currentUser} />
         ) : tab === 'members' ? (
           <MembersTab currentUser={currentUser} onMemberDeleted={onMemberDeleted} />
         ) : tab === 'cycles' ? (

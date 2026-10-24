@@ -4,7 +4,7 @@ import { useRepositories } from '@/data/context'
 import { useObservable } from '@/data/use-observable'
 import { t } from '@/i18n'
 import type { Member, Project } from '@/types'
-import { OSelect } from '@/components/oas-wrappers'
+import { OMultiSelect, OSelect } from '@/components/oas-wrappers'
 
 type Col = {
   key: string
@@ -17,8 +17,20 @@ type TableHost = HTMLElement & {
   data?: Array<Record<string, unknown>>
 }
 
-export function ProjectsTab({ memberMap }: { memberMap: Map<string, Member> }) {
-  const { projects: projectsRepo, admin } = useRepositories()
+export function ProjectsTab({
+  memberMap,
+  currentUser,
+}: {
+  memberMap: Map<string, Member>
+  currentUser: string
+}) {
+  const {
+    projects: projectsRepo,
+    admin,
+    members: membersRepo,
+    projectMembers: projectMembersRepo,
+    audit: auditRepo,
+  } = useRepositories()
   const tableRef = useRef<TableHost>(null)
   const modalRef = useRef<HTMLElement>(null)
   const nameRef = useRef<HTMLElement & { value?: string }>(null)
@@ -28,10 +40,15 @@ export function ProjectsTab({ memberMap }: { memberMap: Map<string, Member> }) {
   const [lead, setLead] = useState('')
   const [fieldError, setFieldError] = useState('')
   const [error, setError] = useState('')
+  const memberModalRef = useRef<HTMLElement>(null)
+  const [memberProject, setMemberProject] = useState<Project | null>(null)
+  const [selectedMembers, setSelectedMembers] = useState<string[]>([])
   const errorTimer = useRef<number | undefined>(undefined)
   const inFlightRef = useRef(false)
 
   const list = useObservable(() => projectsRepo.liveAll(), [projectsRepo])
+  const members = useObservable(() => membersRepo.liveAll(), [membersRepo])
+  const projectMembers = useObservable(() => projectMembersRepo.liveAll(), [projectMembersRepo])
   const health = useObservable(() => admin.liveProjectHealth(), [admin])
   const healthMap = useMemo(
     () => new Map((health ?? []).map((h) => [h.projectId, h.total])),
@@ -48,9 +65,40 @@ export function ProjectsTab({ memberMap }: { memberMap: Map<string, Member> }) {
   const listRef = useRef(list)
   listRef.current = list
   const memberOptions = useMemo(
-    () => [...memberMap.values()].map((m) => ({ label: m.name, value: m.id })),
-    [memberMap],
+    () => (members ?? []).map((m) => ({ label: m.name, value: m.id })),
+    [members],
   )
+
+  const openMembers = useCallback(
+    (p: Project) => {
+      setMemberProject(p)
+      setSelectedMembers(
+        (projectMembers ?? []).filter((a) => a.projectId === p.id).map((a) => a.memberId),
+      )
+      memberModalRef.current?.setAttribute('visible', '')
+    },
+    [projectMembers],
+  )
+  const openMembersRef = useRef(openMembers)
+  openMembersRef.current = openMembers
+
+  const saveMembers = useCallback(async () => {
+    if (!memberProject) return
+    try {
+      await projectMembersRepo.setMembers(memberProject.id, selectedMembers)
+      void auditRepo.add({
+        id: nanoid(),
+        at: Date.now(),
+        actorId: currentUser,
+        action: 'projectMember.set',
+        target: memberProject.name,
+        detail: String(selectedMembers.length),
+      })
+      memberModalRef.current?.removeAttribute('visible')
+    } catch (e) {
+      showError(e instanceof Error ? e.message : String(e))
+    }
+  }, [memberProject, selectedMembers, projectMembersRepo, auditRepo, currentUser, showError])
 
   const openModal = useCallback(
     (p: Project | null) => {
@@ -161,6 +209,14 @@ export function ProjectsTab({ memberMap }: { memberMap: Map<string, Member> }) {
             const p = (listRef.current ?? []).find((x) => x.id === id)
             if (p) openModalRef.current(p)
           })
+          const mem = document.createElement('oas-button')
+          mem.setAttribute('size', 'small')
+          mem.setAttribute('data-testid', `admin-project-members-${id}`)
+          mem.textContent = t('projectMembers')
+          mem.addEventListener('click', () => {
+            const p = (listRef.current ?? []).find((x) => x.id === id)
+            if (p) openMembersRef.current(p)
+          })
           const pop = document.createElement('oas-popconfirm')
           pop.setAttribute('title', t('adminDeleteConfirm'))
           const del = document.createElement('oas-button')
@@ -173,7 +229,7 @@ export function ProjectsTab({ memberMap }: { memberMap: Map<string, Member> }) {
             const reason = (e as CustomEvent<{ reason?: string }>).detail?.reason
             if (reason === 'ok') void removeRef.current(id)
           })
-          box.append(edit, pop)
+          box.append(mem, edit, pop)
           return box
         },
       },
@@ -254,6 +310,38 @@ export function ProjectsTab({ memberMap }: { memberMap: Map<string, Member> }) {
             </oas-button>
             <oas-button type="primary" data-testid="admin-project-save" onClick={() => void save()}>
               {editing ? t('save') : t('create')}
+            </oas-button>
+          </div>
+        </div>
+      </oas-modal>
+
+      {/* 项目成员：负责人候选/成员筛选只看项目成员；工作区目录可搜索 */}
+      <oas-modal ref={memberModalRef} no-footer data-testid="admin-project-members-modal">
+        <div className="create-body">
+          <h2 className="profile-title">{t('projectMembers')}</h2>
+          <p className="profile-hint">{t('projectMembersHint')}</p>
+          <OMultiSelect
+            testid="admin-project-members-select"
+            label={t('projectMembers')}
+            searchLabel={t('searchMembers')}
+            placeholder={t('allMembers')}
+            value={selectedMembers}
+            options={memberOptions}
+            onChange={setSelectedMembers}
+          />
+          <div className="quit-actions">
+            <oas-button
+              data-testid="admin-project-members-cancel"
+              onClick={() => memberModalRef.current?.removeAttribute('visible')}
+            >
+              {t('cancel')}
+            </oas-button>
+            <oas-button
+              type="primary"
+              data-testid="admin-project-members-save"
+              onClick={() => void saveMembers()}
+            >
+              {t('save')}
             </oas-button>
           </div>
         </div>

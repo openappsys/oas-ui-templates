@@ -16,6 +16,7 @@ export type SideKind =
   | 'savedview'
   | 'cycle'
   | 'assignee'
+  | 'member-more'
   | 'group'
   | 'clear'
 
@@ -106,6 +107,8 @@ function rowIcon(row: SideRow): string {
       return 'refresh'
     case 'assignee':
       return 'user'
+    case 'member-more':
+      return 'more'
     case 'group':
       return 'filter'
     case 'clear':

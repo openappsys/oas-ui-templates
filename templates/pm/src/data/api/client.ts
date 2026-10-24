@@ -10,6 +10,7 @@ import type {
   Project,
   Role,
   AuditEntry,
+  ProjectMember,
   ProjectRoleAssignment,
   SavedView,
 } from '@/types'
@@ -37,6 +38,7 @@ import type {
   Repositories,
   RoleRepository,
   AuditRepository,
+  ProjectMemberRepository,
   ProjectRoleRepository,
   SavedViewRepository,
   SettingsRepository,
@@ -438,6 +440,19 @@ export function createApiRepositories(options: ApiClientOptions = {}): Repositor
     },
   }
 
+  const projectMembers: ProjectMemberRepository = {
+    liveAll: () =>
+      live(async () =>
+        asItems<ProjectMember>(
+          await send<{ items: ProjectMember[] }>('GET', '/api/project-members'),
+        ),
+      ),
+    setMembers: async (projectId, memberIds) => {
+      await send('PUT', '/api/project-members', undefined, { projectId, memberIds })
+      poke()
+    },
+  }
+
   const comments: CommentRepository = {
     liveByIssue: (issueId) =>
       live(async () =>
@@ -604,6 +619,7 @@ export function createApiRepositories(options: ApiClientOptions = {}): Repositor
     roles,
     audit,
     projectRoles,
+    projectMembers,
     comments,
     activities,
     savedViews,

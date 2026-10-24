@@ -27,6 +27,7 @@ import {
   type Notification,
   type Project,
   type Role,
+  type ProjectMember,
   type AuditEntry,
   type ProjectRoleAssignment,
   type SavedView,
@@ -54,6 +55,7 @@ export interface SeedTables {
   roles: Role[]
   audit: AuditEntry[]
   projectRoles: ProjectRoleAssignment[]
+  projectMembers: ProjectMember[]
 }
 
 export interface MockStore extends SeedTables {
@@ -320,6 +322,18 @@ function buildSeed(seed: number, now: number): SeedTables {
     roles: BUILTIN_ROLES.map((r) => ({ ...r, permissions: [...r.permissions] })),
     audit: [],
     projectRoles: [],
+    projectMembers: [
+      ...members.map((m) => ({
+        id: `project-1:${m.id}`,
+        projectId: 'project-1',
+        memberId: m.id,
+      })),
+      ...members.slice(0, 5).map((m) => ({
+        id: `project-2:${m.id}`,
+        projectId: 'project-2',
+        memberId: m.id,
+      })),
+    ],
   }
 }
 
@@ -414,6 +428,7 @@ function isAdminOnly(method: string, head: string, second?: string, third?: stri
   if (head === 'admin') return true
   if (head === 'projects' || head === 'members' || head === 'roles') return method !== 'GET'
   if (head === 'project-roles') return method !== 'GET'
+  if (head === 'project-members') return method !== 'GET'
   if (head === 'audit') return true
   if (head === 'settings') return method === 'PUT'
   if (head === 'issues' && second && (third === 'restore' || third === 'purge')) return true
@@ -795,6 +810,7 @@ function importEnvelope(store: MockStore, raw: unknown): void {
     roles: rows('roles') as Role[],
     audit: rows('audit') as AuditEntry[],
     projectRoles: rows('projectRoles') as ProjectRoleAssignment[],
+    projectMembers: rows('projectMembers') as ProjectMember[],
   })
   Object.assign(store, next)
 }
@@ -817,6 +833,7 @@ function wipeStore(store: MockStore): void {
   store.roles = BUILTIN_ROLES.map((r) => ({ ...r, permissions: [...r.permissions] }))
   store.audit = []
   store.projectRoles = []
+  store.projectMembers = []
 }
 
 function globalStats(store: MockStore) {
@@ -1440,6 +1457,37 @@ function routeProjectRoles(
   fail(405, 'method not allowed')
 }
 
+function routeProjectMembers(
+  store: MockStore,
+  method: string,
+  second: string | undefined,
+  body: unknown,
+): ApiResponse {
+  if (second) fail(404, 'not found')
+  if (method === 'GET') return ok({ items: [...store.projectMembers].sort(byIdAsc) })
+  if (method === 'PUT') {
+    const input = asRecord(body)
+    const projectId = String(input.projectId ?? '')
+    const memberIds = Array.isArray(input.memberIds) ? input.memberIds.map(String) : []
+    if (!projectId) fail(400, 'projectId required')
+    if (!store.projects.some((p) => p.id === projectId)) fail(404, 'project not found')
+    if (memberIds.some((id) => !store.members.some((m) => m.id === id))) {
+      fail(400, 'unknown member')
+    }
+    store.projectMembers = store.projectMembers.filter((a) => a.projectId !== projectId)
+    store.projectMembers.push(
+      ...memberIds.map((memberId) => ({
+        id: `${projectId}:${memberId}`,
+        projectId,
+        memberId,
+      })),
+    )
+    store.revision += 1
+    return ok({ ok: true })
+  }
+  fail(405, 'method not allowed')
+}
+
 function routeSettings(
   store: MockStore,
   method: string,
@@ -1558,6 +1606,8 @@ function route(store: MockStore, req: ApiRequest, member: Member | null): ApiRes
       return routeAudit(store, method, second, q, req.body)
     case 'project-roles':
       return routeProjectRoles(store, method, second, req.body)
+    case 'project-members':
+      return routeProjectMembers(store, method, second, req.body)
     case 'comments':
       return routeComments(store, method, second, third, q, req.body)
     case 'activities':

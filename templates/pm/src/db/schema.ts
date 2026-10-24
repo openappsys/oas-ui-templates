@@ -11,6 +11,7 @@ import type {
   Role,
   AuditEntry,
   ProjectRoleAssignment,
+  ProjectMember,
 } from '@/types'
 
 export interface SettingRow {
@@ -32,6 +33,7 @@ export class PMDatabase extends Dexie {
   roles!: EntityTable<Role, 'id'>
   audit!: EntityTable<AuditEntry, 'id'>
   projectRoles!: EntityTable<ProjectRoleAssignment, 'id'>
+  projectMembers!: EntityTable<ProjectMember, 'id'>
 
   constructor(name = 'oas-pm') {
     super(name)
@@ -182,6 +184,23 @@ export class PMDatabase extends Dexie {
       roles: 'id, name',
       audit: 'id, at, actorId, action',
       projectRoles: 'id, projectId, memberId, [projectId+memberId]',
+    })
+    // v14：项目成员。负责人候选与成员筛选只取当前项目成员；工作区目录保持全量
+    this.version(14).stores({
+      issues:
+        'id, projectId, key, status, priority, assigneeId, parentId, cycleId, createdAt, updatedAt, deletedAt, [projectId+status], [projectId+priority], [projectId+assigneeId], [projectId+updatedAt], [projectId+status+updatedAt], [assigneeId+status], [status+updatedAt], [projectId+cycleId]',
+      projects: 'id, key',
+      members: 'id, role',
+      comments: 'id, issueId, [issueId+createdAt]',
+      savedViews: 'id, name',
+      activities: 'id, issueId, [issueId+createdAt], createdAt',
+      settings: 'key',
+      cycles: 'id, projectId, [projectId+startAt]',
+      notifications: 'id, memberId, createdAt, [memberId+createdAt], [memberId+readAt]',
+      roles: 'id, name',
+      audit: 'id, at, actorId, action',
+      projectRoles: 'id, projectId, memberId, [projectId+memberId]',
+      projectMembers: 'id, projectId, memberId, [projectId+memberId]',
     })
   }
 }

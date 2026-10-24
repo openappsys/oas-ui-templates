@@ -44,8 +44,23 @@ export async function seedDatabase(): Promise<void> {
       if (!(await db.roles.get(role.id))) await db.roles.put(role)
     }
   }
+  // v14：旧库升级补项目成员（全量成员进所有项目，管理员后续可裁剪）
+  const ensureProjectMembers = async () => {
+    if ((await db.projectMembers.count()) > 0) return
+    const [allMembers, allProjects] = await Promise.all([
+      db.members.toArray(),
+      db.projects.toArray(),
+    ])
+    if (allMembers.length === 0 || allProjects.length === 0) return
+    await db.projectMembers.bulkPut(
+      allProjects.flatMap((p) =>
+        allMembers.map((m) => ({ id: `${p.id}:${m.id}`, projectId: p.id, memberId: m.id })),
+      ),
+    )
+  }
   if (marked && issueCount > 0) {
     await ensureRoles()
+    await ensureProjectMembers()
     return
   }
   // 旧 seed 数据（v1 的 updatedAt 走了未来时间戳）/ 中断残留 清表重播；
@@ -87,6 +102,20 @@ export async function seedDatabase(): Promise<void> {
     },
   ]
   await db.projects.bulkPut(projects)
+
+  // v14：项目成员（负责人候选/成员筛选只取当前项目成员）。project-1 全员，project-2 前 5 人
+  await db.projectMembers.bulkPut([
+    ...members.map((m) => ({
+      id: `project-1:${m.id}`,
+      projectId: 'project-1',
+      memberId: m.id,
+    })),
+    ...members.slice(0, 5).map((m) => ({
+      id: `project-2:${m.id}`,
+      projectId: 'project-2',
+      memberId: m.id,
+    })),
+  ])
 
   // 迭代（Sprint）：project-1 两份已结束 + 一份进行中（now ∈ [start,end) 派生当前，无 status 字段）。
   // 区间按天对齐，与 API mock 的 buildSeed 同形；归属规则见 lib/cycles.demoCycleIdFor。

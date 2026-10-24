@@ -39,6 +39,8 @@ export function MembersTab({
   const [newRole, setNewRole] = useState('member')
   const [fieldError, setFieldError] = useState('')
   const [error, setError] = useState('')
+  const [query, setQuery] = useState('')
+  const [page, setPage] = useState(0)
   const errorTimer = useRef<number | undefined>(undefined)
   const inFlightRef = useRef(false)
 
@@ -151,16 +153,27 @@ export function MembersTab({
   const removeRef = useRef(remove)
   removeRef.current = remove
 
+  const PAGE_SIZE = 20
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return list ?? []
+    return (list ?? []).filter((m) => `${m.name} ${m.email}`.toLowerCase().includes(q))
+  }, [list, query])
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const safePage = Math.min(page, pageCount - 1)
+  useEffect(() => {
+    setPage(0)
+  }, [query])
   const rows = useMemo(
     () =>
-      (list ?? []).map((m) => ({
+      filtered.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE).map((m) => ({
         id: m.id,
         name: m.id === currentUser ? `${m.name}${t('adminMe')}` : m.name,
         email: m.email,
         role: m.role,
         inProgress: workloadMap.get(m.id)?.toLocaleString() ?? '…',
       })),
-    [list, workloadMap, currentUser],
+    [filtered, safePage, workloadMap, currentUser],
   )
 
   const columns = useMemo<Col[]>(
@@ -221,13 +234,41 @@ export function MembersTab({
     <div className="admin-crud-page" data-testid="admin-tab-members">
       <div className="admin-crud-top">
         <h1 className="page-h1">{t('adminMembersTitle')}</h1>
-        <oas-button
-          type="primary"
-          data-testid="admin-member-new"
-          onClick={() => openModalRef.current()}
-        >
-          {t('adminNewMember')}
-        </oas-button>
+        <div className="admin-tools">
+          <oas-input
+            value={query}
+            aria-label={t('searchMembers')}
+            placeholder={t('searchMembers')}
+            data-testid="admin-member-search"
+            onInput={(e) => setQuery((e.target as HTMLElement & { value?: string }).value ?? '')}
+          />
+          <span className="admin-count" data-testid="admin-member-count">
+            {filtered.length}
+          </span>
+          <oas-button
+            size="small"
+            data-testid="admin-member-prev"
+            disabled={safePage === 0 ? '' : undefined}
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+          >
+            ‹
+          </oas-button>
+          <oas-button
+            size="small"
+            data-testid="admin-member-next"
+            disabled={safePage >= pageCount - 1 ? '' : undefined}
+            onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+          >
+            ›
+          </oas-button>
+          <oas-button
+            type="primary"
+            data-testid="admin-member-new"
+            onClick={() => openModalRef.current()}
+          >
+            {t('adminNewMember')}
+          </oas-button>
+        </div>
       </div>
       {error && (
         <oas-alert type="error" className="admin-crud-error" data-testid="admin-member-error">

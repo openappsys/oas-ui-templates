@@ -12,6 +12,7 @@ import type {
   Role,
   AuditEntry,
   ProjectRoleAssignment,
+  ProjectMember,
 } from '@/types'
 import type { Observable } from './observable'
 
@@ -228,6 +229,12 @@ export interface ProjectRoleRepository {
   set(projectId: string, memberId: string, roleId: string | null): Promise<void>
 }
 
+export interface ProjectMemberRepository {
+  liveAll(): Observable<ProjectMember[]>
+  /** 整组替换某项目的成员 */
+  setMembers(projectId: string, memberIds: string[]): Promise<void>
+}
+
 export interface Repositories {
   issues: IssueRepository
   projects: ProjectRepository
@@ -241,5 +248,6 @@ export interface Repositories {
   roles: RoleRepository
   audit: AuditRepository
   projectRoles: ProjectRoleRepository
+  projectMembers: ProjectMemberRepository
   admin: AdminRepository
 }

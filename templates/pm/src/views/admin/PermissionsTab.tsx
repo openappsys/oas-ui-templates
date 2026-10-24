@@ -44,6 +44,7 @@ const AUDIT_LABEL: Record<string, DictKey> = {
   'member.role': 'auditMemberRole',
   'projectRole.set': 'auditProjectRole',
   'projectRole.clear': 'auditProjectRoleClear',
+  'projectMember.set': 'auditProjectMembers',
 }
 
 function roleLabel(role: MemberRole): string {
@@ -86,6 +87,7 @@ export function PermissionsTab({ currentUser }: { currentUser: string }) {
   // 项目角色覆盖表单
   const [ovProject, setOvProject] = useState('')
   const [ovMember, setOvMember] = useState('')
+  const [ovMemberQuery, setOvMemberQuery] = useState('')
   const [ovRole, setOvRole] = useState('')
 
   const custom = useMemo(() => (roles ?? []).filter((r) => !r.builtin), [roles])
@@ -395,11 +397,26 @@ export function PermissionsTab({ currentUser }: { currentUser: string }) {
           </div>
           <div className="perm-field">
             <span>{t('projRoleMember')}</span>
+            <oas-input
+              value={ovMemberQuery}
+              aria-label={t('searchMembers')}
+              placeholder={t('searchMembers')}
+              data-testid="proj-role-member-search"
+              onInput={(e) =>
+                setOvMemberQuery((e.target as HTMLElement & { value?: string }).value ?? '')
+              }
+            />
             <OSelect
               testid="proj-role-member"
               ariaLabel={t('projRoleMember')}
               value={ovMember}
-              options={(members ?? []).map((m) => ({ label: m.name, value: m.id }))}
+              options={(members ?? [])
+                .filter((m) =>
+                  ovMemberQuery.trim()
+                    ? m.name.toLowerCase().includes(ovMemberQuery.trim().toLowerCase())
+                    : true,
+                )
+                .map((m) => ({ label: m.name, value: m.id }))}
               onChange={setOvMember}
             />
           </div>

@@ -1,7 +1,7 @@
 import type { PMDatabase } from '@/db/schema'
 import type { AuditEntry } from '@/types'
 import { fromLiveQuery } from '@/data/observable'
-import type { AuditRepository, ProjectRoleRepository } from '@/data/types'
+import type { AuditRepository, ProjectMemberRepository, ProjectRoleRepository } from '@/data/types'
 
 export function createDexieAuditRepository(db: PMDatabase): AuditRepository {
   return {
@@ -23,6 +23,27 @@ export function createDexieProjectRoleRepository(db: PMDatabase): ProjectRoleRep
             return
           }
           await db.projectRoles.put({ id, projectId, memberId, roleId })
+        })
+        .then(() => undefined),
+  }
+}
+
+export function createDexieProjectMemberRepository(db: PMDatabase): ProjectMemberRepository {
+  return {
+    liveAll: () => fromLiveQuery(() => db.projectMembers.toArray()),
+    setMembers: (projectId, memberIds) =>
+      db
+        .transaction('rw', db.projectMembers, async () => {
+          await db.projectMembers.where('projectId').equals(projectId).delete()
+          if (memberIds.length > 0) {
+            await db.projectMembers.bulkPut(
+              memberIds.map((memberId) => ({
+                id: `${projectId}:${memberId}`,
+                projectId,
+                memberId,
+              })),
+            )
+          }
         })
         .then(() => undefined),
   }
