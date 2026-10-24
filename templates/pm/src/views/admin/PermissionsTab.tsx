@@ -55,9 +55,45 @@ const PERM_GROUPS: Array<{ key: DictKey; actions: Action[] }> = [
   { key: 'permGroupAdmin', actions: ['project:manage', 'member:manage'] },
 ]
 
-const ACTION_GROUP: Record<Action, DictKey> = Object.fromEntries(
-  PERM_GROUPS.flatMap((g) => g.actions.map((a) => [a, g.key])),
-) as Record<Action, DictKey>
+/** 只读矩阵按资源分组：每组一张小表（动作 × 三角色），组标题在表上方 */
+function MatrixGroup({ title, actions }: { title: string; actions: Action[] }) {
+  const ref = useRef<TableHost>(null)
+  const rows = useMemo(
+    () =>
+      actions.map((action) => ({
+        id: action,
+        action: t(PERM_LABEL[action]),
+        ...Object.fromEntries(
+          MATRIX_ROLES.map((role) => [role, can({ id: 'matrix', role }, action) ? '✓' : '—']),
+        ),
+      })),
+    [actions],
+  )
+  const columns = useMemo<Col[]>(
+    () => [
+      { key: 'action', title: t('adminPermAction') },
+      ...MATRIX_ROLES.map((role) => ({
+        key: role,
+        title: roleLabel(role),
+        align: 'center' as const,
+        render: (row: Record<string, unknown>) => String(row[role] ?? ''),
+      })),
+    ],
+    [],
+  )
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    el.columns = columns
+    el.data = rows
+  }, [columns, rows])
+  return (
+    <section className="perm-matrix-group">
+      <p className="perm-group-title">{title}</p>
+      <oas-table ref={ref} className="admin-perm-table" row-key="id" />
+    </section>
+  )
+}
 
 const AUDIT_LABEL: Record<string, DictKey> = {
   'role.create': 'auditRoleCreate',
@@ -87,7 +123,6 @@ export function PermissionsTab({ currentUser }: { currentUser: string }) {
     projects: projectsRepo,
     members: membersRepo,
   } = useRepositories()
-  const tableRef = useRef<TableHost>(null)
   const roles = useObservable(() => rolesRepo.liveAll(), [rolesRepo])
   const audit = useObservable(() => auditRepo.liveRecent(12), [auditRepo])
   const assignments = useObservable(() => projectRolesRepo.liveAll(), [projectRolesRepo])
@@ -240,40 +275,6 @@ export function PermissionsTab({ currentUser }: { currentUser: string }) {
   }
 
   // 内置三角色只读矩阵（保持原有口径：14 行 × 3 列）
-  const rows = useMemo(
-    () =>
-      ACTIONS.map((action) => ({
-        id: action,
-        action: t(PERM_LABEL[action]),
-        category: t(ACTION_GROUP[action]),
-        ...Object.fromEntries(
-          MATRIX_ROLES.map((role) => [role, can({ id: 'matrix', role }, action) ? '✓' : '—']),
-        ),
-      })),
-    [],
-  )
-
-  const columns = useMemo<Col[]>(
-    () => [
-      { key: 'action', title: t('adminPermAction') },
-      { key: 'category', title: t('permColCategory') },
-      ...MATRIX_ROLES.map((role) => ({
-        key: role,
-        title: roleLabel(role),
-        align: 'center' as const,
-        render: (row: Record<string, unknown>) => String(row[role] ?? ''),
-      })),
-    ],
-    [],
-  )
-
-  useEffect(() => {
-    const el = tableRef.current
-    if (!el) return
-    el.columns = columns
-    el.data = rows
-  }, [columns, rows])
-
   return (
     <div className="admin-crud-page" data-testid="admin-tab-permissions">
       <h1 className="page-h1">{t('adminPermTitle')}</h1>
@@ -537,12 +538,11 @@ export function PermissionsTab({ currentUser }: { currentUser: string }) {
 
       <div className="admin-panel">
         <p className="admin-panel-title">{t('adminPermTitle')}</p>
-        <oas-table
-          ref={tableRef}
-          className="admin-perm-table"
-          row-key="id"
-          data-testid="admin-permissions-matrix"
-        />
+        <div className="perm-matrix-groups" data-testid="admin-permissions-matrix">
+          {PERM_GROUPS.map((group) => (
+            <MatrixGroup key={group.key} title={t(group.key)} actions={group.actions} />
+          ))}
+        </div>
         <p className="admin-hint">{t('adminPermNote')}</p>
       </div>
     </div>

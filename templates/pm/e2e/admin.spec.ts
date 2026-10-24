@@ -342,9 +342,9 @@ test('A10 权限矩阵：行数与 ACTIONS 一致，viewer×新建只读为 —�
   await expect(matrix).toBeVisible()
   const rows = matrix.locator('tbody tr')
   await expect(rows).toHaveCount(14, { timeout: 10_000 })
-  const viewerCell = rows.filter({ hasText: '新建 Issue' }).first().locator('td').nth(2)
+  const viewerCell = rows.filter({ hasText: '新建 Issue' }).first().locator('td').nth(1)
   await expect(viewerCell).toHaveText('—')
-  const adminCells = matrix.locator('tbody tr td:nth-child(5)')
+  const adminCells = matrix.locator('tbody tr td:nth-child(4)')
   await expect(adminCells).toHaveCount(14)
   for (const cell of await adminCells.all()) {
     expect(await cell.textContent()).toContain('✓')

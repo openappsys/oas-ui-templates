@@ -2702,3 +2702,9 @@ oas-drawer::part(close):focus-visible {
   font-weight: 600;
   color: var(--oas-color-text-secondary, #64748b);
 }
+
+.perm-matrix-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
