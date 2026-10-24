@@ -683,10 +683,6 @@ function Workspace({
           collapseKey: 'cycles',
           children: cycleRows,
         },
-        // 「清除筛选」只在有生效筛选时出现（无筛选可清就不占位）
-        ...(filtersActive
-          ? [{ value: 'filter:clear', kind: 'clear' as const, label: t('clearFilters') }]
-          : []),
       ],
     })
   }
@@ -1020,26 +1016,41 @@ function Workspace({
                 onDeleteSavedView={handleDeleteSavedView}
                 trailing={
                   // 成员筛选在筛选区末尾（一项可搜索多选，不铺成每个成员一行）；
-                  // 与顶部筛选栏共用 assigneeFilter
+                  // 「清除全部筛选」放在所有筛选组之后，作用于全部维度（不是只清成员）
                   sidebarFilters ? (
-                    <div className="side-filters" data-testid="side-filters">
-                      <span className="side-filters-label">
-                        <span className="side-filters-icon">
-                          <oas-icon name="filter" size={16} />
+                    <>
+                      <div className="side-filters" data-testid="side-filters">
+                        <span className="side-filters-label">
+                          <span className="side-filters-icon">
+                            <oas-icon name="filter" size={16} />
+                          </span>
+                          <span className="side-filters-text">{t('members')}</span>
                         </span>
-                        <span className="side-filters-text">{t('members')}</span>
-                      </span>
-                      <OMultiSelect
-                        testid="side-filter-assignee"
-                        label={t('members')}
-                        searchLabel={t('searchMembers')}
-                        placeholder={t('allMembers')}
-                        maxTagCount={1}
-                        value={filters.assigneeFilter}
-                        options={assigneeFilterOptions}
-                        onChange={(v) => setF('assigneeFilter', v)}
-                      />
-                    </div>
+                        <OMultiSelect
+                          testid="side-filter-assignee"
+                          label={t('members')}
+                          searchLabel={t('searchMembers')}
+                          placeholder={t('allMembers')}
+                          maxTagCount={1}
+                          value={filters.assigneeFilter}
+                          options={assigneeFilterOptions}
+                          onChange={(v) => setF('assigneeFilter', v)}
+                        />
+                      </div>
+                      {filtersActive && (
+                        <button
+                          type="button"
+                          className="side-clear"
+                          data-testid="filter-clear"
+                          onClick={clearFilters}
+                        >
+                          <span className="side-clear-icon">
+                            <oas-icon name="close" size={16} />
+                          </span>
+                          <span className="side-clear-text">{t('clearFilters')}</span>
+                        </button>
+                      )}
+                    </>
                   ) : null
                 }
               />

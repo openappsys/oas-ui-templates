@@ -63,7 +63,7 @@ const dict = {
     sort: '排序',
     group: '分组',
     priority: '优先级',
-    clearFilters: '清除筛选',
+    clearFilters: '清除全部筛选',
     // 筛选位置偏好（顶栏 segmented）：侧栏 / 内容区顶部 / 两处都显示
     filterPlacement: '筛选位置',
     placementSidebar: '侧栏',
@@ -418,7 +418,7 @@ const dict = {
     sort: 'Sort',
     group: 'Group',
     priority: 'Priority',
-    clearFilters: 'Clear filters',
+    clearFilters: 'Clear all filters',
     filterPlacement: 'Filter placement',
     placementSidebar: 'Sidebar',
     placementTopbar: 'Top',

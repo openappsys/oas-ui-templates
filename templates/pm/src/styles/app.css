@@ -905,6 +905,41 @@ body {
   margin-left: 31px;
 }
 
+/* 清除全部筛选：筛选区末尾的一行（不属于任何单个组），只在一项筛选生效时出现 */
+.side-clear {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: var(--oas-control-height-lg, 40px);
+  margin-top: var(--oas-space-1, 4px);
+  padding: 0 8px;
+  border: none;
+  border-radius: var(--oas-radius-sm, 6px);
+  background: none;
+  color: var(--oas-color-text-secondary, #64748b);
+  font: inherit;
+  font-size: var(--oas-font-size-sm, 13px);
+  text-align: left;
+  cursor: pointer;
+}
+.side-clear:hover {
+  background: var(--oas-color-bg-hover, #f1f5f9);
+  color: var(--oas-color-text-primary, #1f2329);
+}
+.side-clear:focus-visible {
+  outline: 2px solid var(--oas-color-primary, #0b6cff);
+  outline-offset: -2px;
+}
+.side-clear-icon {
+  display: flex;
+  justify-content: center;
+  width: 32px;
+  flex: none;
+}
+.side-clear-text {
+  margin-left: 12px;
+}
+
 /* ── 分组 ── */
 .issue-group-title {
   margin: 0;

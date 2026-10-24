@@ -303,10 +303,17 @@ test('S9 侧栏分区：导航在上、筛选在下，成员控件在筛选区�
     '分区顺序',
   ).toEqual(order)
 
-  // 无生效筛选时「清除筛选」行不出现；加上筛选后出现在筛选区
-  await expect(sideItem(page, 'filter:clear')).toHaveCount(0)
+  // 无生效筛选时「清除全部筛选」不出现；加上筛选后出现在筛选区末尾（成员组之后）
+  await expect(page.getByTestId('filter-clear')).toHaveCount(0)
   await sideRow(page, '待规划').click()
-  await expect(sideItem(page, 'filter:clear')).toBeVisible()
+  await expect(page.getByTestId('filter-clear')).toBeVisible()
+  expect(
+    await page.getByTestId('filter-clear').evaluate((el) => {
+      const member = document.querySelector('[data-testid=side-filters]')
+      return !!(member && member.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING)
+    }),
+    '清除全部筛选在成员组之后',
+  ).toBe(true)
 
   // 成员控件是筛选区最后一项：走组件默认插槽（.body），排在 nav（含迭代/清除）之后，
   // 不再使用 footer slot，也不钉底——和筛选保持同一组织
@@ -403,9 +410,9 @@ test('S11 高亮分级：当前视图实底，生效筛选浅底 + 左色条', a
   // 项目/视图的高亮不受筛选影响
   expect(await bg('project:project-1')).not.toBe('rgba(0, 0, 0, 0)')
 
-  // 清除筛选行：一次清掉状态
-  await sideItem(page, 'filter:clear').click()
+  // 清除全部筛选：一次清掉状态
+  await page.getByTestId('filter-clear').click()
   await expect(sideItem(page, 'status:all')).toHaveAttribute('aria-pressed', 'true')
   expect(await bg('status:backlog')).toBe('rgba(0, 0, 0, 0)')
-  await expect(sideItem(page, 'filter:clear')).toHaveCount(0)
+  await expect(page.getByTestId('filter-clear')).toHaveCount(0)
 })
