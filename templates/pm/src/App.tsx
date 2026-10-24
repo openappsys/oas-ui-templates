@@ -1023,7 +1023,12 @@ function Workspace({
                   // 与顶部筛选栏共用 assigneeFilter
                   sidebarFilters ? (
                     <div className="side-filters" data-testid="side-filters">
-                      <span className="side-filters-label">{t('members')}</span>
+                      <span className="side-filters-label">
+                        <span className="side-filters-icon">
+                          <oas-icon name="filter" size={14} />
+                        </span>
+                        <span className="side-filters-text">{t('members')}</span>
+                      </span>
                       <OMultiSelect
                         testid="side-filter-assignee"
                         label={t('members')}

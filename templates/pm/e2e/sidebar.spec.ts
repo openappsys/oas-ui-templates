@@ -268,7 +268,7 @@ test('S6 折叠 rail：240→56 收窄、行存活、角标仍在，再展开恢
   })
 })
 
-test('S9 侧栏分区：导航在上、筛选在下，成员控件在组件插槽内钉底', async ({ page }) => {
+test('S9 侧栏分区：导航在上、筛选在下，成员控件在筛选区末尾', async ({ page }) => {
   await waitForSeed(page)
   // 分区顺序：项目 → 视图 → 已保存视图 → 分隔线 → 筛选（含状态/优先级/迭代）
   const order = await page.getByTestId('side-list').evaluate((nav) => {
@@ -308,23 +308,28 @@ test('S9 侧栏分区：导航在上、筛选在下，成员控件在组件插�
   await sideRow(page, '待规划').click()
   await expect(sideItem(page, 'filter:clear')).toBeVisible()
 
-  // 成员控件走 oas-sidebar 默认插槽（组件内部）；钉底靠注入的 .body sticky，
-  // 位置在组件折叠条（«）上方，不随筛选列表滚走
-  const footer = await page.getByTestId('side-filters').evaluate((el) => {
+  // 成员控件是筛选区最后一项：走组件默认插槽（.body），排在 nav（含迭代/清除）之后，
+  // 不再使用 footer slot，也不钉底——和筛选保持同一组织
+  const member = await page.getByTestId('side-filters').evaluate((el) => {
     const host = el.closest('oas-sidebar')
     const root = host?.shadowRoot
-    const body = root?.querySelector('.body')
-    const toggle = root?.querySelector('[part="toggle"]')
+    const body = root?.querySelector<HTMLElement>('[part="body"]')
+    const slot = (el as HTMLElement).assignedSlot
+    const foot = root?.querySelector<HTMLElement>('[part="foot"]')
+    const prev = body?.previousElementSibling
     return {
       parentTag: el.parentElement?.tagName ?? '',
-      bodyPos: body ? getComputedStyle(body).position : '',
-      bodyBottom: body?.getBoundingClientRect().bottom ?? 0,
-      toggleTop: toggle?.getBoundingClientRect().top ?? 0,
+      slotName: slot?.getAttribute('name') ?? 'default',
+      slotParentClass: slot?.parentElement?.className ?? '',
+      bodyAfterNav: prev?.tagName === 'NAV' || prev?.className === 'nav',
+      footHidden: foot?.hasAttribute('hidden') ?? false,
     }
   })
-  expect(footer.parentTag).toBe('OAS-SIDEBAR')
-  expect(footer.bodyPos).toBe('sticky')
-  expect(footer.bodyBottom).toBeLessThanOrEqual(footer.toggleTop + 1)
+  expect(member.parentTag).toBe('OAS-SIDEBAR')
+  expect(member.slotName).toBe('default')
+  expect(member.slotParentClass).toBe('body')
+  expect(member.bodyAfterNav).toBe(true)
+  expect(member.footHidden).toBe(true)
 })
 
 test('S10 分组折叠：状态/优先级/迭代各自可折叠，刷新后保持', async ({ page }) => {

@@ -135,31 +135,6 @@ const TIER_STYLES = `
     color: var(--oas-color-text-secondary);
     font-size: var(--oas-font-size-sm, 13px);
   }
-  /* 默认插槽（成员筛选）钉底：内容被组件包在 .body 里，sticky 必须挂在 .body 上，
-     否则会被 .body 的自身高度限位、钉不到滚动视口底部。
-     组件若后续提供 footer slot，可改回公开 API。 */
-  .body {
-    position: sticky;
-    bottom: 0;
-    z-index: 2;
-    background: var(--oas-color-bg-elevated, #ffffff);
-    box-shadow: 0 -10px 18px -14px color-mix(in srgb, #000 22%, transparent);
-  }
-  /* 钉底栏上缘渐隐：滚动内容从下方穿过时不是硬切一行 */
-  .body::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: -18px;
-    height: 18px;
-    pointer-events: none;
-    background: linear-gradient(
-      to top,
-      var(--oas-color-bg-elevated, #ffffff) 12%,
-      transparent 100%
-    );
-  }
 `
 
 function ensureTierStyles(root: ShadowRoot | null): void {
@@ -338,7 +313,7 @@ export function SideList({
 
   return (
     <oas-sidebar ref={barRef} data-testid="side-list" shortcut="">
-      {/* 成员筛选走组件默认插槽，sticky 钉在滚动区底部（在组件自带折叠条上方） */}
+      {/* 成员筛选是筛选区最后一项：走组件默认插槽（紧接迭代/清除之后，同一滚动区） */}
       {trailing}
     </oas-sidebar>
   )

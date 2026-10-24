@@ -840,38 +840,67 @@ body {
   width: 72px;
 }
 
-/* 成员筛选：走 oas-sidebar 默认插槽 + sticky 钉底（在组件折叠条上方），
-   滚动时始终可见；折叠成 rail 时隐藏 */
-.side-panel:has(oas-sidebar[collapsed]) .side-filters {
-  display: none;
-}
-
-/* 侧栏成员筛选（sticky 由 SideList 注入到组件 .body，见 TIER_STYLES） */
+/* 成员筛选：筛选区最后一个组（oas-sidebar 默认插槽，紧接迭代/清除之后）。
+   缩进对齐组件组标题（图标 x=28 / 文案 x=72），下拉对齐子项（x≈51），左侧接组引导线 */
 .side-filters {
-  background: var(--oas-color-bg-elevated, #ffffff);
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  margin: 6px 8px 8px;
-  padding: 8px 2px 2px;
-  border-top: 1px solid var(--oas-color-border, #e2e8f0);
+  margin-top: 2px;
+  padding-top: 2px;
+}
+.side-filters::before {
+  content: "";
+  position: absolute;
+  left: 24px;
+  top: 2px;
+  bottom: 6px;
+  width: 1px;
+  background: var(--oas-color-border, #e2e8f0);
+  pointer-events: none;
+}
+
+/* 滚动区底部渐隐（« 上方），提示筛选还有内容；rail / 窄屏不显示 */
+.side-panel {
+  position: relative;
+}
+.side-panel::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 48px;
+  height: 20px;
+  pointer-events: none;
+  background: linear-gradient(to top, var(--oas-color-bg-elevated, #ffffff) 10%, transparent 100%);
+}
+.side-panel:has(oas-sidebar[collapsed])::after {
+  display: none;
 }
 
 .side-filters-label {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.4px;
-  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  height: 30px;
+  padding-left: 8px;
+  font-size: var(--oas-font-size-sm, 13px);
+  font-weight: 400;
   color: var(--oas-color-text-secondary, #64748b);
+}
+.side-filters-icon {
+  display: flex;
+  justify-content: center;
+  width: 32px;
+  flex: none;
+}
+.side-filters-text {
+  margin-left: 12px;
 }
 
 .side-filters oas-select {
-  width: 100%;
-}
-
-/* 折叠 rail（56px）放不下控件：与视图切换同样收起 */
-.side-panel:has(oas-sidebar[collapsed]) .side-filters {
-  display: none;
+  width: calc(100% - 31px);
+  margin-left: 31px;
 }
 
 /* ── 分组 ── */
@@ -1740,7 +1769,11 @@ oas-drawer::part(close):focus-visible {
   .side-panel oas-sidebar::part(badge) {
     display: none;
   }
+  /* 窄屏 rail 放不下成员控件；底部渐隐也不显示 */
   .side-filters {
+    display: none;
+  }
+  .side-panel::after {
     display: none;
   }
   .tb-search {
