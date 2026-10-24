@@ -216,6 +216,92 @@ test('RL4 权限页可用性：复制内置角色、组全选/取消、角色搜
   const auditFilter = page.getByTestId('audit-filter').locator('input')
   await auditFilter.fill('副本')
   await expect(page.getByTestId('audit-table')).toContainText(/副本|copy/)
+
+  // 导出当前筛选结果（CSV）
+  const downloadPromise = page.waitForEvent('download')
+  await page.getByTestId('audit-export').click()
+  expect((await downloadPromise).suggestedFilename()).toBe('pm-audit.csv')
+
   await auditFilter.fill('绝不存在的记录zz')
   await expect(page.getByTestId('audit-no-match')).toBeVisible()
+})
+
+test('RL5 角色详情分配成员：分配、移除回退角色、管理员至少保留一人', async ({ page }) => {
+  await waitForSeed(page)
+  await openPermissions(page)
+
+  // 复制内置管理员，得到一个 0 成员的自定义角色
+  await page.getByTestId('perm-role-admin').click()
+  await page.getByTestId('perm-role-duplicate').click()
+  const chip = page.locator('.perm-role-chip').filter({ hasText: /副本|copy/ })
+  await expect(chip).toBeVisible({ timeout: 10_000 })
+  const rid = ((await chip.getAttribute('data-testid')) ?? '').replace('perm-role-', '')
+  expect(rid).not.toBe('')
+
+  const setMembers = (ids: string[]) =>
+    page.getByTestId('perm-assign-members').evaluate((el, value) => {
+      ;(el as HTMLElement & { value?: string[] }).value = value
+      el.dispatchEvent(new CustomEvent('oas-change', { bubbles: true, detail: { value } }))
+    }, ids)
+
+  // 分配 member-3
+  await page.getByTestId('perm-assign-open').click()
+  await expect(page.getByTestId('perm-assign-modal')).toHaveAttribute('visible', /.*/)
+  await setMembers(['member-3'])
+  await page.getByTestId('perm-assign-save').click()
+  await expect(page.getByTestId('perm-assign-modal')).not.toHaveAttribute('visible', /.*/, {
+    timeout: 5000,
+  })
+  await expect(page.getByTestId('perm-assigned')).toContainText('1')
+
+  await page.getByTestId('admin-nav-members').click()
+  await expect
+    .poll(
+      () =>
+        page
+          .getByTestId('admin-member-role-member-3')
+          .evaluate((el) => (el as HTMLElement & { value?: string }).value),
+      { timeout: 10_000 },
+    )
+    .toBe(rid)
+
+  // 移除（回退为只读）
+  await page.getByTestId('admin-nav-permissions').click()
+  await page.getByTestId(`perm-role-${rid}`).click()
+  await page.getByTestId('perm-assign-open').click()
+  await setMembers([])
+  await page.getByTestId('perm-assign-fallback').evaluate((el) => {
+    ;(el as HTMLElement & { value?: string }).value = 'viewer'
+    el.dispatchEvent(new CustomEvent('oas-change', { bubbles: true, detail: { value: 'viewer' } }))
+  })
+  await page.getByTestId('perm-assign-save').click()
+  await page.getByTestId('admin-nav-members').click()
+  await expect
+    .poll(
+      () =>
+        page
+          .getByTestId('admin-member-role-member-3')
+          .evaluate((el) => (el as HTMLElement & { value?: string }).value),
+      { timeout: 10_000 },
+    )
+    .toBe('viewer')
+
+  // 管理员不能被全部移除
+  await page.getByTestId('admin-nav-permissions').click()
+  await page.getByTestId('perm-role-admin').click()
+  await page.getByTestId('perm-assign-open').click()
+  await setMembers([])
+  await page.getByTestId('perm-assign-save').click()
+  await expect(page.getByTestId('perm-assign-error')).toContainText(/至少|at least/i, {
+    timeout: 10_000,
+  })
+  await page.getByTestId('perm-assign-cancel').click()
+
+  // 批量分配写审计
+  await page
+    .getByTestId('perm-tabs')
+    .getByRole('tab', { name: /审计|Audit/ })
+    .click()
+  await page.getByTestId('audit-filter').locator('input').fill('副本')
+  await expect(page.getByTestId('audit-table')).toContainText(/调整成员角色|Changed member role/)
 })

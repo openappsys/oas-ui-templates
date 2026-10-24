@@ -5,7 +5,7 @@ import type { MemberRole, Role } from '@/types'
 import { can, builtinPermissions, type Action } from '@/permission/policy'
 import { useRepositories } from '@/data/context'
 import { useObservable } from '@/data/use-observable'
-import { OCheckbox, OSelect, OTabs } from '@/components/oas-wrappers'
+import { OCheckbox, OMultiSelect, OSelect, OTabs } from '@/components/oas-wrappers'
 
 type Col = {
   key: string
@@ -139,7 +139,8 @@ export function PermissionsTab({ currentUser }: { currentUser: string }) {
     members: membersRepo,
   } = useRepositories()
   const roles = useObservable(() => rolesRepo.liveAll(), [rolesRepo])
-  const audit = useObservable(() => auditRepo.liveRecent(20), [auditRepo])
+  const [auditLimit, setAuditLimit] = useState(20)
+  const audit = useObservable(() => auditRepo.liveRecent(auditLimit), [auditRepo, auditLimit])
   const assignments = useObservable(() => projectRolesRepo.liveAll(), [projectRolesRepo])
   const projects = useObservable(() => projectsRepo.liveAll(), [projectsRepo])
   const members = useObservable(() => membersRepo.liveAll(), [membersRepo])
@@ -156,6 +157,13 @@ export function PermissionsTab({ currentUser }: { currentUser: string }) {
   const [error, setError] = useState('')
   const [saved, setSaved] = useState('')
   const [busy, setBusy] = useState(false)
+
+  // 成员分配弹窗（workspace 角色直接改成员角色；项目角色走「项目访问」）
+  const assignModalRef = useRef<HTMLElement>(null)
+  const [assignIds, setAssignIds] = useState<string[]>([])
+  const [assignFallback, setAssignFallback] = useState('member')
+  const [assignError, setAssignError] = useState('')
+  const [assignBusy, setAssignBusy] = useState(false)
 
   // 项目访问表单
   const [ovProject, setOvProject] = useState('')
@@ -395,8 +403,105 @@ export function PermissionsTab({ currentUser }: { currentUser: string }) {
     return { count: rows.length, names: rows.map((m) => m.name) }
   }, [selected, assignments, members, memberMap, projectMap])
 
-  const effectiveRoleId = ovRole || (members ?? []).find((m) => m.id === ovMember)?.role
-  const effectiveRoleName = roles?.find((r) => r.id === effectiveRoleId)?.name
+  // ── 角色成员分配（workspace 角色）与分配概览 ──
+  const workspaceRoles = useMemo(() => (roles ?? []).filter((r) => r.scope !== 'project'), [roles])
+  const memberOptions = useMemo(
+    () => (members ?? []).map((m) => ({ label: m.name, value: m.id })),
+    [members],
+  )
+  const fallbackOptions = useMemo(
+    () =>
+      workspaceRoles
+        .filter((r) => r.id !== selected?.id)
+        .map((r) => ({
+          label: r.builtin ? builtinLabel(r.id) : r.name,
+          value: r.id,
+        })),
+    [workspaceRoles, selected?.id],
+  )
+  const selectedName = selected
+    ? selected.builtin
+      ? builtinLabel(selected.id)
+      : selected.name
+    : ''
+
+  const openAssign = () => {
+    if (!selected || selected.scope === 'project') return
+    setAssignIds((members ?? []).filter((m) => m.role === selected.id).map((m) => m.id))
+    const opts = workspaceRoles.filter((r) => r.id !== selected.id)
+    // 回退优先「成员」，其次「只读」；避免把被移除的人默认抬成管理员
+    const preferred = ['member', 'viewer'].find((id) => opts.some((r) => r.id === id))
+    setAssignFallback(preferred ?? opts[opts.length - 1]?.id ?? '')
+    setAssignError('')
+    assignModalRef.current?.setAttribute('visible', '')
+  }
+
+  const closeAssign = () => {
+    assignModalRef.current?.removeAttribute('visible')
+  }
+
+  const saveAssign = async () => {
+    if (!selected || assignBusy || selected.scope === 'project') return
+    const roleId = selected.id
+    if (roleId === 'admin' && assignIds.length === 0) {
+      setAssignError(t('permAssignLastAdmin'))
+      return
+    }
+    const current = members ?? []
+    const toAdd = assignIds.filter((id) => current.find((m) => m.id === id)?.role !== roleId)
+    const toRemove = current.filter((m) => m.role === roleId && !assignIds.includes(m.id))
+    if (toAdd.length === 0 && toRemove.length === 0) {
+      closeAssign()
+      return
+    }
+    setAssignBusy(true)
+    setAssignError('')
+    try {
+      await Promise.all([
+        ...toAdd.map((id) => membersRepo.update(id, { role: roleId })),
+        ...toRemove.map((m) => membersRepo.update(m.id, { role: assignFallback })),
+      ])
+      const fallbackRole = workspaceRoles.find((r) => r.id === assignFallback)
+      log(
+        'member.role',
+        selectedName,
+        `+${toAdd.length} / -${toRemove.length} · ${roleDisplay(fallbackRole)}`,
+      )
+      setSaved(t('permAssignSaved'))
+      closeAssign()
+    } catch (e) {
+      setAssignError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setAssignBusy(false)
+    }
+  }
+
+  const assignSummary =
+    selected && !isDraft ? (
+      <div className="perm-assign-summary" data-testid="perm-assigned">
+        <div>
+          <p className="perm-assign-title">
+            {selected.scope === 'project'
+              ? t('permAssignedProjects').replace('{n}', String(assignedTo.count))
+              : t('permAssignedCount').replace('{n}', String(assignedTo.count))}
+          </p>
+          <p className="admin-hint">
+            {assignedTo.names.length > 0
+              ? `${assignedTo.names.slice(0, 6).join('、')}${assignedTo.count > 6 ? '…' : ''}`
+              : t('permAssignNone')}
+          </p>
+        </div>
+        {selected.scope === 'project' ? (
+          <oas-button size="small" data-testid="perm-assign-goto" onClick={() => setTab('access')}>
+            {t('permAssignGoto')}
+          </oas-button>
+        ) : (
+          <oas-button size="small" data-testid="perm-assign-open" onClick={openAssign}>
+            {t('permAssignManage')}
+          </oas-button>
+        )}
+      </div>
+    ) : null
 
   // 生效权限预览：工作区角色 + 项目覆盖 → 最终角色（内置角色显示本地化名称）
   const roleDisplay = (role?: Role) =>
@@ -424,6 +529,37 @@ export function PermissionsTab({ currentUser }: { currentUser: string }) {
     const action = AUDIT_LABEL[e.action] ? t(AUDIT_LABEL[e.action]) : e.action
     return `${actor} ${action} ${e.target} ${e.detail ?? ''}`.toLowerCase().includes(auditFilter)
   })
+
+  const exportAudit = () => {
+    const cell = (v: string) => `"${v.replace(/"/g, '""')}"`
+    const header = [
+      t('auditColTime'),
+      t('auditColActor'),
+      t('auditColAction'),
+      t('auditColTarget'),
+      t('auditColDetail'),
+    ]
+    const lines = auditRows.map((e) =>
+      [
+        new Date(e.at).toLocaleString(),
+        memberMap.get(e.actorId)?.name ?? e.actorId,
+        AUDIT_LABEL[e.action] ? t(AUDIT_LABEL[e.action]) : e.action,
+        e.target,
+        e.detail ?? '',
+      ]
+        .map(cell)
+        .join(','),
+    )
+    const blob = new Blob([`\ufeff${[header.map(cell).join(','), ...lines].join('\n')}`], {
+      type: 'text/csv;charset=utf-8',
+    })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'pm-audit.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   return (
     <div className="admin-crud-page" data-testid="admin-tab-permissions">
@@ -511,9 +647,6 @@ export function PermissionsTab({ currentUser }: { currentUser: string }) {
                   <div>
                     <p className="admin-panel-title">{builtinLabel(selected.id)}</p>
                     <p className="admin-hint">{t('adminPermBuiltinHint')}</p>
-                    <p className="perm-role-meta" data-testid="perm-assigned">
-                      {t('permAssignedCount').replace('{n}', String(assignedTo.count))}
-                    </p>
                   </div>
                   <oas-button
                     size="small"
@@ -523,7 +656,13 @@ export function PermissionsTab({ currentUser }: { currentUser: string }) {
                     {t('permDuplicate')}
                   </oas-button>
                 </div>
+                {assignSummary}
                 <BuiltinMatrix />
+                {saved && (
+                  <oas-alert type="success" size="small" data-testid="perm-saved">
+                    {saved}
+                  </oas-alert>
+                )}
               </>
             ) : (
               <>
@@ -542,6 +681,7 @@ export function PermissionsTab({ currentUser }: { currentUser: string }) {
                     {t('permGrantedCount').replace('{n}', String(perms.size))}
                   </span>
                 </div>
+                {assignSummary}
                 <div className="perm-fields">
                   <div className="perm-field">
                     <span>{t('permRoleName')}</span>
@@ -619,15 +759,6 @@ export function PermissionsTab({ currentUser }: { currentUser: string }) {
                     )
                   })}
                 </div>
-
-                {selected && !isDraft && (
-                  <p className="admin-hint" data-testid="perm-assigned">
-                    {t('permAssignedCount').replace('{n}', String(assignedTo.count))}
-                    {assignedTo.names.length > 0
-                      ? ` · ${assignedTo.names.slice(0, 4).join('、')}`
-                      : ''}
-                  </p>
-                )}
 
                 {error && (
                   <oas-alert type="error" size="small" data-testid="perm-error">
@@ -769,49 +900,74 @@ export function PermissionsTab({ currentUser }: { currentUser: string }) {
           <div className="perm-section-head">
             <div>
               <p className="admin-panel-title">{t('auditTitle')}</p>
-              <p className="admin-hint">{t('auditRecentHint')}</p>
+              <p className="admin-hint">
+                {t('auditRecentHint').replace('{n}', String(auditLimit))}
+              </p>
             </div>
-            <oas-input
-              value={auditQuery}
-              aria-label={t('auditFilterPlaceholder')}
-              placeholder={t('auditFilterPlaceholder')}
-              data-testid="audit-filter"
-              onInput={(e) =>
-                setAuditQuery((e.target as HTMLElement & { value?: string }).value ?? '')
-              }
-            />
+            <div className="audit-tools">
+              <oas-input
+                value={auditQuery}
+                aria-label={t('auditFilterPlaceholder')}
+                placeholder={t('auditFilterPlaceholder')}
+                data-testid="audit-filter"
+                onInput={(e) =>
+                  setAuditQuery((e.target as HTMLElement & { value?: string }).value ?? '')
+                }
+              />
+              <oas-button
+                size="small"
+                data-testid="audit-export"
+                disabled={auditRows.length === 0 ? '' : undefined}
+                onClick={exportAudit}
+              >
+                {t('auditExport')}
+              </oas-button>
+            </div>
           </div>
           {(audit ?? []).length > 0 ? (
             auditRows.length > 0 ? (
-              <div className="audit-table" data-testid="audit-table">
-                <div className="audit-row audit-head" aria-hidden="true">
-                  <span>{t('auditColTime')}</span>
-                  <span>{t('auditColActor')}</span>
-                  <span>{t('auditColAction')}</span>
-                  <span>{t('auditColTarget')}</span>
-                  <span>{t('auditColDetail')}</span>
-                </div>
-                {auditRows.map((e) => (
-                  <div key={e.id} className="audit-row">
-                    <span className="audit-time">
-                      {new Date(e.at).toLocaleString(undefined, {
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </span>
-                    <span className="audit-actor">
-                      {memberMap.get(e.actorId)?.name ?? e.actorId}
-                    </span>
-                    <span className="audit-action">
-                      {AUDIT_LABEL[e.action] ? t(AUDIT_LABEL[e.action]) : e.action}
-                    </span>
-                    <span className="audit-target">{e.target}</span>
-                    <span className="audit-detail">{e.detail ?? '—'}</span>
+              <>
+                <div className="audit-table" data-testid="audit-table">
+                  <div className="audit-row audit-head" aria-hidden="true">
+                    <span>{t('auditColTime')}</span>
+                    <span>{t('auditColActor')}</span>
+                    <span>{t('auditColAction')}</span>
+                    <span>{t('auditColTarget')}</span>
+                    <span>{t('auditColDetail')}</span>
                   </div>
-                ))}
-              </div>
+                  {auditRows.map((e) => (
+                    <div key={e.id} className="audit-row">
+                      <span className="audit-time">
+                        {new Date(e.at).toLocaleString(undefined, {
+                          month: '2-digit',
+                          day: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </span>
+                      <span className="audit-actor">
+                        {memberMap.get(e.actorId)?.name ?? e.actorId}
+                      </span>
+                      <span className="audit-action">
+                        {AUDIT_LABEL[e.action] ? t(AUDIT_LABEL[e.action]) : e.action}
+                      </span>
+                      <span className="audit-target">{e.target}</span>
+                      <span className="audit-detail">{e.detail ?? '—'}</span>
+                    </div>
+                  ))}
+                </div>
+                {(audit ?? []).length >= auditLimit && (
+                  <div className="audit-more">
+                    <oas-button
+                      size="small"
+                      data-testid="audit-more"
+                      onClick={() => setAuditLimit((n) => n + 20)}
+                    >
+                      {t('auditLoadMore')}
+                    </oas-button>
+                  </div>
+                )}
+              </>
             ) : (
               <p className="admin-hint" data-testid="audit-no-match">
                 {t('auditNoMatch')}
@@ -824,6 +980,57 @@ export function PermissionsTab({ currentUser }: { currentUser: string }) {
           )}
         </div>
       )}
+
+      <oas-modal
+        ref={assignModalRef}
+        no-footer
+        className="perm-assign-modal"
+        data-testid="perm-assign-modal"
+      >
+        <div className="create-body">
+          <h2 className="profile-title">{selectedName}</h2>
+          <p className="profile-hint">{t('permAssignHint')}</p>
+          <OMultiSelect
+            testid="perm-assign-members"
+            value={assignIds}
+            options={memberOptions}
+            label={t('permAssignMembers')}
+            searchLabel={t('searchMembers')}
+            placeholder={t('permAssignPlaceholder')}
+            maxTagCount={4}
+            onChange={setAssignIds}
+          />
+          <div className="create-field">
+            <label htmlFor="perm-assign-fallback">{t('permAssignFallback')}</label>
+            <OSelect
+              testid="perm-assign-fallback"
+              ariaLabel={t('permAssignFallback')}
+              value={assignFallback}
+              options={fallbackOptions}
+              onChange={setAssignFallback}
+            />
+          </div>
+          <p className="profile-hint">{t('permAssignFallbackHint')}</p>
+          {assignError && (
+            <p className="create-error" data-testid="perm-assign-error">
+              {assignError}
+            </p>
+          )}
+          <div className="quit-actions">
+            <oas-button data-testid="perm-assign-cancel" onClick={closeAssign}>
+              {t('cancel')}
+            </oas-button>
+            <oas-button
+              type="primary"
+              data-testid="perm-assign-save"
+              disabled={assignBusy ? '' : undefined}
+              onClick={() => void saveAssign()}
+            >
+              {t('save')}
+            </oas-button>
+          </div>
+        </div>
+      </oas-modal>
     </div>
   )
 }

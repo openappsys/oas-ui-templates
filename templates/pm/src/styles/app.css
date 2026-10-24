@@ -2591,6 +2591,27 @@ oas-drawer::part(close):focus-visible {
   font-size: 12px;
   color: var(--oas-color-text-secondary, #64748b);
 }
+.perm-assign-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--oas-color-bg-hover, #f8fafc);
+  border-radius: 8px;
+}
+.perm-assign-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--oas-color-text-primary, #1f2329);
+}
+.perm-assign-summary .admin-hint {
+  margin: 2px 0 0;
+}
+.perm-assign-modal oas-select {
+  width: 100%;
+}
 .perm-role-list .perm-role-chip {
   display: flex;
   flex-wrap: wrap;
@@ -2817,10 +2838,23 @@ oas-drawer::part(close):focus-visible {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  flex-wrap: wrap;
   margin-bottom: 10px;
 }
 .perm-section-head oas-input {
   width: 280px;
+  max-width: 100%;
+}
+.audit-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.audit-more {
+  display: flex;
+  justify-content: center;
+  padding-top: 10px;
 }
 .audit-time {
   font-variant-numeric: tabular-nums;
