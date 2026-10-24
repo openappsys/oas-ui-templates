@@ -7,6 +7,11 @@ This document describes the HTTP API of the PM template. The mock server in
 The API is a demo backend. It keeps all data in memory. It does not persist data. It resets the
 data when the dev server restarts.
 
+The mock is mounted **only by the Vite dev server**. Production builds always use the Dexie
+(IndexedDB) data source; there is no deployable API. The client picks the source at startup
+(`src/data/source.ts`): `localStorage["oas-pm-data"] === "api"` plus `import.meta.env.DEV`, otherwise
+Dexie. API mode also requires a login session (section 2).
+
 ## 1. Conventions
 
 - Base path: `/api`. All bodies are JSON (`content-type: application/json`).
@@ -18,6 +23,8 @@ data when the dev server restarts.
 - Responses use `items` for lists. A list response has the shape `{ "items": [...] }`.
 - Successful writes bump the revision counter (see section 3) and return `{ "ok": true }` unless a
   section below says otherwise.
+- The list **window** is 200 rows (`LIST_WINDOW`). `limit` defaults to 200; the web client grows it
+  by 200 per scroll step (`LIST_WINDOW_STEP`). Search has its own cap of 2000 rows.
 
 ## 2. Authentication
 
@@ -77,15 +84,58 @@ Response: `204` with no body.
 
 ### 2.5 Authorization (who may call what)
 
-| Rule | Effect |
+The mock is no longer "any token can write". Every call resolves the caller's role and checks an
+action id from `src/permission/policy.ts`. The rules are the same as the client policy:
+
+- **Workspace role**: `members.role` points at a built-in role (`admin`, `member`, `viewer`) or a
+  custom role from the `roles` table.
+- **Project override**: `projectRoles` may replace the role inside one project. A workspace admin is
+  never overridden. Project-scoped roles cannot carry workspace actions.
+- **Custom roles** grant their `permissions` set unconditionally. Built-in roles keep the
+  "own issue / own comment" conditions of `can()`.
+
+Action sets:
+
+| Role | May |
 | --- | --- |
-| Any valid token | Read every resource, write issues, comments, activities, saved views and cycles, and mark own notifications read |
-| `role = "admin"` only | All `/api/admin/*` endpoints, `POST/PATCH/DELETE /api/projects*`, `POST/PATCH/DELETE /api/members*`, `POST/PATCH/DELETE /api/roles*`, `PUT /api/project-roles`, `PUT /api/project-members`, `GET|POST /api/audit`, `PUT /api/settings/:key` |
+| `admin` | All 15 actions, in every project and at workspace level |
+| `member` | `issue:create`, `comment:create`, `view:save`, `view:delete`; `issue:edit`, `issue:change-status`, `issue:change-assignee` only when the member is the assignee or reporter; `comment:edit`/`comment:delete` only on their own comments |
+| `viewer` | Read only. Any write returns `403`. |
+| custom role | Exactly its `permissions` list (`project` scope: workspace actions are stripped) |
+
+Endpoint gating:
+
+| Endpoint group | Required action |
+| --- | --- |
+| `GET` issues / comments / activities / saved views / cycles / notifications / settings, `GET /api/revision` | Any valid token (reads are not restricted per row) |
+| `GET /api/roles`, `/api/project-roles`, `/api/project-members` | Any valid token (the client needs them to resolve the caller's effective permissions) |
+| `POST/PATCH/DELETE` issues | action per field/operation (`issue:create`, `issue:edit`, `issue:change-status`, `issue:change-assignee`, `issue:delete`, `bulk:apply`, `bulk:delete`) with `Ctx` = current issue |
+| comments, activities, saved views | `comment:create/edit/delete`, action implied by activity `type`, `view:save` / `view:delete` |
+| `GET /api/issues?deleted=1` | `workspace:manage` |
+| `POST /api/issues/:id/restore` | `issue:delete` or `bulk:delete` for the issue |
+| `DELETE /api/issues/:id/purge` | `workspace:manage` |
+| `POST/PATCH/DELETE /api/projects*`, `/api/cycles*` | `project:manage` |
+| `POST/PATCH/DELETE /api/members*` (except self-profile) | `member:manage` |
+| role change (`PATCH /api/members/:id` with `role`), `POST /api/members` with a role | `workspace:manage` |
+| `POST/PATCH/DELETE /api/roles*`, `PUT /api/settings/:key` | `workspace:manage` |
+| `GET /api/admin/stats|workload|health`, `GET /api/audit` | Any admin capability (`project:manage` OR `member:manage` OR `workspace:manage`) |
+| `GET /api/admin/export` | `workspace:manage` |
+| `POST /api/admin/*` (export/import/reset/wipe) | `workspace:manage` |
+| `POST /api/audit` | Any admin capability |
+| `GET /api/audit` | Any admin capability (project/member/workspace) |
+| `PUT /api/project-roles`, `PUT /api/project-members` | Any admin capability |
 | No token | `401` |
 
-A valid token with a non-admin role on an admin-only endpoint returns `403` with
-`{ "error": "admin role required" }`. The frontend also hides these actions with its client-side
-policy (`src/permission/policy.ts`). The server check is the authority.
+Self-service: `PATCH /api/members/:me` skips the admin gate. Without `member:manage`, only
+`name`, `title`, `timezone` and `avatarColor` are accepted; `email` and `role` are admin-managed
+(`403 "field is admin-managed"`).
+
+A denied call returns `403` with `{ "error": "permission denied" }`. The frontend also hides these
+actions with its client-side policy (`src/permission/policy.ts`). The server check is the authority.
+
+Actor identity: `POST /api/comments` and `POST /api/activities` take the author/actor from the
+session. A body `authorId` / `actorId` is honored only when the caller has `workspace:manage`
+(import/repair scenarios).
 
 ## 3. Change polling
 
@@ -129,7 +179,9 @@ Example: `?projectId=project-1&status=todo,done&priority=urgent`
 
 ### 4.3 Limits
 
-- `limit` defaults to the list window (500) on window queries.
+- `limit` defaults to the list window (**200**) on window queries. The client starts at 200 and adds
+  200 per scroll step. Concrete-cycle reads (`cycle=<id>`) ignore the `updatedAt` window, so old
+  cycles stay complete.
 - `search` scans the whole issue table and returns at most 2000 rows.
 
 ## 5. Issues
@@ -149,7 +201,7 @@ Query parameters:
 | `currentUser` | string | Member ID used by `myOnly` |
 | `sortBy` | enum | `updatedAt` (default), `priority`, `createdAt` |
 | `cycle` | string | Cycle ID, `__current__`, `__none__`, or omitted |
-| `limit` | number | Window size |
+| `limit` | number | Window size (default 200) |
 
 Response `200`: `{ "items": [Issue, …] }`
 
@@ -188,17 +240,21 @@ not change, so a restored row keeps its list position.
 
 Response `200`: `{ "ok": true }`. Error `404`: unknown ID.
 
-Deleted rows are excluded from every query: the list window, `search`, counts, sub-issues,
-relation candidates, created-since, workload, cycle counts, cycle issues, `bulk`, `all`, and the
-dashboard/admin requests. `GET /api/issues/:id` returns `404` for a deleted row.
+Deleted rows are excluded from every query: the list window, `search`, counts (including
+`byPriority`), sub-issues, relation candidates, created-since, workload, cycle counts, cycle issues,
+`bulk`, `all`, and the dashboard/admin requests. `GET /api/issues/:id` returns `404` for a deleted
+row. `PATCH /api/issues/:id` on a deleted row is a silent no-op (still `{ "ok": true }`).
+
+The web client shows a 6-second undo bar after a delete; undo calls `restore`. `bulk-delete` is the
+same soft delete.
 
 ### 5.6.1 Trash endpoints
 
 | Endpoint | Response | Notes |
 | --- | --- | --- |
-| `GET /api/issues?deleted=1` | `{ items }` | Trash list. Sorted by `deletedAt` descending, then by ID descending. Admin-only. |
-| `POST /api/issues/:id/restore` | `{ ok: true }` | Clears `deletedAt`. Admin-only. A row that is not deleted is a no-op. `404` for an unknown ID. |
-| `DELETE /api/issues/:id/purge` | `{ ok: true }` | Physical delete. Admin-only. `409` when the row is not in the trash. `404` for an unknown ID. |
+| `GET /api/issues?deleted=1` | `{ items }` | Trash list. Sorted by `deletedAt` descending, then by ID descending. Requires `workspace:manage` (not just any admin capability). Other query parameters are ignored. |
+| `POST /api/issues/:id/restore` | `{ ok: true }` | Clears `deletedAt`. Requires `workspace:manage`. A row that is not deleted is a no-op. `404` for an unknown ID. |
+| `DELETE /api/issues/:id/purge` | `{ ok: true }` | Physical delete. Requires `workspace:manage`. `409` when the row is not in the trash. `404` for an unknown ID. Cascades: deletes the issue's comments, activities and notifications, and sets `parentId = null` on its sub-issues. |
 
 ### 5.7 `GET /api/issues/:id/sub-issues`
 
@@ -210,7 +266,7 @@ Response `200`: `{ "items": [Issue, …] }` (children by `parentId`, ID ascendin
 | --- | --- | --- |
 | `GET /api/issues/all?limit=` | `{ items }` | All issues, ID ascending, limited |
 | `GET /api/issues/bulk?ids=a,b` | `{ items: [Issue \| null] }` | Positional result; `null` for unknown IDs |
-| `GET /api/issues/counts?projectId=` | `{ total, byStatus: { todo, in_progress, … } }` | Counts over the whole project |
+| `GET /api/issues/counts?projectId=` | `{ total, byStatus, byPriority }` | Counts over the whole project (or `__all__`) after excluding soft-deleted rows. `byStatus` has all five status keys; `byPriority` has `urgent/high/medium/low`. |
 | `GET /api/issues/cycle-counts?projectId=` | `{ items: [{ cycleId, total, done, cancelled }] }` | `cycleId: null` is the "no cycle" bucket; the null bucket comes first |
 | `GET /api/issues/cycle-issues?projectId=&cycleId=` | `{ items }` | Whole cycle, ID ascending |
 | `GET /api/issues/workload?projectId=` | `{ items: [{ memberId, count }] }` | Assignee counts in the project |
@@ -225,74 +281,122 @@ values.
 
 ## 6. Projects
 
+All writes require `project:manage` (section 2.5).
+
 | Endpoint | Body / query | Response | Errors |
 | --- | --- | --- | --- |
 | `GET /api/projects` | – | `{ items }` (ID ascending) | – |
-| `POST /api/projects` | Project object | `201 { ok: true }` | `409` duplicate ID |
+| `POST /api/projects` | Project object | `201 { ok: true }` | `409` duplicate ID or duplicate `key` |
 | `GET /api/projects/:id` | – | `{ project }` | `404` |
-| `PATCH /api/projects/:id` | `{ changes }` | `{ ok: true }` | `404` |
+| `PATCH /api/projects/:id` | `{ changes }` | `{ ok: true }` | `404`, `409` duplicate `key` |
 | `DELETE /api/projects/:id` | – | `{ ok: true }` | `404`, `409` project still has issues |
-| `POST /api/projects/:id/allocate-key` | – | `{ keyNum }` | – |
+| `POST /api/projects/:id/allocate-key` | – | `{ keyNum }` | `404` |
 
 The `allocate-key` call increases `nextKeyNum` by one and returns the used number.
 
+`DELETE` is allowed only when the project has no issue rows (soft-deleted rows count as rows, so an
+empty project must be purged first). It cascades to `projectMembers`, `projectRoles` and `cycles`
+of that project.
+
+The web client, after creating a project, calls `PUT /api/project-members` with every current
+member, so a new project starts with the full workspace directory.
+
 ## 7. Members
+
+Writes require `member:manage`. Creating a member with a `role`, or changing `role`, additionally
+requires `workspace:manage` (prevents a "manage members" holder from minting admins).
 
 | Endpoint | Body / query | Response | Errors |
 | --- | --- | --- | --- |
 | `GET /api/members` | – | `{ items }` (ID ascending) | – |
-| `POST /api/members` | Member object | `201 { ok: true }` | `409` duplicate ID |
+| `POST /api/members` | Member object | `201 { ok: true }` | `403` role without `workspace:manage`, `409` duplicate ID |
 | `GET /api/members/:id` | – | `{ member }` | `404` |
-| `PATCH /api/members/:id` | `{ changes }` | `{ ok: true }` | `400` unknown role, `404`, `409` demoting the last admin |
+| `PATCH /api/members/:id` | `{ changes }` | `{ ok: true }` | `400` unknown role or project-scope role, `403` self-profile field not allowed, `403` role without `workspace:manage`, `404`, `409` demoting the last admin |
 | `DELETE /api/members/:id` | – | `{ ok: true }` | `409` removing the last admin |
 
-`DELETE` also clears the deleted member from every issue assignee. The call is idempotent: an
+`DELETE` clears the member from every issue assignee, deletes the member's `projectMembers` and
+`projectRoles` rows, and **revokes every session of that member**. The call is idempotent: an
 unknown ID returns `{ "ok": true }`.
+
+`PATCH /api/members/:me` is self-service: without `member:manage` only `name`, `title`, `timezone`
+and `avatarColor` are accepted. `email` and `role` are read-only for the member (the profile drawer
+renders email as a disabled field). Assigning a role whose `scope` is `project` as a workspace role
+is rejected with `400`.
 
 ## 7b. Roles
 
 | Endpoint | Body / query | Response | Errors |
 | --- | --- | --- | --- |
-| `GET /api/roles` | – | `{ items }` (ID ascending; built-in + custom) | – |
-| `POST /api/roles` | Role object (`id, name, description, permissions`) | `201 { ok: true }` | `400` missing id/name, `409` duplicate ID |
+| `GET /api/roles` | – | `{ items }` (ID ascending; built-in + custom) | Any valid token (permission resolution) |
+| `POST /api/roles` | Role object (`id, name, description, scope?, permissions`) | `201 { ok: true }` | `400` missing id/name, `409` duplicate ID |
 | `PATCH /api/roles/:id` | `{ changes }` | `{ ok: true }` | `403` built-in role, `404` |
-| `DELETE /api/roles/:id` | – | `{ ok: true }` | `403` built-in role, `404`, `409` role assigned to members |
+| `DELETE /api/roles/:id` | – | `{ ok: true }` | `403` built-in role, `404`, `409` role assigned to members or used by a project override |
 
 `permissions` is an array of action ids from `src/permission/policy.ts`. Built-in roles
-(`admin`, `member`, `viewer`) are read-only; custom roles grant permissions unconditionally.
-`scope` is `workspace` (default) or `project` (only offered as a project override).
-Member assignment uses `PATCH /api/members/:id { changes: { role: "<role id>" } }`.
-Writes require an admin token.
+(`admin`, `member`, `viewer`) are read-only and derive their permissions from `can()`; custom roles
+grant their permission set unconditionally. `scope` is `workspace` (default) or `project` (offered as
+a project override). Member assignment uses `PATCH /api/members/:id { changes: { role: "<role id>" } }`.
+
+- Reads require an admin capability (`project:manage` OR `member:manage` OR `workspace:manage`).
+- Writes require `workspace:manage`.
+- `scope` is **immutable after creation**: `PATCH` ignores it. Creating or updating a `project` role
+  silently strips workspace actions (`project:manage`, `member:manage`, `workspace:manage`).
+- The role matrix in the admin console is display-only for built-in roles; a custom role can be
+  created empty or by duplicating a built-in role.
 
 ## 7c. Project role overrides
 
 | Endpoint | Body / query | Response | Errors |
 | --- | --- | --- | --- |
-| `GET /api/project-roles` | – | `{ items }` (all overrides) | – |
-| `PUT /api/project-roles` | `{ projectId, memberId, roleId }` (`roleId: null` clears) | `{ ok: true }` | `400` unknown role, `404` project/member |
+| `GET /api/project-roles` | – | `{ items }` (all overrides) | Any valid token (permission resolution) |
+| `PUT /api/project-roles` | `{ projectId, memberId, roleId }` (`roleId: null` clears) | `{ ok: true }` | `400` unknown role, `400` role is not project scope, `400` member is not in the project, `400` missing ids, `404` project/member |
 
-An override applies only inside the given project. Workspace admins are never overridden.
-Reads are open to any authenticated member (the client resolves permissions per project);
-writes require an admin token.
+An override applies only inside the given project. **A workspace admin is never overridden.**
+Project roles cannot carry workspace actions, so an override cannot escalate
+`project:manage` / `member:manage` / `workspace:manage`.
+Reads require an admin capability; writes require an admin capability (`project:manage`,
+`member:manage` or `workspace:manage`).
 
 ## 7d. Audit log
 
 | Endpoint | Body / query | Response | Errors |
 | --- | --- | --- | --- |
-| `GET /api/audit?limit=20` | – | `{ items }` (newest first) | – |
+| `GET /api/audit?limit=20` | – | `{ items }` (newest first; default limit 20) | `403` without an admin capability |
 | `POST /api/audit` | `{ id, at, actorId, action, target?, detail? }` | `201 { ok: true }` | `400` missing id/action |
 
 Records role and assignment changes (`role.create`, `role.update`, `role.delete`,
-`member.role`, `projectRole.set`, `projectRole.clear`). Admin token required.
+`member.role`, `projectRole.set`, `projectRole.clear`, `projectMember.set`).
+Reading and writing both require an admin capability; the audit log is not exposed to plain members.
+The permissions page loads 20 rows and appends 20 per click, filters client-side, and exports the
+filtered rows as a UTF-8-BOM CSV (`pm-audit.csv`). There is no retention policy and no
+server-side export.
+
+## 7e. Project members
+
+| Endpoint | Body / query | Response | Errors |
+| --- | --- | --- | --- |
+| `GET /api/project-members` | – | `{ items }` (`projectId` + `memberId`) | Any valid token (assignee scoping) |
+| `PUT /api/project-members` | `{ projectId, memberIds: string[] }` | `{ ok: true }` | `400` unknown member, `404` project, `403` without an admin capability |
+
+Project members scope the assignee picker and the member filter. The workspace directory
+(`GET /api/members`) stays complete for the admin page; new projects are created with every
+current member by the web client. Reads and writes both require an admin capability.
+
+`PUT` replaces the project's member list. It also **prunes the project's role overrides** for
+members that were removed from the list, so an override never applies to a non-member.
 
 ## 8. Comments
 
 | Endpoint | Body / query | Response | Errors |
 | --- | --- | --- | --- |
 | `GET /api/comments?issueId=` | – | `{ items }` created-at ascending | – |
-| `POST /api/comments` | `{ issueId, authorId, body }` | `201 { comment }` | – |
-| `PATCH /api/comments/:id` | `{ body }` | `{ ok: true }` | `404` |
-| `DELETE /api/comments/:id` | – | `{ ok: true }` | `404` |
+| `POST /api/comments` | `{ issueId, authorId?, body }` | `201 { comment }` | `403` without `comment:create`, `404` unknown issue |
+| `PATCH /api/comments/:id` | `{ body }` | `{ ok: true }` | `403` not the author, `404` |
+| `DELETE /api/comments/:id` | – | `{ ok: true }` | `403` not the author, `404` |
+
+`authorId` is taken from the session; a body value is honored only for `workspace:manage` callers.
+Members may edit/delete only their own comments; `admin` and custom roles with the permission may
+edit/delete any comment. A comment write also creates notification rows (section 13).
 
 ## 9. Activities
 
@@ -300,19 +404,24 @@ Records role and assignment changes (`role.create`, `role.update`, `role.delete`
 | --- | --- | --- | --- |
 | `GET /api/activities?issueId=` | – | `{ items }` created-at descending | – |
 | `GET /api/activities?recent=<n>` | – | `{ items }`, newest `n`, default 100 | – |
-| `POST /api/activities` | `{ issueId, actorId, type, field?, from?, to? }` | `201 { ok: true }` | – |
+| `POST /api/activities` | `{ issueId, actorId?, type, field?, from?, to? }` | `201 { ok: true }` | `403` without the matching issue action, `404` unknown issue |
 
 `issueId` wins over `recent` when both are present.
+The activity `type` selects the permission check: `status` → `issue:change-status`, `assignee` →
+`issue:change-assignee`, `comment` / `comment-edit` → `comment:create`, `delete` → `issue:delete`,
+everything else → `issue:edit`. `actorId` comes from the session unless the caller has
+`workspace:manage`. A stored activity also creates notifications (section 13).
 
 ## 10. Saved views
 
 | Endpoint | Body / query | Response | Errors |
 | --- | --- | --- | --- |
 | `GET /api/saved-views` | – | `{ items }` (name ascending) | – |
-| `POST /api/saved-views` | `{ name, filters }` | `201 { ok: true }` | – |
-| `DELETE /api/saved-views/:id` | – | `{ ok: true }` | – |
+| `POST /api/saved-views` | `{ name, filters }` | `201 { ok: true }` | `403` without `view:save` |
+| `DELETE /api/saved-views/:id` | – | `{ ok: true }` | `403` without `view:delete` |
 
-The server stores `filters` as a JSON string. The client parses it on read.
+The server stores `filters` as a JSON string. The client parses it on read. Views are workspace-wide
+(not per member).
 
 ## 11. Cycles
 
@@ -325,6 +434,7 @@ The server stores `filters` as a JSON string. The client parses it on read.
 | `DELETE /api/cycles/:id` | – | `{ ok: true }` | `404` |
 
 `DELETE` does not delete issues. It sets their `cycleId` to `null` and updates `updatedAt`.
+Writes require `project:manage`.
 
 ## 12. Settings
 
@@ -333,8 +443,8 @@ The server stores `filters` as a JSON string. The client parses it on read.
 | `GET /api/settings/:key` | – | `{ found: boolean, value }` | – |
 | `PUT /api/settings/:key` | `{ value }` | `{ ok: true }` | – |
 
-`GET` never returns `404`. A missing key returns `{ "found": false, "value": null }`. `PUT` is
-admin-only.
+`GET` never returns `404`. A missing key returns `{ "found": false, "value": null }`. `PUT` requires
+`workspace:manage`.
 
 ## 13. Notifications
 
@@ -363,7 +473,8 @@ the same points as the activity log:
 - A status change to `done` or `cancelled` sends `status` to the assignee.
 
 No rule notifies the actor. Unassigning an issue notifies nobody. Rows are keyed by receiver, so each
-member sees only their own rows.
+member sees only their own rows. `cycle` and `system` are render-only types; no current rule produces
+them.
 
 ### 13.2 `GET /api/notifications`
 
@@ -375,7 +486,14 @@ Returns the rows of the calling member, newest first.
 
 Response `200`: `{ "items": [ { … } ] }`
 
-The client derives the unread badge from this list (the newest 50 rows).
+The panel shows the newest 50 rows (`NOTIFICATION_LIMIT`). The unread badge uses
+`GET /api/notifications/unread-count`, which returns `{ "count": n }` over **every** unread row
+of the calling member (not just the 50-row panel window). Dexie uses the `memberId` index count.
+The badge renders `99+` above 99.
+
+### 13.2a `GET /api/notifications/unread-count`
+
+Returns `{ "count": number }` for the calling member.
 
 ### 13.3 `POST /api/notifications/:id/read`
 
@@ -398,37 +516,46 @@ Response `200`: `{ "ok": true }`
 
 ## 14. Admin
 
-All admin endpoints are admin-only. A non-admin token gets `403`.
+`GET /api/admin/*` requires an admin capability (`project:manage` OR `member:manage` OR
+`workspace:manage`). `POST /api/admin/*` requires `workspace:manage`. Denials are `403
+{ "error": "permission denied" }`.
 
 | Endpoint | Response |
 | --- | --- |
-| `GET /api/admin/stats` | `{ projects, members, issues, done }` |
+| `GET /api/admin/stats` | `{ projects, members, issues, done }` (soft-deleted rows excluded) |
 | `GET /api/admin/workload` | `{ items: [{ memberId, total, todo, inProgress, done }] }` |
-| `GET /api/admin/health` | `{ items: [{ projectId, name, total, overdue, unassigned, stale }] }` |
+| `GET /api/admin/health` | `{ items: [{ projectId, name, total, overdue, unassigned, stale }] }` (stale = open and untouched for 14 days) |
 | `GET /api/admin/export` | Backup envelope, see below |
 | `POST /api/admin/import` | `{ ok: true }`; body `{ json: "<envelope as string>" }`, `400` on a bad envelope |
 | `POST /api/admin/reset` | `{ ok: true }`; restores the deterministic seed |
-| `POST /api/admin/wipe` | `{ ok: true }`; deletes all rows |
+| `POST /api/admin/wipe` | `{ ok: true }`; body `{ keepMemberId? }`; deletes all business rows |
 
-Backup envelope:
+Backup envelope (`version: 10`, 13 tables):
 
 ```json
 {
   "app": "oas-pm",
-  "version": 9,
+  "version": 10,
   "exportedAt": 1700000000000,
   "tables": { "issues": [], "projects": [], "members": [], "comments": [],
               "savedViews": [], "activities": [], "settings": [], "cycles": [],
-              "notifications": [] }
+              "notifications": [], "roles": [], "audit": [], "projectRoles": [],
+              "projectMembers": [] }
 }
 ```
 
-The export includes soft-deleted rows and keeps their `deletedAt` value. An import restores
-the trash together with the live rows.
+The export includes soft-deleted rows and keeps their `deletedAt` value. An import clears every table
+and restores the envelope (trash included). If the envelope has no roles, the three built-in roles
+are re-added so member roles never point at a missing row.
+
+`wipe` keeps the built-in roles and the `keepMemberId` member (the web client passes the current
+admin), so the admin console remains reachable after a wipe. It does **not** reseed on reload:
+the Dexie seed marker is left in place. `reset` (and the settings page's "reset demo") clears the
+marker and reseeds.
 
 `reset` and `wipe` do not touch sessions. A session stays valid after a wipe. An admin can
-therefore call `reset` again. A new login needs a member row, so `wipe` blocks new logins until
-`reset` runs.
+therefore call `reset` again. A new login needs a member row, so wiping without `keepMemberId`
+blocks new logins until `reset` runs. Deleting a member revokes that member's sessions (section 7).
 
 ## 15. Status codes
 
@@ -439,10 +566,10 @@ therefore call `reset` again. A new login needs a member row, so `wipe` blocks n
 | `204` | Success, no body (logout) |
 | `400` | Malformed body, bad JSON, or a missing required field |
 | `401` | Missing or invalid token, or bad credentials |
-| `403` | Valid token, but the endpoint needs the admin role |
+| `403` | Valid token, but the caller lacks the required action (admin capability, `workspace:manage`, or a write permission) |
 | `404` | Unknown path or unknown resource |
 | `405` | Wrong method for a known path |
-| `409` | Conflict: duplicate ID, last admin, a project that still has issues, or a purge of a row that is not in the trash |
+| `409` | Conflict: duplicate project/member/role ID, duplicate project key, last admin, role still assigned or overridden, a project that still has issues, or a purge of a row that is not in the trash |
 | `500` | Unexpected server error. The mock handler does not produce this code; uncaught errors surface as a Vite error. |
 
 ## 16. Client behavior
@@ -459,14 +586,77 @@ therefore call `reset` again. A new login needs a member row, so `wipe` blocks n
 The list view shows an error block (`data-testid="list-error"`) when the first load fails. The
 retry button subscribes again.
 
-## 7e. Project members
+Both 401 and 403 notices are localized in the UI; the server messages are English and stable for
+logs only.
 
-| Endpoint | Body / query | Response | Errors |
-| --- | --- | --- | --- |
-| `GET /api/project-members` | – | `{ items }` (projectId + memberId) | – |
-| `PUT /api/project-members` | `{ projectId, memberIds: string[] }` | `{ ok: true }` | `400` unknown member, `404` project |
+## 17. Entity shapes
 
-Project members scope the assignee picker and member filter. The workspace directory
-(`GET /api/members`) stays complete for the admin page. Reads are open to authenticated
-members; writes require an admin token.
+These are the row shapes (`src/types/index.ts`) returned by the API and stored in Dexie.
 
+```ts
+type Issue = {
+  id: string
+  projectId: string
+  key: string                       // `${project.key}-${n}`
+  title: string
+  description: string
+  status: 'backlog' | 'todo' | 'in_progress' | 'done' | 'cancelled'
+  priority: 'urgent' | 'high' | 'medium' | 'low'
+  assigneeId: string | null
+  reporterId: string
+  labels: string[]
+  startAt: number | null
+  dueAt: number | null
+  createdAt: number
+  updatedAt: number
+  order: number
+  parentId?: string | null          // one level of sub-issues
+  completedAt?: number | null       // set when status becomes done
+  relations?: Array<{ type: 'blocks' | 'blocked-by' | 'relates'; targetId: string }>
+  cycleId?: string | null           // null/absent = no cycle
+  deletedAt?: number | null         // null/absent = live; set = in trash
+}
+
+type Project = {
+  id: string; name: string; key: string; description: string
+  leadId: string; createdAt: number; nextKeyNum?: number
+}
+
+type Member = {
+  id: string; name: string; email: string; avatarColor: string
+  role: string                      // built-in id or custom role id
+  title?: string; timezone?: string
+}
+
+type Cycle = {
+  id: string; projectId: string; name: string
+  startAt: number; endAt: number    // [startAt, endAt): now >= endAt means ended; UI-created cycles use the end of the chosen day
+  goal?: string; createdAt: number; updatedAt: number
+}
+
+type Role = {
+  id: string; name: string; description: string; builtin: boolean
+  scope?: 'workspace' | 'project'
+  permissions: string[]             // action ids from src/permission/policy.ts
+}
+
+type ProjectRoleAssignment = { id: string; projectId: string; memberId: string; roleId: string }
+type ProjectMember = { id: string; projectId: string; memberId: string }
+```
+
+`Comment`, `SavedView`, `Activity`, `Notification`, `AuditEntry` and `SettingRow` follow
+`src/types/index.ts` and `src/db/schema.ts`.
+
+## 18. Local (Dexie) parity and verification
+
+- The Dexie implementation (`src/data/dexie/*`) exposes the same Repository methods. Soft-delete,
+  trash ordering and cascade behavior match this contract; the trash UI is gated by
+  `workspace:manage`. The list window default is 200 in both sources.
+- The local seed differs from the API seed by design: **local = 2 projects, 8 members, 3 cycles,
+  2 saved views, 100,000 issues** (adjustable via `oas-pm-seed-size`, 1000–100000); **API mock =
+  3 projects, 8 members, 3 cycles, 2,000 issues**. Both use seed `42` and the same saved-view
+  definitions.
+- Typecheck: `pnpm --filter pm exec tsc6 --noEmit` (the TS6 bin is `tsc6`, not `tsc`). Build:
+  `pnpm --filter pm run build` (tsc6 + vite). Unit: `pnpm --filter pm run test` (309 tests).
+  E2E: `pnpm --filter pm exec playwright test` (188 Chromium tests in 27 spec files, `workers: 1`).
+  There is no mobile Playwright project and no size-budget script.

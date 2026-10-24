@@ -1,8 +1,28 @@
 # OAS PM 产品需求文档（PRD）
 
 > 项目：OAS PM（项目管理模板）
-> 版本：v0.2.0（对应 oas-ui 2.6.1）
+> 版本：v0.3.0（2026-10-24，对应 oas-ui 2.6.3）
 > 定位：本地优先（Local-first）的轻量项目管理工具模板，面向演示与二次开发基线
+
+---
+
+## 0. 当前实现快照（2026-10-24）
+
+本节的数字与行为均对应当前代码；与旧版 PRD 冲突处以本节为准。
+
+| 维度 | 现状 |
+|------|------|
+| 数据层 | Dexie（IndexedDB）schema **v14 / 13 张表**；Repository 接口 + React Context 注入，默认 Dexie 实现 |
+| 权限 | **强制生效**：内置 `admin / member / viewer` + 自定义角色（工作区 / 项目作用域）+ 项目级覆盖 + 审计日志 |
+| 管理台 | **7 个页签**：总览 / 项目 / 成员 / 迭代 / 配置（标签·状态·优先级·回收站）/ 权限（角色·访问·审计）/ 设置；页签按权限过滤 |
+| 列表窗口 | `LIST_WINDOW = 200`，触底每次 `+200`；全库搜索命中上限 2000 |
+| 删除 | Issue 为**软删除**（`deletedAt`），6 秒撤销条；管理台回收站可恢复 / 永久删除 |
+| 备份 | 全库 JSON 导出/导入（信封 `version: 10`，13 张表）；支持清空与重置演示数据 |
+| 通知 | 独立 `notifications` 表；面板展示最近 50 条；单条已读 / 全部已读；角标 `99+` |
+| 个人资料 | 姓名 / 职位 / 时区 / 头像色 / 语言自助修改；资料内的邮箱与角色只读 |
+| 演示数据 | 默认 100,000 Issue，可用 `localStorage['oas-pm-seed-size']` 在 1,000–100,000 之间调整；实测 44–134s；e2e 固定 5,000 |
+| API 模式 | 仅开发模式可用（Vite 中间件 + 内存库）；生产构建固定 Dexie |
+| 测试基线 | 311 单测（22 个测试文件）、188 个 Chromium e2e（27 个 spec 文件）；类型检查 `tsc6 --noEmit` |
 
 ---
 
@@ -14,20 +34,31 @@ OAS PM 是 oas-ui-templates 仓库下的一个**前端模板**，用于展示「
 
 ### 1.2 核心价值主张
 
-- **本地优先**：全部数据落在浏览器 IndexedDB，零后端、零登录即可跑通全流程；离线可用、即时响应。
-- **大规模数据可承载**：通过复合索引 + 窗口取数 + 虚拟列表，支撑 **10W~100W 级 Issue** 的流畅浏览与筛选。
-- **四视图一体**：仪表盘（洞察）、列表（精确管理）、看板（拖拽流转）、时间线（排期）覆盖 PM 核心工作方式。
-- **零依赖业务逻辑**：状态流转、活动审计、批量操作、通知等关键行为均在模板内闭环实现，可直接复用。
+- **本地优先**：业务数据落在浏览器 IndexedDB，零后端即可跑通全流程；离线可用、即时响应。
+- **数据量可承载**：复合索引 + 窗口取数（200）+ 虚拟列表，默认演示规模 10 万 Issue（实测载入 44–134s，随机器负载波动）。
+- **六视图一体**：仪表盘、列表、看板、时间线、资源、日程覆盖 PM 常见工作方式。
+- **治理能力内建**：强制权限策略、角色/项目覆盖、审计日志、软删除回收站、全库备份恢复，均在模板内闭环。
+- **两套数据源同契约**：Dexie 实现与开发期 HTTP mock 共用 Repository 接口与权限策略，便于替换为真实后端。
 
-### 1.3 目标用户（演示身份）
+### 1.3 目标用户与权限（已强制生效）
 
-| 角色 | 说明 | 诉求 |
-|------|------|------|
-| 项目管理员（admin） | 项目 Owner | 全局视图、批量处置 |
-| 成员（member） | 日常执行者 | 领任务、改状态、评论协作 |
-| 访客（viewer） | 只读视角 | 浏览、筛选、导出 |
+角色定义在 `roles` 表中：内置 `admin / member / viewer` 只读，自定义角色可编辑权限集合。
 
-> 注：`role` 字段已建模（admin/member/viewer），但**当前仅作身份标签展示，未实现强制权限控制**（见 §6 边界）。
+| 角色 | 权限（当前实现） |
+|------|------------------|
+| 管理员（admin） | 全部 15 个动作；不受项目级覆盖影响 |
+| 成员（member） | 新建 Issue、发评论、保存/删除视图；编辑/改状态/改负责人**仅限自己负责或自己提交的 Issue**；编辑/删除**仅限自己的评论**；不能删除 Issue、不能批量操作、不能进入管理工作区 |
+| 访客（viewer） | 只读：不能写 Issue、评论、视图，不能进入管理区 |
+| 自定义角色 | 按 `permissions` 集合**无条件**授权（不区分「本人」）；`scope = project` 的角色不得包含工作区级动作 |
+| 项目级覆盖 | 成员在某项目内使用覆盖角色；**工作区 admin 永不被覆盖**；项目角色只授予项目内动作 |
+
+- 15 个动作：`issue:create/edit/delete/change-status/change-assignee`、`comment:create/edit/delete`、`view:save/delete`、`bulk:apply/delete`、`project:manage`、`member:manage`、`workspace:manage`。
+- 工作区级动作（`project:manage` / `member:manage` / `workspace:manage`）**只能由工作区角色授予**；项目角色创建/更新时会被过滤。
+- 自定义角色**作用域创建后不可变**；内置角色不可改不可删；角色被成员占用或被项目覆盖引用时不可删除。
+- 管理台入口要求 `member:manage` / `project:manage` / `workspace:manage` 任一；页签进一步过滤。
+- 每次角色/分配变更写入 `audit` 表（权限页可筛选并导出 CSV）。
+
+> API 模式的服务端校验与客户端策略同源（`src/permission/policy.ts`），非仅 UI 拦截；详见 `docs/api.md`。
 
 ---
 
@@ -36,38 +67,56 @@ OAS PM 是 oas-ui-templates 仓库下的一个**前端模板**，用于展示「
 ```
 OAS PM
 ├── 全局框架
-│   ├── 顶栏：品牌 / 身份切换 / 新建 Issue / 导出 CSV / 全库搜索 / 语言切换 / 动态通知 / 关于
-│   └── 侧栏：视图切换（仪表盘/列表/看板/时间线）、项目、我的/全部、状态筛选、保存视图、成员筛选
-├── 四大视图
-│   ├── 仪表盘：统计卡片 + 状态分布 + 成员 Top6 + 近 30 天创建趋势
+│   ├── 顶栏：品牌 / 数据源徽标 / 新建 Issue / 导出 CSV / 全库搜索 / 通知 / 设置菜单 / 身份与个人资料
+│   └── 侧栏：视图切换、项目、我的/全部、状态/优先级/迭代筛选、保存视图、成员筛选
+├── 六大视图
+│   ├── 仪表盘：统计卡 + 状态分布 + 成员 Top6 + 近 30 天趋势 + 迭代燃尽/速率
 │   ├── 列表：虚拟列表 + 排序/分组/筛选 + 多选批量操作
 │   ├── 看板：5 状态列拖拽流转（fractional order）
-│   └── 时间线：甘特图排期 + 拖拽改期 + fs 依赖
+│   ├── 时间线：甘特图排期 + 拖拽改期 + 依赖连线
+│   ├── 资源：成员负载泳道 + 转派 + 一键均载
+│   └── 日程：月/周/议程三档 + 截止日分桶拖拽
 ├── Issue 生命周期
 │   ├── 新建（弹窗）：标题/状态/优先级/负责人
-│   ├── 详情（抽屉）：状态/优先级/负责人/描述/标签/子任务/关联/评论/活动/删除
-│   └── 批量操作：改状态/优先级/负责人/删除
-└── 协作与上下文
-    ├── 评论（@提及、编辑、删除）
-    ├── 活动历史（字段级 diff 审计）
-    ├── 通知（与我相关的最近动态）
-    └── 保存视图（筛选组合快照）
+│   ├── 详情（抽屉）：状态/优先级/负责人/描述/标签/子任务/关联/评论/活动
+│   ├── 删除：软删除 + 6 秒撤销（权限：issue:delete）
+│   └── 批量操作：改状态/优先级/负责人/删除（权限：bulk:apply / bulk:delete）
+├── 协作与上下文
+│   ├── 评论（@提及、编辑、删除）
+│   ├── 活动历史（字段级 diff）
+│   ├── 通知（独立表；未读角标；单条/全部已读）
+│   └── 保存视图（筛选组合快照）
+└── 管理台（7 页签，按权限过滤）
+    ├── 总览：全局统计 / 成员负载 / 项目健康度
+    ├── 项目：CRUD / 负责人 / 项目成员维护
+    ├── 成员：新增 / 删除 / 角色分配
+    ├── 迭代：CRUD / 关闭结转
+    ├── 配置：标签 / 状态 / 优先级矩阵 / 回收站
+    ├── 权限：角色矩阵 / 访问（项目角色覆盖）/ 审计
+    └── 设置：外观 / 语言 / 数据源 / 备份恢复 / 清空 / 重置
 ```
 
 ---
 
 ## 3. 数据模型
 
-### 3.1 实体（IndexedDB 6 张表，Dexie 版本 v5）
+### 3.1 实体（IndexedDB 13 张表，Dexie v14）
 
-| 实体 | 关键字段 | 说明 |
-|------|----------|------|
-| **Issue** | `id, projectId, key, title, description, status, priority, assigneeId, reporterId, labels[], startAt, dueAt, createdAt, updatedAt, order, parentId, completedAt, relations[]` | 核心工作项，支持子任务（一层 `parentId`）与关联（`blocks/blocked-by/relates`） |
-| **Project** | `id, name, key, description, leadId, createdAt, nextKeyNum` | 项目；`nextKeyNum` 用于 Issue key 事务内严格递增 |
-| **Member** | `id, name, email, avatarColor, role` | 成员；`role ∈ {admin, member, viewer}` |
-| **Comment** | `id, issueId, authorId, body, createdAt` | 评论（纯文本 + `@提及` 约定） |
-| **SavedView** | `id, name, filters(JSON), createdAt` | 保存的筛选视图（不含 search） |
-| **Activity** | `id, issueId, actorId, type, field, from, to, createdAt` | 活动审计（字段级 diff） |
+| 表 | 关键字段 | 说明 |
+|----|----------|------|
+| **issues** | `id, projectId, key, title, description, status, priority, assigneeId, reporterId, labels[], startAt, dueAt, createdAt, updatedAt, order, parentId?, completedAt?, relations?, cycleId?, deletedAt?` | 工作项；`parentId` 仅一层子任务；`deletedAt` 缺失/null = 在库；`cycleId` 空 = 未入迭代 |
+| **projects** | `id, name, key, description, leadId, createdAt, nextKeyNum?` | 项目；`key` 唯一；`nextKeyNum` 事务内严格递增 |
+| **members** | `id, name, email, avatarColor, role, title?, timezone?` | 成员；`role` 可指向内置或自定义角色 id |
+| **comments** | `id, issueId, authorId, body, createdAt` | 纯文本评论 + `@提及` 约定 |
+| **savedViews** | `id, name, filters(JSON), createdAt` | 保存的筛选视图（不含 search） |
+| **activities** | `id, issueId, actorId, type, field?, from?, to?, createdAt` | 字段级活动审计 |
+| **settings** | `key, value, updatedAt` | 键值配置（如标签库） |
+| **cycles** | `id, projectId, name, startAt, endAt, goal?, createdAt, updatedAt` | 迭代；状态由 `now` 与区间派生，不落 status |
+| **notifications** | `id, memberId, type, issueId?, actorId?, message?, readAt, createdAt` | 接收者视角的站内通知；`readAt = null` 未读 |
+| **roles** | `id, name, description, builtin, scope?, permissions[]` | 内置只读；`scope ∈ {workspace, project}` |
+| **audit** | `id, at, actorId, action, target, detail?` | 角色/分配等管理变更（只追加） |
+| **projectRoles** | `id, projectId, memberId, roleId` | 项目级角色覆盖；`id = projectId:memberId` |
+| **projectMembers** | `id, projectId, memberId` | 项目成员；负责人候选与成员筛选只取当前项目成员 |
 
 ### 3.2 枚举
 
@@ -75,17 +124,47 @@ OAS PM
 |------|------|
 | IssueStatus | `backlog / todo / in_progress / done / cancelled` |
 | IssuePriority | `urgent / high / medium / low` |
-| MemberRole | `admin / member / viewer` |
+| MemberRole | 内置 `admin / member / viewer`，或自定义角色 id（字符串） |
 | RelationType | `blocks / blocked-by / relates` |
-| ActivityType | `create / status / priority / assignee / labels / description / title / dates / relations / comment / comment-edit / delete` |
+| NotificationType | `mention / assigned / comment / status / cycle / system`（当前产生前四种） |
+| RoleScope | `workspace / project` |
+| ActivityType | `create / status / priority / assignee / labels / description / title / dates / relations / comment / comment-edit / delete`（存储为字符串） |
 
 ### 3.3 索引策略（性能关键）
 
-- `[projectId+status]`、`[projectId+priority]`、`[projectId+assigneeId]`、`[projectId+updatedAt]`：项目维度分类/排序直取。
-- `[projectId+status+updatedAt]`（v2 新增）：状态筛选 + 更新时间排序走 index 游标，避免 10W 级全量载入内存。
-- `createdAt`（v4 新增）：创建趋势/通知范围取数。
-- `parentId`（v5 新增）：子任务列表直取。
-- `[issueId+createdAt]`：评论/活动按 Issue 时序读取。
+v14 的 `issues` 索引：
+`id, projectId, key, status, priority, assigneeId, parentId, cycleId, createdAt, updatedAt, deletedAt,
+[projectId+status], [projectId+priority], [projectId+assigneeId], [projectId+updatedAt], [projectId+status+updatedAt],
+[assigneeId+status], [status+updatedAt], [projectId+cycleId]`
+
+其余表：`projects: id,key`；`members: id,role`；`comments: id,issueId,[issueId+createdAt]`；
+`activities: id,issueId,[issueId+createdAt],createdAt`；`savedViews: id,name`；`settings: key`；
+`cycles: id,projectId,[projectId+startAt]`；
+`notifications: id,memberId,createdAt,[memberId+createdAt],[memberId+readAt]`；
+`roles: id,name`；`audit: id,at,actorId,action`；
+`projectRoles: id,projectId,memberId,[projectId+memberId]`；
+`projectMembers: id,projectId,memberId,[projectId+memberId]`。
+
+要点：
+
+- `[projectId+status+updatedAt]` / `[status+updatedAt]` 支撑「状态筛选 + 更新时间排序」索引直取，10 万级不把全量结果载入内存。
+- `deletedAt` 只索引软删行（IndexedDB 不索引 null/undefined），回收站与计数扣减免去扫全表。
+- `[assigneeId+status]` 支撑成员负载；`[projectId+cycleId]` 支撑迭代直取。
+- 复合索引首字段必须有独立索引（如 `notifications.memberId`、`projectRoles.projectId`），否则 Dexie 建表失败。
+
+### 3.4 级联与不变式
+
+| 操作 | 行为 |
+|------|------|
+| Issue 软删除 | 只写 `deletedAt`，**不改 `updatedAt`**，恢复后回到原排序位置 |
+| Issue 永久删除 | 仅回收站可用；删评论 / 活动 / 通知，子任务 `parentId → null` |
+| 成员删除 | Issue 指派清空；删该成员的 `projectMembers` / `projectRoles`；**最后一名 admin 不可删** |
+| 项目删除 | 项目仍有 Issue 时拒绝；否则级联删 `projectMembers` / `projectRoles` / `cycles` |
+| 项目成员维护 | 保存时移除不再属于该项目的成员的**项目角色覆盖** |
+| 新建项目 | 自动把**当前全部成员**加入项目成员 |
+| 迭代删除 | Issue 退回「未入迭代」（`cycleId = null`），不删 Issue |
+| 角色删除 | 内置角色拒绝；被成员占用或被项目覆盖引用时拒绝 |
+| 清空数据 | 保留内置角色 + 当前管理员；不清 seed 标记，刷新不会重播 |
 
 ---
 
@@ -95,81 +174,106 @@ OAS PM
 
 | 编号 | 功能 | 需求描述 | 验收要点 |
 |------|------|----------|----------|
-| F-01 | 身份切换 | 顶栏头像点击弹窗，8 个成员自由切换；身份持久化到 `localStorage`（`oas-pm-user`） | 切换后「我的」视图、通知、评论作者随之变化 |
-| F-02 | 语言切换 | 中/英一键切换，偏好持久化（`oas-pm-lang`） | 核心 UI 文案双语；刷新后保持 |
-| F-03 | 全库搜索 | 顶栏输入框，按 Key 或标题跨窗口全表匹配（`/` 快捷键聚焦） | 命中前 2000 条封顶；空串恢复窗口列表 |
-| F-04 | CSV 导出 | 导出当前窗口 Issue（Key/标题/状态/优先级/负责人/创建日期） | 带 UTF-8 BOM，Excel 中文不乱码 |
-| F-05 | 快捷键 | `C` 新建、`/` 聚焦搜索、`Esc` 关抽屉 | 输入框聚焦时不劫持 |
-| F-06 | 关于/启动兜底 | 关于弹窗展示版本；IndexedDB 不可用/配额满时展示兜底错误页而非白屏 | 隐私模式/配额满可见友好提示 |
+| F-01 | 身份切换 | 本地模式顶栏头像弹窗切换 8 个成员，持久化 `localStorage['oas-pm-user']`；API 模式改为登录（`user1–8@oas.dev`，口令 `oas`） | 切换后「我的」、通知、评论作者随之变化 |
+| F-02 | 语言切换 | 中/英一键切换，偏好 `oas-pm-lang` | 核心 UI 文案双语；刷新后保持 |
+| F-03 | 全库搜索 | 顶栏输入框，按 Key 或标题子串匹配（`/` 聚焦） | 命中上限 2000；空串恢复窗口列表 |
+| F-04 | CSV 导出 | 导出当前已加载窗口（Key/标题/状态/优先级/负责人/创建日期） | UTF-8 BOM；受当前窗口 200 限制，非全库 |
+| F-05 | 快捷键 | `C` 新建、`/` 聚焦搜索、`?` 帮助、`Esc` 关抽屉/弹层 | 输入框聚焦时不劫持 |
+| F-06 | 启动兜底 | IndexedDB 不可用/配额满时展示错误页而非白屏 | 隐私模式可见友好提示 |
+| F-07 | 主题与筛选位置 | 明/暗/跟随系统；筛选控件可放侧栏 / 顶栏 / 两处 | `oas-pm-theme`、`oas-pm-filters-placement` 持久化 |
+| F-08 | 数据源切换 | 顶栏数据源徽标；仅开发模式可点切「本地 / API」，构建产物只读 | 生产构建固定 Dexie |
 
 ### 4.2 仪表盘（Dashboard）
 
 | 编号 | 功能 | 需求描述 |
 |------|------|----------|
-| F-07 | 统计卡片 | 全部 / Todo / In Progress / Done 四张实时计数（index count，与窗口无关） |
-| F-08 | 状态分布图 | donut 图，按 5 状态计数 |
-| F-09 | 成员 Top6 | bar 图，按成员被分配 Issue 数降序 |
-| F-10 | 创建趋势 | area 图，近 30 天按天聚合（createdAt 索引范围取数） |
+| F-09 | 统计卡片 | 全部 / Todo / In Progress / Done 四张实时计数（索引 count，扣减软删行） |
+| F-10 | 状态分布图 | donut，按 5 状态计数 |
+| F-11 | 成员 Top6 | bar，按成员被分配 Issue 数降序 |
+| F-12 | 创建趋势 | area，近 30 天按天聚合（createdAt 范围） |
+| F-13 | 迭代图表 | 当前迭代燃尽 + 最近 6 期完成量（速率） |
 
 ### 4.3 列表（Issues）
 
 | 编号 | 功能 | 需求描述 | 验收要点 |
 |------|------|----------|----------|
-| F-11 | 虚拟列表 | `oas-virtual-list`，窗口 500 条，滚动即时渲染 | 10W 级流畅滚动，行高固定 44px |
-| F-12 | 排序 | 最近更新 / 优先级 / 创建时间 | 状态筛选 + 更新排序走复合索引 |
-| F-13 | 分组 | 不分组 / 按优先级 / 按负责人；组内预览前 30 条 | 组标题带计数，超出提示 |
-| F-14 | 筛选 | 状态（侧栏）、优先级、负责人、我的/全部 | 侧栏状态/成员计数实时 |
-| F-15 | 多选 | 行首 checkbox，多选后弹出批量操作条 | 全窗口选中集可用 |
-| F-16 | 清除筛选 / 保存视图 | 一键清空；把当前筛选（不含 search）存为命名视图 | 视图侧栏列出，可应用/删除 |
+| F-14 | 虚拟列表 | `oas-virtual-list`，**窗口 200**，触底每次 +200 | 10 万级滚动流畅，行高固定 |
+| F-15 | 排序 | 最近更新 / 优先级 / 创建时间 | 状态筛选 + 更新排序走复合索引 |
+| F-16 | 分组 | 不分组 / 按优先级 / 按负责人；组内预览前 30 条 | 组标题带计数 |
+| F-17 | 筛选 | 项目（含全部项目）/ 状态多选 / 优先级 / 负责人 / 迭代 / 我的 / 搜索 | 侧栏与顶栏同一份状态 |
+| F-18 | 多选 | 行首 checkbox，多选后出现批量条 | 受 `bulk:apply` / `bulk:delete` 约束 |
+| F-19 | 清除筛选 / 保存视图 | 清空筛选；把当前筛选（不含 search）存为命名视图 | 可应用 / 删除；受 `view:save` / `view:delete` |
 
 ### 4.4 看板（Board）
 
 | 编号 | 功能 | 需求描述 | 验收要点 |
 |------|------|----------|----------|
-| F-17 | 状态流转 | 5 状态列，卡片拖拽改状态 | 落库 status + updatedAt |
-| F-18 | 列内排序 | 拖拽重排，采用 fractional order（prev/next 取中值） | 边界 ±1024 步进 |
-| F-19 | 卡片点击 | 打开详情抽屉 | 卡片点击与拖拽不冲突 |
+| F-20 | 状态流转 | 5 状态列，卡片拖拽改状态 | 落库 status + updatedAt；无权限时回弹并提示 |
+| F-21 | 列内排序 | fractional order（prev/next 取中值） | 边界步进 |
+| F-22 | 卡片点击 | 打开详情抽屉 | 与拖拽不冲突 |
 
 ### 4.5 时间线（Timeline）
 
 | 编号 | 功能 | 需求描述 | 验收要点 |
 |------|------|----------|----------|
-| F-20 | 甘特图 | 仅展示「有截止日期且 due > created」的 Issue，最多 50 条 | 无数据时显示空态 |
-| F-21 | 拖拽改期 | 拖拽/拉伸甘特条写回 `startAt/dueAt` | liveQuery 全视图自动刷新 |
-| F-22 | 依赖连线 | 相邻任务 fs 依赖（前项完成→后项开始）演示连线能力 | 依赖渲染正确 |
+| F-23 | 甘特图 | 展示「有截止日期且 `dueAt > createdAt`」的 Issue，最多 50 条 | 无数据空态 |
+| F-24 | 拖拽改期 | 拖拽/拉伸写回 `startAt / dueAt` | liveQuery 自动刷新 |
+| F-25 | 依赖连线 | 相邻任务 fs 依赖 + 里程碑（紧急且无截止日，最多 5 个） | 渲染正确 |
 
-### 4.6 Issue 生命周期
-
-| 编号 | 功能 | 需求描述 | 验收要点 |
-|------|------|----------|----------|
-| F-23 | 新建 | 弹窗填标题/状态/优先级/负责人；标题必填校验 | Key 严格递增（事务内 `nextKeyNum` 读改写） |
-| F-24 | 详情抽屉 | 即时保存状态/优先级/负责人/描述/标签 | 字段变更写活动历史 |
-| F-25 | 子任务 | 一层子任务：添加、勾选完成/还原、点击跳转 | 子任务独立成 Issue（`parentId`） |
-| F-26 | 关联 | 添加/移除 `blocks/blocked-by/relates`，展示为可删标签 | 候选集当前项目前 100 条 |
-| F-27 | 标签 | 预置 8 标签 + 自由输入（`oas-dynamic-tags`） | 增删即时保存 |
-| F-28 | 评论 | 添加/编辑/删除；`@中英文名` 高亮渲染 | 仅作者可编辑/删除自己的评论 |
-| F-29 | 活动历史 | 字段级 diff 审计（谁/改什么/从→到/何时） | 状态→done 记录 `completedAt` |
-| F-30 | 删除 | Popconfirm 二次确认后删除 | 删除即物理删除（软删除不在范围） |
-
-### 4.7 批量操作（BulkBar）
+### 4.6 资源与日程
 
 | 编号 | 功能 | 需求描述 |
 |------|------|----------|
-| F-31 | 批量改状态/优先级/负责人 | 事务内逐条写入 + 活动历史 |
-| F-32 | 批量删除 | 事务内删除选中集 |
+| F-26 | 资源泳道 | 按成员汇总负载、超载高亮、拖拽改期/转派 |
+| F-27 | 一键均载 | `levelResources` 重新分配，需 `bulk:apply`（内置 admin 具备；自定义角色可授予） |
+| F-28 | 日程视图 | 月历 / 周时刻轴 / 议程；截止日全天 / 上午 / 下午三档，拖拽归档写回 |
 
-### 4.8 通知（动态）
+### 4.7 Issue 生命周期
 
 | 编号 | 功能 | 需求描述 | 验收要点 |
 |------|------|----------|----------|
-| F-33 | 与我相关动态 | 他人对「我负责的 Issue」的变更（近 300 条活动内取，最多 20 条） | 顶栏角标计数；点击跳转详情 |
+| F-29 | 新建 | 标题/状态/优先级/负责人；标题必填 | Key 事务内 `nextKeyNum` 递增 |
+| F-30 | 详情抽屉 | 即时保存状态/优先级/负责人/描述/标签 | 字段变更写活动；权限按动作 + 上下文判定 |
+| F-31 | 子任务 | 一层子任务：添加、勾选完成/还原、跳转 | 独立 Issue（`parentId`） |
+| F-32 | 关联 | 添加/移除 `blocks / blocked-by / relates` | 候选集为当前项目前 100 条存活 Issue |
+| F-33 | 标签 | 预置标签 + 自由输入（`oas-dynamic-tags`） | 增删即时保存 |
+| F-34 | 评论 | 添加/编辑/删除；`@中英文名` 高亮 | 成员仅作者本人可改删；admin 不受限 |
+| F-35 | 活动历史 | 字段级 diff（谁/改什么/从→到/何时） | 状态→done 记录 `completedAt` |
+| F-36 | 软删除与撤销 | 删除只写 `deletedAt`，顶部 6 秒撤销条可批量恢复 | `updatedAt` 不变，恢复后回原位 |
+| F-37 | 批量操作 | 改状态/优先级/负责人在事务内逐条写并记活动（`bulk:apply`）；批量删除为软删除（`bulk:delete`） | 已删除行不参与改写 |
 
-### 4.9 数据初始化（Seed）
+### 4.8 通知
+
+| 编号 | 功能 | 需求描述 | 验收要点 |
+|------|------|----------|----------|
+| F-38 | 通知中心 | 独立 `notifications` 表；面板取最近 50 条；未读角标（>99 显示 99+） | 点击单条标已读并跳转 Issue |
+| F-39 | 全部已读 | 一键把本人未读置为已读 | 不影响他人 |
+| F-40 | 生成规则 | 评论 @提及 → mention；评论 → comment（负责人）；改派 → assigned；关闭类状态 → status | 不通知操作者；解除指派不通知 |
+
+### 4.9 管理台（7 页签）
+
+| 编号 | 页签 | 所需权限 | 需求描述 |
+|------|------|----------|----------|
+| F-41 | 总览 | 进入管理区即可 | 全局统计、成员负载、项目健康度（逾期/未指派/停滞；扣除软删） |
+| F-42 | 项目 | `project:manage` | 项目 CRUD（key 唯一）；选择负责人；维护项目成员；删除需项目无 Issue |
+| F-43 | 成员 | `member:manage` | 成员新增/删除；角色分配（工作区角色）；最后管理员保护；删除级联 |
+| F-44 | 迭代 | `project:manage` | 迭代 CRUD；区间校验与重叠提示；关闭结转未完成项到下一迭代或移出 |
+| F-45 | 配置 | `workspace:manage` | 标签库编辑；状态/优先级展示；回收站（恢复 / 永久删除） |
+| F-46 | 权限 | `project:manage` 或 `workspace:manage` | 角色矩阵（内置只读）；自定义角色 CRUD；项目角色覆盖（成员取自项目成员，可清除）；审计日志（默认 20 条，+20 加载，支持筛选与 CSV 导出） |
+| F-47 | 设置 | `workspace:manage` | 主题/语言；全库 JSON 备份导出、导入、重置演示数据、清空数据 |
+
+> 页签过滤：无权限的页签不渲染；当前页签失权时回落到第一个可见页签。管理区入口本身要求任一管理动作。
+
+### 4.10 数据初始化与数据源
 
 | 编号 | 功能 | 需求描述 |
 |------|------|----------|
-| F-34 | 演示数据 | 2 项目、8 成员、**100,000 Issue**（确定性随机 `mulberry32(42)`），分块 5000 批量写入 |
-| F-35 | Seed 幂等 | 版本标记 + 数据计数双校验；中断残留清表重播，不 close 单例连接 |
+| F-48 | 本地演示数据 | Dexie seed：**2 项目、8 成员、3 迭代、2 示例保存视图、默认 100,000 Issue**（确定性 `mulberry32(42)`），5000 一块批量写入 |
+| F-49 | 可调播种规模 | `localStorage['oas-pm-seed-size']`，取值夹取到 `[1000, 100000]`；空/非法回落 100,000；e2e 固定 5000 |
+| F-50 | Seed 幂等 | `oas-pm-seed-v11` 标记；已标记时只补内置角色与项目成员，不重播数据 |
+| F-51 | API mock | 仅开发模式：Vite 中间件 + 内存库；**3 项目、8 成员、3 迭代、2,000 Issue**；重启 dev server 复位 |
+| F-52 | 备份/恢复 | 信封 `{app:'oas-pm', version:10, exportedAt, tables}` 覆盖全部 13 张表（含回收站行）；导入先清空再 bulkPut |
+| F-53 | 清空 / 重置 | 清空保留内置角色 + 当前管理员且不重播；重置演示数据清标记后重新 seed |
 
 ---
 
@@ -177,89 +281,69 @@ OAS PM
 
 | 类别 | 需求 | 指标 |
 |------|------|------|
-| 性能 | 列表/筛选/排序在大数据量下流畅 | 10W 级浏览无卡顿；索引直取 O(log n) |
-| 性能 | 启动 Seed | 100W 级导入 ~30s（bulkPut 事务） |
-| 可用性 | 离线可用 | 全功能不依赖网络 |
-| 可用性 | 响应式/移动端适配 | 侧栏折叠、抽屉全屏等窄屏降级 |
+| 性能 | 列表/筛选/排序 | 默认窗口 200（+200 续载）；搜索上限 2000；索引直取 |
+| 性能 | 10 万 Issue 播种 | 实测 44–134s（随机器负载波动）；分块 5000 `bulkPut`；期间显示准备屏 |
+| 可用性 | 离线可用 | 除开发期 API 模式外不依赖网络 |
+| 可用性 | 窄屏降级 | 侧栏折叠、抽屉全屏；**无独立移动端 Playwright 工程** |
 | 国际化 | 中英双语 | 核心 UI 文案覆盖（非全量） |
-| 可访问性 | 键盘可达 | 行 Enter/Space 打开、`Esc` 关闭、`/` 搜索 |
-| 健壮性 | 启动兜底 | IndexedDB 异常时友好错误页 |
+| 可访问性 | 键盘可达 | 行 Enter/Space 打开、`Esc` 关闭、`/` 搜索、`?` 帮助 |
+| 健壮性 | 启动兜底 | IndexedDB 异常/配额满展示错误页 |
+| 数据安全 | 管理操作可追溯 | 角色/分配变更写审计；审计可筛选导出 CSV |
 
 ---
 
-## 6. 产品功能边界（明确「不做」）
+## 6. 产品功能边界
 
-> 本节是 PRD 的核心：划定产品边界，避免范围蔓延（scope creep）。
-
-### 6.1 数据与后端（明确不做）
-
-| 边界项 | 说明 | 现状/替代 |
-|--------|------|-----------|
-| ❌ 服务端/云端同步 | 无后端、无账号体系、无多端同步 | 数据仅存浏览器 IndexedDB，刷新不清、清缓存即失 |
-| ❌ 真实用户认证 | 身份切换仅为本地演示，无登录/鉴权 | `localStorage` 模拟当前用户 |
-| ❌ 多租户隔离 | 单实例本地库，无组织/工作区隔离 | — |
-| ❌ 数据导入 UI | `bulkImport` service 已备，但**无导入入口** | 仅 Seed 程序化灌数 |
-| ❌ 数据备份/恢复 | 无导出全库、无版本回滚 | 仅 CSV 导出当前窗口 |
-
-### 6.2 权限与治理（明确不做）
+### 6.1 仍未实现（明确不做）
 
 | 边界项 | 说明 |
 |--------|------|
-| ❌ 强制 ACL | `role` 字段仅展示，**无「viewer 只读 / member 可写」的强制拦截** |
-| ❌ 审批流 | 无状态流转审批/门禁 |
-| ❌ 审计留痕治理 | 活动历史仅展示，无导出、无合规留存策略 |
-
-### 6.3 项目管理域（明确不做）
-
-| 边界项 | 说明 |
-|--------|------|
-| ❌ 项目/成员 CRUD UI | 项目、成员仅由 Seed 注入，无新建/编辑/删除界面（service 层已备） |
-| ❌ 迭代/Sprint | 无迭代周期、无容量规划 |
-| ❌ 史诗/故事层级 | Issue 仅一层子任务，无 Epic→Story→Task 多层 |
-| ❌ 自定义工作流 | 状态机固定 5 态，不可增删/重命名状态、不可自定义流转规则 |
-| ❌ 自定义字段 | 字段集固定，无用户自定义字段 |
-
-### 6.4 协作域（明确不做）
-
-| 边界项 | 说明 |
-|--------|------|
-| ❌ 实时协作 | 无 WebSocket/多人同时编辑冲突处理 |
-| ❌ 富文本/Markdown | 描述与评论均为纯文本，`@提及` 为文本约定高亮，无用户选择器/自动补全 |
-| ❌ 评论嵌套 | 无回复线程、无点赞/表情 |
+| ❌ 团队 / 用户组 | 无 team/group 实体，权限只到成员与项目两级 |
+| ❌ 访客（guest）角色 | 只有 admin / member / viewer 与自定义角色；无外部访客、无链接分享 |
+| ❌ SSO / SCIM | 无企业身份源、无目录同步 |
+| ❌ 自定义工作流状态 / 字段 | 状态固定 5 态、字段集固定；仅标签可配置 |
 | ❌ 附件 | 无文件/图片上传 |
-| ❌ 通知高级特性 | 无已读/未读状态、无推送订阅 |
+| ❌ 富文本 / Markdown | 描述与评论为纯文本；`@提及` 为文本约定高亮，无选择器/自动补全 |
+| ❌ 实时协作 | 无 WebSocket / 多人编辑冲突处理；API mock 仅轮询 revision |
+| ❌ 评论线程 | 无回复嵌套、无表情/点赞 |
+| ❌ 服务端 / 云端同步 | 无持久后端；API mock 仅开发模式、内存态、重启即失 |
+| ❌ 真实多租户认证 | 本地身份切换 / 演示登录，无组织隔离与真实鉴权 |
+| ❌ 审计留存治理 | 无保留策略、无合规归档；导出仅当前筛选的 CSV |
+| ❌ 全文检索 | 仅 Key/标题子串，无全文索引/拼音/模糊容错 |
 
-### 6.5 视图与体验域（明确不做）
+### 6.2 已实现但与旧版 PRD 描述不同
 
-| 边界项 | 说明 |
-|--------|------|
-| ❌ 甘特图高级能力 | 无里程碑、无资源负载、无关键路径、无任务分组/折叠 |
-| ❌ 跨项目聚合视图 | 看板/列表均按单项目维度 |
-| ❌ 全文检索 | 搜索仅匹配 Key/标题（子串），无全文/高亮/拼音/模糊容错 |
-| ❌ 完整 i18n | 仅核心 UI 文案双语，错误信息/Seed 数据/部分标签仍中文 |
-
-### 6.6 明确「后续可选」的延展方向（非本期承诺）
-
-- 项目/成员管理界面（service 层已就绪）
-- 权限强制执行（基于 `role` + 操作点）
-- 数据导入/导出全库（bulkImport 已有，补 UI）
-- 自定义工作流与自定义字段
-- Markdown/富文本编辑器 + 附件
-- 通知已读状态
-- 后端同步适配层（替换 Dexie 数据访问为远程 API）
+| 项 | 当前事实 |
+|----|----------|
+| 权限 | **已强制执行**（内置角色 + 自定义角色 + 项目覆盖 + 审计）；不再是「仅展示标签」 |
+| 项目 / 成员 / 迭代 | **CRUD 已实现**（管理台）；项目/成员不再只由 Seed 注入 |
+| 删除 | Issue 为软删除 + 6 秒撤销 + 回收站；永久删除才物理移除并级联 |
+| 备份 | 全库 JSON 备份/恢复已实现（13 表，信封 v10）；CSV 仅导出当前窗口 |
+| 通知 | 独立表 + 已读/未读 + 全部已读；非「近 300 条活动派生」 |
+| 迭代 | 已实现迭代 CRUD 与关闭结转；仍无容量规划/故事点 |
+| 数据规模 | 默认 10 万、播种上限 100,000；未提供百万级种子与实测（旧稿「100W ~30s」作废） |
+| 数据源 | 生产固定 Dexie；API mock 仅开发模式，3 项目 / 2000 Issue / 重启复位 |
 
 ---
 
 ## 7. 验收与测试基线
 
-| 类型 | 覆盖 |
-|------|------|
-| 类型检查 | `pnpm --filter pm exec tsc --noEmit`（0 错） |
-| 构建 | `pnpm --filter pm build`（tsc6 + vite） |
-| E2E | `pnpm --filter pm exec playwright test`（`e2e/smoke.spec.ts` + `e2e/_shots.spec.ts` 截图） |
-| 尺寸 | 满足 size budget |
+| 类型 | 命令 / 覆盖 | 基线 |
+|------|-------------|------|
+| 类型检查 | `pnpm --filter pm exec tsc6 --noEmit` | 0 错（注意 bin 是 `tsc6`，不是 `tsc`） |
+| 构建 | `pnpm --filter pm run build`（tsc6 + vite） | 通过 |
+| 单测 | `pnpm --filter pm run test`（vitest + fake-indexeddb） | 311 个用例 / 22 个测试文件 |
+| E2E | `pnpm --filter pm exec playwright test` | 188 个 Chromium 用例 / 27 个 spec 文件；`workers: 1` |
+| 截图 | `e2e/_shots.spec.ts` | 34 个截图用例；Firefox 下跳过 |
+| 尺寸预算 | — | pm 无 size-budget 脚本 |
 
-**E2E 已覆盖的关键行为**：新建/详情编辑/子任务/关联/评论增删改/@提及/甘特依赖/完成趋势/通知跳转/批量操作/保存视图/活动/全库搜索/i18n/移动端，以及 `from=to` 无 diff 的差异化断言。
+补充：
+
+- 无移动端 Playwright project；窄屏仅有布局降级，不做独立移动端验收。
+- `PW_BROWSER=firefox` 可跑同一套用例（截图 spec 除外）。
+- e2e 每个用例全新上下文都重播种子，故用 5,000 条（`e2e/seed.ts`），生产默认 100,000。
+
+**E2E 已覆盖的关键行为**：新建/详情编辑/子任务/关联/评论增删改/@提及/甘特依赖/完成趋势/通知跳转与已读/批量操作/保存视图/活动/全库搜索/i18n/主题/工具栏菜单/管理台 CRUD/角色与覆盖/审计导出/软删除与回收站/API 模式鉴权/项目成员收窄/a11y 结构。
 
 ---
 
@@ -267,10 +351,11 @@ OAS PM
 
 | 项 | 选型 |
 |----|------|
-| 框架 | React 19 |
-| 数据层 | Dexie.js（IndexedDB）+ dexie-react-hooks（liveQuery 响应式） |
-| 状态 | zustand（UI 辅助）+ React state（页面主逻辑） |
-| 组件 | `@oas-ui/ui`（Web Components，React 侧 property/事件桥接） |
-| 构建 | Vite 8 + TypeScript 6 |
-| 测试 | Playwright |
-| 本地优先 | 无网络依赖；IndexedDB 为唯一数据源 |
+| 框架 | React 19.3 |
+| 数据层 | Dexie 4.4（IndexedDB）+ 自研 Observable（`useObservable`；未使用 dexie-react-hooks） |
+| 状态 | React state + localStorage 偏好；`src/stores/ui-store.ts` 是一个**未被引用**的 zustand 外壳（无消费者，可删） |
+| 组件 | `@oas-ui/ui` 2.6.3（Web Components，React 侧 property/事件桥接）+ `@oas-ui/icons` + `@oas-ui/theme` |
+| 构建 | Vite 8 + TypeScript 6（`typescript` 别名 `@typescript/typescript6`） |
+| 测试 | Vitest 5 + fake-indexeddb；Playwright 1.64（Chromium 默认，可切 Firefox） |
+| 本地优先 | IndexedDB 为唯一持久数据源；API 实现仅开发期可切换 |
+| 依赖形态 | `@oas-ui/*` 通过 `link:` 指向本地 oas-ui 工作副本；`package.json` 与锁文件保留本地 link 状态、不提交 |

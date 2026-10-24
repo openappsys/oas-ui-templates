@@ -2005,8 +2005,13 @@ oas-drawer::part(close):focus-visible {
 }
 
 .admin-perm-table {
+  /* 组件分组头用 secondary 落在 bg-hover 上仅 4.4:1；局部加深到 ≥4.5 */
+  --oas-color-text-secondary: #5b6573;
   display: block;
   width: 100%;
+}
+:root[data-theme="dark"] .admin-perm-table {
+  --oas-color-text-secondary: #cbd5e1;
 }
 
 .admin-field-row {
@@ -2563,7 +2568,7 @@ oas-drawer::part(close):focus-visible {
   margin: 6px 0 2px;
   font-size: 11px;
   font-weight: 600;
-  color: var(--oas-color-text-tertiary, #94a3b8);
+  color: var(--oas-color-text-secondary, #64748b);
 }
 .perm-role-list-head .perm-role-group-label {
   margin: 0;
@@ -2584,7 +2589,7 @@ oas-drawer::part(close):focus-visible {
 .perm-role-empty {
   margin: 4px 0;
   font-size: 12px;
-  color: var(--oas-color-text-tertiary, #94a3b8);
+  color: var(--oas-color-text-secondary, #64748b);
 }
 .perm-role-meta {
   margin: 4px 0 0;
@@ -2608,6 +2613,7 @@ oas-drawer::part(close):focus-visible {
 }
 .perm-assign-summary .admin-hint {
   margin: 2px 0 0;
+  color: var(--oas-color-text-primary, #1f2329);
 }
 .perm-assign-modal oas-select {
   width: 100%;
@@ -2634,16 +2640,16 @@ oas-drawer::part(close):focus-visible {
 }
 .perm-unsaved {
   padding: 1px 6px;
-  font-size: 10px;
-  color: var(--oas-color-warning-text, #92400e);
-  background: color-mix(in srgb, var(--oas-color-warning, #f59e0b) 14%, transparent);
+  font-size: 11px;
+  color: var(--oas-color-text-primary, #1f2329);
+  background: color-mix(in srgb, var(--oas-color-warning, #f59e0b) 20%, transparent);
   border-radius: 999px;
 }
 .perm-role-lock {
   margin-left: auto;
   padding: 0 5px;
   font-size: 10px;
-  color: var(--oas-color-text-tertiary, #94a3b8);
+  color: var(--oas-color-text-primary, #1f2329);
   background: var(--oas-color-bg-hover, #f1f5f9);
   border-radius: 999px;
 }
@@ -2678,7 +2684,7 @@ oas-drawer::part(close):focus-visible {
 .perm-group-count {
   margin-left: 4px;
   font-size: 11px;
-  color: var(--oas-color-text-tertiary, #94a3b8);
+  color: var(--oas-color-text-primary, #1f2329);
   font-variant-numeric: tabular-nums;
 }
 .perm-group {
@@ -2764,7 +2770,7 @@ oas-drawer::part(close):focus-visible {
 }
 .proj-role-effective span {
   font-size: 11px;
-  color: var(--oas-color-text-tertiary, #94a3b8);
+  color: var(--oas-color-text-primary, #1f2329);
 }
 .proj-role-effective strong {
   font-size: 13px;
@@ -2810,25 +2816,33 @@ oas-drawer::part(close):focus-visible {
   cursor: pointer;
 }
 .audit-table {
-  display: flex;
-  flex-direction: column;
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
 }
-.audit-row {
-  display: grid;
-  grid-template-columns: 110px 120px 150px minmax(0, 1fr) minmax(0, 1fr);
-  gap: 10px;
-  align-items: baseline;
+.audit-table th,
+.audit-table td {
   padding: 7px 0;
   font-size: 12px;
+  text-align: left;
+  vertical-align: baseline;
   color: var(--oas-color-text-secondary, #64748b);
   border-bottom: 1px solid var(--oas-color-border, #e2e8f0);
 }
-.audit-head {
+.audit-table th {
   font-weight: 600;
-  color: var(--oas-color-text-tertiary, #94a3b8);
+  color: var(--oas-color-text-secondary, #64748b);
+}
+.audit-table th:nth-child(1) {
+  width: 110px;
+}
+.audit-table th:nth-child(2) {
+  width: 120px;
+}
+.audit-table th:nth-child(3) {
+  width: 150px;
 }
 .audit-detail {
-  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2858,7 +2872,7 @@ oas-drawer::part(close):focus-visible {
 }
 .audit-time {
   font-variant-numeric: tabular-nums;
-  color: var(--oas-color-text-tertiary, #94a3b8);
+  color: var(--oas-color-text-secondary, #64748b);
 }
 .audit-actor {
   color: var(--oas-color-text-primary, #1f2329);

@@ -152,7 +152,7 @@ describe('服务端权限：admin 专属端点 403', () => {
     ).toBe(200)
   })
 
-  it('普通 issue 写只要求已登录（前端 can() 才是细粒度门禁）', () => {
+  it('普通 issue 写也走权限：viewer 改标题 403 且不落库', () => {
     const store = createMockStore({ now: FIXED })
     const token = tokenOf(store, VIEWER_EMAIL)
     const target = store.issues[0]
@@ -161,8 +161,8 @@ describe('服务端权限：admin 专属端点 403', () => {
         body: { changes: { title: 'viewer edit' } },
         bearer: token,
       }).status,
-    ).toBe(200)
-    expect((store.issues[0] as Issue).title).toBe('viewer edit')
+    ).toBe(403)
+    expect((store.issues[0] as Issue).title).toBe(target.title)
   })
 })
 
@@ -254,5 +254,35 @@ describe('API 客户端会话：token 注入与 401/403 反馈', () => {
         })
     })
     expect((err as ApiError).status).toBe(401)
+  })
+})
+
+describe('自助资料与身份边界', () => {
+  it('成员可改自己的白名单字段，不能改邮箱/角色', () => {
+    const store = createMockStore({ now: FIXED })
+    const token = tokenOf(store, MEMBER_EMAIL)
+    const me = store.members.find((m) => m.email === MEMBER_EMAIL) as Member
+    const ok = send(store, 'PATCH', `/api/members/${me.id}`, {
+      body: { changes: { name: 'New Name', title: 'Engineer' } },
+      bearer: token,
+    })
+    expect(ok.status).toBe(200)
+    expect(store.members.find((m) => m.id === me.id)?.name).toBe('New Name')
+
+    const bad = send(store, 'PATCH', `/api/members/${me.id}`, {
+      body: { changes: { role: 'admin' } },
+      bearer: token,
+    })
+    expect(bad.status).toBe(403)
+    expect(store.members.find((m) => m.id === me.id)?.role).toBe(me.role)
+  })
+
+  it('删除成员会撤销其会话 token', () => {
+    const store = createMockStore({ now: FIXED })
+    const admin = tokenOf(store, ADMIN_EMAIL)
+    const victim = tokenOf(store, MEMBER_EMAIL)
+    const target = store.members.find((m) => m.email === MEMBER_EMAIL) as Member
+    expect(send(store, 'DELETE', `/api/members/${target.id}`, { bearer: admin }).status).toBe(200)
+    expect(send(store, 'GET', '/api/auth/me', { bearer: victim }).status).toBe(401)
   })
 })

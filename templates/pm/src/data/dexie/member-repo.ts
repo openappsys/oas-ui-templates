@@ -11,8 +11,16 @@ export function createDexieMemberRepository(db: PMDatabase): MemberRepository {
     create: (m: Member) => db.members.add(m).then(() => undefined),
     update: (id, changes) =>
       db
-        .transaction('rw', db.members, async () => {
+        .transaction('rw', db.members, db.roles, async () => {
           const current = await db.members.get(id)
+          if (changes.role !== undefined) {
+            const role = await db.roles.get(changes.role)
+            const builtin = ['admin', 'member', 'viewer'].includes(changes.role)
+            if (!role && !builtin) throw new Error('unknown role')
+            if (role?.scope === 'project') {
+              throw new Error('project role cannot be assigned as a workspace role')
+            }
+          }
           if (
             current &&
             changes.role !== undefined &&

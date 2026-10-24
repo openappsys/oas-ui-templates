@@ -32,33 +32,37 @@ const TITLES = [
 ]
 const LABELS = ['frontend', 'backend', 'design', 'bug', 'feature', 'tech-debt', 'docs', 'infra']
 
+export const SEED_MARKER_KEY = 'oas-pm-seed-v11'
+
 export async function seedDatabase(): Promise<void> {
-  // seed 版本标记：调整 seed 逻辑后 bump。标记 + 数据双验证——
-  // 单看标记会在「上次 seed 中断」时永久跳过，留下空库
-  const SEED_VER = 'oas-pm-seed-v11'
-  const marked = localStorage.getItem(SEED_VER)
-  const issueCount = await db.issues.count()
+  // seed 版本标记：调整 seed 逻辑后 bump。标记只表示「本浏览器已完成初始化」——
+  // 不再用 issueCount>0 作为条件，否则清空/导入空备份后刷新会重播演示数据并覆盖用户新数据
+  const marked = localStorage.getItem(SEED_MARKER_KEY)
   // v12：内置角色补齐——旧库（已有 seed 标记）升级后也要有角色，不重播数据
   const ensureRoles = async () => {
     for (const role of BUILTIN_ROLES) {
       if (!(await db.roles.get(role.id))) await db.roles.put(role)
     }
   }
-  // v14：旧库升级补项目成员（全量成员进所有项目，管理员后续可裁剪）
+  // v14：旧库升级补项目成员（只跑一次；管理员后续裁剪不会被下次启动重新灌回）
   const ensureProjectMembers = async () => {
-    if ((await db.projectMembers.count()) > 0) return
-    const [allMembers, allProjects] = await Promise.all([
+    const marker = 'migration:project-members-v14'
+    if (await db.settings.get(marker)) return
+    const [allMembers, allProjects, count] = await Promise.all([
       db.members.toArray(),
       db.projects.toArray(),
+      db.projectMembers.count(),
     ])
-    if (allMembers.length === 0 || allProjects.length === 0) return
-    await db.projectMembers.bulkPut(
-      allProjects.flatMap((p) =>
-        allMembers.map((m) => ({ id: `${p.id}:${m.id}`, projectId: p.id, memberId: m.id })),
-      ),
-    )
+    if (count === 0 && allMembers.length > 0 && allProjects.length > 0) {
+      await db.projectMembers.bulkPut(
+        allProjects.flatMap((p) =>
+          allMembers.map((m) => ({ id: `${p.id}:${m.id}`, projectId: p.id, memberId: m.id })),
+        ),
+      )
+    }
+    await db.settings.put({ key: marker, value: true, updatedAt: Date.now() })
   }
-  if (marked && issueCount > 0) {
+  if (marked) {
     await ensureRoles()
     await ensureProjectMembers()
     return
@@ -188,7 +192,11 @@ export async function seedDatabase(): Promise<void> {
           : (['backlog', 'todo', 'in_progress'] as const)[schedJ % 3]
         : statuses[Math.floor(rand() * (idx < ISSUE_COUNT * 0.2 ? 3 : 5))]
       const priority = priorities[Math.floor(rand() * 4)]
-      const assignee = rand() > 0.15 ? members[Math.floor(rand() * members.length)] : null
+      const assignee = (() => {
+        if (rand() <= 0.15) return null
+        const pool = proj.id === 'project-1' ? members : members.slice(0, 5)
+        return pool[Math.floor(rand() * pool.length)]
+      })()
       const title = TITLES[Math.floor(rand() * TITLES.length)]
       const createdAt = now - Math.floor(rand() * 90) * day
       const labels: string[] = []
@@ -274,5 +282,5 @@ export async function seedDatabase(): Promise<void> {
   // v10：示例保存视图。此前 savedViews 只有用户自建、seed 后为空——首屏侧栏「已保存视图」组与
   // 工具条下拉都没有内容，入口不可发现。定义与 API mock 共用 lib/saved-views，两源首屏一致
   await db.savedViews.bulkPut(demoSavedViewRows(now))
-  localStorage.setItem(SEED_VER, '1')
+  localStorage.setItem(SEED_MARKER_KEY, '1')
 }

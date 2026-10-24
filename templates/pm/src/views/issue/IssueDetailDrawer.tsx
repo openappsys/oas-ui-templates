@@ -9,7 +9,7 @@ import {
   OTimePicker,
   TagChip,
 } from '@/components/oas-wrappers'
-import { activityTypeLabel, dateLocale, relationLabel, statusLabel, t } from '@/i18n'
+import { activityTypeLabel, dateLocale, priorityLabel, relationLabel, statusLabel, t } from '@/i18n'
 import { useRepositories } from '@/data/context'
 import { useObservable } from '@/data/use-observable'
 import { useLabelSet } from '@/lib/labels'
@@ -48,7 +48,7 @@ function DrawerActivities({
             </span>
             <span className="activity-text">
               {activityTypeLabel(a.type)}
-              {a.field === '状态' && a.to ? ` → ${statusLabel(a.to)}` : ''}
+              {a.type === 'status' && a.to ? ` → ${statusLabel(a.to)}` : ''}
               {a.field && a.type !== 'status' && a.to ? ` → ${a.to}` : ''}
             </span>
             <span className="activity-time">
@@ -64,11 +64,13 @@ function DrawerActivities({
 /* ── 评论区（详情抽屉，oas-comment + oas-input） ── */
 function CommentsBlock({
   issueId,
+  projectId,
   memberMap,
   currentUser,
   can,
 }: {
   issueId: string
+  projectId: string
   memberMap: Map<string, Member>
   currentUser: string
   can: (action: Action, ctx?: Ctx) => boolean
@@ -154,9 +156,19 @@ function CommentsBlock({
                 datetime={new Date(cm.createdAt).toLocaleString(dateLocale())}
               >
                 <span slot="content">{renderMentions(cm.body)}</span>
-                {cm.authorId === currentUser && (
+                {(can('comment:edit', {
+                  comment: cm,
+                  issue: { assigneeId: null, reporterId: '', projectId },
+                }) ||
+                  can('comment:delete', {
+                    comment: cm,
+                    issue: { assigneeId: null, reporterId: '', projectId },
+                  })) && (
                   <span slot="actions" className="comment-ops">
-                    {can('comment:edit', { comment: cm }) && (
+                    {can('comment:edit', {
+                      comment: cm,
+                      issue: { assigneeId: null, reporterId: '', projectId },
+                    }) && (
                       <button
                         type="button"
                         className="comment-op"
@@ -171,7 +183,10 @@ function CommentsBlock({
                         {t('adminEdit')}
                       </button>
                     )}
-                    {can('comment:delete', { comment: cm }) && (
+                    {can('comment:delete', {
+                      comment: cm,
+                      issue: { assigneeId: null, reporterId: '', projectId },
+                    }) && (
                       <button
                         type="button"
                         className="comment-op comment-op-del"
@@ -259,7 +274,7 @@ export function IssueDetailDrawer({
 
   const addSub = useCallback(async () => {
     const title = (subInputRef.current?.value ?? '').trim()
-    if (!title || !issue) return
+    if (!title || !issue || !can('issue:create')) return
     const created = await issuesRepo.create({
       projectId: issue.projectId,
       title,
@@ -272,7 +287,7 @@ export function IssueDetailDrawer({
     })
     if (subInputRef.current) subInputRef.current.value = ''
     await activitiesRepo.log({ issueId: created.id, actorId: currentUser, type: 'create' })
-  }, [issue, currentUser, issuesRepo, activitiesRepo])
+  }, [issue, currentUser, issuesRepo, activitiesRepo, can])
 
   // 标签编辑（oas-dynamic-tags）：modelValue 双向同步 issue.labels
   const labelsTagsRef = useRef<HTMLElement & { modelValue?: string[]; value?: string[] }>(null)
@@ -302,13 +317,14 @@ export function IssueDetailDrawer({
   // 描述编辑态在切换 issue 时重置；textarea value 跟随 issue.description
   const descRefValue = useRef<HTMLElement & { value?: string }>(null)
   // 历史脏数据清洗：labels 含 '__none__' 时落库修正
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 清洗 labels 时只关心 issue 与 repo，避免每次渲染重复写入
   useEffect(() => {
-    if (issue?.labels?.includes('__none__')) {
+    if (issue?.labels?.includes('__none__') && can('issue:edit', { issue })) {
       void issuesRepo.update(issue.id, {
         labels: issue.labels.filter((x) => x !== '__none__'),
       })
     }
-  }, [issue?.id, issue?.labels, issuesRepo])
+  }, [issue?.id, issue?.labels, issuesRepo, can])
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: 切 issue 时即便 description 相同也必须重置脏态/textarea，防 A 的未保存编辑带进 B
   useEffect(() => {
@@ -363,6 +379,9 @@ export function IssueDetailDrawer({
   )
 
   const canEdit = issue ? can('issue:edit', { issue }) : true
+  const canChangeStatus = issue ? can('issue:change-status', { issue }) : false
+  const canChangeAssignee = issue ? can('issue:change-assignee', { issue }) : false
+  const canCreate = can('issue:create')
   const canDelete = issue ? can('issue:delete', { issue }) : false
 
   useEffect(() => {
@@ -373,21 +392,32 @@ export function IssueDetailDrawer({
 
   const relationTarget = (id: string) => relCandidates?.find((x) => x.id === id)
   const save = (changes: Partial<Issue>) => {
-    if (issue && !can('issue:edit', { issue })) return
+    if (!issue) return
+    // 细粒度权限：只改状态/负责人时，不要求完整 issue:edit
+    const keys = Object.keys(changes) as Array<keyof Issue>
+    const onlyStatus = keys.every((k) => k === 'status' || k === 'completedAt')
+    const onlyAssignee = keys.every((k) => k === 'assigneeId')
+    if (onlyStatus) {
+      if (!canChangeStatus) return
+    } else if (onlyAssignee) {
+      if (!canChangeAssignee) return
+    } else if (!canEdit) {
+      return
+    }
     // 脏数据兜底：历史版本曾把占位符 '__none__' 写进 labels，落库前清洗
     if (Array.isArray(changes.labels)) {
       const cleaned = changes.labels.filter((x) => x && x !== '__none__')
       if (cleaned.length !== changes.labels.length) changes.labels = cleaned
     }
     const FIELD_LABEL: Partial<Record<keyof Issue, string>> = {
-      status: '状态',
-      priority: '优先级',
-      assigneeId: '负责人',
-      description: '描述',
-      title: '标题',
-      dueAt: '截止日期',
-      startAt: '开始日期',
-      cycleId: '迭代',
+      status: 'status',
+      priority: 'priority',
+      assigneeId: 'assigneeId',
+      description: 'description',
+      title: 'title',
+      dueAt: 'dueAt',
+      startAt: 'startAt',
+      cycleId: 'cycleId',
     }
     // 迭代的活动记录写周期名而非 id：历史里出现 nanoid 对读者无意义
     const cycleName = (id: string | null | undefined) =>
@@ -443,7 +473,7 @@ export function IssueDetailDrawer({
               value={issue.status}
               options={ISSUE_STATUSES.map((s) => ({ label: statusLabel(s), value: s }))}
               onChange={(v) => save({ status: v as IssueStatus })}
-              disabled={!canEdit}
+              disabled={!canChangeStatus}
             />
           </div>
           <div className="detail-field">
@@ -452,7 +482,7 @@ export function IssueDetailDrawer({
               testid="detail-priority"
               ariaLabel={t('priority')}
               value={issue.priority}
-              options={ISSUE_PRIORITIES.map((p) => ({ label: p, value: p }))}
+              options={ISSUE_PRIORITIES.map((p) => ({ label: priorityLabel(p), value: p }))}
               onChange={(v) => save({ priority: v as IssuePriority })}
               disabled={!canEdit}
             />
@@ -465,7 +495,7 @@ export function IssueDetailDrawer({
               value={issue.assigneeId ?? '__none__'}
               options={memberOptions}
               onChange={(v) => save({ assigneeId: v === '__none__' ? null : v })}
-              disabled={!canEdit}
+              disabled={!canChangeAssignee}
             />
           </div>
           <div className="detail-field">
@@ -562,19 +592,20 @@ export function IssueDetailDrawer({
                   testid="row-check"
                   checked={s.status === 'done'}
                   disabled={!can('issue:change-status', { issue: s })}
-                  onChange={() => {
+                  onChange={async () => {
                     const done = s.status === 'done'
-                    void issuesRepo.update(s.id, {
-                      status: done ? 'todo' : 'done',
-                      completedAt: done ? null : Date.now(),
-                      updatedAt: Date.now(),
-                    })
-                    void activitiesRepo.log({
+                    // 先写活动再改状态：通知生成读取「当前 issue」作为 from，顺序反了会丢状态通知
+                    await activitiesRepo.log({
                       issueId: s.id,
                       actorId: currentUser,
                       type: 'status',
                       field: '状态',
                       to: done ? 'todo' : 'done',
+                    })
+                    await issuesRepo.update(s.id, {
+                      status: done ? 'todo' : 'done',
+                      completedAt: done ? null : Date.now(),
+                      updatedAt: Date.now(),
                     })
                   }}
                 />
@@ -597,7 +628,7 @@ export function IssueDetailDrawer({
               </div>
             ))}
           </div>
-          {canEdit && (
+          {canCreate && (
             <div className="sub-add-row">
               <input
                 ref={subInputRef}
@@ -748,6 +779,7 @@ export function IssueDetailDrawer({
         </div>
         <CommentsBlock
           issueId={issue.id}
+          projectId={issue.projectId}
           memberMap={memberMap}
           currentUser={currentUser}
           can={can}

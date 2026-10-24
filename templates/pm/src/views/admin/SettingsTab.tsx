@@ -6,11 +6,13 @@ import { OSelect } from '@/components/oas-wrappers'
 import type { ThemePreference } from '@/lib/preferences'
 
 export function SettingsTab({
+  currentUser,
   themePref,
   onSetTheme,
   lang,
   onSetLang,
 }: {
+  currentUser: string
   themePref: ThemePreference
   onSetTheme: (pref: ThemePreference) => void
   lang: Lang
@@ -101,14 +103,14 @@ export function SettingsTab({
     if (busyRef.current) return
     beginAction()
     try {
-      await admin.wipeAll()
+      await admin.wipeAll(currentUser)
       setOk(t('adminWipeDone'))
     } catch (e) {
       showError(`${t('adminDataFailed')}${e instanceof Error ? e.message : String(e)}`)
     } finally {
       endAction()
     }
-  }, [admin, showError, beginAction, endAction])
+  }, [admin, currentUser, showError, beginAction, endAction])
 
   useEffect(() => {
     const el = resetPopRef.current

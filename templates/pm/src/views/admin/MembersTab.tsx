@@ -2,8 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { nanoid } from 'nanoid'
 import { useRepositories } from '@/data/context'
 import { useObservable } from '@/data/use-observable'
-import { t } from '@/i18n'
+import { getLang, t } from '@/i18n'
 import { AVATAR_PALETTE } from '@/lib/colors'
+import { isWorkspaceAction, type Action } from '@/permission/policy'
 import { OSelect } from '@/components/oas-wrappers'
 
 type Col = {
@@ -27,9 +28,12 @@ const PALETTE = AVATAR_PALETTE
 export function MembersTab({
   currentUser,
   onMemberDeleted,
+  canWorkspace,
 }: {
   currentUser: string
   onMemberDeleted: (id: string) => void
+  /** 无工作区管理权限时不能授予含工作区动作的角色（防止成员管理员自提权） */
+  canWorkspace: boolean
 }) {
   const { members: membersRepo, roles: rolesRepo, audit: auditRepo, admin } = useRepositories()
   const tableRef = useRef<TableHost>(null)
@@ -75,8 +79,11 @@ export function MembersTab({
     () =>
       (roles ?? [])
         .filter((r) => r.scope !== 'project')
+        .filter(
+          (r) => canWorkspace || !(r.permissions as Action[]).some((a) => isWorkspaceAction(a)),
+        )
         .map((r) => ({ label: roleLabel(r.id), value: r.id })),
-    [roles, roleLabel],
+    [roles, roleLabel, canWorkspace],
   )
 
   const openModal = useCallback(() => {
@@ -121,6 +128,16 @@ export function MembersTab({
 
   const changeRole = useCallback(
     async (id: string, role: string, sel: SelectEl, prev: string) => {
+      const next = (roles ?? []).find((r) => r.id === role)
+      if (
+        !canWorkspace &&
+        next &&
+        (next.id === 'admin' || (next.permissions as Action[]).some((a) => isWorkspaceAction(a)))
+      ) {
+        sel.value = prev
+        showError(t('adminRoleElevateBlocked'))
+        return
+      }
       try {
         await membersRepo.update(id, { role })
         const target = listRef.current?.find((m) => m.id === id)?.name ?? id
@@ -137,7 +154,7 @@ export function MembersTab({
         showError(t('adminRoleDemoteFailed'))
       }
     },
-    [membersRepo, auditRepo, currentUser, roleLabel, showError],
+    [membersRepo, auditRepo, currentUser, roleLabel, showError, canWorkspace, roles],
   )
   const changeRoleRef = useRef(changeRole)
   changeRoleRef.current = changeRole
@@ -179,6 +196,7 @@ export function MembersTab({
     [filtered, safePage, workloadMap, currentUser],
   )
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 语言切换需要重建表头/操作文案
   const columns = useMemo<Col[]>(
     () => [
       { key: 'name', title: t('adminMemberName') },
@@ -189,6 +207,7 @@ export function MembersTab({
         render: (row) => {
           const sel = document.createElement('oas-select') as SelectEl
           sel.setAttribute('size', 'small')
+          sel.setAttribute('label', `${t('adminColRole')} · ${String(row.name ?? '')}`)
           sel.setAttribute('data-testid', `admin-member-role-${String(row.id)}`)
           sel.style.width = '120px'
           sel.options = roleOptions
@@ -223,7 +242,7 @@ export function MembersTab({
         },
       },
     ],
-    [roleOptions],
+    [roleOptions, getLang()],
   )
 
   useEffect(() => {
@@ -251,6 +270,7 @@ export function MembersTab({
           <oas-button
             size="small"
             data-testid="admin-member-prev"
+            aria-label={t('adminPrevPage')}
             disabled={safePage === 0 ? '' : undefined}
             onClick={() => setPage((p) => Math.max(0, p - 1))}
           >
@@ -259,6 +279,7 @@ export function MembersTab({
           <oas-button
             size="small"
             data-testid="admin-member-next"
+            aria-label={t('adminNextPage')}
             disabled={safePage >= pageCount - 1 ? '' : undefined}
             onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
           >

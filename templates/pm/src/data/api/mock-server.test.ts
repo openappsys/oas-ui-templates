@@ -656,7 +656,7 @@ describe('项目/成员守卫', () => {
 })
 
 describe('备份信封与 reset', () => {
-  it('export 信封含 9 张表与元信息', () => {
+  it('export 信封含 10 版元信息与 13 张表', () => {
     const store = createMockStore({ now: FIXED })
     const body = call(store, 'GET', '/api/admin/export').body as {
       app: string
@@ -665,16 +665,20 @@ describe('备份信封与 reset', () => {
       tables: Record<string, unknown[]>
     }
     expect(body.app).toBe('oas-pm')
-    expect(body.version).toBe(9)
+    expect(body.version).toBe(10)
     expect(typeof body.exportedAt).toBe('number')
     expect(Object.keys(body.tables).sort()).toEqual([
       'activities',
+      'audit',
       'comments',
       'cycles',
       'issues',
       'members',
       'notifications',
+      'projectMembers',
+      'projectRoles',
       'projects',
+      'roles',
       'savedViews',
       'settings',
     ])

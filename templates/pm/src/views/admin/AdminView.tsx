@@ -84,6 +84,7 @@ export function AdminView({
             key={x.id}
             className={`admin-nav-item${effectiveTab === x.id ? ' is-active' : ''}`}
             type="button"
+            aria-current={effectiveTab === x.id ? 'page' : undefined}
             data-testid={`admin-nav-${x.id}`}
             onClick={() => onTab(x.id)}
           >
@@ -97,7 +98,11 @@ export function AdminView({
         ) : effectiveTab === 'projects' ? (
           <ProjectsTab memberMap={memberMap} currentUser={currentUser} />
         ) : effectiveTab === 'members' ? (
-          <MembersTab currentUser={currentUser} onMemberDeleted={onMemberDeleted} />
+          <MembersTab
+            currentUser={currentUser}
+            onMemberDeleted={onMemberDeleted}
+            canWorkspace={canWorkspace}
+          />
         ) : effectiveTab === 'cycles' ? (
           <CyclesTab lang={lang} />
         ) : effectiveTab === 'config' ? (
@@ -106,6 +111,7 @@ export function AdminView({
           <PermissionsTab currentUser={currentUser} canWorkspace={canWorkspace} />
         ) : (
           <SettingsTab
+            currentUser={currentUser}
             themePref={themePref}
             onSetTheme={onSetTheme}
             lang={lang}

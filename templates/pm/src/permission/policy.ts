@@ -41,8 +41,15 @@ export interface Subject {
 }
 
 export interface Ctx {
-  issue?: { assigneeId: string | null; reporterId: string }
+  issue?: { assigneeId: string | null; reporterId: string; projectId?: string }
   comment?: { authorId: string }
+}
+
+/** 工作区级权限：只能由工作区角色授予，项目覆盖不得提升 */
+export const WORKSPACE_ACTIONS: Action[] = ['project:manage', 'member:manage', 'workspace:manage']
+
+export function isWorkspaceAction(action: Action): boolean {
+  return WORKSPACE_ACTIONS.includes(action)
 }
 
 function isOwnIssue(subject: Subject, issue: Ctx['issue']): boolean {

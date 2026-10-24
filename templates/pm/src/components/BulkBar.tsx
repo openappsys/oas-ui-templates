@@ -6,7 +6,7 @@ import { parseFilters } from '@/lib/filters'
 import type { Action, Ctx } from '@/permission/policy'
 import type { IssuePriority, IssueStatus, SavedView } from '../types'
 import { ISSUE_PRIORITIES, ISSUE_STATUSES } from '../types'
-import { statusLabel, t } from '@/i18n'
+import { priorityLabel, statusLabel, t } from '@/i18n'
 import { OSelect } from './oas-wrappers'
 
 /** 批量操作浮条：选中集 → 批量改状态/优先级/负责人/删除（写活动历史） */
@@ -30,8 +30,10 @@ export function BulkBar({
   const { issues: issuesRepo, members: membersRepo } = useRepositories()
   const members = useObservable(() => membersRepo.liveAll(), [membersRepo])
 
-  if (!can('bulk:apply')) return null
+  if (!can('bulk:apply') && !can('bulk:delete')) return null
   if (selectedIds.size === 0) return null
+  const canApply = can('bulk:apply')
+  const canDelete = can('bulk:delete')
 
   const apply = async () => {
     const patch: { status?: IssueStatus; priority?: IssuePriority; assigneeId?: string | null } = {}
@@ -45,6 +47,7 @@ export function BulkBar({
   }
 
   const remove = async () => {
+    if (!canDelete) return
     const ids = [...selectedIds]
     await issuesRepo.bulkDelete(ids)
     onDeleted?.(ids)
@@ -59,6 +62,7 @@ export function BulkBar({
       <OSelect
         testid="bulk-status"
         value={status}
+        disabled={!canApply}
         options={[
           { label: t('bulkSetStatus'), value: '' },
           ...ISSUE_STATUSES.map((s) => ({ label: statusLabel(s), value: s })),
@@ -68,15 +72,17 @@ export function BulkBar({
       <OSelect
         testid="bulk-priority"
         value={priority}
+        disabled={!canApply}
         options={[
           { label: t('bulkSetPriority'), value: '' },
-          ...ISSUE_PRIORITIES.map((p) => ({ label: p, value: p })),
+          ...ISSUE_PRIORITIES.map((p) => ({ label: priorityLabel(p), value: p })),
         ]}
         onChange={setPriority}
       />
       <OSelect
         testid="bulk-assignee"
         value={assignee}
+        disabled={!canApply}
         options={[
           { label: t('bulkSetAssignee'), value: '' },
           { label: t('resourceUnassigned'), value: '__none__' },
@@ -84,22 +90,26 @@ export function BulkBar({
         ]}
         onChange={setAssignee}
       />
-      <button
-        className="bulk-apply"
-        type="button"
-        data-testid="bulk-apply"
-        onClick={() => void apply()}
-      >
-        {t('apply')}
-      </button>
-      <button
-        className="bulk-delete"
-        type="button"
-        data-testid="bulk-delete"
-        onClick={() => void remove()}
-      >
-        {t('delete')}
-      </button>
+      {canApply && (
+        <button
+          className="bulk-apply"
+          type="button"
+          data-testid="bulk-apply"
+          onClick={() => void apply()}
+        >
+          {t('apply')}
+        </button>
+      )}
+      {canDelete && (
+        <button
+          className="bulk-delete"
+          type="button"
+          data-testid="bulk-delete"
+          onClick={() => void remove()}
+        >
+          {t('delete')}
+        </button>
+      )}
       <button className="bulk-cancel" type="button" data-testid="bulk-cancel" onClick={onDone}>
         {t('cancel')}
       </button>

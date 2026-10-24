@@ -72,6 +72,13 @@ test('RL1 自定义角色：新建 + 勾权限 + 分配给成员后按权限生�
   await expect(page.getByTestId('admin-nav-settings')).toHaveCount(0)
   await expect(page.getByTestId('admin-nav-permissions')).toHaveCount(0)
   await expect(page.getByTestId('admin-nav-projects')).toHaveCount(0)
+  await page.getByTestId('admin-nav-members').click()
+  await page.getByTestId('admin-member-role-member-2').waitFor({ timeout: 10_000 })
+  const selfRoleOptions = await page.getByTestId('admin-member-role-member-2').evaluate((el) => {
+    const host = el as HTMLElement & { options?: Array<{ value: string }> }
+    return (host.options ?? []).map((o) => o.value)
+  })
+  expect(selfRoleOptions).not.toContain('admin')
   await page.getByTestId('admin-back').click()
 
   // 刷新后角色仍生效
@@ -409,4 +416,64 @@ test('RL6 项目权限：project:manage 可进管理区，只看到项目相关�
   await expect(page.getByTestId('proj-role-project')).toBeVisible({ timeout: 10_000 })
   await expect(page.getByTestId('perm-tabs').getByRole('tab')).toHaveCount(1)
   await expect(page.getByTestId('perm-role-admin')).toHaveCount(0)
+})
+
+test('RL7 项目角色不提工作区权限；跨项目访问按目标项目判权', async ({ page }) => {
+  await waitForSeed(page)
+  await openPermissions(page)
+
+  // 项目作用域：工作区管理组不可见、不可勾选
+  await page.getByTestId('perm-role-new').click()
+  await page.getByTestId('perm-role-name').locator('input').fill('项目删除者')
+  await page.getByTestId('perm-role-scope').evaluate((el) => {
+    ;(el as HTMLElement & { value?: string }).value = 'project'
+    el.dispatchEvent(new CustomEvent('oas-change', { bubbles: true, detail: { value: 'project' } }))
+  })
+  await expect(page.getByTestId('perm-workspace:manage')).toHaveCount(0)
+  await expect(page.getByTestId('perm-scope-hint')).toBeVisible()
+  await page.getByTestId('perm-issue:delete').click()
+  await page.getByTestId('perm-role-save').click()
+  await expect(page.getByTestId('perm-saved')).toBeVisible({ timeout: 10_000 })
+  const chip = page.locator('.perm-role-chip').filter({ hasText: '项目删除者' })
+  const rid = ((await chip.getAttribute('data-testid')) ?? '').replace('perm-role-', '')
+  expect(rid).not.toBe('')
+
+  // 仅覆盖 project-2
+  await page
+    .getByTestId('perm-tabs')
+    .getByRole('tab', { name: /项目访问|Project access/ })
+    .click()
+  await page.getByTestId('proj-role-project').evaluate((el) => {
+    ;(el as HTMLElement & { value?: string }).value = 'project-2'
+    el.dispatchEvent(
+      new CustomEvent('oas-change', { bubbles: true, detail: { value: 'project-2' } }),
+    )
+  })
+  await page.getByTestId('proj-role-member').evaluate((el) => {
+    ;(el as HTMLElement & { value?: string }).value = 'member-2'
+    el.dispatchEvent(
+      new CustomEvent('oas-change', { bubbles: true, detail: { value: 'member-2' } }),
+    )
+  })
+  await page.getByTestId('proj-role-role').evaluate((el, id) => {
+    ;(el as HTMLElement & { value?: string }).value = id
+    el.dispatchEvent(new CustomEvent('oas-change', { bubbles: true, detail: { value: id } }))
+  }, rid)
+  await page.getByTestId('proj-role-apply').click()
+  await expect(page.getByTestId('proj-role-list')).toContainText('项目删除者', {
+    timeout: 10_000,
+  })
+
+  // 在 project-2 视图里搜到 project-1 的 Issue：不得套用 project-2 的删除权限
+  await switchUser(page, 'member-2')
+  await page
+    .getByTestId('side-list')
+    .locator('[part="item"][data-value="project:project-2"]')
+    .click()
+  await page.getByTestId('toolbar-search').locator('input').fill('OAS-1')
+  const row = page.locator('.issue-row').first()
+  await expect(row).toContainText('OAS-1', { timeout: 10_000 })
+  await row.click()
+  await expect(page.getByTestId('detail-drawer')).toHaveAttribute('visible', /.*/)
+  await expect(page.getByTestId('detail-delete-btn')).toHaveCount(0)
 })

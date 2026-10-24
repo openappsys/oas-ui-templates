@@ -18,7 +18,7 @@ Views audited (9), each in the light and the dark theme (18 audits):
 | resource | `view-seg` = 资源 | same |
 | schedule | `view-seg` = 日程 | same |
 | dashboard | `view-seg` = 仪表盘 | same |
-| admin | `tb-toolbar` → 管理 | same |
+| admin | `pm-toolbar` → `admin-entry` | same |
 | drawer | click on the first issue row | same |
 | login | API mode (`localStorage oas-pm-data = api`), no token | mock backend |
 

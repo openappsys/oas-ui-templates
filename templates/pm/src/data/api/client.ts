@@ -549,14 +549,8 @@ export function createApiRepositories(options: ApiClientOptions = {}): Repositor
       ),
     unreadCount: (_memberId) =>
       live(async () => {
-        const rows = asItems<Notification>(
-          await send<{ items: Notification[] }>(
-            'GET',
-            '/api/notifications',
-            buildQuery({ limit: NOTIFICATION_LIMIT }),
-          ),
-        )
-        return rows.filter((n) => n.readAt === null).length
+        const body = await send<{ count: number }>('GET', '/api/notifications/unread-count')
+        return body.count
       }),
     markRead: async (id) => {
       await send('POST', `/api/notifications/${encodeURIComponent(id)}/read`)
@@ -606,8 +600,8 @@ export function createApiRepositories(options: ApiClientOptions = {}): Repositor
       await send('POST', '/api/admin/reset')
       poke()
     },
-    wipeAll: async () => {
-      await send('POST', '/api/admin/wipe')
+    wipeAll: async (keepMemberId?: string) => {
+      await send('POST', '/api/admin/wipe', undefined, { keepMemberId })
       poke()
     },
   }

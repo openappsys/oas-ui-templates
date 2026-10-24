@@ -98,17 +98,18 @@ describe('dexie issue repository', () => {
     expect(b.key).toBe('OAS-100002')
   })
 
-  it('create 项目不存在时回退 OAS key（沿用 App 语义）', async () => {
+  it('create 项目不存在时拒绝，避免重复 key 与悬空归属', async () => {
     const repo = createDexieIssueRepository(db)
-    const created = await repo.create({
-      projectId: 'ghost',
-      title: 'X',
-      status: 'todo',
-      priority: 'low',
-      assigneeId: null,
-      reporterId: 'm1',
-    })
-    expect(created.key).toBe('OAS-100001')
+    await expect(
+      repo.create({
+        projectId: 'ghost',
+        title: 'X',
+        status: 'todo',
+        priority: 'low',
+        assigneeId: null,
+        reporterId: 'm1',
+      }),
+    ).rejects.toThrow(/project not found/)
   })
 
   it('update/delete 生效', async () => {
@@ -1199,7 +1200,7 @@ describe('dexie issue repository — 软删除与回收站', () => {
     expect((await first(repo.liveTrash())).map((r) => r.id)).toEqual(['b', 'c', 'a'])
   })
 
-  it('导出的信封版本为 9 且软删除行如实带 deletedAt', async () => {
+  it('导出的信封版本为 10 且软删除行如实带 deletedAt', async () => {
     await db.issues.add(seedIssue(db, { id: 'e1' }))
     const repo = createDexieIssueRepository(db)
     await repo.delete('e1')
@@ -1208,7 +1209,7 @@ describe('dexie issue repository — 软删除与回收站', () => {
       version: number
       tables: { issues: Issue[] }
     }
-    expect(envelope.version).toBe(9)
+    expect(envelope.version).toBe(10)
     expect(envelope.tables.issues).toHaveLength(1)
     expect(typeof envelope.tables.issues[0].deletedAt).toBe('number')
   })

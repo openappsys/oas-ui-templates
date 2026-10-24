@@ -82,6 +82,7 @@ test('L2 切换英文：文案变英文 + localStorage 持久化 + reload 保持
   await expect(page.getByTestId('toolbar-new')).toContainText('New Issue')
   await expect.poll(() => sortLabels(page)).toContain('Last updated')
   await expect.poll(() => page.evaluate(() => localStorage.getItem('oas-pm-lang'))).toBe('en')
+  await expect.poll(() => page.evaluate(() => document.documentElement.lang)).toBe('en')
   await setView(page, 'dashboard')
   await expect(page.locator('.dash-page .page-h1')).toHaveText('Dashboard', { timeout: 10_000 })
 
@@ -122,6 +123,7 @@ test('L3 切回中文：文案恢复且结束时 lang=zh', async ({ page }) => {
   await toggleLang(page)
   await toggleLang(page)
   await expect.poll(() => page.evaluate(() => localStorage.getItem('oas-pm-lang'))).toBe('zh')
+  await expect.poll(() => page.evaluate(() => document.documentElement.lang)).toBe('zh-CN')
   await expect(page.getByTestId('view-seg')).toHaveAttribute('items', /列表/)
   await expect.poll(() => viewSegTabLabels(page)).toContain('列表')
   await expect(page.getByTestId('toolbar-new')).toContainText('新建 Issue')

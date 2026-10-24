@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { nanoid } from 'nanoid'
-import { t, type DictKey } from '@/i18n'
+import { dateLocale, getLang, t, type DictKey } from '@/i18n'
 import type { MemberRole, Role } from '@/types'
-import { can, builtinPermissions, type Action } from '@/permission/policy'
+import { can, builtinPermissions, isWorkspaceAction, type Action } from '@/permission/policy'
 import { useRepositories } from '@/data/context'
 import { useObservable } from '@/data/use-observable'
 import { OCheckbox, OMultiSelect, OSelect, OTabs } from '@/components/oas-wrappers'
@@ -84,6 +84,7 @@ function builtinLabel(id: string): string {
 /** 内置三角色只读对比矩阵（一张表 group-by，列宽跨组对齐） */
 function BuiltinMatrix() {
   const ref = useRef<TableHost>(null)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 语言切换需要重建权限矩阵
   const rows = useMemo(
     () =>
       PERM_GROUPS.flatMap((group) =>
@@ -96,8 +97,9 @@ function BuiltinMatrix() {
           ),
         })),
       ),
-    [],
+    [getLang()],
   )
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 语言切换需要重建权限矩阵
   const columns = useMemo<Col[]>(
     () => [
       { key: 'action', title: t('adminPermAction') },
@@ -105,10 +107,16 @@ function BuiltinMatrix() {
         key: role,
         title: roleLabel(role),
         align: 'center' as const,
-        render: (row: Record<string, unknown>) => String(row[role] ?? ''),
+        render: (row: Record<string, unknown>) => {
+          const ok = String(row[role] ?? '') === '✓'
+          const span = document.createElement('span')
+          span.setAttribute('aria-label', ok ? t('permAllowed') : t('permDenied'))
+          span.textContent = ok ? '✓' : '—'
+          return span
+        },
       })),
     ],
-    [],
+    [getLang()],
   )
   useEffect(() => {
     const el = ref.current
@@ -158,6 +166,7 @@ export function PermissionsTab({
   const projectMap = useMemo(() => new Map((projects ?? []).map((p) => [p.id, p])), [projects])
 
   const [tab, setTab] = useState<PermTab>('roles')
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 语言切换需要重建页签文案
   const permTabs = useMemo(
     () =>
       canWorkspace
@@ -167,12 +176,19 @@ export function PermissionsTab({
             { label: t('permTabAudit'), value: 'audit' },
           ]
         : [{ label: t('permTabAccess'), value: 'access' }],
-    [canWorkspace],
+    [canWorkspace, getLang()],
   )
 
   useEffect(() => {
     if (!canWorkspace && tab !== 'access') setTab('access')
   }, [canWorkspace, tab])
+
+  // 切页签清掉上一页的成功/错误提示，避免「已保存」串页
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 切换页签时清空提示，setState 是稳定引用
+  useEffect(() => {
+    setSaved('')
+    setError('')
+  }, [tab])
   const [selectedId, setSelectedId] = useState('admin')
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -246,6 +262,19 @@ export function PermissionsTab({
       [...perms].some((a) => !base.has(a))
     )
   }, [isDraft, name, description, scope, perms, selected])
+
+  // 项目作用域只展示项目内动作；工作区管理动作只能由工作区角色授予
+  const visibleGroups = useMemo(
+    () =>
+      PERM_GROUPS.filter(
+        (g) => scope === 'workspace' || !g.actions.some((a) => isWorkspaceAction(a)),
+      ),
+    [scope],
+  )
+  const grantedCount = useMemo(
+    () => [...perms].filter((a) => scope === 'workspace' || !isWorkspaceAction(a)).length,
+    [perms, scope],
+  )
 
   useEffect(() => {
     if (!ovProject && projects?.length) setOvProject(projects[0].id)
@@ -344,6 +373,8 @@ export function PermissionsTab({
       setError(t('permRoleNameRequired'))
       return
     }
+    // 项目作用域不能携带工作区级权限（否则项目覆盖可提权到工作区管理）
+    const cleanPerms = [...perms].filter((a) => scope === 'workspace' || !isWorkspaceAction(a))
     setBusy(true)
     setError('')
     try {
@@ -355,7 +386,7 @@ export function PermissionsTab({
           description: description.trim(),
           scope,
           builtin: false,
-          permissions: [...perms],
+          permissions: cleanPerms,
         })
         setSelectedId(id)
         log('role.create', clean)
@@ -364,7 +395,7 @@ export function PermissionsTab({
           name: clean,
           description: description.trim(),
           scope: selected.scope === 'project' ? 'project' : 'workspace',
-          permissions: [...perms],
+          permissions: cleanPerms,
         })
         log('role.update', clean)
       }
@@ -417,19 +448,26 @@ export function PermissionsTab({
         roleId ? (roles?.find((r) => r.id === roleId)?.name ?? roleId) : undefined,
       )
       setSaved(t('permRoleSaved'))
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
     } finally {
       setBusy(false)
     }
   }
 
   const clearAssignment = async (a: { projectId: string; memberId: string }) => {
-    await projectRolesRepo.set(a.projectId, a.memberId, null)
-    log(
-      'projectRole.clear',
-      `${projectMap.get(a.projectId)?.name ?? a.projectId} / ${
-        memberMap.get(a.memberId)?.name ?? a.memberId
-      }`,
-    )
+    try {
+      await projectRolesRepo.set(a.projectId, a.memberId, null)
+      log(
+        'projectRole.clear',
+        `${projectMap.get(a.projectId)?.name ?? a.projectId} / ${
+          memberMap.get(a.memberId)?.name ?? a.memberId
+        }`,
+      )
+      setSaved(t('permRoleSaved'))
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    }
   }
 
   const assignedTo = useMemo(() => {
@@ -534,7 +572,9 @@ export function PermissionsTab({
           </p>
           <p className="admin-hint">
             {assignedTo.names.length > 0
-              ? `${assignedTo.names.slice(0, 6).join('、')}${assignedTo.count > 6 ? '…' : ''}`
+              ? `${assignedTo.names.slice(0, 6).join(t('listSeparator'))}${
+                  assignedTo.count > 6 ? '…' : ''
+                }`
               : t('permAssignNone')}
           </p>
         </div>
@@ -594,7 +634,7 @@ export function PermissionsTab({
     ]
     const lines = auditRows.map((e) =>
       [
-        new Date(e.at).toLocaleString(),
+        new Date(e.at).toLocaleString(dateLocale()),
         memberMap.get(e.actorId)?.name ?? e.actorId,
         AUDIT_LABEL[e.action] ? t(AUDIT_LABEL[e.action]) : e.action,
         e.target,
@@ -648,6 +688,7 @@ export function PermissionsTab({
                 key={role.id}
                 type="button"
                 className={`perm-role-chip${selectedId === role.id ? ' is-active' : ''}`}
+                aria-pressed={selectedId === role.id}
                 data-testid={`perm-role-${role.id}`}
                 onClick={() => select(role)}
               >
@@ -677,6 +718,7 @@ export function PermissionsTab({
                   key={role.id}
                   type="button"
                   className={`perm-role-chip${selectedId === role.id ? ' is-active' : ''}`}
+                  aria-pressed={selectedId === role.id}
                   data-testid={`perm-role-${role.id}`}
                   onClick={() => select(role)}
                 >
@@ -727,7 +769,7 @@ export function PermissionsTab({
                     )}
                   </div>
                   <span className="admin-hint">
-                    {t('permGrantedCount').replace('{n}', String(perms.size))}
+                    {t('permGrantedCount').replace('{n}', String(grantedCount))}
                   </span>
                 </div>
                 {assignSummary}
@@ -765,14 +807,22 @@ export function PermissionsTab({
                         { label: t('roleScopeWorkspace'), value: 'workspace' },
                         { label: t('roleScopeProject'), value: 'project' },
                       ]}
-                      onChange={(v) => setScope(v === 'project' ? 'project' : 'workspace')}
+                      onChange={(v) => {
+                        const next = v === 'project' ? 'project' : 'workspace'
+                        setScope(next)
+                        if (next === 'project') {
+                          setPerms(
+                            (prev) => new Set([...prev].filter((a) => !isWorkspaceAction(a))),
+                          )
+                        }
+                      }}
                     />
                     {!isDraft && <span className="admin-hint">{t('permScopeLocked')}</span>}
                   </div>
                 </div>
 
                 <div className="perm-groups" data-testid="perm-checks">
-                  {PERM_GROUPS.map((group) => {
+                  {visibleGroups.map((group) => {
                     const hit = group.actions.filter((a) => perms.has(a)).length
                     return (
                       <section
@@ -810,6 +860,11 @@ export function PermissionsTab({
                     )
                   })}
                 </div>
+                {scope === 'project' && (
+                  <p className="admin-hint" data-testid="perm-scope-hint">
+                    {t('permScopeProjectHint')}
+                  </p>
+                )}
 
                 {error && (
                   <oas-alert type="error" size="small" data-testid="perm-error">
@@ -910,6 +965,16 @@ export function PermissionsTab({
               {t('projRoleAdminLocked')}
             </p>
           )}
+          {error && (
+            <oas-alert type="error" size="small" data-testid="proj-role-error">
+              {error}
+            </oas-alert>
+          )}
+          {saved && (
+            <oas-alert type="success" size="small" data-testid="proj-role-saved">
+              {saved}
+            </oas-alert>
+          )}
 
           <div className="proj-role-effective" data-testid="proj-role-effective">
             <div>
@@ -950,6 +1015,9 @@ export function PermissionsTab({
                   <button
                     type="button"
                     className="proj-role-remove"
+                    aria-label={`${t('delete')} ${
+                      projectMap.get(a.projectId)?.name ?? a.projectId
+                    } / ${memberMap.get(a.memberId)?.name ?? a.memberId}`}
                     data-testid={`proj-role-remove-${a.id}`}
                     onClick={() => void clearAssignment(a)}
                   >
@@ -996,35 +1064,39 @@ export function PermissionsTab({
           {(audit ?? []).length > 0 ? (
             auditRows.length > 0 ? (
               <>
-                <div className="audit-table" data-testid="audit-table">
-                  <div className="audit-row audit-head" aria-hidden="true">
-                    <span>{t('auditColTime')}</span>
-                    <span>{t('auditColActor')}</span>
-                    <span>{t('auditColAction')}</span>
-                    <span>{t('auditColTarget')}</span>
-                    <span>{t('auditColDetail')}</span>
-                  </div>
-                  {auditRows.map((e) => (
-                    <div key={e.id} className="audit-row">
-                      <span className="audit-time">
-                        {new Date(e.at).toLocaleString(undefined, {
-                          month: '2-digit',
-                          day: '2-digit',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </span>
-                      <span className="audit-actor">
-                        {memberMap.get(e.actorId)?.name ?? e.actorId}
-                      </span>
-                      <span className="audit-action">
-                        {AUDIT_LABEL[e.action] ? t(AUDIT_LABEL[e.action]) : e.action}
-                      </span>
-                      <span className="audit-target">{e.target}</span>
-                      <span className="audit-detail">{e.detail ?? '—'}</span>
-                    </div>
-                  ))}
-                </div>
+                <table className="audit-table" data-testid="audit-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">{t('auditColTime')}</th>
+                      <th scope="col">{t('auditColActor')}</th>
+                      <th scope="col">{t('auditColAction')}</th>
+                      <th scope="col">{t('auditColTarget')}</th>
+                      <th scope="col">{t('auditColDetail')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {auditRows.map((e) => (
+                      <tr key={e.id}>
+                        <td className="audit-time">
+                          {new Date(e.at).toLocaleString(dateLocale(), {
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </td>
+                        <td className="audit-actor">
+                          {memberMap.get(e.actorId)?.name ?? e.actorId}
+                        </td>
+                        <td className="audit-action">
+                          {AUDIT_LABEL[e.action] ? t(AUDIT_LABEL[e.action]) : e.action}
+                        </td>
+                        <td className="audit-target">{e.target}</td>
+                        <td className="audit-detail">{e.detail ?? '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
                 {(audit ?? []).length >= auditLimit && (
                   <div className="audit-more">
                     <oas-button
@@ -1056,8 +1128,10 @@ export function PermissionsTab({
         className="perm-assign-modal"
         data-testid="perm-assign-modal"
       >
+        <h2 slot="title" className="profile-title">
+          {selectedName}
+        </h2>
         <div className="create-body">
-          <h2 className="profile-title">{selectedName}</h2>
           <p className="profile-hint">{t('permAssignHint')}</p>
           <OMultiSelect
             testid="perm-assign-members"
@@ -1081,7 +1155,7 @@ export function PermissionsTab({
           </div>
           <p className="profile-hint">{t('permAssignFallbackHint')}</p>
           {assignError && (
-            <p className="create-error" data-testid="perm-assign-error">
+            <p role="alert" className="create-error" data-testid="perm-assign-error">
               {assignError}
             </p>
           )}

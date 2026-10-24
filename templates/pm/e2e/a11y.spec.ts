@@ -238,7 +238,7 @@ async function snapshotInfo(page: Page): Promise<{
 }> {
   const snap = await page.locator('body').ariaSnapshot()
   const named =
-    /button|link|textbox|combobox|checkbox|radio|switch|tab|menuitem|searchbox|slider|spinbutton/
+    /button|link|textbox|combobox|checkbox|radio|switch|tab|menuitem|searchbox|slider|spinbutton|dialog|alertdialog/
   const landmarks: Record<string, number> = {}
   const unnamed: { role: string; line: string }[] = []
   const h1: string[] = []
@@ -357,7 +357,7 @@ function assertAudit(view: ViewAudit) {
   expect(view.landmarks.main ?? 0, `main ${where}`).toBeGreaterThanOrEqual(1)
   // 一级标题：每个主视图都有（view 级 h1，只读屏可见也算）
   expect(view.h1.count, `h1 ${where}`).toBe(1)
-  expect(view.htmlLang, `lang ${where}`).toBe('zh-CN')
+  expect(view.htmlLang, `lang ${where}`).toMatch(/^(zh-CN|en)$/)
   expect(view.imgNoAlt, `img alt ${where}`).toBe(0)
 }
 
@@ -428,6 +428,30 @@ test('A7 管理台', async ({ page }) => {
   await expect(page.getByTestId('admin-view')).toBeVisible({ timeout: 20_000 })
   await page.waitForTimeout(500)
   await auditBothThemes(page, 'admin')
+})
+
+test('A7b 权限页：角色 / 项目访问 / 审计', async ({ page }) => {
+  test.setTimeout(240_000)
+  await openApp(page)
+  await page.getByTestId('admin-entry').click()
+  await page.getByTestId('admin-nav-permissions').click()
+  await expect(page.getByTestId('admin-custom-roles')).toBeVisible({ timeout: 20_000 })
+  await page.waitForTimeout(400)
+  await auditBothThemes(page, 'permissions-roles')
+
+  await page
+    .getByTestId('perm-tabs')
+    .getByRole('tab', { name: /项目访问|Project access/ })
+    .click()
+  await page.waitForTimeout(400)
+  await auditBothThemes(page, 'permissions-access')
+
+  await page
+    .getByTestId('perm-tabs')
+    .getByRole('tab', { name: /审计|Audit/ })
+    .click()
+  await page.waitForTimeout(400)
+  await auditBothThemes(page, 'permissions-audit')
 })
 
 test('A8 详情抽屉', async ({ page }) => {

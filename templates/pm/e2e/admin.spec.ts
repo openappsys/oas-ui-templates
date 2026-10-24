@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { expect, test, type Locator, type Page } from '@playwright/test'
 
 /** e2e 播种规模（产品默认 10 万；M1 架构用例单独传 100_000） */
@@ -351,7 +352,7 @@ test('A10 权限矩阵：行数与 ACTIONS 一致，viewer×新建只读为 —�
   }
 })
 
-test('A11 数据闭环：导出 JSON → 清空（管理态被收回+空态）→ 导入恢复 → 统计回归', async ({
+test('A11 数据闭环：导出 JSON（含权限表）→ 清空保留管理员 → 刷新不重播 → 导入恢复 → 统计回归', async ({
   page,
 }, testInfo) => {
   test.setTimeout(300_000)
@@ -365,17 +366,28 @@ test('A11 数据闭环：导出 JSON → 清空（管理态被收回+空态）�
   const download = await downloadPromise
   const backup = testInfo.outputPath('oas-pm-backup.json')
   await download.saveAs(backup)
+  const parsed = JSON.parse(readFileSync(backup, 'utf8')) as {
+    version: number
+    tables: Record<string, unknown[]>
+  }
+  expect(parsed.version).toBe(10)
+  expect(parsed.tables.roles.length).toBeGreaterThanOrEqual(3)
+  expect(parsed.tables.projectMembers.length).toBeGreaterThan(0)
+  expect(parsed.tables.projectRoles).toBeInstanceOf(Array)
 
   await confirmPop(page.getByTestId('admin-wipe-all'))
-  await expect(page.getByTestId('admin-view')).toHaveCount(0, { timeout: 20_000 })
-  await expect(page.getByTestId('side-panel')).toBeVisible()
-  await expect(page.getByTestId('admin-entry')).toHaveCount(0)
+  await expect(page.getByTestId('admin-data-ok')).toBeVisible({ timeout: 20_000 })
+  // 清空保留当前管理员与内置角色：可原地恢复备份，且刷新后不重播演示数据
+  await expect(page.getByTestId('admin-view')).toBeVisible()
+  await page.getByTestId('admin-back').click()
   await expect(page.getByTestId('issues-empty')).toBeVisible({ timeout: 20_000 })
   await expect(page.locator('.issue-row')).toHaveCount(0)
+  await expect(page.getByTestId('admin-entry')).toBeVisible()
 
   await page.reload()
   await expect(page.getByTestId('pm-toolbar')).toBeVisible({ timeout: 10_000 })
-  await expect(page.getByTestId('admin-entry')).toBeVisible({ timeout: 120_000 })
+  await expect(page.getByTestId('admin-entry')).toBeVisible({ timeout: 20_000 })
+  await expect(page.getByTestId('issues-empty')).toBeVisible({ timeout: 20_000 })
   await page.getByTestId('admin-entry').click()
   await page.getByTestId('admin-nav-settings').click()
   await expect(page.getByTestId('admin-data-actions')).toBeVisible()

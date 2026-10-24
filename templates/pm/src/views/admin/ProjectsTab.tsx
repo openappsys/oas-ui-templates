@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { nanoid } from 'nanoid'
 import { useRepositories } from '@/data/context'
 import { useObservable } from '@/data/use-observable'
-import { t } from '@/i18n'
+import { getLang, t } from '@/i18n'
 import type { Member, Project } from '@/types'
 import { OMultiSelect, OSelect } from '@/components/oas-wrappers'
 
@@ -134,8 +134,9 @@ export function ProjectsTab({
       if (editing) {
         await projectsRepo.update(editing.id, { name, key, description, leadId: lead })
       } else {
+        const id = nanoid()
         await projectsRepo.create({
-          id: nanoid(),
+          id,
           name,
           key,
           description,
@@ -143,6 +144,11 @@ export function ProjectsTab({
           createdAt: Date.now(),
           nextKeyNum: 100001,
         })
+        // 新项目默认全员可参与：否则负责人候选/成员筛选为空
+        await projectMembersRepo.setMembers(
+          id,
+          (members ?? []).map((m) => m.id),
+        )
       }
       modalRef.current?.removeAttribute('visible')
     } catch (e) {
@@ -150,7 +156,7 @@ export function ProjectsTab({
     } finally {
       inFlightRef.current = false
     }
-  }, [editing, lead, projectsRepo, showError])
+  }, [editing, lead, projectsRepo, projectMembersRepo, members, showError])
 
   const remove = useCallback(
     async (id: string) => {
@@ -177,6 +183,7 @@ export function ProjectsTab({
     [list, memberMap],
   )
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 语言切换需要重建表头/操作文案
   const columns = useMemo<Col[]>(() => {
     return [
       { key: 'name', title: t('adminColName') },
@@ -234,7 +241,7 @@ export function ProjectsTab({
         },
       },
     ]
-  }, [healthMap])
+  }, [healthMap, getLang()])
 
   useEffect(() => {
     const el = tableRef.current

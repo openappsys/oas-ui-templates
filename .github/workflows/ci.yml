@@ -25,7 +25,7 @@ jobs:
           - { name: admin-pro/vue, workdir: templates/admin-pro/vue, tsc: 'false', size: 'true', e2e: 'true' }
           - { name: admin-pro/svelte, workdir: templates/admin-pro/svelte, tsc: 'false', size: 'true', e2e: 'true' }
           - { name: mobile-h5, workdir: templates/mobile-h5, tsc: 'false', size: 'false', e2e: 'true' }
-          - { name: pm, workdir: templates/pm, tsc: 'true', size: 'false', e2e: 'true' }
+          - { name: pm, workdir: templates/pm, tsc: 'true', tscCmd: 'tsc6', size: 'false', e2e: 'true' }
     name: ${{ matrix.template.name }}
     runs-on: ubuntu-latest
     defaults:
@@ -39,7 +39,7 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install
-      - run: pnpm exec tsc --noEmit
+      - run: pnpm exec ${{ matrix.template.tscCmd || 'tsc' }} --noEmit
         if: matrix.template.tsc == 'true'
       - run: pnpm test
       - run: pnpm build

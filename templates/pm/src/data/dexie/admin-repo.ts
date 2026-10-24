@@ -3,6 +3,8 @@ import type { PMDatabase } from '@/db/schema'
 import { fromLiveQuery } from '@/data/observable'
 import type { AdminRepository, GlobalStats, MemberWorkload, ProjectHealth } from '@/data/types'
 import type { IssueStatus } from '@/types'
+import { BUILTIN_ROLES } from '@/lib/builtin-roles'
+import { SEED_MARKER_KEY } from '@/seed-db'
 
 export function createDexieAdminRepository(db: PMDatabase): AdminRepository {
   const allTables: Table[] = [
@@ -15,10 +17,18 @@ export function createDexieAdminRepository(db: PMDatabase): AdminRepository {
     db.settings,
     db.cycles,
     db.notifications,
+    db.roles,
+    db.audit,
+    db.projectRoles,
+    db.projectMembers,
   ]
-  const wipeAll = () =>
+  /** 清空业务数据，但保留内置角色与当前管理员——否则清空后无法再进入设置恢复备份 */
+  const wipeAll = (keepMemberId?: string) =>
     db.transaction('rw', allTables, async () => {
+      const keep = keepMemberId ? await db.members.get(keepMemberId) : undefined
       for (const t of allTables) await t.clear()
+      for (const role of BUILTIN_ROLES) await db.roles.put(role)
+      if (keep) await db.members.put(keep)
     })
   /** 软删行不参与统计：走 deletedAt 索引直取（只有回收站那一小撮），
    *  再从索引计数里扣减，避免为排除去扫 10W 行 */
@@ -108,6 +118,10 @@ export function createDexieAdminRepository(db: PMDatabase): AdminRepository {
         settings,
         cycles,
         notifications,
+        roles,
+        audit,
+        projectRoles,
+        projectMembers,
       ] = await Promise.all([
         db.issues.toArray(),
         db.projects.toArray(),
@@ -118,10 +132,14 @@ export function createDexieAdminRepository(db: PMDatabase): AdminRepository {
         db.settings.toArray(),
         db.cycles.toArray(),
         db.notifications.toArray(),
+        db.roles.toArray(),
+        db.audit.toArray(),
+        db.projectRoles.toArray(),
+        db.projectMembers.toArray(),
       ])
       return JSON.stringify({
         app: 'oas-pm',
-        version: 9,
+        version: 10,
         exportedAt: Date.now(),
         tables: {
           issues,
@@ -133,6 +151,10 @@ export function createDexieAdminRepository(db: PMDatabase): AdminRepository {
           settings,
           cycles,
           notifications,
+          roles,
+          audit,
+          projectRoles,
+          projectMembers,
         },
       })
     },
@@ -159,14 +181,23 @@ export function createDexieAdminRepository(db: PMDatabase): AdminRepository {
         [db.settings, rows('settings')],
         [db.cycles, rows('cycles')],
         [db.notifications, rows('notifications')],
+        [db.roles, rows('roles')],
+        [db.audit, rows('audit')],
+        [db.projectRoles, rows('projectRoles')],
+        [db.projectMembers, rows('projectMembers')],
       ]
       await db.transaction('rw', allTables, async () => {
         for (const t of allTables) await t.clear()
         for (const [t, data] of restore) await t.bulkPut(data)
+        // v9 备份不含角色：恢复后补内置角色，避免成员角色指向不存在的行
+        if ((await db.roles.count()) === 0) {
+          for (const role of BUILTIN_ROLES) await db.roles.put(role)
+        }
       })
     },
     resetDemo: async () => {
       await wipeAll()
+      localStorage.removeItem(SEED_MARKER_KEY)
       const { seedDatabase } = await import('@/seed-db')
       await seedDatabase()
     },

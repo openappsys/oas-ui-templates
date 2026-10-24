@@ -100,6 +100,10 @@ describe('契约：同一份 seed 下 Dexie 与 API 输出相同', () => {
     await db.activities.bulkPut(store.activities)
     await db.settings.bulkPut(store.settings)
     await db.cycles.bulkPut(store.cycles)
+    await db.roles.bulkPut(store.roles)
+    await db.audit.bulkPut(store.audit)
+    await db.projectRoles.bulkPut(store.projectRoles)
+    await db.projectMembers.bulkPut(store.projectMembers)
     dexie = createDexieRepositories(db)
     api = createApiRepositories({ transport: directTransport(store), pollMs: 10 })
   })
@@ -332,8 +336,8 @@ describe('契约：同一份 seed 下 Dexie 与 API 输出相同', () => {
     expect(a.projectId).toBe(d.projectId)
     expect(a.parentId).toBe(d.parentId)
     expect(a.labels).toEqual(d.labels)
-    const ghost = await api.issues.create({ ...input, projectId: 'ghost' })
-    expect(ghost.key).toBe('OAS-100001')
+    await expect(api.issues.create({ ...input, projectId: 'ghost' })).rejects.toThrow()
+    await expect(dexie.issues.create({ ...input, projectId: 'ghost' })).rejects.toThrow()
   })
 
   it('settings get/set/live 一致', async () => {

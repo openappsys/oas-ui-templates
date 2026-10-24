@@ -123,9 +123,26 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
       await db.issues.update(id, { deletedAt: null })
     },
 
-    /** 永久删除：仅回收站内可用（物理删除，不可恢复） */
+    /** 永久删除：仅回收站内可用（物理删除，不可恢复）；级联清评论/活动/通知并解除子任务挂载 */
     async purge(id) {
-      await db.issues.delete(id)
+      await db.transaction(
+        'rw',
+        db.issues,
+        db.comments,
+        db.activities,
+        db.notifications,
+        async () => {
+          const row = await db.issues.get(id)
+          if (!row || notDeleted(row)) return
+          await db.issues.delete(id)
+          await db.comments.where('issueId').equals(id).delete()
+          await db.activities.where('issueId').equals(id).delete()
+          const notifs = await db.notifications.toArray()
+          const stale = notifs.filter((n) => n.issueId === id).map((n) => n.id)
+          if (stale.length > 0) await db.notifications.bulkDelete(stale)
+          await db.issues.where('parentId').equals(id).modify({ parentId: null })
+        },
+      )
     },
 
     liveTrash(): Observable<Issue[]> {
@@ -427,7 +444,7 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
           // 通知规则需要变更前的负责人/状态（活动先写、字段后写，与单条编辑路径同序）
           const prior = await db.issues.get(id)
           // 已删除行不参与批量改写：删除后残留的选中集不该把行「写活」
-          if (prior && !notDeleted(prior)) continue
+          if (!prior || !notDeleted(prior)) continue
           const acts: Array<Promise<unknown>> = []
           if (patch.status) {
             acts.push(
@@ -484,7 +501,10 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
             )
           }
           const changes: Partial<Issue> = { updatedAt: now }
-          if (patch.status) changes.status = patch.status
+          if (patch.status) {
+            changes.status = patch.status
+            changes.completedAt = patch.status === 'done' ? now : null
+          }
           if (patch.priority) changes.priority = patch.priority
           if (patch.assigneeId !== undefined) changes.assigneeId = patch.assigneeId
           await db.issues.update(id, changes)

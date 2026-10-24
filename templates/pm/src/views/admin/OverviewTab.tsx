@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import { useRepositories } from '@/data/context'
 import { useObservable } from '@/data/use-observable'
 import type { Member } from '@/types'
-import { t } from '@/i18n'
+import { getLang, t } from '@/i18n'
 import { toChartData } from '@/lib/chart-data'
 import { Chart } from '@/components/Chart'
 
@@ -40,6 +40,7 @@ export function OverviewTab({
       })),
     [health],
   )
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 语言切换需要重建表头
   const columns = useMemo(
     () => [
       { key: 'name', title: t('adminHealthProject') },
@@ -48,7 +49,7 @@ export function OverviewTab({
       { key: 'unassigned', title: t('adminHealthUnassigned'), align: 'right' },
       { key: 'stale', title: t('adminHealthStale'), align: 'right' },
     ],
-    [],
+    [getLang()],
   )
 
   useEffect(() => {

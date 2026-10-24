@@ -39,7 +39,7 @@ import { useObservable, useObservableState } from './data/use-observable'
 import { activeDataSource, storeDataSource } from './data/source'
 import { fetchMe, logout as logoutSession, type LoginResult } from './data/api/auth'
 import { getToken, onApiError, onSessionExpired } from './data/api/session'
-import { roleCan, type Action, type Ctx } from './permission/policy'
+import { roleCan, isWorkspaceAction, type Action, type Ctx } from './permission/policy'
 import { isBuiltinRole } from './lib/builtin-roles'
 import { Avatar } from './components/Avatar'
 import { SideList, type SideRow, type SideSection } from './components/SideList'
@@ -370,15 +370,6 @@ function Workspace({
   const saveViewRef = useRef<HTMLElement>(null)
   const createRef = useRef<HTMLElement>(null)
 
-  const doSaveView = useCallback(async () => {
-    const name = (saveViewNameRef.current?.value ?? '').trim()
-    if (!name) return
-    const { search: _s, ...rest } = filters
-    await savedViewsRepo.create(name, rest)
-    if (saveViewNameRef.current) saveViewNameRef.current.value = ''
-    saveViewRef.current?.removeAttribute('visible')
-  }, [filters, savedViewsRepo])
-
   const [listLimit, setListLimit] = useState(LIST_WINDOW)
   const extendList = useCallback(() => setListLimit((n) => n + LIST_WINDOW_STEP), [])
   // 窗口订阅失败的重试入口：改 nonce → 重新订阅（错误态复位为加载态）
@@ -402,19 +393,29 @@ function Workspace({
       const workspaceRoleId =
         members?.find((m) => m.id === currentUser)?.role ?? session?.role ?? 'viewer'
       // 项目级覆盖：只在具体项目内生效；工作区 admin 不被项目角色降级
+      const projectId = ctx?.issue?.projectId ?? filters.projectId
       const override =
-        workspaceRoleId === 'admin' || filters.projectId === ALL_PROJECTS
+        isWorkspaceAction(action) || workspaceRoleId === 'admin' || projectId === ALL_PROJECTS
           ? undefined
-          : projectRoles?.find(
-              (a) => a.projectId === filters.projectId && a.memberId === currentUser,
-            )?.roleId
+          : projectRoles?.find((a) => a.projectId === projectId && a.memberId === currentUser)
+              ?.roleId
       const roleId = override ?? workspaceRoleId
       const stored = roles?.find((r) => r.id === roleId)
+      const wsStored = roles?.find((r) => r.id === workspaceRoleId)
+      // 项目覆盖只认 project 作用域角色；旧数据里的工作区角色覆盖不得生效
       const role =
-        stored ??
-        (isBuiltinRole(roleId)
-          ? { id: roleId, name: '', description: '', builtin: true, permissions: [] }
-          : undefined)
+        override !== undefined && stored?.scope === 'project'
+          ? stored
+          : (wsStored ??
+            (isBuiltinRole(workspaceRoleId)
+              ? {
+                  id: workspaceRoleId,
+                  name: '',
+                  description: '',
+                  builtin: true,
+                  permissions: [],
+                }
+              : undefined))
       return roleCan(role, currentUser, action, ctx)
     },
     [currentUser, filters.projectId, members, projectRoles, roles, session],
@@ -425,6 +426,24 @@ function Workspace({
   const canManageProjects = can('project:manage')
   const canManageMembers = can('member:manage')
   const canManageWorkspace = can('workspace:manage')
+  const roleName = useCallback(
+    (id: string) => {
+      if (id === 'admin') return t('adminRoleAdmin')
+      if (id === 'member') return t('adminRoleMember')
+      if (id === 'viewer') return t('adminRoleViewer')
+      return roles?.find((r) => r.id === id)?.name ?? id
+    },
+    [roles],
+  )
+  const doSaveView = useCallback(async () => {
+    if (!can('view:save')) return
+    const name = (saveViewNameRef.current?.value ?? '').trim()
+    if (!name) return
+    const { search: _s, ...rest } = filters
+    await savedViewsRepo.create(name, rest)
+    if (saveViewNameRef.current) saveViewNameRef.current.value = ''
+    saveViewRef.current?.removeAttribute('visible')
+  }, [filters, savedViewsRepo, can])
   useEffect(() => {
     if (view === 'admin' && !canManage) setView('issues')
   }, [view, canManage])
@@ -879,9 +898,10 @@ function Workspace({
 
   const handleDeleteSavedView = useCallback(
     (id: string) => {
+      if (!can('view:delete')) return
       void savedViewsRepo.delete(id)
     },
-    [savedViewsRepo],
+    [savedViewsRepo, can],
   )
 
   const exportCsv = useCallback(() => {
@@ -893,8 +913,8 @@ function Workspace({
         [
           i.key,
           esc(i.title),
-          i.status,
-          i.priority,
+          esc(statusLabel(i.status)),
+          esc(priorityLabel(i.priority)),
           esc(memberMap.get(i.assigneeId ?? '')?.name ?? ''),
           new Date(i.createdAt).toISOString().slice(0, 10),
         ].join(','),
@@ -1282,7 +1302,7 @@ function Workspace({
               <OSelect
                 testid="create-priority"
                 value={createPriority}
-                options={ISSUE_PRIORITIES.map((p) => ({ label: p, value: p }))}
+                options={ISSUE_PRIORITIES.map((p) => ({ label: priorityLabel(p), value: p }))}
                 onChange={(v) => setCreatePriority(v as IssuePriority)}
               />
             </div>
@@ -1431,7 +1451,7 @@ function Workspace({
               >
                 <Avatar member={m} size={26} />
                 <span>{m.name}</span>
-                <span className="user-pick-role">{m.role}</span>
+                <span className="user-pick-role">{roleName(m.role)}</span>
               </button>
             ))}
           </div>

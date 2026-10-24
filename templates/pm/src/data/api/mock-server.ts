@@ -13,6 +13,7 @@ import {
 } from '../../lib/notify.ts'
 import { PRIORITY_WEIGHT } from '../../lib/order.ts'
 import { mulberry32 } from '../../lib/prng.ts'
+import { isWorkspaceAction, roleCan, type Action, type Ctx } from '../../permission/policy.ts'
 import {
   ISSUE_PRIORITIES,
   ISSUE_STATUSES,
@@ -225,7 +226,16 @@ function buildSeed(seed: number, now: number): SeedTables {
     const project = roll < 0.5 ? projects[0] : roll < 0.8 ? projects[1] : projects[2]
     const status = ISSUE_STATUSES[Math.floor(rand() * ISSUE_STATUSES.length)]
     const priority = PRIORITIES[Math.floor(rand() * PRIORITIES.length)]
-    const assignee = rand() > 0.15 ? members[Math.floor(rand() * members.length)] : null
+    const assignee = (() => {
+      if (rand() <= 0.15) return null
+      const pool =
+        project.id === 'project-1'
+          ? members
+          : project.id === 'project-2'
+            ? members.slice(0, 5)
+            : members.slice(2, 7)
+      return pool[Math.floor(rand() * pool.length)]
+    })()
     const title = TITLES[Math.floor(rand() * TITLES.length)]
     const labels: string[] = []
     const labelCount = Math.floor(rand() * 3)
@@ -333,6 +343,11 @@ function buildSeed(seed: number, now: number): SeedTables {
         projectId: 'project-2',
         memberId: m.id,
       })),
+      ...members.slice(2, 7).map((m) => ({
+        id: `project-3:${m.id}`,
+        projectId: 'project-3',
+        memberId: m.id,
+      })),
     ],
   }
 }
@@ -421,18 +436,76 @@ function sessionMember(store: MockStore, req: ApiRequest): Member {
   return store.members.find((m) => m.id === snapshot.id) ?? snapshot
 }
 
-/** 仅 admin 可用的端点：admin 全部端点、项目/成员写操作、设置写操作、回收站行操作
- *  （恢复/永久删除不可由 member 自助）。普通 issue/评论/视图写只要求已登录
- *  （前端 can() 仍做细粒度门禁） */
-function isAdminOnly(method: string, head: string, second?: string, third?: string): boolean {
-  if (head === 'admin') return true
-  if (head === 'projects' || head === 'members' || head === 'roles') return method !== 'GET'
-  if (head === 'project-roles') return method !== 'GET'
-  if (head === 'project-members') return method !== 'GET'
-  if (head === 'audit') return true
-  if (head === 'settings') return method === 'PUT'
-  if (head === 'issues' && second && (third === 'restore' || third === 'purge')) return true
-  return false
+/** 角色解析：工作区角色 + 目标项目的覆盖（工作区 admin 不被覆盖） */
+function workspaceRoleOf(store: MockStore, member: Member): Role | undefined {
+  const found = store.roles.find((r) => r.id === member.role)
+  if (found) return found
+  // 最小 store / 旧备份可能没有角色表：内置角色按默认权限解析，避免 admin 掉成无权限
+  return BUILTIN_ROLES.find((r) => r.id === member.role)
+}
+
+function roleForProject(store: MockStore, member: Member, projectId?: string): Role | undefined {
+  const ws = workspaceRoleOf(store, member)
+  if (!ws || member.role === 'admin' || !projectId) return ws
+  const override = store.projectRoles.find(
+    (a) => a.projectId === projectId && a.memberId === member.id,
+  )?.roleId
+  const overrideRole = override ? store.roles.find((r) => r.id === override) : undefined
+  return overrideRole?.scope === 'project' ? overrideRole : ws
+}
+
+function canAction(
+  store: MockStore,
+  member: Member,
+  action: Action,
+  projectId?: string,
+  ctx?: Ctx,
+): boolean {
+  const role = roleForProject(store, member, projectId)
+  return role ? roleCan(role, member.id, action, ctx) : false
+}
+
+/** 审计身份：普通用户只能以自己身份写入；工作区管理员可代填（导入/修复场景） */
+function actingId(store: MockStore, actor: Member, requested: unknown): string {
+  return typeof requested === 'string' &&
+    requested !== '' &&
+    canAction(store, actor, 'workspace:manage')
+    ? requested
+    : actor.id
+}
+
+/** 管理端点的最小权限映射；返回 null 表示不在此处做管理门禁 */
+function requiredAction(
+  method: string,
+  head: string,
+  second?: string,
+  third?: string,
+): Action | 'anyAdmin' | null {
+  if (method === 'GET') {
+    if (head === 'admin') return second === 'export' ? 'workspace:manage' : 'anyAdmin'
+    if (head === 'audit') return 'anyAdmin'
+    // 角色/项目覆盖/项目成员列表是 App 解析权限与筛选的只读依赖：任何登录用户可读
+    return null
+  }
+  if (head === 'admin') return 'workspace:manage'
+  if (head === 'projects' || head === 'cycles') return 'project:manage'
+  if (head === 'members') return 'member:manage'
+  if (head === 'roles') return 'workspace:manage'
+  if (head === 'audit') return 'anyAdmin'
+  if (head === 'project-roles' || head === 'project-members') return 'anyAdmin'
+  if (head === 'settings') return 'workspace:manage'
+  if (head === 'issues' && second && third === 'purge') {
+    return 'workspace:manage'
+  }
+  return null
+}
+
+function hasAnyAdmin(store: MockStore, member: Member): boolean {
+  return (
+    canAction(store, member, 'project:manage') ||
+    canAction(store, member, 'member:manage') ||
+    canAction(store, member, 'workspace:manage')
+  )
 }
 
 /** Dexie 语义复刻：search 走全表（无视 project/status、按主键序、上限 2000）；
@@ -634,23 +707,25 @@ interface CreateIssueBody {
   order?: number
 }
 
-function createIssue(store: MockStore, raw: unknown): Issue {
+function createIssue(store: MockStore, raw: unknown, actor: Member): Issue {
   const input = asRecord(raw) as unknown as CreateIssueBody
   const project = store.projects.find((p) => p.id === input.projectId)
-  // 项目缺失时回退到 OAS 号段，且不动项目计数器（与 Dexie 实现的 update 空转一致）
-  const keyNum = project?.nextKeyNum ?? 100001
-  if (project) project.nextKeyNum = keyNum + 1
+  // 项目必须存在：否则会生成重复 key 且归属悬空
+  if (!project) fail(404, 'project not found')
+  if (!canAction(store, actor, 'issue:create', project.id)) fail(403, 'permission denied')
+  const keyNum = project.nextKeyNum ?? 100001
+  project.nextKeyNum = keyNum + 1
   const now = Date.now()
   const issue: Issue = {
     id: nextId(store, 'issue'),
-    projectId: String(input.projectId ?? ''),
-    key: `${project?.key ?? 'OAS'}-${keyNum}`,
+    projectId: project.id,
+    key: `${project.key}-${keyNum}`,
     title: String(input.title ?? ''),
     description: '',
     status: input.status ?? 'todo',
     priority: input.priority ?? 'medium',
     assigneeId: input.assigneeId ?? null,
-    reporterId: String(input.reporterId ?? ''),
+    reporterId: actingId(store, actor, input.reporterId),
     labels: [],
     startAt: null,
     dueAt: null,
@@ -674,7 +749,7 @@ function updateIssue(store: MockStore, id: string, changes: Record<string, unkno
   Object.assign(issue, changes, { updatedAt: Date.now() })
 }
 
-function updateMany(store: MockStore, raw: unknown): void {
+function updateMany(store: MockStore, raw: unknown, actor: Member): void {
   const updates = asRecord(raw).updates
   if (!Array.isArray(updates)) fail(400, 'updates must be an array')
   const now = Date.now()
@@ -683,15 +758,34 @@ function updateMany(store: MockStore, raw: unknown): void {
     const issue = store.issues.find((i) => i.id === String(rec.id))
     // 软删行不参与批量改写（与 Dexie updateMany 的空转一致）
     if (!issue || !notDeleted(issue)) continue
-    Object.assign(issue, asRecord(rec.changes), { updatedAt: now })
+    const changes = asRecord(rec.changes)
+    const ctx: Ctx = {
+      issue: {
+        assigneeId: issue.assigneeId,
+        reporterId: issue.reporterId,
+        projectId: issue.projectId,
+      },
+    }
+    const needsEdit = Object.keys(changes).some(
+      (k) => k !== 'status' && k !== 'completedAt' && k !== 'order',
+    )
+    if ('status' in changes) {
+      if (!canAction(store, actor, 'issue:change-status', issue.projectId, ctx)) {
+        fail(403, 'permission denied')
+      }
+    }
+    if (needsEdit && !canAction(store, actor, 'issue:edit', issue.projectId, ctx)) {
+      fail(403, 'permission denied')
+    }
+    Object.assign(issue, changes, { updatedAt: now })
   }
 }
 
-function bulkApply(store: MockStore, raw: unknown): void {
+function bulkApply(store: MockStore, raw: unknown, actor: Member): void {
   const body = asRecord(raw)
   const ids = Array.isArray(body.ids) ? body.ids.map((id) => String(id)) : []
   const patch = asRecord(body.patch)
-  const actorId = String(body.actorId ?? '')
+  const actorId = actingId(store, actor, body.actorId)
   const status = patch.status as IssueStatus | undefined
   const priority = patch.priority as IssuePriority | undefined
   const hasAssignee = 'assigneeId' in patch
@@ -700,6 +794,16 @@ function bulkApply(store: MockStore, raw: unknown): void {
   for (const id of ids) {
     const issue = store.issues.find((i) => i.id === id)
     if (!issue || !notDeleted(issue)) continue
+    const ctx: Ctx = {
+      issue: {
+        assigneeId: issue.assigneeId,
+        reporterId: issue.reporterId,
+        projectId: issue.projectId,
+      },
+    }
+    if (!canAction(store, actor, 'bulk:apply', issue.projectId, ctx)) {
+      fail(403, 'permission denied')
+    }
     // 批量指派/关闭与单条编辑同一套通知规则；先取旧负责人/状态，再落字段
     const drafts = issueChangeNotificationDrafts({
       issueId: id,
@@ -742,7 +846,10 @@ function bulkApply(store: MockStore, raw: unknown): void {
         createdAt: now,
       })
     }
-    if (status) issue.status = status
+    if (status) {
+      issue.status = status
+      issue.completedAt = status === 'done' ? now : null
+    }
     if (priority) issue.priority = priority
     if (hasAssignee) issue.assigneeId = assigneeId
     issue.updatedAt = now
@@ -750,14 +857,25 @@ function bulkApply(store: MockStore, raw: unknown): void {
   }
 }
 
-function bulkDelete(store: MockStore, raw: unknown): void {
+function bulkDelete(store: MockStore, raw: unknown, actor: Member): void {
   const ids = asRecord(raw).ids
   if (!Array.isArray(ids)) fail(400, 'ids must be an array')
   const now = Date.now()
   const drop = new Set(ids.map((id) => String(id)))
   // 批量删除与单条 DELETE 同口径：软删除（回收站可恢复）
   for (const issue of store.issues) {
-    if (drop.has(issue.id) && notDeleted(issue)) issue.deletedAt = now
+    if (!drop.has(issue.id) || !notDeleted(issue)) continue
+    const ctx: Ctx = {
+      issue: {
+        assigneeId: issue.assigneeId,
+        reporterId: issue.reporterId,
+        projectId: issue.projectId,
+      },
+    }
+    if (!canAction(store, actor, 'bulk:delete', issue.projectId, ctx)) {
+      fail(403, 'permission denied')
+    }
+    issue.deletedAt = now
   }
 }
 
@@ -766,7 +884,7 @@ function exportEnvelope(store: MockStore) {
   // 例如软删除——会把已导出的信封一起改掉）
   return structuredClone({
     app: 'oas-pm',
-    version: 9,
+    version: 10,
     exportedAt: Date.now(),
     tables: {
       issues: [...store.issues].sort(byIdAsc),
@@ -778,6 +896,10 @@ function exportEnvelope(store: MockStore) {
       settings: [...store.settings].sort((a, b) => cmpKey(a.key, b.key)),
       cycles: [...store.cycles].sort(byIdAsc),
       notifications: [...store.notifications].sort(byIdAsc),
+      roles: [...store.roles].sort(byIdAsc),
+      audit: [...store.audit].sort(byIdAsc),
+      projectRoles: [...store.projectRoles].sort(byIdAsc),
+      projectMembers: [...store.projectMembers].sort(byIdAsc),
     },
   })
 }
@@ -812,17 +934,29 @@ function importEnvelope(store: MockStore, raw: unknown): void {
     projectRoles: rows('projectRoles') as ProjectRoleAssignment[],
     projectMembers: rows('projectMembers') as ProjectMember[],
   })
+  // v9 备份不含角色：补内置角色，避免成员角色指向不存在的行
+  if (next.roles.length === 0) {
+    next.roles = BUILTIN_ROLES.map((r) => ({ ...r, permissions: [...r.permissions] }))
+  }
   Object.assign(store, next)
+  // 备份可能来自另一个会话：把自增序号推到导入数据之后，避免 issue-new-1 撞已有 id
+  let maxSeq = 0
+  for (const row of [...next.issues, ...next.comments, ...next.cycles, ...next.notifications]) {
+    const m = /-new-(\d+)$/.exec(row.id)
+    if (m) maxSeq = Math.max(maxSeq, Number(m[1]))
+  }
+  store.seq = Math.max(store.seq, maxSeq)
 }
 
 function resetStore(store: MockStore): void {
   Object.assign(store, cloneTables(store.seed))
 }
 
-function wipeStore(store: MockStore): void {
+function wipeStore(store: MockStore, keepMemberId?: string): void {
+  const keep = keepMemberId ? store.members.find((m) => m.id === keepMemberId) : undefined
   store.issues = []
   store.projects = []
-  store.members = []
+  store.members = keep ? [keep] : []
   store.comments = []
   store.savedViews = []
   store.activities = []
@@ -884,6 +1018,7 @@ function routeIssues(
   third: string | undefined,
   q: URLSearchParams,
   body: unknown,
+  actor: Member,
 ): ApiResponse {
   if (!second) {
     if (method === 'GET') {
@@ -895,12 +1030,12 @@ function routeIssues(
       return ok({ items: windowIssues(store, q) })
     }
     if (method === 'POST') {
-      const issue = createIssue(store, body)
+      const issue = createIssue(store, body, actor)
       store.revision += 1
       return ok({ issue }, 201)
     }
     if (method === 'PATCH') {
-      updateMany(store, body)
+      updateMany(store, body, actor)
       store.revision += 1
       return ok({ ok: true })
     }
@@ -975,12 +1110,12 @@ function routeIssues(
     })
   }
   if (second === 'bulk-apply' && method === 'POST') {
-    bulkApply(store, body)
+    bulkApply(store, body, actor)
     store.revision += 1
     return ok({ ok: true })
   }
   if (second === 'bulk-delete' && method === 'POST') {
-    bulkDelete(store, body)
+    bulkDelete(store, body, actor)
     store.revision += 1
     return ok({ ok: true })
   }
@@ -994,6 +1129,19 @@ function routeIssues(
   if (third === 'restore') {
     if (method !== 'POST') fail(405, 'method not allowed')
     const issue = mustFindIssue(store, id)
+    const ctx: Ctx = {
+      issue: {
+        assigneeId: issue.assigneeId,
+        reporterId: issue.reporterId,
+        projectId: issue.projectId,
+      },
+    }
+    if (
+      !canAction(store, actor, 'issue:delete', issue.projectId, ctx) &&
+      !canAction(store, actor, 'bulk:delete', issue.projectId, ctx)
+    ) {
+      fail(403, 'permission denied')
+    }
     // 恢复软删行（清 deletedAt）；未删除的行视为空操作
     if (!notDeleted(issue)) issue.deletedAt = null
     store.revision += 1
@@ -1005,6 +1153,12 @@ function routeIssues(
     // 永久删除只对回收站内的行开放：在库行必须先走软删除
     if (notDeleted(issue)) fail(409, 'issue is not deleted')
     store.issues = store.issues.filter((i) => i.id !== id)
+    store.comments = store.comments.filter((c) => c.issueId !== id)
+    store.activities = store.activities.filter((a) => a.issueId !== id)
+    store.notifications = store.notifications.filter((n) => n.issueId !== id)
+    for (const child of store.issues) {
+      if (child.parentId === id) child.parentId = null
+    }
     store.revision += 1
     return ok({ ok: true })
   }
@@ -1018,12 +1172,67 @@ function routeIssues(
   if (method === 'PATCH') {
     const row = mustFindIssue(store, id)
     // 软删行不可改写（与 Dexie update 的空转一致），仍回报成功保持幂等
-    if (notDeleted(row)) updateIssue(store, id, asRecord(asRecord(body).changes))
+    if (notDeleted(row)) {
+      const raw = asRecord(asRecord(body).changes)
+      const changes: Record<string, unknown> = {}
+      const allowed = [
+        'title',
+        'description',
+        'status',
+        'priority',
+        'assigneeId',
+        'labels',
+        'startAt',
+        'dueAt',
+        'cycleId',
+        'order',
+        'parentId',
+        'relations',
+        'completedAt',
+      ]
+      for (const key of allowed) {
+        if (key in raw) changes[key] = raw[key]
+      }
+      const ctx: Ctx = {
+        issue: {
+          assigneeId: row.assigneeId,
+          reporterId: row.reporterId,
+          projectId: row.projectId,
+        },
+      }
+      if ('status' in changes) {
+        if (!canAction(store, actor, 'issue:change-status', row.projectId, ctx)) {
+          fail(403, 'permission denied')
+        }
+      }
+      if ('assigneeId' in changes) {
+        if (!canAction(store, actor, 'issue:change-assignee', row.projectId, ctx)) {
+          fail(403, 'permission denied')
+        }
+      }
+      const needsEdit = Object.keys(changes).some(
+        (k) => k !== 'status' && k !== 'assigneeId' && k !== 'completedAt',
+      )
+      if (needsEdit && !canAction(store, actor, 'issue:edit', row.projectId, ctx)) {
+        fail(403, 'permission denied')
+      }
+      updateIssue(store, id, changes)
+    }
     store.revision += 1
     return ok({ ok: true })
   }
   if (method === 'DELETE') {
     const issue = mustFindIssue(store, id)
+    const ctx: Ctx = {
+      issue: {
+        assigneeId: issue.assigneeId,
+        reporterId: issue.reporterId,
+        projectId: issue.projectId,
+      },
+    }
+    if (!canAction(store, actor, 'issue:delete', issue.projectId, ctx)) {
+      fail(403, 'permission denied')
+    }
     // 软删除：只写 deletedAt，行留在库里供回收站恢复（updatedAt 不动，恢复后回原位）
     if (notDeleted(issue)) issue.deletedAt = Date.now()
     store.revision += 1
@@ -1044,6 +1253,7 @@ function routeProjects(
     if (method === 'POST') {
       const project = asRecord(body) as unknown as Project
       if (store.projects.some((p) => p.id === project.id)) fail(409, 'project exists')
+      if (store.projects.some((p) => p.key === project.key)) fail(409, 'project key exists')
       store.projects.push(project)
       store.revision += 1
       return ok({ ok: true }, 201)
@@ -1053,8 +1263,9 @@ function routeProjects(
   if (third === 'allocate-key') {
     if (method !== 'POST') fail(405, 'method not allowed')
     const project = store.projects.find((p) => p.id === second)
-    const keyNum = project?.nextKeyNum ?? 100001
-    if (project) project.nextKeyNum = keyNum + 1
+    if (!project) fail(404, 'project not found')
+    const keyNum = project.nextKeyNum ?? 100001
+    project.nextKeyNum = keyNum + 1
     store.revision += 1
     return ok({ keyNum })
   }
@@ -1066,7 +1277,15 @@ function routeProjects(
   }
   if (method === 'PATCH') {
     if (!project) fail(404, 'project not found')
-    Object.assign(project, asRecord(body).changes)
+    const changes = asRecord(asRecord(body).changes)
+    const nextKey = changes.key
+    if (
+      typeof nextKey === 'string' &&
+      store.projects.some((p) => p.key === nextKey && p.id !== project.id)
+    ) {
+      fail(409, 'project key exists')
+    }
+    Object.assign(project, changes)
     store.revision += 1
     return ok({ ok: true })
   }
@@ -1076,6 +1295,7 @@ function routeProjects(
     store.projects = store.projects.filter((p) => p.id !== second)
     store.projectMembers = store.projectMembers.filter((a) => a.projectId !== second)
     store.projectRoles = store.projectRoles.filter((a) => a.projectId !== second)
+    store.cycles = store.cycles.filter((c) => c.projectId !== second)
     store.revision += 1
     return ok({ ok: true })
   }
@@ -1088,12 +1308,17 @@ function routeMembers(
   second: string | undefined,
   third: string | undefined,
   body: unknown,
+  actor: Member,
 ): ApiResponse {
   if (!second) {
     if (method === 'GET') return ok({ items: [...store.members].sort(byIdAsc) })
     if (method === 'POST') {
       const member = asRecord(body) as unknown as Member
       if (store.members.some((m) => m.id === member.id)) fail(409, 'member exists')
+      // 授予角色属于工作区管理能力：防止「管理成员」权限自建 admin 提权
+      if (member.role && !canAction(store, actor, 'workspace:manage')) {
+        fail(403, 'permission denied')
+      }
       store.members.push(member)
       store.revision += 1
       return ok({ ok: true }, 201)
@@ -1109,9 +1334,25 @@ function routeMembers(
   if (method === 'PATCH') {
     if (!member) fail(404, 'member not found')
     const changes = asRecord(asRecord(body).changes)
+    const self = actor.id === member.id
+    if (self) {
+      // 自助资料只允许白名单字段；角色仅工作区管理员可自助调整，邮箱仍由管理员维护
+      const canRole = canAction(store, actor, 'workspace:manage')
+      for (const key of Object.keys(changes)) {
+        if (key === 'role' && canRole) continue
+        if (!['name', 'title', 'timezone', 'avatarColor'].includes(key)) {
+          fail(403, 'field is admin-managed')
+        }
+      }
+    }
     const role = changes.role as string | undefined
-    if (role !== undefined && !store.roles.some((r) => r.id === role)) {
-      fail(400, 'unknown role')
+    if (role !== undefined) {
+      if (!canAction(store, actor, 'workspace:manage')) fail(403, 'permission denied')
+      const roleRow = store.roles.find((r) => r.id === role)
+      if (!roleRow && !BUILTIN_ROLES.some((r) => r.id === role)) fail(400, 'unknown role')
+      if (roleRow?.scope === 'project') {
+        fail(400, 'project role cannot be assigned as workspace role')
+      }
     }
     if (role !== undefined && role !== member.role && member.role === 'admin') {
       if (store.members.filter((m) => m.role === 'admin').length <= 1) {
@@ -1132,6 +1373,10 @@ function routeMembers(
     }
     store.projectMembers = store.projectMembers.filter((a) => a.memberId !== second)
     store.projectRoles = store.projectRoles.filter((a) => a.memberId !== second)
+    // 删除即撤销会话：否则被删管理员仍可用旧 token 管理
+    for (const [token, snapshot] of store.sessions) {
+      if (snapshot.id === second) store.sessions.delete(token)
+    }
     store.members = store.members.filter((m) => m.id !== second)
     store.revision += 1
     return ok({ ok: true })
@@ -1146,6 +1391,7 @@ function routeComments(
   third: string | undefined,
   q: URLSearchParams,
   body: unknown,
+  actor: Member,
 ): ApiResponse {
   if (!second) {
     if (method === 'GET') {
@@ -1157,10 +1403,15 @@ function routeComments(
     }
     if (method === 'POST') {
       const input = asRecord(body)
+      const issue = store.issues.find((i) => i.id === String(input.issueId ?? ''))
+      if (!issue) fail(404, 'issue not found')
+      if (!canAction(store, actor, 'comment:create', issue.projectId, { issue })) {
+        fail(403, 'permission denied')
+      }
       const comment: Comment = {
         id: nextId(store, 'comment'),
-        issueId: String(input.issueId ?? ''),
-        authorId: String(input.authorId ?? ''),
+        issueId: issue.id,
+        authorId: actingId(store, actor, input.authorId),
         body: String(input.body ?? ''),
         createdAt: Date.now(),
       }
@@ -1174,12 +1425,29 @@ function routeComments(
   if (third) fail(404, 'not found')
   const comment = store.comments.find((c) => c.id === second)
   if (!comment) fail(404, 'comment not found')
+  const issue = store.issues.find((i) => i.id === comment.issueId)
+  const ctx: Ctx = {
+    comment: { authorId: comment.authorId },
+    issue: issue
+      ? {
+          assigneeId: issue.assigneeId,
+          reporterId: issue.reporterId,
+          projectId: issue.projectId,
+        }
+      : undefined,
+  }
   if (method === 'PATCH') {
+    if (!canAction(store, actor, 'comment:edit', issue?.projectId, ctx)) {
+      fail(403, 'permission denied')
+    }
     comment.body = String(asRecord(body).body ?? '')
     store.revision += 1
     return ok({ ok: true })
   }
   if (method === 'DELETE') {
+    if (!canAction(store, actor, 'comment:delete', issue?.projectId, ctx)) {
+      fail(403, 'permission denied')
+    }
     store.comments = store.comments.filter((c) => c.id !== second)
     store.revision += 1
     return ok({ ok: true })
@@ -1194,6 +1462,7 @@ function routeActivities(
   third: string | undefined,
   q: URLSearchParams,
   body: unknown,
+  actor: Member,
 ): ApiResponse {
   if (second || third) fail(404, 'not found')
   if (method === 'GET') {
@@ -1212,11 +1481,36 @@ function routeActivities(
   }
   if (method === 'POST') {
     const input = asRecord(body)
+    const issue = store.issues.find((i) => i.id === String(input.issueId ?? ''))
+    if (!issue) fail(404, 'issue not found')
+    const type = String(input.type ?? '')
+    const action: Action =
+      type === 'status'
+        ? 'issue:change-status'
+        : type === 'assignee'
+          ? 'issue:change-assignee'
+          : type === 'comment'
+            ? 'comment:create'
+            : type === 'comment-edit'
+              ? 'comment:edit'
+              : type === 'delete'
+                ? 'issue:delete'
+                : 'issue:edit'
+    const ctx: Ctx = {
+      issue: {
+        assigneeId: issue.assigneeId,
+        reporterId: issue.reporterId,
+        projectId: issue.projectId,
+      },
+    }
+    if (!canAction(store, actor, action, issue.projectId, ctx)) {
+      fail(403, 'permission denied')
+    }
     const activity: Activity = {
       id: nextId(store, 'act'),
-      issueId: String(input.issueId ?? ''),
-      actorId: String(input.actorId ?? ''),
-      type: String(input.type ?? ''),
+      issueId: issue.id,
+      actorId: actingId(store, actor, input.actorId),
+      type,
       field: input.field as string | undefined,
       from: input.from as string | undefined,
       to: input.to as string | undefined,
@@ -1236,6 +1530,7 @@ function routeSavedViews(
   second: string | undefined,
   third: string | undefined,
   body: unknown,
+  actor: Member,
 ): ApiResponse {
   if (!second) {
     if (method === 'GET') {
@@ -1245,6 +1540,7 @@ function routeSavedViews(
       return ok({ items: rows })
     }
     if (method === 'POST') {
+      if (!canAction(store, actor, 'view:save')) fail(403, 'permission denied')
       const input = asRecord(body)
       store.savedViews.push({
         id: nextId(store, 'view'),
@@ -1259,6 +1555,7 @@ function routeSavedViews(
   }
   if (third) fail(404, 'not found')
   if (method === 'DELETE') {
+    if (!canAction(store, actor, 'view:delete')) fail(403, 'permission denied')
     store.savedViews = store.savedViews.filter((v) => v.id !== second)
     store.revision += 1
     return ok({ ok: true })
@@ -1344,6 +1641,13 @@ function routeNotifications(
       .slice(0, limit)
     return ok({ items: rows })
   }
+  if (second === 'unread-count' && !third) {
+    if (method !== 'GET') fail(405, 'method not allowed')
+    const count = store.notifications.filter(
+      (n) => n.memberId === member.id && n.readAt === null,
+    ).length
+    return ok({ count })
+  }
   if (method !== 'POST') fail(405, 'method not allowed')
   if (second === 'read-all' && !third) {
     const now = Date.now()
@@ -1383,7 +1687,13 @@ function routeRoles(
       const role = asRecord(body) as unknown as Role
       if (!role?.id || !role.name) fail(400, 'role id/name required')
       if (store.roles.some((r) => r.id === role.id)) fail(409, 'role exists')
-      store.roles.push({ ...role, builtin: false, permissions: [...(role.permissions ?? [])] })
+      const permissions = (role.permissions ?? []) as Action[]
+      store.roles.push({
+        ...role,
+        builtin: false,
+        permissions:
+          role.scope === 'project' ? permissions.filter((a) => !isWorkspaceAction(a)) : permissions,
+      })
       store.revision += 1
       return ok({ ok: true }, 201)
     }
@@ -1398,6 +1708,11 @@ function routeRoles(
     // 作用域创建后不可变：变更会让已分配成员/项目覆盖落到错误层级
     const safe = { ...changes }
     delete safe.scope
+    if (safe.permissions) {
+      const permissions = safe.permissions as Action[]
+      safe.permissions =
+        role.scope === 'project' ? permissions.filter((a) => !isWorkspaceAction(a)) : permissions
+    }
     Object.assign(role, safe, { id: role.id, builtin: false })
     store.revision += 1
     return ok({ ok: true })
@@ -1457,7 +1772,14 @@ function routeProjectRoles(
     if (!projectId || !memberId) fail(400, 'projectId/memberId required')
     if (!store.projects.some((p) => p.id === projectId)) fail(404, 'project not found')
     if (!store.members.some((m) => m.id === memberId)) fail(404, 'member not found')
-    if (roleId !== null && !store.roles.some((r) => r.id === roleId)) fail(400, 'unknown role')
+    if (roleId !== null) {
+      const role = store.roles.find((r) => r.id === roleId)
+      if (!role) fail(400, 'unknown role')
+      if (role.scope !== 'project') fail(400, 'project role required')
+      if (!store.projectMembers.some((a) => a.projectId === projectId && a.memberId === memberId)) {
+        fail(400, 'member is not in project')
+      }
+    }
     const id = `${projectId}:${memberId}`
     store.projectRoles = store.projectRoles.filter((a) => a.id !== id)
     if (roleId !== null) store.projectRoles.push({ id, projectId, memberId, roleId })
@@ -1489,7 +1811,7 @@ function routeProjectMembers(
       (a) => a.projectId !== projectId || memberIds.includes(a.memberId),
     )
     store.projectMembers.push(
-      ...memberIds.map((memberId) => ({
+      ...[...new Set(memberIds)].map((memberId) => ({
         id: `${projectId}:${memberId}`,
         projectId,
         memberId,
@@ -1551,7 +1873,8 @@ function routeAdmin(
       return ok({ ok: true })
     }
     if (second === 'wipe') {
-      wipeStore(store)
+      const keep = asRecord(asRecord(body)).keepMemberId
+      wipeStore(store, typeof keep === 'string' ? keep : undefined)
       store.revision += 1
       return ok({ ok: true })
     }
@@ -1608,11 +1931,11 @@ function route(store: MockStore, req: ApiRequest, member: Member | null): ApiRes
       if (method !== 'GET') fail(405, 'method not allowed')
       return ok({ revision: store.revision })
     case 'issues':
-      return routeIssues(store, method, second, third, q, req.body)
+      return routeIssues(store, method, second, third, q, req.body, member as Member)
     case 'projects':
       return routeProjects(store, method, second, third, req.body)
     case 'members':
-      return routeMembers(store, method, second, third, req.body)
+      return routeMembers(store, method, second, third, req.body, member as Member)
     case 'roles':
       return routeRoles(store, method, second, third, req.body)
     case 'audit':
@@ -1622,11 +1945,11 @@ function route(store: MockStore, req: ApiRequest, member: Member | null): ApiRes
     case 'project-members':
       return routeProjectMembers(store, method, second, req.body)
     case 'comments':
-      return routeComments(store, method, second, third, q, req.body)
+      return routeComments(store, method, second, third, q, req.body, member as Member)
     case 'activities':
-      return routeActivities(store, method, second, third, q, req.body)
+      return routeActivities(store, method, second, third, q, req.body, member as Member)
     case 'saved-views':
-      return routeSavedViews(store, method, second, third, req.body)
+      return routeSavedViews(store, method, second, third, req.body, member as Member)
     case 'cycles':
       return routeCycles(store, method, second, third, q, req.body)
     case 'notifications': {
@@ -1649,8 +1972,19 @@ export function handleApi(store: MockStore, req: ApiRequest): ApiResponse {
     // 免鉴权端点：登录、登出（登出必须幂等）。其余端点（含 revision 轮询）都要求 Bearer
     const anonymous = head === 'auth' && (second === 'login' || second === 'logout')
     const member = anonymous ? null : sessionMember(store, req)
-    if (member && isAdminOnly(method, head, second, third) && member.role !== 'admin') {
-      fail(403, 'admin role required')
+    if (member) {
+      const required = requiredAction(method, head, second, third)
+      // 自助改资料：PATCH /api/members/:me 不走管理门禁（字段白名单在 routeMembers）
+      const selfProfile = method === 'PATCH' && head === 'members' && second === member.id
+      if (required && !selfProfile) {
+        const allowed =
+          required === 'anyAdmin' ? hasAnyAdmin(store, member) : canAction(store, member, required)
+        if (!allowed) fail(403, 'permission denied')
+      }
+      // 回收站列表属于工作区管理面，普通成员不可枚举已删除标题
+      if (head === 'issues' && method === 'GET' && req.query?.get('deleted') === '1') {
+        if (!canAction(store, member, 'workspace:manage')) fail(403, 'permission denied')
+      }
     }
     return route(store, req, member)
   } catch (e) {

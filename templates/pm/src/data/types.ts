@@ -207,7 +207,7 @@ export interface AdminRepository {
   exportAll(): Promise<string>
   importAll(json: string): Promise<void>
   resetDemo(): Promise<void>
-  wipeAll(): Promise<void>
+  wipeAll(keepMemberId?: string): Promise<void>
 }
 
 export interface RoleRepository {

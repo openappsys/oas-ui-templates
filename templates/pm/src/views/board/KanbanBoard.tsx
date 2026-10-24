@@ -141,7 +141,14 @@ export function KanbanBoard({
         const prevOrder = pos > 0 ? (finalArr[pos - 1].order as number) : undefined
         const nextOrder =
           pos < finalArr.length - 1 ? (finalArr[pos + 1].order as number) : undefined
-        return { id: iid, changes: { status: to, order: betweenOrder(prevOrder, nextOrder) } }
+        return {
+          id: iid,
+          changes: {
+            status: to,
+            order: betweenOrder(prevOrder, nextOrder),
+            completedAt: to === 'done' ? Date.now() : null,
+          },
+        }
       })
       void issuesRepo.updateMany(updates)
     }
