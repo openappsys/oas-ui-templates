@@ -15,6 +15,7 @@ export type Action =
   | 'bulk:delete'
   | 'project:manage'
   | 'member:manage'
+  | 'workspace:manage'
 
 export const ACTIONS: Action[] = [
   'issue:create',
@@ -31,6 +32,7 @@ export const ACTIONS: Action[] = [
   'bulk:delete',
   'project:manage',
   'member:manage',
+  'workspace:manage',
 ]
 
 export interface Subject {

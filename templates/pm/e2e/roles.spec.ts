@@ -38,7 +38,7 @@ test('RL1 自定义角色：新建 + 勾权限 + 分配给成员后按权限生�
   // 内置矩阵仍是 14 行只读
   await expect(
     page.getByTestId('admin-permissions-matrix').locator('tbody tr:not(.group-header)'),
-  ).toHaveCount(14)
+  ).toHaveCount(15)
 
   await page.getByTestId('perm-role-new').click()
   await page.getByTestId('perm-role-name').locator('input').fill('项目负责人')
@@ -63,10 +63,16 @@ test('RL1 自定义角色：新建 + 勾权限 + 分配给成员后按权限生�
   }, roleId)
   await page.waitForTimeout(600)
 
-  // 切换到该成员：管理入口在（project:manage），新建 Issue 不在（无 issue:create）
+  // 切换到该成员：管理入口在（member:manage），但只出现「成员」页签
   await switchUser(page, 'member-2')
   await expect(page.getByTestId('admin-entry')).toBeVisible({ timeout: 10_000 })
   await expect(page.getByTestId('toolbar-new')).toHaveCount(0)
+  await page.getByTestId('admin-entry').click()
+  await expect(page.getByTestId('admin-nav-members')).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByTestId('admin-nav-settings')).toHaveCount(0)
+  await expect(page.getByTestId('admin-nav-permissions')).toHaveCount(0)
+  await expect(page.getByTestId('admin-nav-projects')).toHaveCount(0)
+  await page.getByTestId('admin-back').click()
 
   // 刷新后角色仍生效
   await page.reload()
@@ -157,6 +163,17 @@ test('RL3 项目级角色：项目内覆盖生效、项目外继承工作区，�
     timeout: 10_000,
   })
 
+  // 被项目覆盖使用的角色不能删除
+  await page
+    .getByTestId('perm-tabs')
+    .getByRole('tab', { name: /角色与权限|Roles/ })
+    .click()
+  await page.getByTestId(`perm-role-${rid}`).click()
+  await page.getByTestId('perm-role-delete').click()
+  await expect(page.getByTestId('perm-error')).toContainText(/项目覆盖|project override/i, {
+    timeout: 10_000,
+  })
+
   // 审计：建角色 + 调成员角色 + 项目覆盖都留痕
   await page
     .getByTestId('perm-tabs')
@@ -166,6 +183,21 @@ test('RL3 项目级角色：项目内覆盖生效、项目外继承工作区，�
   await expect(audit).toContainText(/新建角色|Created role/)
   await expect(audit).toContainText(/调整成员角色|Changed member role/)
   await expect(audit).toContainText(/设置项目角色|Set project role/)
+
+  // 工作区 admin 不受项目覆盖：角色与生效预览都锁定
+  await page
+    .getByTestId('perm-tabs')
+    .getByRole('tab', { name: /项目访问|Project access/ })
+    .click()
+  await page.getByTestId('proj-role-member').evaluate((el) => {
+    ;(el as HTMLElement & { value?: string }).value = 'member-1'
+    el.dispatchEvent(
+      new CustomEvent('oas-change', { bubbles: true, detail: { value: 'member-1' } }),
+    )
+  })
+  await expect(page.getByTestId('proj-role-admin-lock')).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByTestId('proj-role-role')).toHaveAttribute('disabled', '')
+  await expect(page.getByTestId('proj-role-effective')).toContainText(/管理员|Admin/)
 
   // 切到李娜：项目-2 有新建 Issue（项目角色），项目-1 没有（工作区只读）
   await switchUser(page, 'member-2')
@@ -202,6 +234,7 @@ test('RL4 权限页可用性：复制内置角色、组全选/取消、角色搜
 
   // 组全选 → 未保存提示；取消 → 恢复且保存禁用
   await copyChip.click()
+  await expect(page.getByTestId('perm-role-scope')).toHaveAttribute('disabled', '')
   await page.getByTestId('perm-group-all-permGroupIssue').click()
   await expect(page.getByTestId('perm-unsaved')).toBeVisible()
   await page.getByTestId('perm-role-cancel').click()
@@ -304,4 +337,42 @@ test('RL5 角色详情分配成员：分配、移除回退角色、管理员至�
     .click()
   await page.getByTestId('audit-filter').locator('input').fill('副本')
   await expect(page.getByTestId('audit-table')).toContainText(/调整成员角色|Changed member role/)
+})
+
+test('RL6 项目权限：project:manage 可进管理区，只看到项目相关页签', async ({ page }) => {
+  await waitForSeed(page)
+  await openPermissions(page)
+
+  await page.getByTestId('perm-role-new').click()
+  await page.getByTestId('perm-role-name').locator('input').fill('项目管理员')
+  await page.getByTestId('perm-project:manage').click()
+  await page.getByTestId('perm-role-save').click()
+  await expect(page.getByTestId('perm-saved')).toBeVisible({ timeout: 10_000 })
+  const chip = page.locator('.perm-role-chip').filter({ hasText: '项目管理员' })
+  const rid = ((await chip.getAttribute('data-testid')) ?? '').replace('perm-role-', '')
+  expect(rid).not.toBe('')
+
+  await page.getByTestId('admin-nav-members').click()
+  await page.getByTestId('admin-member-role-member-2').evaluate((el, id) => {
+    ;(el as HTMLElement & { value?: string }).value = id
+    el.dispatchEvent(new CustomEvent('oas-change', { bubbles: true, detail: { value: id } }))
+  }, rid)
+  await page.waitForTimeout(600)
+
+  await switchUser(page, 'member-2')
+  await expect(page.getByTestId('admin-entry')).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByTestId('toolbar-new')).toHaveCount(0)
+  await page.getByTestId('admin-entry').click()
+  await expect(page.getByTestId('admin-nav-projects')).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByTestId('admin-nav-cycles')).toBeVisible()
+  await expect(page.getByTestId('admin-nav-permissions')).toBeVisible()
+  await expect(page.getByTestId('admin-nav-members')).toHaveCount(0)
+  await expect(page.getByTestId('admin-nav-settings')).toHaveCount(0)
+  await expect(page.getByTestId('admin-nav-config')).toHaveCount(0)
+
+  // 进入权限页只有「项目访问」，看不到角色/审计
+  await page.getByTestId('admin-nav-permissions').click()
+  await expect(page.getByTestId('proj-role-project')).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByTestId('perm-tabs').getByRole('tab')).toHaveCount(1)
+  await expect(page.getByTestId('perm-role-admin')).toHaveCount(0)
 })

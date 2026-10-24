@@ -35,6 +35,7 @@ const PERM_LABEL: Record<Action, DictKey> = {
   'bulk:delete': 'permBulkDelete',
   'project:manage': 'permProjectManage',
   'member:manage': 'permMemberManage',
+  'workspace:manage': 'permWorkspaceManage',
 }
 
 const MATRIX_ROLES: MemberRole[] = ['viewer', 'member', 'admin']
@@ -57,7 +58,7 @@ const PERM_GROUPS: Array<{ key: DictKey; actions: Action[] }> = [
   { key: 'permGroupComment', actions: ['comment:create', 'comment:edit', 'comment:delete'] },
   { key: 'permGroupView', actions: ['view:save', 'view:delete'] },
   { key: 'permGroupBulk', actions: ['bulk:apply', 'bulk:delete'] },
-  { key: 'permGroupAdmin', actions: ['project:manage', 'member:manage'] },
+  { key: 'permGroupAdmin', actions: ['project:manage', 'member:manage', 'workspace:manage'] },
 ]
 
 const AUDIT_LABEL: Record<string, DictKey> = {
@@ -130,7 +131,14 @@ function BuiltinMatrix() {
  * 权限页：角色（master-detail：内置只读对比 + 自定义编辑，可复制内置）/
  * 项目访问（项目成员的项目角色覆盖 + 生效预览）/ 审计。
  */
-export function PermissionsTab({ currentUser }: { currentUser: string }) {
+export function PermissionsTab({
+  currentUser,
+  canWorkspace,
+}: {
+  currentUser: string
+  /** 工作区级权限（角色/审计）；仅项目权限时只显示「项目访问」 */
+  canWorkspace: boolean
+}) {
   const {
     roles: rolesRepo,
     audit: auditRepo,
@@ -148,6 +156,21 @@ export function PermissionsTab({ currentUser }: { currentUser: string }) {
   const projectMap = useMemo(() => new Map((projects ?? []).map((p) => [p.id, p])), [projects])
 
   const [tab, setTab] = useState<PermTab>('roles')
+  const permTabs = useMemo(
+    () =>
+      canWorkspace
+        ? [
+            { label: t('permTabRoles'), value: 'roles' },
+            { label: t('permTabAccess'), value: 'access' },
+            { label: t('permTabAudit'), value: 'audit' },
+          ]
+        : [{ label: t('permTabAccess'), value: 'access' }],
+    [canWorkspace],
+  )
+
+  useEffect(() => {
+    if (!canWorkspace && tab !== 'access') setTab('access')
+  }, [canWorkspace, tab])
   const [selectedId, setSelectedId] = useState('admin')
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -318,7 +341,7 @@ export function PermissionsTab({ currentUser }: { currentUser: string }) {
         await rolesRepo.update(selected.id, {
           name: clean,
           description: description.trim(),
-          scope,
+          scope: selected.scope === 'project' ? 'project' : 'workspace',
           permissions: [...perms],
         })
         log('role.update', clean)
@@ -357,6 +380,8 @@ export function PermissionsTab({ currentUser }: { currentUser: string }) {
 
   const applyProjectRole = async () => {
     if (!ovProject || !ovMember || busy) return
+    // 工作区 admin 不受项目覆盖；UI 已禁用，这里兜底防止程序化调用写入无效数据
+    if ((members ?? []).find((m) => m.id === ovMember)?.role === 'admin') return
     const roleId = ovRole === INHERIT ? null : ovRole
     setBusy(true)
     try {
@@ -512,7 +537,9 @@ export function PermissionsTab({ currentUser }: { currentUser: string }) {
     (a) => a.projectId === ovProject && a.memberId === ovMember,
   )
   const overrideRole = roles?.find((r) => r.id === override?.roleId)
-  const finalRole = overrideRole ?? workspaceRole
+  const isWorkspaceAdmin = selectedMember?.role === 'admin'
+  // 工作区 admin 在策略层不受项目覆盖：预览必须与真实生效一致
+  const finalRole = isWorkspaceAdmin ? workspaceRole : (overrideRole ?? workspaceRole)
 
   useEffect(() => {
     if (!ovProject || !ovMember) return
@@ -570,16 +597,12 @@ export function PermissionsTab({ currentUser }: { currentUser: string }) {
           testid="perm-tabs"
           ariaLabel={t('adminPermTitle')}
           value={tab}
-          options={[
-            { label: t('permTabRoles'), value: 'roles' },
-            { label: t('permTabAccess'), value: 'access' },
-            { label: t('permTabAudit'), value: 'audit' },
-          ]}
+          options={permTabs}
           onChange={(v) => setTab(v as PermTab)}
         />
       </div>
 
-      {tab === 'roles' && (
+      {tab === 'roles' && canWorkspace && (
         <div className="perm-layout" data-testid="perm-roles-tab">
           <aside className="perm-role-list" data-testid="admin-custom-roles">
             <oas-input
@@ -711,12 +734,14 @@ export function PermissionsTab({ currentUser }: { currentUser: string }) {
                       testid="perm-role-scope"
                       ariaLabel={t('roleScope')}
                       value={scope}
+                      disabled={!isDraft}
                       options={[
                         { label: t('roleScopeWorkspace'), value: 'workspace' },
                         { label: t('roleScopeProject'), value: 'project' },
                       ]}
                       onChange={(v) => setScope(v === 'project' ? 'project' : 'workspace')}
                     />
+                    {!isDraft && <span className="admin-hint">{t('permScopeLocked')}</span>}
                   </div>
                 </div>
 
@@ -834,6 +859,7 @@ export function PermissionsTab({ currentUser }: { currentUser: string }) {
                 testid="proj-role-role"
                 ariaLabel={t('projRoleRole')}
                 value={ovRole}
+                disabled={isWorkspaceAdmin}
                 options={[
                   { label: t('projRoleInherit'), value: INHERIT },
                   ...projectRoles.map((r) => ({ label: r.name, value: r.id })),
@@ -845,11 +871,18 @@ export function PermissionsTab({ currentUser }: { currentUser: string }) {
               type="primary"
               size="small"
               data-testid="proj-role-apply"
+              disabled={isWorkspaceAdmin ? '' : undefined}
               onClick={() => void applyProjectRole()}
             >
               {t('projRoleApply')}
             </oas-button>
           </div>
+
+          {isWorkspaceAdmin && (
+            <p className="admin-hint" data-testid="proj-role-admin-lock">
+              {t('projRoleAdminLocked')}
+            </p>
+          )}
 
           <div className="proj-role-effective" data-testid="proj-role-effective">
             <div>
@@ -895,7 +928,7 @@ export function PermissionsTab({ currentUser }: { currentUser: string }) {
         </div>
       )}
 
-      {tab === 'audit' && (
+      {tab === 'audit' && canWorkspace && (
         <div className="admin-panel" data-testid="admin-audit">
           <div className="perm-section-head">
             <div>

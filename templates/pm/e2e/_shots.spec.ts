@@ -380,7 +380,7 @@ async function captureAdminTabs(page: Page, suffix: string) {
   await page.getByTestId('admin-nav-permissions').click()
   const matrix = page.getByTestId('admin-permissions-matrix')
   await expect(matrix).toBeVisible({ timeout: 10_000 })
-  await expect(matrix.locator('tbody tr:not(.group-header)')).toHaveCount(14, { timeout: 10_000 })
+  await expect(matrix.locator('tbody tr:not(.group-header)')).toHaveCount(15, { timeout: 10_000 })
   await page.waitForTimeout(1200)
   await page.screenshot({ path: `shots/pm-admin-permissions${suffix}.png` })
 

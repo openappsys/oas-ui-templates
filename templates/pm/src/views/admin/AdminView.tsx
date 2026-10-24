@@ -18,14 +18,17 @@ export type AdminTab =
   | 'permissions'
   | 'settings'
 
-const TABS: Array<{ id: AdminTab; labelKey: DictKey }> = [
+type TabPerm = 'project' | 'member' | 'workspace'
+
+/** 每个管理页对应的权限：无 perm = 进入管理区即可见；anyOf = 满足任一即可 */
+const TABS: Array<{ id: AdminTab; labelKey: DictKey; perm?: TabPerm; anyOf?: TabPerm[] }> = [
   { id: 'overview', labelKey: 'adminNavOverview' },
-  { id: 'projects', labelKey: 'adminNavProjects' },
-  { id: 'members', labelKey: 'adminNavMembers' },
-  { id: 'cycles', labelKey: 'adminNavCycles' },
-  { id: 'config', labelKey: 'adminNavConfig' },
-  { id: 'permissions', labelKey: 'adminNavPermissions' },
-  { id: 'settings', labelKey: 'adminNavSettings' },
+  { id: 'projects', labelKey: 'adminNavProjects', perm: 'project' },
+  { id: 'members', labelKey: 'adminNavMembers', perm: 'member' },
+  { id: 'cycles', labelKey: 'adminNavCycles', perm: 'project' },
+  { id: 'config', labelKey: 'adminNavConfig', perm: 'workspace' },
+  { id: 'permissions', labelKey: 'adminNavPermissions', anyOf: ['project', 'workspace'] },
+  { id: 'settings', labelKey: 'adminNavSettings', perm: 'workspace' },
 ]
 
 export function AdminView({
@@ -40,6 +43,9 @@ export function AdminView({
   onSetTheme,
   lang,
   onSetLang,
+  canProject,
+  canMember,
+  canWorkspace,
 }: {
   tab: AdminTab
   onTab: (tab: AdminTab) => void
@@ -52,7 +58,20 @@ export function AdminView({
   onSetTheme: (pref: ThemePreference) => void
   lang: Lang
   onSetLang: (lang: Lang) => void
+  canProject: boolean
+  canMember: boolean
+  canWorkspace: boolean
 }) {
+  const allowed: Record<TabPerm, boolean> = {
+    project: canProject,
+    member: canMember,
+    workspace: canWorkspace,
+  }
+  const visible = TABS.filter((x) =>
+    x.anyOf ? x.anyOf.some((p) => allowed[p]) : x.perm ? allowed[x.perm] : true,
+  )
+  const effectiveTab = visible.some((x) => x.id === tab) ? tab : visible[0].id
+
   return (
     <div className="admin-layout" data-testid="admin-view">
       <nav className="admin-nav">
@@ -60,10 +79,10 @@ export function AdminView({
           <oas-icon name="arrow-left" size={14} />
           <span>{t('adminBack')}</span>
         </button>
-        {TABS.map((x) => (
+        {visible.map((x) => (
           <button
             key={x.id}
-            className={`admin-nav-item${tab === x.id ? ' is-active' : ''}`}
+            className={`admin-nav-item${effectiveTab === x.id ? ' is-active' : ''}`}
             type="button"
             data-testid={`admin-nav-${x.id}`}
             onClick={() => onTab(x.id)}
@@ -73,18 +92,18 @@ export function AdminView({
         ))}
       </nav>
       <main className="admin-content">
-        {tab === 'overview' ? (
+        {effectiveTab === 'overview' ? (
           <OverviewTab memberMap={memberMap} onOpenProject={onOpenProject} />
-        ) : tab === 'projects' ? (
+        ) : effectiveTab === 'projects' ? (
           <ProjectsTab memberMap={memberMap} currentUser={currentUser} />
-        ) : tab === 'members' ? (
+        ) : effectiveTab === 'members' ? (
           <MembersTab currentUser={currentUser} onMemberDeleted={onMemberDeleted} />
-        ) : tab === 'cycles' ? (
+        ) : effectiveTab === 'cycles' ? (
           <CyclesTab lang={lang} />
-        ) : tab === 'config' ? (
+        ) : effectiveTab === 'config' ? (
           <ConfigTab />
-        ) : tab === 'permissions' ? (
-          <PermissionsTab currentUser={currentUser} />
+        ) : effectiveTab === 'permissions' ? (
+          <PermissionsTab currentUser={currentUser} canWorkspace={canWorkspace} />
         ) : (
           <SettingsTab
             themePref={themePref}

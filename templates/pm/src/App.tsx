@@ -421,7 +421,10 @@ function Workspace({
   )
   const canCreateIssue = can('issue:create')
   // 管理区入口用 member:manage（最低权限）：只给「管理项目」的自定义角色不会打开全局管理
-  const canManage = can('member:manage')
+  const canManage = can('member:manage') || can('project:manage') || can('workspace:manage')
+  const canManageProjects = can('project:manage')
+  const canManageMembers = can('member:manage')
+  const canManageWorkspace = can('workspace:manage')
   useEffect(() => {
     if (view === 'admin' && !canManage) setView('issues')
   }, [view, canManage])
@@ -1138,6 +1141,9 @@ function Workspace({
             onSetTheme={applyThemeAndStore}
             lang={lang}
             onSetLang={setLangAndApply}
+            canProject={canManageProjects}
+            canMember={canManageMembers}
+            canWorkspace={canManageWorkspace}
           />
         ) : (
           <>

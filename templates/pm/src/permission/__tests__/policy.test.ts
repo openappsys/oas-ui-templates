@@ -31,6 +31,7 @@ describe('permission policy', () => {
     expect(can(me, 'view:delete')).toBe(true)
     expect(can(me, 'project:manage')).toBe(false)
     expect(can(me, 'member:manage')).toBe(false)
+    expect(can(me, 'workspace:manage')).toBe(false)
   })
 
   it('member 无 ctx 时编辑一律默认拒绝', () => {

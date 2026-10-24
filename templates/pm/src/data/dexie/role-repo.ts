@@ -15,16 +15,23 @@ export function createDexieRoleRepository(db: PMDatabase): RoleRepository {
           const role = await db.roles.get(id)
           if (!role) return
           if (role.builtin) throw new Error('builtin role cannot be edited')
-          await db.roles.update(id, changes)
+          // 作用域创建后不可变：变更会让已分配成员/项目覆盖落到错误层级
+          const safe = { ...changes }
+          delete safe.scope
+          await db.roles.update(id, safe)
         })
         .then(() => undefined),
     delete: (id) =>
-      db.transaction('rw', db.roles, db.members, async () => {
+      db.transaction('rw', db.roles, db.members, db.projectRoles, async () => {
         const role = await db.roles.get(id)
         if (!role) return
         if (role.builtin) throw new Error('builtin role cannot be deleted')
         const inUse = await db.members.where('role').equals(id).count()
         if (inUse > 0) throw new Error('role is assigned to members')
+        const overrides = await db.projectRoles.toArray()
+        if (overrides.some((a) => a.roleId === id)) {
+          throw new Error('role is used by project overrides')
+        }
         await db.roles.delete(id)
       }),
   }

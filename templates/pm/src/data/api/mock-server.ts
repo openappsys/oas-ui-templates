@@ -1391,7 +1391,10 @@ function routeRoles(
   if (method === 'PATCH') {
     if (role.builtin) fail(403, 'builtin role cannot be edited')
     const changes = asRecord(asRecord(body).changes) as Partial<Role>
-    Object.assign(role, changes, { id: role.id, builtin: false })
+    // 作用域创建后不可变：变更会让已分配成员/项目覆盖落到错误层级
+    const safe = { ...changes }
+    delete safe.scope
+    Object.assign(role, safe, { id: role.id, builtin: false })
     store.revision += 1
     return ok({ ok: true })
   }
@@ -1399,6 +1402,9 @@ function routeRoles(
     if (role.builtin) fail(403, 'builtin role cannot be deleted')
     if (store.members.some((m) => m.role === role.id)) {
       fail(409, 'role is assigned to members')
+    }
+    if (store.projectRoles.some((a) => a.roleId === role.id)) {
+      fail(409, 'role is used by project overrides')
     }
     store.roles = store.roles.filter((r) => r.id !== role.id)
     store.revision += 1
