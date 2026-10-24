@@ -82,9 +82,9 @@ export function SettingsMenu({
         aria-label={t('settings')}
         title={t('settings')}
       >
-        <oas-icon name="gear" size={15} />
+        <oas-icon name="pm-gear" size={15} />
       </button>
-      <oas-dropdown-item value="theme" kind="action" icon="gear" data-testid="theme-toggle">
+      <oas-dropdown-item value="theme" kind="action" icon="pm-gear" data-testid="theme-toggle">
         {`${t('adminTheme')}: ${themeLabel}`}
       </oas-dropdown-item>
       <oas-dropdown-item value="lang" kind="action" icon="language" data-testid="lang-toggle">

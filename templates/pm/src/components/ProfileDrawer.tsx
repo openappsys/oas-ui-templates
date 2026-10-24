@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { t, type DictKey } from '@/i18n'
+import { t, type DictKey, type Lang } from '@/i18n'
 import type { Member } from '@/types'
 import { AVATAR_PALETTE } from '@/lib/colors'
 import { OSelect } from './oas-wrappers'
@@ -37,6 +37,8 @@ export function ProfileDrawer({
   open,
   member,
   roleName,
+  lang,
+  onLang,
   onClose,
   onSave,
   onMyIssues,
@@ -44,6 +46,8 @@ export function ProfileDrawer({
   open: boolean
   member: Member | undefined
   roleName?: string
+  lang: Lang
+  onLang: (lang: Lang) => void
   onClose: () => void
   onSave: (changes: Partial<Member>) => Promise<void>
   onMyIssues: () => void
@@ -182,6 +186,21 @@ export function ProfileDrawer({
             value={timezone}
             options={TIMEZONES.map((z) => ({ label: z, value: z }))}
             onChange={setTimezone}
+          />
+        </div>
+
+        {/* 语言是账号级偏好：资料抽屉与设置菜单共用同一持久化 */}
+        <div className="profile-field">
+          <label htmlFor="profile-lang">{t('adminLanguage')}</label>
+          <OSelect
+            testid="profile-lang"
+            ariaLabel={t('adminLanguage')}
+            value={lang}
+            options={[
+              { label: '中文', value: 'zh' },
+              { label: 'English', value: 'en' },
+            ]}
+            onChange={(v) => onLang(v === 'en' ? 'en' : 'zh')}
           />
         </div>
 

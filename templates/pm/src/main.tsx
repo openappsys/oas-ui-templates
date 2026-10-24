@@ -58,6 +58,7 @@ import { activeDataSource, type DataSource } from './data/source'
 import { RepositoriesProvider } from './data/context'
 import type { Repositories } from './data/types'
 import { initTheme } from './lib/theme'
+import './lib/icons'
 import { bindKeys } from './lib/keyboard'
 
 // 启动兜底：IndexedDB 不可用/配额满/隐私模式 → 错误页而非白屏

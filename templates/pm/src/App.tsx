@@ -1388,6 +1388,8 @@ function Workspace({
         open={profileOpen}
         member={memberMap.get(currentUser)}
         roleName={roles?.find((r) => r.id === (memberMap.get(currentUser)?.role ?? ''))?.name}
+        lang={lang}
+        onLang={setLangAndApply}
         onClose={() => setProfileOpen(false)}
         onSave={saveProfile}
         onMyIssues={openMyIssues}

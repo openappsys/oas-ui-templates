@@ -72,7 +72,10 @@ export function MembersTab({
   )
 
   const roleOptions = useMemo(
-    () => (roles ?? []).map((r) => ({ label: roleLabel(r.id), value: r.id })),
+    () =>
+      (roles ?? [])
+        .filter((r) => r.scope !== 'project')
+        .map((r) => ({ label: roleLabel(r.id), value: r.id })),
     [roles, roleLabel],
   )
 

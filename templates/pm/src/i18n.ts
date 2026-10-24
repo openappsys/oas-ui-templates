@@ -295,6 +295,8 @@ const dict = {
     auditProjectMembers: '调整项目成员',
     adminPermAction: '动作',
     adminPermNote: '矩阵由权限策略实时计算，只读展示',
+    adminPermBuiltinHint:
+      '内置角色是工作区级、只读，不能修改；需要定制请新建自定义角色（可选工作区/项目作用域）。',
     permIssueCreate: '新建 Issue',
     permIssueEdit: '编辑 Issue',
     permIssueDelete: '删除 Issue',
@@ -706,6 +708,8 @@ const dict = {
     auditProjectMembers: 'Changed project members',
     adminPermAction: 'Action',
     adminPermNote: 'The matrix is computed live from the permission policy (read-only)',
+    adminPermBuiltinHint:
+      'Built-in roles are workspace-level and read-only. Create a custom role (workspace or project scope) to customize permissions.',
     permIssueCreate: 'Create issue',
     permIssueEdit: 'Edit issue',
     permIssueDelete: 'Delete issue',

@@ -290,9 +290,9 @@ export function PermissionsTab({ currentUser }: { currentUser: string }) {
               onClick={() => load(role)}
             >
               {role.name}
-              {role.scope === 'project' && (
-                <span className="perm-role-scope">{t('roleScopeProject')}</span>
-              )}
+              <span className="perm-role-scope">
+                {role.scope === 'project' ? t('roleScopeProject') : t('roleScopeWorkspace')}
+              </span>
             </button>
           ))}
           <button
@@ -533,6 +533,9 @@ export function PermissionsTab({ currentUser }: { currentUser: string }) {
 
       <div className="admin-panel">
         <p className="admin-panel-title">{t('adminPermTitle')}</p>
+        <p className="admin-hint" data-testid="admin-builtin-hint">
+          {t('adminPermBuiltinHint')}
+        </p>
         <oas-table
           ref={tableRef}
           className="admin-perm-table"
