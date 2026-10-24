@@ -37,6 +37,28 @@ const PERM_LABEL: Record<Action, DictKey> = {
 
 const MATRIX_ROLES: MemberRole[] = ['viewer', 'member', 'admin']
 
+/** 权限按资源分组（编辑区与只读矩阵用同一套；分类列/分节标题） */
+const PERM_GROUPS: Array<{ key: DictKey; actions: Action[] }> = [
+  {
+    key: 'permGroupIssue',
+    actions: [
+      'issue:create',
+      'issue:edit',
+      'issue:delete',
+      'issue:change-status',
+      'issue:change-assignee',
+    ],
+  },
+  { key: 'permGroupComment', actions: ['comment:create', 'comment:edit', 'comment:delete'] },
+  { key: 'permGroupView', actions: ['view:save', 'view:delete'] },
+  { key: 'permGroupBulk', actions: ['bulk:apply', 'bulk:delete'] },
+  { key: 'permGroupAdmin', actions: ['project:manage', 'member:manage'] },
+]
+
+const ACTION_GROUP: Record<Action, DictKey> = Object.fromEntries(
+  PERM_GROUPS.flatMap((g) => g.actions.map((a) => [a, g.key])),
+) as Record<Action, DictKey>
+
 const AUDIT_LABEL: Record<string, DictKey> = {
   'role.create': 'auditRoleCreate',
   'role.update': 'auditRoleUpdate',
@@ -223,6 +245,7 @@ export function PermissionsTab({ currentUser }: { currentUser: string }) {
       ACTIONS.map((action) => ({
         id: action,
         action: t(PERM_LABEL[action]),
+        category: t(ACTION_GROUP[action]),
         ...Object.fromEntries(
           MATRIX_ROLES.map((role) => [role, can({ id: 'matrix', role }, action) ? '✓' : '—']),
         ),
@@ -233,6 +256,7 @@ export function PermissionsTab({ currentUser }: { currentUser: string }) {
   const columns = useMemo<Col[]>(
     () => [
       { key: 'action', title: t('adminPermAction') },
+      { key: 'category', title: t('permColCategory') },
       ...MATRIX_ROLES.map((role) => ({
         key: role,
         title: roleLabel(role),
@@ -326,17 +350,28 @@ export function PermissionsTab({ currentUser }: { currentUser: string }) {
             </div>
 
             <p className="perm-matrix-title">{t('permMatrixTitle')}</p>
-            <div className="perm-checks" data-testid="perm-checks">
-              {ACTIONS.map((action) => (
-                <div key={action} className="perm-check">
-                  <OCheckbox
-                    testid={`perm-${action}`}
-                    ariaLabel={t(PERM_LABEL[action])}
-                    checked={perms.has(action)}
-                    onChange={() => toggle(action)}
-                  />
-                  <span>{t(PERM_LABEL[action])}</span>
-                </div>
+            <div className="perm-groups" data-testid="perm-checks">
+              {PERM_GROUPS.map((group) => (
+                <section
+                  key={group.key}
+                  className="perm-group"
+                  data-testid={`perm-group-${group.key}`}
+                >
+                  <p className="perm-group-title">{t(group.key)}</p>
+                  <div className="perm-checks">
+                    {group.actions.map((action) => (
+                      <div key={action} className="perm-check">
+                        <OCheckbox
+                          testid={`perm-${action}`}
+                          ariaLabel={t(PERM_LABEL[action])}
+                          checked={perms.has(action)}
+                          onChange={() => toggle(action)}
+                        />
+                        <span>{t(PERM_LABEL[action])}</span>
+                      </div>
+                    ))}
+                  </div>
+                </section>
               ))}
             </div>
 

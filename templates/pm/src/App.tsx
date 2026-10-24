@@ -800,6 +800,7 @@ function Workspace({
           value: 'group:members',
           kind: 'group',
           label: t('members'),
+          count: String(scopedMembers.length),
           collapseKey: 'members',
           children: assigneeRows,
         },

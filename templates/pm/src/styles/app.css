@@ -2690,3 +2690,15 @@ oas-drawer::part(close):focus-visible {
   color: var(--oas-color-text-secondary, #64748b);
   font-variant-numeric: tabular-nums;
 }
+
+.perm-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.perm-group-title {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--oas-color-text-secondary, #64748b);
+}
