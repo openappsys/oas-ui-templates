@@ -36,7 +36,7 @@ test('RL1 自定义角色：新建 + 勾权限 + 分配给成员后按权限生�
   await openPermissions(page)
 
   // 内置矩阵仍是 14 行只读
-  await expect(page.getByTestId('admin-permissions-matrix').locator('tbody tr')).toHaveCount(14)
+  await expect(page.getByTestId('admin-permissions-matrix').locator('tbody tr:not(.group-header)')).toHaveCount(14)
 
   await page.getByTestId('perm-role-new').click()
   await page.getByTestId('perm-role-name').locator('input').fill('项目负责人')

@@ -55,46 +55,6 @@ const PERM_GROUPS: Array<{ key: DictKey; actions: Action[] }> = [
   { key: 'permGroupAdmin', actions: ['project:manage', 'member:manage'] },
 ]
 
-/** 只读矩阵按资源分组：每组一张小表（动作 × 三角色），组标题在表上方 */
-function MatrixGroup({ title, actions }: { title: string; actions: Action[] }) {
-  const ref = useRef<TableHost>(null)
-  const rows = useMemo(
-    () =>
-      actions.map((action) => ({
-        id: action,
-        action: t(PERM_LABEL[action]),
-        ...Object.fromEntries(
-          MATRIX_ROLES.map((role) => [role, can({ id: 'matrix', role }, action) ? '✓' : '—']),
-        ),
-      })),
-    [actions],
-  )
-  const columns = useMemo<Col[]>(
-    () => [
-      { key: 'action', title: t('adminPermAction') },
-      ...MATRIX_ROLES.map((role) => ({
-        key: role,
-        title: roleLabel(role),
-        align: 'center' as const,
-        render: (row: Record<string, unknown>) => String(row[role] ?? ''),
-      })),
-    ],
-    [],
-  )
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    el.columns = columns
-    el.data = rows
-  }, [columns, rows])
-  return (
-    <section className="perm-matrix-group">
-      <p className="perm-group-title">{title}</p>
-      <oas-table ref={ref} className="admin-perm-table" row-key="id" />
-    </section>
-  )
-}
-
 const AUDIT_LABEL: Record<string, DictKey> = {
   'role.create': 'auditRoleCreate',
   'role.update': 'auditRoleUpdate',
@@ -152,6 +112,41 @@ export function PermissionsTab({ currentUser }: { currentUser: string }) {
     () => (roles ?? []).filter((r) => r.scope === 'project' && !r.builtin),
     [roles],
   )
+
+  // 只读矩阵：一张表 + group-by（组头行），列宽跨组一致
+  const tableRef = useRef<TableHost>(null)
+  const matrixRows = useMemo(
+    () =>
+      PERM_GROUPS.flatMap((group) =>
+        group.actions.map((action) => ({
+          id: action,
+          action: t(PERM_LABEL[action]),
+          category: t(group.key),
+          ...Object.fromEntries(
+            MATRIX_ROLES.map((role) => [role, can({ id: 'matrix', role }, action) ? '✓' : '—']),
+          ),
+        })),
+      ),
+    [],
+  )
+  const matrixColumns = useMemo<Col[]>(
+    () => [
+      { key: 'action', title: t('adminPermAction') },
+      ...MATRIX_ROLES.map((role) => ({
+        key: role,
+        title: roleLabel(role),
+        align: 'center' as const,
+        render: (row: Record<string, unknown>) => String(row[role] ?? ''),
+      })),
+    ],
+    [],
+  )
+  useEffect(() => {
+    const el = tableRef.current
+    if (!el) return
+    el.columns = matrixColumns
+    el.data = matrixRows
+  }, [matrixColumns, matrixRows])
 
   useEffect(() => {
     if (!ovProject && projects?.length) setOvProject(projects[0].id)
@@ -538,11 +533,13 @@ export function PermissionsTab({ currentUser }: { currentUser: string }) {
 
       <div className="admin-panel">
         <p className="admin-panel-title">{t('adminPermTitle')}</p>
-        <div className="perm-matrix-groups" data-testid="admin-permissions-matrix">
-          {PERM_GROUPS.map((group) => (
-            <MatrixGroup key={group.key} title={t(group.key)} actions={group.actions} />
-          ))}
-        </div>
+        <oas-table
+          ref={tableRef}
+          className="admin-perm-table"
+          row-key="id"
+          group-by="category"
+          data-testid="admin-permissions-matrix"
+        />
         <p className="admin-hint">{t('adminPermNote')}</p>
       </div>
     </div>

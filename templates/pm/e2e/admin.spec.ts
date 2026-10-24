@@ -340,11 +340,11 @@ test('A10 权限矩阵：行数与 ACTIONS 一致，viewer×新建只读为 —�
   await page.getByTestId('admin-nav-permissions').click()
   const matrix = page.getByTestId('admin-permissions-matrix')
   await expect(matrix).toBeVisible()
-  const rows = matrix.locator('tbody tr')
+  const rows = matrix.locator('tbody tr:not(.group-header)')
   await expect(rows).toHaveCount(14, { timeout: 10_000 })
   const viewerCell = rows.filter({ hasText: '新建 Issue' }).first().locator('td').nth(1)
   await expect(viewerCell).toHaveText('—')
-  const adminCells = matrix.locator('tbody tr td:nth-child(4)')
+  const adminCells = matrix.locator('tbody tr:not(.group-header) td:nth-child(4)')
   await expect(adminCells).toHaveCount(14)
   for (const cell of await adminCells.all()) {
     expect(await cell.textContent()).toContain('✓')
