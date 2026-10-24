@@ -1408,11 +1408,20 @@ function routeComments(
       if (!canAction(store, actor, 'comment:create', issue.projectId, { issue })) {
         fail(403, 'permission denied')
       }
+      // 一级线程：回复"回复"时归并到同一线程根
+      let parentId: string | null = null
+      const inputParent = String(input.parentId ?? '')
+      if (inputParent) {
+        const parent = store.comments.find((c) => c.id === inputParent)
+        if (!parent || parent.issueId !== issue.id) fail(404, 'parent comment not found')
+        parentId = parent.parentId || parent.id
+      }
       const comment: Comment = {
         id: nextId(store, 'comment'),
         issueId: issue.id,
         authorId: actingId(store, actor, input.authorId),
         body: String(input.body ?? ''),
+        parentId,
         createdAt: Date.now(),
       }
       store.comments.push(comment)
@@ -1448,7 +1457,8 @@ function routeComments(
     if (!canAction(store, actor, 'comment:delete', issue?.projectId, ctx)) {
       fail(403, 'permission denied')
     }
-    store.comments = store.comments.filter((c) => c.id !== second)
+    // 删除评论级联删除其回复（一级线程）
+    store.comments = store.comments.filter((c) => c.id !== second && c.parentId !== second)
     store.revision += 1
     return ok({ ok: true })
   }

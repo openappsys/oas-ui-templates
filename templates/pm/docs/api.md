@@ -390,13 +390,18 @@ members that were removed from the list, so an override never applies to a non-m
 | Endpoint | Body / query | Response | Errors |
 | --- | --- | --- | --- |
 | `GET /api/comments?issueId=` | – | `{ items }` created-at ascending | – |
-| `POST /api/comments` | `{ issueId, authorId?, body }` | `201 { comment }` | `403` without `comment:create`, `404` unknown issue |
+| `POST /api/comments` | `{ issueId, authorId?, body, parentId? }` | `201 { comment }` | `403` without `comment:create`, `404` unknown issue / unknown parent comment |
 | `PATCH /api/comments/:id` | `{ body }` | `{ ok: true }` | `403` not the author, `404` |
 | `DELETE /api/comments/:id` | – | `{ ok: true }` | `403` not the author, `404` |
 
 `authorId` is taken from the session; a body value is honored only for `workspace:manage` callers.
 Members may edit/delete only their own comments; `admin` and custom roles with the permission may
 edit/delete any comment. A comment write also creates notification rows (section 13).
+
+**Threads (one level)**: `POST` accepts `parentId` — the id of the root comment. Replying to a
+reply is flattened onto the same root (`parent.parentId || parent.id`); the parent must exist and
+belong to the same issue (`404` otherwise). `DELETE /api/comments/:id` cascades to the thread's
+replies (`parentId = :id`). The response comment includes `parentId` (`null` for roots).
 
 ## 9. Activities
 

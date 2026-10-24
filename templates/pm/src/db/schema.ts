@@ -202,6 +202,23 @@ export class PMDatabase extends Dexie {
       projectRoles: 'id, projectId, memberId, [projectId+memberId]',
       projectMembers: 'id, projectId, memberId, [projectId+memberId]',
     })
+    // v15：评论一级回复线程。parentId 指向线程根评论；删除根评论级联删回复
+    this.version(15).stores({
+      issues:
+        'id, projectId, key, status, priority, assigneeId, parentId, cycleId, createdAt, updatedAt, deletedAt, [projectId+status], [projectId+priority], [projectId+assigneeId], [projectId+updatedAt], [projectId+status+updatedAt], [assigneeId+status], [status+updatedAt], [projectId+cycleId]',
+      projects: 'id, key',
+      members: 'id, role',
+      comments: 'id, issueId, parentId, [issueId+createdAt]',
+      savedViews: 'id, name',
+      activities: 'id, issueId, [issueId+createdAt], createdAt',
+      settings: 'key',
+      cycles: 'id, projectId, [projectId+startAt]',
+      notifications: 'id, memberId, createdAt, [memberId+createdAt], [memberId+readAt]',
+      roles: 'id, name',
+      audit: 'id, at, actorId, action',
+      projectRoles: 'id, projectId, memberId, [projectId+memberId]',
+      projectMembers: 'id, projectId, memberId, [projectId+memberId]',
+    })
   }
 }
 

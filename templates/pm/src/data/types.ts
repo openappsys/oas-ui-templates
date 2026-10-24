@@ -61,6 +61,8 @@ export interface CreateCommentInput {
   issueId: string
   authorId: string
   body: string
+  /** 回复目标：根评论 id（回复"回复"时自动归并到同一线程根） */
+  parentId?: string | null
 }
 
 export interface CreateCycleInput {

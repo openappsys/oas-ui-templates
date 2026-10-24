@@ -1009,3 +1009,41 @@ test('M22 触底续载：滚动到底部计数持续增加（行高与阈值一�
   await scrollBottom()
   await expect.poll(loaded, { timeout: 15_000 }).toBeGreaterThan(second)
 })
+
+test('M23 评论线程：回复嵌套展示 + 删根级联删回复', async ({ page }) => {
+  await waitForSeed(page)
+  await page
+    .locator('.issue-row')
+    .first()
+    .evaluate((el) => el.dispatchEvent(new MouseEvent('click', { bubbles: true })))
+  await page.getByTestId('comments-block').waitFor({ timeout: 10_000 })
+
+  // 根评论
+  await fillOInput(page, 'comment-input', 'E2E 线程根评论')
+  await page.getByTestId('comment-send').click()
+  const root = page.getByTestId('comment-item').filter({ hasText: 'E2E 线程根评论' }).first()
+  await expect(root).toBeVisible({ timeout: 10_000 })
+
+  // 回复 → 嵌套挂在根评论下
+  await root.getByTestId('comment-reply').click()
+  await fillOInput(page, 'reply-input', 'E2E 回复内容')
+  await page.getByTestId('reply-send').click()
+  const replies = root.getByTestId('comment-replies')
+  await expect(replies).toContainText('E2E 回复内容', { timeout: 10_000 })
+  await expect(replies.getByTestId('comment-reply-item')).toHaveCount(1)
+
+  // 回复作者高亮渲染（@提及）不受影响：再发一条带 @ 的回复
+  await root.getByTestId('comment-reply').click()
+  await fillOInput(page, 'reply-input', 'E2E 回复 @张伟 请确认')
+  await page.getByTestId('reply-send').click()
+  await expect(replies.getByTestId('comment-reply-item')).toHaveCount(2, { timeout: 10_000 })
+
+  // 删根级联删回复
+  await root.locator('oas-comment').first().getByTestId('comment-del').click()
+  await expect(page.getByTestId('comment-item').filter({ hasText: 'E2E 线程根评论' })).toHaveCount(
+    0,
+    { timeout: 10_000 },
+  )
+  await expect(page.getByTestId('comments-block')).not.toContainText('E2E 回复内容')
+  await expect(page.getByTestId('comments-block')).not.toContainText('E2E 回复 @张伟')
+})

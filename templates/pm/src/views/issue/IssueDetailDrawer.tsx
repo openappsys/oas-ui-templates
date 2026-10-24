@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import type { Issue, IssuePriority, IssueStatus, Member } from '@/types'
+import type { Comment, Issue, IssuePriority, IssueStatus, Member } from '@/types'
 import { ISSUE_PRIORITIES, ISSUE_STATUSES } from '@/types'
 import {
   OSelect,
@@ -79,7 +79,9 @@ function CommentsBlock({
   const comments = useObservable(() => commentsRepo.liveByIssue(issueId), [issueId, commentsRepo])
   const inputRef = useRef<HTMLInputElement>(null)
   const editRef = useRef<HTMLElement & { value?: string }>(null)
+  const replyRef = useRef<HTMLInputElement>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [replyTo, setReplyTo] = useState<string | null>(null)
 
   const submit = async () => {
     const body = (inputRef.current?.value ?? '').trim()
@@ -87,6 +89,28 @@ function CommentsBlock({
     await commentsRepo.add({ issueId, authorId: currentUser, body })
     await activitiesRepo.log({ issueId, actorId: currentUser, type: 'comment' })
     if (inputRef.current) inputRef.current.value = ''
+  }
+
+  const submitReply = async (rootId: string) => {
+    const body = (replyRef.current?.value ?? '').trim()
+    if (!body) return
+    await commentsRepo.add({ issueId, authorId: currentUser, body, parentId: rootId })
+    await activitiesRepo.log({ issueId, actorId: currentUser, type: 'comment' })
+    if (replyRef.current) replyRef.current.value = ''
+    setReplyTo(null)
+  }
+
+  // 一级线程：顶层评论 + 挂在根评论下的回复
+  const roots: Comment[] = []
+  const repliesByRoot = new Map<string, Comment[]>()
+  for (const c of comments ?? []) {
+    if (c.parentId) {
+      const list = repliesByRoot.get(c.parentId) ?? []
+      list.push(c)
+      repliesByRoot.set(c.parentId, list)
+    } else {
+      roots.push(c)
+    }
   }
 
   /** @提及渲染：@中文/英文名 → 高亮 span（纯文本安全拆分） */
@@ -105,104 +129,150 @@ function CommentsBlock({
     )
   }
 
+  /** 单条评论渲染（根/回复共用；根评论带回复列表与回复框） */
+  const renderOne = (cm: Comment, isReply: boolean) => {
+    const replies = repliesByRoot.get(cm.id) ?? []
+    return (
+      <div
+        key={cm.id}
+        data-testid={isReply ? 'comment-reply-item' : 'comment-item'}
+        style={{ position: 'relative' }}
+      >
+        {editingId === cm.id ? (
+          <div className="comment-edit-row">
+            <oas-textarea
+              ref={editRef}
+              data-testid="comment-edit"
+              className="comment-input"
+              style={{ minHeight: 60 }}
+            />
+            <div className="quit-actions">
+              <oas-button
+                size="small"
+                data-testid="comment-cancel"
+                onClick={() => setEditingId(null)}
+              >
+                {t('cancel')}
+              </oas-button>
+              <oas-button
+                size="small"
+                type="primary"
+                data-testid="comment-save"
+                onClick={() => {
+                  const v = editRef.current?.value ?? ''
+                  if (v.trim()) {
+                    void commentsRepo.update(cm.id, v.trim())
+                    void activitiesRepo.log({
+                      issueId: cm.issueId,
+                      actorId: currentUser,
+                      type: 'comment-edit',
+                    })
+                  }
+                  setEditingId(null)
+                }}
+              >
+                {t('save')}
+              </oas-button>
+            </div>
+          </div>
+        ) : (
+          <oas-comment
+            author={memberMap.get(cm.authorId)?.name ?? t('commentAnonymous')}
+            datetime={new Date(cm.createdAt).toLocaleString(dateLocale())}
+          >
+            <span slot="content">{renderMentions(cm.body)}</span>
+            <span slot="actions" className="comment-ops">
+              {!isReply && can('comment:create') && (
+                <button
+                  type="button"
+                  className="comment-op"
+                  data-testid="comment-reply"
+                  onClick={() => setReplyTo(replyTo === cm.id ? null : cm.id)}
+                >
+                  {t('reply')}
+                </button>
+              )}
+              {can('comment:edit', {
+                comment: cm,
+                issue: { assigneeId: null, reporterId: '', projectId },
+              }) && (
+                <button
+                  type="button"
+                  className="comment-op"
+                  data-testid="comment-edit-btn"
+                  onClick={() => {
+                    setEditingId(cm.id)
+                    setTimeout(() => {
+                      if (editRef.current) editRef.current.value = cm.body
+                    }, 50)
+                  }}
+                >
+                  {t('adminEdit')}
+                </button>
+              )}
+              {can('comment:delete', {
+                comment: cm,
+                issue: { assigneeId: null, reporterId: '', projectId },
+              }) && (
+                <button
+                  type="button"
+                  className="comment-op comment-op-del"
+                  data-testid="comment-del"
+                  onClick={() => void commentsRepo.delete(cm.id)}
+                >
+                  {t('delete')}
+                </button>
+              )}
+            </span>
+          </oas-comment>
+        )}
+        {!isReply && replies.length > 0 && (
+          <div className="comment-replies" data-testid="comment-replies">
+            <div className="replies-title">
+              {t('replies')}（{replies.length}）
+            </div>
+            {replies.map((r) => renderOne(r, true))}
+          </div>
+        )}
+        {!isReply && replyTo === cm.id && can('comment:create') && (
+          <div className="comment-reply-row" data-testid="comment-reply-row">
+            <input
+              ref={replyRef}
+              className="comment-input"
+              data-testid="reply-input"
+              placeholder={t('replyPlaceholder')}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') void submitReply(cm.id)
+              }}
+            />
+            <button
+              className="comment-send"
+              type="button"
+              data-testid="reply-send"
+              onClick={() => void submitReply(cm.id)}
+            >
+              {t('send')}
+            </button>
+            <button
+              className="comment-op"
+              type="button"
+              data-testid="reply-cancel"
+              onClick={() => setReplyTo(null)}
+            >
+              {t('cancel')}
+            </button>
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="comments-block" data-testid="comments-block">
       <span>
         {t('comments')}（{comments?.length ?? 0}）
       </span>
-      <div className="comments-list">
-        {(comments ?? []).map((cm) => (
-          <div key={cm.id} data-testid="comment-item" style={{ position: 'relative' }}>
-            {editingId === cm.id ? (
-              <div className="comment-edit-row">
-                <oas-textarea
-                  ref={editRef}
-                  data-testid="comment-edit"
-                  className="comment-input"
-                  style={{ minHeight: 60 }}
-                />
-                <div className="quit-actions">
-                  <oas-button
-                    size="small"
-                    data-testid="comment-cancel"
-                    onClick={() => setEditingId(null)}
-                  >
-                    {t('cancel')}
-                  </oas-button>
-                  <oas-button
-                    size="small"
-                    type="primary"
-                    data-testid="comment-save"
-                    onClick={() => {
-                      const v = editRef.current?.value ?? ''
-                      if (v.trim()) {
-                        void commentsRepo.update(cm.id, v.trim())
-                        void activitiesRepo.log({
-                          issueId: cm.issueId,
-                          actorId: currentUser,
-                          type: 'comment-edit',
-                        })
-                      }
-                      setEditingId(null)
-                    }}
-                  >
-                    {t('save')}
-                  </oas-button>
-                </div>
-              </div>
-            ) : (
-              <oas-comment
-                author={memberMap.get(cm.authorId)?.name ?? t('commentAnonymous')}
-                datetime={new Date(cm.createdAt).toLocaleString(dateLocale())}
-              >
-                <span slot="content">{renderMentions(cm.body)}</span>
-                {(can('comment:edit', {
-                  comment: cm,
-                  issue: { assigneeId: null, reporterId: '', projectId },
-                }) ||
-                  can('comment:delete', {
-                    comment: cm,
-                    issue: { assigneeId: null, reporterId: '', projectId },
-                  })) && (
-                  <span slot="actions" className="comment-ops">
-                    {can('comment:edit', {
-                      comment: cm,
-                      issue: { assigneeId: null, reporterId: '', projectId },
-                    }) && (
-                      <button
-                        type="button"
-                        className="comment-op"
-                        data-testid="comment-edit-btn"
-                        onClick={() => {
-                          setEditingId(cm.id)
-                          setTimeout(() => {
-                            if (editRef.current) editRef.current.value = cm.body
-                          }, 50)
-                        }}
-                      >
-                        {t('adminEdit')}
-                      </button>
-                    )}
-                    {can('comment:delete', {
-                      comment: cm,
-                      issue: { assigneeId: null, reporterId: '', projectId },
-                    }) && (
-                      <button
-                        type="button"
-                        className="comment-op comment-op-del"
-                        data-testid="comment-del"
-                        onClick={() => void commentsRepo.delete(cm.id)}
-                      >
-                        {t('delete')}
-                      </button>
-                    )}
-                  </span>
-                )}
-              </oas-comment>
-            )}
-          </div>
-        ))}
-      </div>
+      <div className="comments-list">{roots.map((cm) => renderOne(cm, false))}</div>
       {can('comment:create') && (
         <div className="comment-input-row">
           {/* 非受控：draft 只用于提交时读 DOM，受控 value 会在任何一次父级重渲染

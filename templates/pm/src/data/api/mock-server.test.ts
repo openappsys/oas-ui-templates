@@ -838,6 +838,35 @@ describe('设置与评论/活动/视图', () => {
     expect(store.comments.some((c) => c.id === id)).toBe(false)
   })
 
+  it('comments 一级线程：parentId 归并到根、未知父 404、删根级联', () => {
+    const store = createMockStore({ now: FIXED })
+    const root = store.comments[0]
+    const addReply = (parentId: string, body: string) =>
+      call(store, 'POST', '/api/comments', {
+        body: { issueId: root.issueId, authorId: 'member-1', body, parentId },
+      })
+    expect(addReply(root.id, 'r1').status).toBe(201)
+    const reply = store.comments.find((c) => c.body === 'r1')!
+    expect(reply.parentId).toBe(root.id)
+
+    // 回复"回复"归并到根
+    expect(addReply(reply.id, 'r2').status).toBe(201)
+    const reply2 = store.comments.find((c) => c.body === 'r2')!
+    expect(reply2.parentId).toBe(root.id)
+
+    // 父评论不存在 / 跨 Issue 的父 → 404
+    expect(addReply('comment-nope', 'x').status).toBe(404)
+    const otherIssueComment = store.comments.find((c) => c.issueId !== root.issueId)
+    if (otherIssueComment) {
+      expect(addReply(otherIssueComment.id, 'x').status).toBe(404)
+    }
+
+    // 删根级联删回复
+    call(store, 'DELETE', `/api/comments/${root.id}`)
+    expect(store.comments.some((c) => c.id === reply.id)).toBe(false)
+    expect(store.comments.some((c) => c.id === reply2.id)).toBe(false)
+  })
+
   it('activities 按 issue 倒序、recent 按 createdAt 倒序截断', () => {
     const store = createMockStore({ now: FIXED })
     const issueId = store.activities[0].issueId

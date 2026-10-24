@@ -1,6 +1,6 @@
 # OAS PM（pm）项目管理系统模板
 
-> 状态：可用（2026-10-24）——测试基线 311 单测 + 188 Chromium e2e（27 个 spec 文件）
+> 状态：可用（2026-10-24）——测试基线 313 单测 + 189 Chromium e2e（27 个 spec 文件）
 
 基于 oas-ui 的项目管理系统模板：**React 19 + Dexie（IndexedDB）+ @oas-ui/ui**。
 演示「生产级前端基线」：Repository 数据层（可换 REST 适配器）、强制权限模型（内置角色 + 自定义角色 + 项目级覆盖）、六大视图、7 页签管理台、中英双语、明暗双主题。
@@ -15,6 +15,7 @@
 - **日程**：月历 / 周时刻轴 / 议程，截止日**全天 / 上午 / 下午**三档，拖拽归档写回
 - **通知中心**：独立 `notifications` 表，顶栏铃铛 + 未读角标（>99 显示 99+，0 隐藏），右侧面板展示最近 50 条；单条已读、全部已读，点击跳转 Issue
 - **软删除**：删除 Issue 进入回收站，顶部 6 秒撤销条；管理台「配置 → 回收站」可恢复或永久删除（永久删除级联清评论/活动/通知，并解除子任务挂载）
+- **评论**：纯文本 + @提及高亮；**一级回复线程**（回复归并到线程根，删根级联删回复）
 - **权限（强制生效）**：15 个动作；内置 `admin / member / viewer`；自定义角色（工作区/项目作用域）；项目级角色覆盖（工作区 admin 永不被覆盖）；最后一名 admin 保护；角色被占用/被覆盖引用时禁止删除；作用域创建后不可变
 - **管理台（7 页签，按权限过滤）**：总览 / 项目 / 成员 / 迭代 / 配置（标签·状态·优先级·回收站）/ 权限（角色·访问·审计）/ 设置
 - **数据管理**：全库 JSON 备份导出/导入（信封 v10，13 张表）、清空（保留内置角色 + 当前管理员，不重播）、重置演示数据
@@ -65,8 +66,8 @@ IndexedDB（Dexie，schema **v14 / 13 张表**）本地持久化；首启自动 
 |------|------|------|
 | 类型检查 | `pnpm exec tsc6 --noEmit` | 0 错 |
 | 构建 | `pnpm build` | tsc6 + vite |
-| 单测 | `pnpm test` | 311 用例 / 22 文件 |
-| E2E | `pnpm test:e2e` | 188 用例 / 27 spec（Chromium，`workers: 1`；无独立移动端 project） |
+| 单测 | `pnpm test` | 313 用例 / 22 文件 |
+| E2E | `pnpm test:e2e` | 189 用例 / 27 spec（Chromium，`workers: 1`；无独立移动端 project） |
 | 截图 | `e2e/_shots.spec.ts` | 34 个截图用例（Firefox 下跳过） |
 
 pm 没有 size-budget 脚本。
@@ -90,7 +91,7 @@ src/
 
 # OAS PM (pm) — Project Management Template
 
-> Status: available (2026-10-24) — baseline 311 unit + 188 Chromium e2e tests (27 spec files)
+> Status: available (2026-10-24) — baseline 313 unit + 189 Chromium e2e tests (27 spec files)
 
 A project-management template built on oas-ui: **React 19 + Dexie (IndexedDB) + @oas-ui/ui**.
 A production-grade frontend baseline: Repository data layer (REST-adapter ready), enforced permissions (built-in roles + custom roles + per-project overrides), six views, a 7-tab admin console, zh-en i18n, dual theme.
@@ -105,6 +106,7 @@ A production-grade frontend baseline: Repository data layer (REST-adapter ready)
 - **Schedule**: month / week time-axis / agenda views, due dates in **all-day / AM / PM** buckets, drag-to-bucket writeback
 - **Notifications**: a dedicated `notifications` table. Bell with an unread badge (>99 shows 99+, hidden at zero) and a right-side panel of the newest 50 rows. Read one row or mark all read. Click a row to open the issue.
 - **Soft delete**: deleting an issue moves it to the trash with a 6-second undo bar. Admin console → Config → Trash restores or purges. A purge cascades comments/activities/notifications and detaches subtasks.
+- **Comments**: plain text with @mention highlight; **one-level reply threads** (replies flatten onto the thread root; deleting a root cascades to its replies)
 - **Permissions (enforced)**: 15 actions; built-in `admin / member / viewer`; custom roles (workspace/project scope); per-project role overrides (workspace admins are never overridden); last-admin guard; role delete guard when assigned or overridden; scope immutable after creation
 - **Admin console (7 tabs, permission-filtered)**: overview / projects / members / cycles / config (labels, statuses, priorities, trash) / permissions (roles, access, audit) / settings
 - **Data management**: full JSON backup export/import (envelope v10, 13 tables), wipe (keeps built-in roles + the current admin, does not reseed), reset demo data
@@ -155,8 +157,8 @@ A second implementation of the same Repository interface talks HTTP (`src/data/a
 |------|---------|----------|
 | Typecheck | `pnpm exec tsc6 --noEmit` | 0 errors |
 | Build | `pnpm build` | tsc6 + vite |
-| Unit | `pnpm test` | 311 tests / 22 files |
-| E2E | `pnpm test:e2e` | 188 tests / 27 specs (Chromium, `workers: 1`; no mobile project) |
+| Unit | `pnpm test` | 313 tests / 22 files |
+| E2E | `pnpm test:e2e` | 189 tests / 27 specs (Chromium, `workers: 1`; no mobile project) |
 | Screenshots | `e2e/_shots.spec.ts` | 34 screenshot tests (skipped on Firefox) |
 
 pm has no size-budget script.

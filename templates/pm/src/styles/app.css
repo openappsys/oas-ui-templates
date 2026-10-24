@@ -1304,6 +1304,29 @@ oas-app-bar.topbar {
   overflow-y: auto;
 }
 
+/* 一级回复线程：回复缩进挂在根评论下 */
+.comment-replies {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 8px 0 2px 26px;
+  padding-left: 12px;
+  border-left: 2px solid var(--oas-color-border, #e2e8f0);
+}
+.replies-title {
+  font-size: 11px;
+  color: var(--oas-color-text-secondary, #64748b);
+}
+.comment-reply-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 2px 26px;
+}
+.comment-reply-row .comment-input {
+  flex: 1;
+}
+
 .comment-item {
   padding: 8px 10px;
   border: 1px solid var(--oas-color-border, #e2e8f0);

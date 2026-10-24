@@ -112,6 +112,8 @@ export interface Comment {
   authorId: string
   body: string
   createdAt: number
+  /** 一级回复线程：指向根评论 id；根评论为 null/undefined */
+  parentId?: string | null
 }
 
 export interface SavedView {
