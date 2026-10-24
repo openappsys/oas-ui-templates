@@ -13,6 +13,7 @@ import { activityTypeLabel, dateLocale, priorityLabel, relationLabel, statusLabe
 import { useRepositories } from '@/data/context'
 import { useObservable } from '@/data/use-observable'
 import { useLabelSet } from '@/lib/labels'
+import { loadCommentMode, storeCommentMode, type CommentMode } from '@/lib/preferences'
 import {
   bucketOf,
   bucketToDueAt,
@@ -82,6 +83,12 @@ function CommentsBlock({
   const replyRef = useRef<HTMLInputElement>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [replyTo, setReplyTo] = useState<string | null>(null)
+  const [mode, setMode] = useState<CommentMode>(() => loadCommentMode())
+  const changeMode = (v: string) => {
+    const next: CommentMode = v === 'flat' ? 'flat' : v === 'nested' ? 'nested' : 'thread'
+    setMode(next)
+    storeCommentMode(next)
+  }
 
   const submit = async () => {
     const body = (inputRef.current?.value ?? '').trim()
@@ -91,26 +98,41 @@ function CommentsBlock({
     if (inputRef.current) inputRef.current.value = ''
   }
 
-  const submitReply = async (rootId: string) => {
+  const submitReply = async (parentId: string) => {
     const body = (replyRef.current?.value ?? '').trim()
     if (!body) return
-    await commentsRepo.add({ issueId, authorId: currentUser, body, parentId: rootId })
+    await commentsRepo.add({ issueId, authorId: currentUser, body, parentId })
     await activitiesRepo.log({ issueId, actorId: currentUser, type: 'comment' })
     if (replyRef.current) replyRef.current.value = ''
     setReplyTo(null)
   }
 
-  // 一级线程：顶层评论 + 挂在根评论下的回复
-  const roots: Comment[] = []
-  const repliesByRoot = new Map<string, Comment[]>()
-  for (const c of comments ?? []) {
-    if (c.parentId) {
-      const list = repliesByRoot.get(c.parentId) ?? []
-      list.push(c)
-      repliesByRoot.set(c.parentId, list)
-    } else {
-      roots.push(c)
+  // 真实树：parentId 存直接父评论；无嵌套/一级/无限嵌套只是三种渲染模式
+  const all = comments ?? []
+  const byId = new Map(all.map((c) => [c.id, c]))
+  const childrenOf = new Map<string | null, Comment[]>()
+  for (const c of all) {
+    const key = c.parentId ?? null
+    const list = childrenOf.get(key) ?? []
+    list.push(c)
+    childrenOf.set(key, list)
+  }
+  const roots = childrenOf.get(null) ?? []
+  /** 线程模式：根下的全部后代按时间平铺 */
+  const descendants = (rootId: string): Comment[] => {
+    const out: Comment[] = []
+    const walk = (pid: string) => {
+      for (const c of childrenOf.get(pid) ?? []) {
+        out.push(c)
+        walk(c.id)
+      }
     }
+    walk(rootId)
+    return out.sort((a, b) => a.createdAt - b.createdAt)
+  }
+  const parentAuthorName = (cm: Comment): string => {
+    const parent = cm.parentId ? byId.get(cm.parentId) : undefined
+    return parent ? (memberMap.get(parent.authorId)?.name ?? t('commentAnonymous')) : ''
   }
 
   /** @提及渲染：@中文/英文名 → 高亮 span（纯文本安全拆分） */
@@ -129,9 +151,12 @@ function CommentsBlock({
     )
   }
 
-  /** 单条评论渲染（根/回复共用；根评论带回复列表与回复框） */
-  const renderOne = (cm: Comment, isReply: boolean) => {
-    const replies = repliesByRoot.get(cm.id) ?? []
+  /** 单条评论渲染。showReply：是否出现「回复」按钮；badge：无嵌套模式的「回复 @谁」标记 */
+  const renderOne = (
+    cm: Comment,
+    opts: { isReply?: boolean; showReply?: boolean; badge?: boolean },
+  ) => {
+    const { isReply = false, showReply = false, badge = false } = opts
     return (
       <div
         key={cm.id}
@@ -180,9 +205,16 @@ function CommentsBlock({
             author={memberMap.get(cm.authorId)?.name ?? t('commentAnonymous')}
             datetime={new Date(cm.createdAt).toLocaleString(dateLocale())}
           >
-            <span slot="content">{renderMentions(cm.body)}</span>
+            <span slot="content">
+              {badge && cm.parentId && (
+                <span className="reply-tag">
+                  ↳ {t('reply')} @{parentAuthorName(cm)}
+                </span>
+              )}
+              {renderMentions(cm.body)}
+            </span>
             <span slot="actions" className="comment-ops">
-              {!isReply && can('comment:create') && (
+              {showReply && can('comment:create') && (
                 <button
                   type="button"
                   className="comment-op"
@@ -226,15 +258,7 @@ function CommentsBlock({
             </span>
           </oas-comment>
         )}
-        {!isReply && replies.length > 0 && (
-          <div className="comment-replies" data-testid="comment-replies">
-            <div className="replies-title">
-              {t('replies')}（{replies.length}）
-            </div>
-            {replies.map((r) => renderOne(r, true))}
-          </div>
-        )}
-        {!isReply && replyTo === cm.id && can('comment:create') && (
+        {replyTo === cm.id && can('comment:create') && (
           <div className="comment-reply-row" data-testid="comment-reply-row">
             <input
               ref={replyRef}
@@ -267,12 +291,69 @@ function CommentsBlock({
     )
   }
 
+  /** 线程模式：根评论 + 全部后代按时间平铺在回复区（回复框由 renderOne 渲染在根评论上） */
+  const renderThread = (root: Comment) => {
+    const replies = descendants(root.id)
+    return (
+      <div key={root.id} data-testid="comment-item">
+        {renderOne(root, { showReply: true })}
+        {replies.length > 0 && (
+          <div className="comment-replies" data-testid="comment-replies">
+            <div className="replies-title">
+              {t('replies')}（{replies.length}）
+            </div>
+            {replies.map((r) => renderOne(r, { isReply: true }))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  /** 无限嵌套模式：逐层递归，每条都可回复 */
+  const renderNested = (cm: Comment, depth: number) => {
+    const children = (childrenOf.get(cm.id) ?? []).slice().sort((a, b) => a.createdAt - b.createdAt)
+    return (
+      <div key={cm.id} data-testid={depth === 0 ? 'comment-item' : undefined}>
+        {renderOne(cm, { isReply: depth > 0, showReply: true })}
+        {children.length > 0 && (
+          <div
+            className="comment-replies"
+            data-testid={depth === 0 ? 'comment-replies' : undefined}
+          >
+            {children.map((c) => renderNested(c, depth + 1))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  const sortedFlat = [...all].sort((a, b) => a.createdAt - b.createdAt)
+
   return (
     <div className="comments-block" data-testid="comments-block">
-      <span>
-        {t('comments')}（{comments?.length ?? 0}）
-      </span>
-      <div className="comments-list">{roots.map((cm) => renderOne(cm, false))}</div>
+      <div className="comments-head">
+        <span>
+          {t('comments')}（{comments?.length ?? 0}）
+        </span>
+        <OSegmented
+          testid="comment-mode"
+          ariaLabel={t('commentModeLabel')}
+          value={mode}
+          options={[
+            { label: t('modeFlat'), value: 'flat' },
+            { label: t('modeThread'), value: 'thread' },
+            { label: t('modeNested'), value: 'nested' },
+          ]}
+          onChange={changeMode}
+        />
+      </div>
+      <div className="comments-list">
+        {mode === 'flat'
+          ? sortedFlat.map((cm) => renderOne(cm, { badge: true }))
+          : mode === 'nested'
+            ? roots.map((root) => renderNested(root, 0))
+            : roots.map((root) => renderThread(root))}
+      </div>
       {can('comment:create') && (
         <div className="comment-input-row">
           {/* 非受控：draft 只用于提交时读 DOM，受控 value 会在任何一次父级重渲染

@@ -531,7 +531,7 @@ describe('契约：同一份 seed 下 Dexie 与 API 输出相同', () => {
     )
   })
 
-  it('comments 一级回复线程：parentId 归并到根、删根级联删回复', async () => {
+  it('comments 线程：parentId 存直接父评论（真实树）、删根级联整棵子树', async () => {
     const issueId = store.issues[0].id
     await api.comments.add({ issueId, authorId: 'member-1', body: 'root-api' })
     await dexie.comments.add({ issueId, authorId: 'member-1', body: 'root-dexie' })
@@ -542,35 +542,60 @@ describe('契约：同一份 seed 下 Dexie 与 API 输出相同', () => {
       (c) => c.body === 'root-dexie',
     )!
 
-    // 回复"回复"时归并到同一线程根
+    // 直接父评论：child → root，grandchild → child（真实树，三种渲染模式共用）
     await api.comments.add({
       issueId,
       authorId: 'member-2',
-      body: 'reply-api',
+      body: 'child-api',
       parentId: apiRoot.id,
     })
     await dexie.comments.add({
       issueId,
       authorId: 'member-2',
-      body: 'reply-dexie',
+      body: 'child-dexie',
       parentId: dexieRoot.id,
     })
+    const apiChild = (await first(api.comments.liveByIssue(issueId))).find(
+      (c) => c.body === 'child-api',
+    )!
+    const dexieChild = (await first(dexie.comments.liveByIssue(issueId))).find(
+      (c) => c.body === 'child-dexie',
+    )!
+    await api.comments.add({
+      issueId,
+      authorId: 'member-3',
+      body: 'grand-api',
+      parentId: apiChild.id,
+    })
+    await dexie.comments.add({
+      issueId,
+      authorId: 'member-3',
+      body: 'grand-dexie',
+      parentId: dexieChild.id,
+    })
 
-    const parentIdOf = (rows: Comment[], body: string) =>
+    const parentOf = (rows: Comment[], body: string) =>
       rows.find((c) => c.body === body)?.parentId ?? null
     const apiRows = await first(api.comments.liveByIssue(issueId))
     const dexieRows = await first(dexie.comments.liveByIssue(issueId))
-    expect(parentIdOf(apiRows, 'reply-api')).toBe(apiRoot.id)
-    expect(parentIdOf(dexieRows, 'reply-dexie')).toBe(dexieRoot.id)
-    expect(apiRows.every((c) => !c.parentId || c.parentId === apiRoot.id)).toBe(true)
+    expect(parentOf(apiRows, 'child-api')).toBe(apiRoot.id)
+    expect(parentOf(apiRows, 'grand-api')).toBe(apiChild.id)
+    expect(parentOf(dexieRows, 'child-dexie')).toBe(dexieRoot.id)
+    expect(parentOf(dexieRows, 'grand-dexie')).toBe(dexieChild.id)
 
-    // 删根级联删回复
+    // 删根级联删整棵子树（child + grandchild）
     await api.comments.delete(apiRoot.id)
     await dexie.comments.delete(dexieRoot.id)
     const afterApi = await first(api.comments.liveByIssue(issueId))
     const afterDexie = await first(dexie.comments.liveByIssue(issueId))
-    expect(afterApi.some((c) => c.body === 'reply-api')).toBe(false)
-    expect(afterDexie.some((c) => c.body === 'reply-dexie')).toBe(false)
+    expect(
+      ['root-api', 'child-api', 'grand-api'].filter((b) => afterApi.some((c) => c.body === b)),
+    ).toEqual([])
+    expect(
+      ['root-dexie', 'child-dexie', 'grand-dexie'].filter((b) =>
+        afterDexie.some((c) => c.body === b),
+      ),
+    ).toEqual([])
   })
 
   it('activities log/liveByIssue/liveRecent 一致', async () => {

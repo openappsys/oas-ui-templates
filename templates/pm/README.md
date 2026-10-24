@@ -15,7 +15,7 @@
 - **日程**：月历 / 周时刻轴 / 议程，截止日**全天 / 上午 / 下午**三档，拖拽归档写回
 - **通知中心**：独立 `notifications` 表，顶栏铃铛 + 未读角标（>99 显示 99+，0 隐藏），右侧面板展示最近 50 条；单条已读、全部已读，点击跳转 Issue
 - **软删除**：删除 Issue 进入回收站，顶部 6 秒撤销条；管理台「配置 → 回收站」可恢复或永久删除（永久删除级联清评论/活动/通知，并解除子任务挂载）
-- **评论**：纯文本 + @提及高亮；**一级回复线程**（回复归并到线程根，删根级联删回复）
+- **评论**：纯文本 + @提及高亮；回复线程（数据为真实树）；**三种显示模式可切换**：无嵌套 / 一级嵌套 / 无限嵌套（偏好本地持久化，默认一级）
 - **权限（强制生效）**：15 个动作；内置 `admin / member / viewer`；自定义角色（工作区/项目作用域）；项目级角色覆盖（工作区 admin 永不被覆盖）；最后一名 admin 保护；角色被占用/被覆盖引用时禁止删除；作用域创建后不可变
 - **管理台（7 页签，按权限过滤）**：总览 / 项目 / 成员 / 迭代 / 配置（标签·状态·优先级·回收站）/ 权限（角色·访问·审计）/ 设置
 - **数据管理**：全库 JSON 备份导出/导入（信封 v10，13 张表）、清空（保留内置角色 + 当前管理员，不重播）、重置演示数据
@@ -106,7 +106,7 @@ A production-grade frontend baseline: Repository data layer (REST-adapter ready)
 - **Schedule**: month / week time-axis / agenda views, due dates in **all-day / AM / PM** buckets, drag-to-bucket writeback
 - **Notifications**: a dedicated `notifications` table. Bell with an unread badge (>99 shows 99+, hidden at zero) and a right-side panel of the newest 50 rows. Read one row or mark all read. Click a row to open the issue.
 - **Soft delete**: deleting an issue moves it to the trash with a 6-second undo bar. Admin console → Config → Trash restores or purges. A purge cascades comments/activities/notifications and detaches subtasks.
-- **Comments**: plain text with @mention highlight; **one-level reply threads** (replies flatten onto the thread root; deleting a root cascades to its replies)
+- **Comments**: plain text with @mention highlight; reply threads stored as a real tree with **three switchable display modes** — flat / threaded (one level) / fully nested (preference persisted locally, default threaded)
 - **Permissions (enforced)**: 15 actions; built-in `admin / member / viewer`; custom roles (workspace/project scope); per-project role overrides (workspace admins are never overridden); last-admin guard; role delete guard when assigned or overridden; scope immutable after creation
 - **Admin console (7 tabs, permission-filtered)**: overview / projects / members / cycles / config (labels, statuses, priorities, trash) / permissions (roles, access, audit) / settings
 - **Data management**: full JSON backup export/import (envelope v10, 13 tables), wipe (keeps built-in roles + the current admin, does not reseed), reset demo data

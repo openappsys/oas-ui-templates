@@ -838,7 +838,7 @@ describe('设置与评论/活动/视图', () => {
     expect(store.comments.some((c) => c.id === id)).toBe(false)
   })
 
-  it('comments 一级线程：parentId 归并到根、未知父 404、删根级联', () => {
+  it('comments 线程：parentId 存直接父评论、未知父 404、删根级联整棵子树', () => {
     const store = createMockStore({ now: FIXED })
     const root = store.comments[0]
     const addReply = (parentId: string, body: string) =>
@@ -849,10 +849,10 @@ describe('设置与评论/活动/视图', () => {
     const reply = store.comments.find((c) => c.body === 'r1')!
     expect(reply.parentId).toBe(root.id)
 
-    // 回复"回复"归并到根
+    // 深层回复：parentId 存直接父（真实树）
     expect(addReply(reply.id, 'r2').status).toBe(201)
     const reply2 = store.comments.find((c) => c.body === 'r2')!
-    expect(reply2.parentId).toBe(root.id)
+    expect(reply2.parentId).toBe(reply.id)
 
     // 父评论不存在 / 跨 Issue 的父 → 404
     expect(addReply('comment-nope', 'x').status).toBe(404)
@@ -861,7 +861,7 @@ describe('设置与评论/活动/视图', () => {
       expect(addReply(otherIssueComment.id, 'x').status).toBe(404)
     }
 
-    // 删根级联删回复
+    // 删根级联删整棵子树
     call(store, 'DELETE', `/api/comments/${root.id}`)
     expect(store.comments.some((c) => c.id === reply.id)).toBe(false)
     expect(store.comments.some((c) => c.id === reply2.id)).toBe(false)

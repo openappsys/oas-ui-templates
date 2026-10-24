@@ -1305,6 +1305,17 @@ oas-app-bar.topbar {
 }
 
 /* 一级回复线程：回复缩进挂在根评论下 */
+.comments-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.reply-tag {
+  font-size: 11px;
+  color: var(--oas-color-text-secondary, #64748b);
+  margin-right: 6px;
+}
 .comment-replies {
   display: flex;
   flex-direction: column;

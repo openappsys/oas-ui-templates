@@ -15,7 +15,7 @@ export function createDexieCommentRepository(db: PMDatabase): CommentRepository 
           .toArray(),
       ),
     // 评论与通知同一事务：评论落库成功即产生通知，不留「有评论没通知」的半截状态。
-    // parentId 指向线程根：回复"回复"时自动归并到同一线程根，保持一级嵌套
+    // parentId 存直接父评论（真实树）；无嵌套/一级/无限嵌套只是三种渲染模式
     add: (input: CreateCommentInput) =>
       db
         .transaction('rw', db.comments, db.issues, db.members, db.notifications, async () => {
@@ -25,7 +25,7 @@ export function createDexieCommentRepository(db: PMDatabase): CommentRepository 
             if (!parent || parent.issueId !== input.issueId) {
               throw new Error('parent comment not found')
             }
-            parentId = parent.parentId || parent.id
+            parentId = parent.id
           }
           await db.comments.add({
             id: nanoid(),
@@ -43,12 +43,20 @@ export function createDexieCommentRepository(db: PMDatabase): CommentRepository 
         })
         .then(() => undefined),
     update: (id, body) => db.comments.update(id, { body }).then(() => undefined),
-    // 删除评论级联删除其回复（一级线程：回复的 parentId 都指向根）
+    // 删除评论级联删除整棵子树（无限嵌套下的后代一并删除）
     delete: (id) =>
       db
         .transaction('rw', db.comments, async () => {
-          await db.comments.where('parentId').equals(id).delete()
-          await db.comments.delete(id)
+          const doomed: string[] = [id]
+          const walk = async (pid: string) => {
+            const kids = await db.comments.where('parentId').equals(pid).toArray()
+            for (const k of kids) {
+              doomed.push(k.id)
+              await walk(k.id)
+            }
+          }
+          await walk(id)
+          await db.comments.bulkDelete(doomed)
         })
         .then(() => undefined),
   }

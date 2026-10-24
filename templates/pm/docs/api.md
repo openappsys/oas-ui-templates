@@ -398,10 +398,11 @@ members that were removed from the list, so an override never applies to a non-m
 Members may edit/delete only their own comments; `admin` and custom roles with the permission may
 edit/delete any comment. A comment write also creates notification rows (section 13).
 
-**Threads (one level)**: `POST` accepts `parentId` — the id of the root comment. Replying to a
-reply is flattened onto the same root (`parent.parentId || parent.id`); the parent must exist and
-belong to the same issue (`404` otherwise). `DELETE /api/comments/:id` cascades to the thread's
-replies (`parentId = :id`). The response comment includes `parentId` (`null` for roots).
+**Threads (real tree)**: `POST` accepts `parentId` — the id of the **direct parent** comment. The
+stored data is always a tree regardless of the client's display mode (flat / one-level threaded /
+fully nested are client-side renderers). The parent must exist and belong to the same issue (`404`
+otherwise). `DELETE /api/comments/:id` cascades to the **entire subtree** (all descendants). The
+response comment includes `parentId` (`null` for roots).
 
 ## 9. Activities
 

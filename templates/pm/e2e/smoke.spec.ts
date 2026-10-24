@@ -1010,7 +1010,7 @@ test('M22 触底续载：滚动到底部计数持续增加（行高与阈值一�
   await expect.poll(loaded, { timeout: 15_000 }).toBeGreaterThan(second)
 })
 
-test('M23 评论线程：回复嵌套展示 + 删根级联删回复', async ({ page }) => {
+test('M23 评论显示三模式：一级线程 / 无限嵌套 / 无嵌套 + 删根级联', async ({ page }) => {
   await waitForSeed(page)
   await page
     .locator('.issue-row')
@@ -1018,32 +1018,56 @@ test('M23 评论线程：回复嵌套展示 + 删根级联删回复', async ({ p
     .evaluate((el) => el.dispatchEvent(new MouseEvent('click', { bubbles: true })))
   await page.getByTestId('comments-block').waitFor({ timeout: 10_000 })
 
-  // 根评论
+  // 根评论 + 一级回复（默认「一级嵌套」）
   await fillOInput(page, 'comment-input', 'E2E 线程根评论')
   await page.getByTestId('comment-send').click()
   const root = page.getByTestId('comment-item').filter({ hasText: 'E2E 线程根评论' }).first()
   await expect(root).toBeVisible({ timeout: 10_000 })
-
-  // 回复 → 嵌套挂在根评论下
   await root.getByTestId('comment-reply').click()
-  await fillOInput(page, 'reply-input', 'E2E 回复内容')
+  await fillOInput(page, 'reply-input', 'E2E 一级回复')
   await page.getByTestId('reply-send').click()
   const replies = root.getByTestId('comment-replies')
-  await expect(replies).toContainText('E2E 回复内容', { timeout: 10_000 })
-  await expect(replies.getByTestId('comment-reply-item')).toHaveCount(1)
+  await expect(replies).toContainText('E2E 一级回复', { timeout: 10_000 })
 
-  // 回复作者高亮渲染（@提及）不受影响：再发一条带 @ 的回复
-  await root.getByTestId('comment-reply').click()
-  await fillOInput(page, 'reply-input', 'E2E 回复 @张伟 请确认')
+  const setMode = (mode: string) =>
+    page.getByTestId('comment-mode').evaluate((el, v) => {
+      el.dispatchEvent(new CustomEvent('oas-change', { bubbles: true, detail: { value: v } }))
+    }, mode)
+
+  // 切「无限嵌套」：回复"回复"得到二级嵌套渲染
+  await setMode('nested')
+  const replyItem = replies.getByTestId('comment-reply-item').first()
+  await replyItem.getByTestId('comment-reply').click()
+  await fillOInput(page, 'reply-input', 'E2E 二级回复')
   await page.getByTestId('reply-send').click()
   await expect(replies.getByTestId('comment-reply-item')).toHaveCount(2, { timeout: 10_000 })
+  await expect(replies).toContainText('E2E 二级回复')
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-comment-mode')))
+    .toBe('nested')
 
-  // 删根级联删回复
-  await root.locator('oas-comment').first().getByTestId('comment-del').click()
+  // 切「无嵌套」：全部按时间平铺，无回复容器，回复带「↳ 回复 @作者」标记
+  await setMode('flat')
+  await expect(page.getByTestId('comment-replies')).toHaveCount(0, { timeout: 10_000 })
+  await expect(page.getByTestId('comment-item').filter({ hasText: 'E2E 二级回复' })).toHaveCount(1)
+  await expect(page.locator('.reply-tag').first()).toBeVisible()
+
+  // 切回「一级嵌套」：同一棵树，二级回复平铺在根的回复区
+  await setMode('thread')
+  await expect(root).toBeVisible()
+  await expect(root).toContainText('E2E 二级回复')
+
+  // 删根级联整棵子树
+  await page
+    .getByTestId('comments-block')
+    .locator('oas-comment')
+    .first()
+    .getByTestId('comment-del')
+    .click()
   await expect(page.getByTestId('comment-item').filter({ hasText: 'E2E 线程根评论' })).toHaveCount(
     0,
     { timeout: 10_000 },
   )
-  await expect(page.getByTestId('comments-block')).not.toContainText('E2E 回复内容')
-  await expect(page.getByTestId('comments-block')).not.toContainText('E2E 回复 @张伟')
+  await expect(page.getByTestId('comments-block')).not.toContainText('E2E 一级回复')
+  await expect(page.getByTestId('comments-block')).not.toContainText('E2E 二级回复')
 })

@@ -1408,13 +1408,13 @@ function routeComments(
       if (!canAction(store, actor, 'comment:create', issue.projectId, { issue })) {
         fail(403, 'permission denied')
       }
-      // 一级线程：回复"回复"时归并到同一线程根
+      // parentId 存直接父评论（真实树）；无嵌套/一级/无限嵌套只是三种渲染模式
       let parentId: string | null = null
       const inputParent = String(input.parentId ?? '')
       if (inputParent) {
         const parent = store.comments.find((c) => c.id === inputParent)
         if (!parent || parent.issueId !== issue.id) fail(404, 'parent comment not found')
-        parentId = parent.parentId || parent.id
+        parentId = parent.id
       }
       const comment: Comment = {
         id: nextId(store, 'comment'),
@@ -1457,8 +1457,19 @@ function routeComments(
     if (!canAction(store, actor, 'comment:delete', issue?.projectId, ctx)) {
       fail(403, 'permission denied')
     }
-    // 删除评论级联删除其回复（一级线程）
-    store.comments = store.comments.filter((c) => c.id !== second && c.parentId !== second)
+    // 删除评论级联删除整棵子树（无限嵌套下的后代一并删除）
+    const doomed = new Set([second])
+    let grew = true
+    while (grew) {
+      grew = false
+      for (const c of store.comments) {
+        if (c.parentId && doomed.has(c.parentId) && !doomed.has(c.id)) {
+          doomed.add(c.id)
+          grew = true
+        }
+      }
+    }
+    store.comments = store.comments.filter((c) => !doomed.has(c.id))
     store.revision += 1
     return ok({ ok: true })
   }

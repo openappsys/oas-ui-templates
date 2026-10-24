@@ -107,7 +107,7 @@ OAS PM
 | **issues** | `id, projectId, key, title, description, status, priority, assigneeId, reporterId, labels[], startAt, dueAt, createdAt, updatedAt, order, parentId?, completedAt?, relations?, cycleId?, deletedAt?` | 工作项；`parentId` 仅一层子任务；`deletedAt` 缺失/null = 在库；`cycleId` 空 = 未入迭代 |
 | **projects** | `id, name, key, description, leadId, createdAt, nextKeyNum?` | 项目；`key` 唯一；`nextKeyNum` 事务内严格递增 |
 | **members** | `id, name, email, avatarColor, role, title?, timezone?` | 成员；`role` 可指向内置或自定义角色 id |
-| **comments** | `id, issueId, authorId, body, createdAt, parentId?` | 纯文本评论 + `@提及` 约定；一级回复线程（`parentId` 指向线程根） |
+| **comments** | `id, issueId, authorId, body, createdAt, parentId?` | 纯文本评论 + `@提及` 约定；回复线程（`parentId` 存直接父评论，数据为真实树，渲染模式用户可切） |
 | **savedViews** | `id, name, filters(JSON), createdAt` | 保存的筛选视图（不含 search） |
 | **activities** | `id, issueId, actorId, type, field?, from?, to?, createdAt` | 字段级活动审计 |
 | **settings** | `key, value, updatedAt` | 键值配置（如标签库） |
@@ -237,7 +237,7 @@ v14 的 `issues` 索引：
 | F-31 | 子任务 | 一层子任务：添加、勾选完成/还原、跳转 | 独立 Issue（`parentId`） |
 | F-32 | 关联 | 添加/移除 `blocks / blocked-by / relates` | 候选集为当前项目前 100 条存活 Issue |
 | F-33 | 标签 | 预置标签 + 自由输入（`oas-dynamic-tags`） | 增删即时保存 |
-| F-34 | 评论 | 添加/编辑/删除；一级回复线程（回复归并到线程根，删根级联删回复）；`@中英文名` 高亮 | 成员仅作者本人可改删（admin 不受限） |
+| F-34 | 评论 | 添加/编辑/删除；回复线程（数据为真实树）；三种显示模式用户可切：**无嵌套**（时间轴 + ↳标记）/ **一级嵌套**（回复挂根，后代平铺）/ **无限嵌套**（整棵树逐层渲染）；`@中英文名` 高亮 | 成员仅作者本人可改删（admin 不受限）；模式偏好本地持久化 |
 | F-35 | 活动历史 | 字段级 diff（谁/改什么/从→到/何时） | 状态→done 记录 `completedAt` |
 | F-36 | 软删除与撤销 | 删除只写 `deletedAt`，顶部 6 秒撤销条可批量恢复 | `updatedAt` 不变，恢复后回原位 |
 | F-37 | 批量操作 | 改状态/优先级/负责人在事务内逐条写并记活动（`bulk:apply`）；批量删除为软删除（`bulk:delete`） | 已删除行不参与改写 |
@@ -305,7 +305,7 @@ v14 的 `issues` 索引：
 | ❌ 附件 | 无文件/图片上传 |
 | ❌ 富文本 / Markdown | 描述与评论为纯文本（`@提及` 文本约定高亮）；规划接入独立 oas-editor 项目，模板内不做实现 |
 | ❌ 实时协作 | 无 WebSocket / 多人编辑冲突处理；同源多标签页经 revision 轮询近实时，真实多端同步随后端走 |
-| ❌ 评论嵌套层级 | 一级回复线程已实现；多层嵌套/表情/点赞不做 |
+| ❌ 评论嵌套层级 | 三种显示模式已支持（无嵌套/一级/无限嵌套）；不做表情/点赞 |
 | ❌ 服务端 / 云端同步 | 无持久后端；API mock 仅开发模式、内存态、重启即失 |
 | ❌ 真实多租户认证 | 本地身份切换 / 演示登录，无组织隔离与真实鉴权 |
 | ❌ 审计留存治理 | 无保留策略、无合规归档；导出仅当前筛选的 CSV |
