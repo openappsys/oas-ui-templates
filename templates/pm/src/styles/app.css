@@ -841,21 +841,23 @@ body {
 }
 
 /* 成员筛选：筛选区最后一个组（oas-sidebar 默认插槽，紧接迭代/清除之后）。
-   缩进对齐组件组标题（图标 x=28 / 文案 x=72），下拉对齐子项（x≈51），左侧接组引导线 */
+   组件组标题/子行都是 40px、组间距 4px；这里用同样的行高与间距，
+   缩进对齐组标题（图标 x=28 / 文案 x=72），下拉对齐子项（x≈51） */
 .side-filters {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin-top: 2px;
-  padding-top: 2px;
+  /* 与组件 nav 的行间距/行高同源：组间距 --oas-space-1、行高 --oas-control-height-lg */
+  gap: var(--oas-space-1, 4px);
+  /* 抵消 .body 顶部 12px padding + nav 底部 8px，让成员组距上组 4px（与组间距一致） */
+  margin-top: -16px;
 }
 .side-filters::before {
   content: "";
   position: absolute;
   left: 24px;
-  top: 32px; /* 从组标题下方开始，避免竖线穿过漏斗图标 */
-  bottom: 6px;
+  top: var(--oas-control-height-lg, 40px); /* 从组标题行下方开始，避免竖线穿过漏斗图标 */
+  bottom: 4px;
   width: 1px;
   background: var(--oas-color-border, #e2e8f0);
   pointer-events: none;
@@ -882,7 +884,7 @@ body {
 .side-filters-label {
   display: flex;
   align-items: center;
-  height: 30px;
+  height: var(--oas-control-height-lg, 40px);
   padding-left: 8px;
   font-size: var(--oas-font-size-sm, 13px);
   font-weight: 400;
