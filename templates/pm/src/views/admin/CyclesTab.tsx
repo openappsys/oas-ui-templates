@@ -290,8 +290,6 @@ export function CyclesTab({ lang }: { lang: Lang }) {
 
           const pop = document.createElement('oas-popconfirm')
           pop.setAttribute('title', t('adminCycleDeleteConfirm'))
-          pop.setAttribute('ok-text', t('confirm'))
-          pop.setAttribute('cancel-text', t('cancel'))
           const del = document.createElement('oas-button')
           del.setAttribute('type', 'danger')
           del.setAttribute('size', 'small')

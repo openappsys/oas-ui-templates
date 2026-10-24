@@ -238,8 +238,6 @@ export function ResourceView({
           <oas-popconfirm
             ref={popRef}
             title={t('resourceLevelConfirm')}
-            ok-text={t('confirm')}
-            cancel-text={t('cancel')}
             data-testid="resource-level-confirm"
           >
             <oas-button type="primary" size="small" data-testid="resource-level-btn">

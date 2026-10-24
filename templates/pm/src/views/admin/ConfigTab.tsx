@@ -201,8 +201,6 @@ function TrashPanel() {
           back.addEventListener('click', () => void restoreRef.current(id))
           const pop = document.createElement('oas-popconfirm')
           pop.setAttribute('title', t('adminTrashPurgeConfirm'))
-          pop.setAttribute('ok-text', t('confirm'))
-          pop.setAttribute('cancel-text', t('cancel'))
           const gone = document.createElement('oas-button')
           gone.setAttribute('type', 'danger')
           gone.setAttribute('size', 'small')
