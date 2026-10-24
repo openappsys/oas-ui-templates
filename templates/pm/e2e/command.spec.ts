@@ -30,6 +30,14 @@ function readItems(page: Page) {
   })
 }
 
+/** 当前高亮项（过滤是异步的：只等 items 里出现目标项还不够，Enter 会选中旧高亮） */
+function readActiveValue(page: Page) {
+  return page.evaluate(() => {
+    const el = document.querySelector('[data-testid=command-palette]') as HTMLElement | null
+    return el?.shadowRoot?.querySelector<HTMLElement>('.option.active')?.dataset.value ?? ''
+  })
+}
+
 test('C1 Ctrl+K 与顶栏按钮都能打开命令面板', async ({ page }) => {
   await waitForSeed(page)
   await page.getByTestId('command-open').click()
@@ -52,9 +60,7 @@ test('C2 Issue 搜索：输入关键字 → Enter 打开详情抽屉', async ({ 
   await page.keyboard.press('Control+k')
   await expect(page.getByTestId('command-palette')).toHaveAttribute('open', /.*/)
   await page.keyboard.type('1001')
-  await expect
-    .poll(async () => (await readItems(page)).some((i) => i.value === 'issue:issue-project-1-1001'))
-    .toBe(true)
+  await expect.poll(() => readActiveValue(page)).toBe('issue:issue-project-1-1001')
   await page.keyboard.press('Enter')
   await expect
     .poll(
@@ -75,9 +81,7 @@ test('C3 导航：搜索看板 → Enter 切换看板视图', async ({ page }) =
   await page.keyboard.press('Control+k')
   await expect(page.getByTestId('command-palette')).toHaveAttribute('open', /.*/)
   await page.keyboard.type('看板')
-  await expect
-    .poll(async () => (await readItems(page)).some((i) => i.value === 'nav:board'))
-    .toBe(true)
+  await expect.poll(() => readActiveValue(page)).toBe('nav:board')
   await page.keyboard.press('Enter')
   // 不再「盲按第二次 Enter」：面板已关闭时再按不会重试导航，只会把真实失败拖成 15s 超时
   await expect(page.getByTestId('board')).toBeVisible({ timeout: 10_000 })

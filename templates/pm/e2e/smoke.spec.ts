@@ -116,7 +116,7 @@ test('M3 看板：oas-change 跨列移动 → status/order 落库', async ({ pag
           const k = document.querySelector('oas-kanban') as HTMLElement & {
             cards?: Array<{ column: string }>
           }
-          return (k.cards ?? []).filter((x) => x.column === 'todo').length
+          return (k?.cards ?? []).filter((x) => x.column === 'todo').length
         }),
       { timeout: 10_000 },
     )
@@ -127,7 +127,7 @@ test('M3 看板：oas-change 跨列移动 → status/order 落库', async ({ pag
     const k = document.querySelector('oas-kanban') as HTMLElement & {
       cards?: Array<{ id: string; column: string }>
     }
-    const card = (k.cards ?? []).find((x) => x.column === 'todo')
+    const card = (k?.cards ?? []).find((x) => x.column === 'todo')
     if (!card) return null
     k.dispatchEvent(
       new CustomEvent('oas-change', {
@@ -173,7 +173,7 @@ test('M3 看板：oas-change 跨列移动 → status/order 落库', async ({ pag
           const k = document.querySelector('oas-kanban') as HTMLElement & {
             cards?: Array<{ id: string; column: string }>
           }
-          return (k.cards ?? []).find((x) => x.id === id)?.column ?? ''
+          return (k?.cards ?? []).find((x) => x.id === id)?.column ?? ''
         }, moved),
       { timeout: 10_000 },
     )
@@ -189,7 +189,7 @@ test('M3b 看板：列内排序 oas-change → order 落库', async ({ page }) =
     const k = document.querySelector('oas-kanban') as HTMLElement & {
       cards?: Array<{ id: string; column: string }>
     }
-    const done = (k.cards ?? []).filter((x) => x.column === 'done')
+    const done = (k?.cards ?? []).filter((x) => x.column === 'done')
     if (done.length < 2) return null
     return done[0].id
   })
@@ -211,7 +211,7 @@ test('M3b 看板：列内排序 oas-change → order 落库', async ({ page }) =
           const k = document.querySelector('oas-kanban') as HTMLElement & {
             cards?: Array<{ id: string; column: string }>
           }
-          const done = (k.cards ?? []).filter((x) => x.column === 'done')
+          const done = (k?.cards ?? []).filter((x) => x.column === 'done')
           return done.findIndex((x) => x.id === id)
         }, moved),
       { timeout: 10_000 },
@@ -289,7 +289,7 @@ test('M5 工具栏：新建 Issue 全流程 + CSV 导出 + 关于弹窗', async 
           const k = document.querySelector('oas-kanban') as HTMLElement & {
             cards?: Array<{ column: string; title: string }>
           }
-          const todo = (k.cards ?? []).filter((x) => x.column === 'todo')
+          const todo = (k?.cards ?? []).filter((x) => x.column === 'todo')
           return todo.length ? todo[todo.length - 1].title : ''
         }),
       { timeout: 10_000 },
@@ -728,7 +728,7 @@ test('M15 批量操作：勾选两条 → 批量改状态 → 删除一条', asy
           const k = document.querySelector('oas-kanban') as HTMLElement & {
             cards?: Array<{ column: string }>
           }
-          return (k.cards ?? []).filter((x) => x.column === 'done').length
+          return (k?.cards ?? []).filter((x) => x.column === 'done').length
         }),
       { timeout: 10_000 },
     )

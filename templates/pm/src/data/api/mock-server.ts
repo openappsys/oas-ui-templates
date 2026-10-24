@@ -1074,6 +1074,8 @@ function routeProjects(
     if (!project) fail(404, 'project not found')
     if (store.issues.some((i) => i.projectId === second)) fail(409, 'project has issues')
     store.projects = store.projects.filter((p) => p.id !== second)
+    store.projectMembers = store.projectMembers.filter((a) => a.projectId !== second)
+    store.projectRoles = store.projectRoles.filter((a) => a.projectId !== second)
     store.revision += 1
     return ok({ ok: true })
   }
@@ -1128,6 +1130,8 @@ function routeMembers(
     for (const issue of store.issues) {
       if (issue.assigneeId === second) issue.assigneeId = null
     }
+    store.projectMembers = store.projectMembers.filter((a) => a.memberId !== second)
+    store.projectRoles = store.projectRoles.filter((a) => a.memberId !== second)
     store.members = store.members.filter((m) => m.id !== second)
     store.revision += 1
     return ok({ ok: true })
@@ -1481,6 +1485,9 @@ function routeProjectMembers(
       fail(400, 'unknown member')
     }
     store.projectMembers = store.projectMembers.filter((a) => a.projectId !== projectId)
+    store.projectRoles = store.projectRoles.filter(
+      (a) => a.projectId !== projectId || memberIds.includes(a.memberId),
+    )
     store.projectMembers.push(
       ...memberIds.map((memberId) => ({
         id: `${projectId}:${memberId}`,

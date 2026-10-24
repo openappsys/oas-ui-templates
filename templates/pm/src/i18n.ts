@@ -307,7 +307,9 @@ const dict = {
     roleScopeWorkspace: '工作区',
     roleScopeProject: '项目',
     projRoleTitle: '项目角色覆盖',
-    projRoleHint: '成员在指定项目内使用项目角色；未覆盖时继承工作区角色。工作区 admin 不受覆盖。',
+    projRoleHint:
+      '成员在指定项目内使用项目角色；未覆盖时继承工作区角色。工作区 admin 不受覆盖。只列出项目成员。',
+    projRoleNoMembers: '暂无项目成员',
     projRoleProject: '项目',
     projRoleMember: '成员',
     projRoleRole: '项目角色',
@@ -761,7 +763,8 @@ const dict = {
     roleScopeProject: 'Project',
     projRoleTitle: 'Project role overrides',
     projRoleHint:
-      'A member uses the project role inside the selected project; otherwise the workspace role applies. Workspace admins are never overridden.',
+      'A member uses the project role inside the selected project; otherwise the workspace role applies. Workspace admins are never overridden. Only project members are listed.',
+    projRoleNoMembers: 'No project members',
     projRoleProject: 'Project',
     projRoleMember: 'Member',
     projRoleRole: 'Project role',

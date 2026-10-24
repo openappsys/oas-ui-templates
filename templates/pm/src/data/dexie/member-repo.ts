@@ -26,7 +26,7 @@ export function createDexieMemberRepository(db: PMDatabase): MemberRepository {
         })
         .then(() => undefined),
     delete: (id) =>
-      db.transaction('rw', db.members, db.issues, async () => {
+      db.transaction('rw', db.members, db.issues, db.projectMembers, db.projectRoles, async () => {
         const target = await db.members.get(id)
         if (!target) return
         if (target.role === 'admin') {
@@ -34,6 +34,8 @@ export function createDexieMemberRepository(db: PMDatabase): MemberRepository {
           if (admins <= 1) throw new Error('cannot remove the last admin')
         }
         await db.issues.where('assigneeId').equals(id).modify({ assigneeId: null })
+        await db.projectMembers.where('memberId').equals(id).delete()
+        await db.projectRoles.where('memberId').equals(id).delete()
         await db.members.delete(id)
       }),
   }

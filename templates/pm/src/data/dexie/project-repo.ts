@@ -23,9 +23,11 @@ export function createDexieProjectRepository(db: PMDatabase): ProjectRepository 
     create: (p: Project) => db.projects.add(p).then(() => undefined),
     update: (id, changes) => db.projects.update(id, changes).then(() => undefined),
     delete: (id) =>
-      db.transaction('rw', db.projects, db.issues, async () => {
+      db.transaction('rw', db.projects, db.issues, db.projectMembers, db.projectRoles, async () => {
         const count = await db.issues.where('projectId').equals(id).count()
         if (count > 0) throw new Error('project has issues')
+        await db.projectMembers.where('projectId').equals(id).delete()
+        await db.projectRoles.where('projectId').equals(id).delete()
         await db.projects.delete(id)
       }),
     allocateKey: (projectId: string) =>

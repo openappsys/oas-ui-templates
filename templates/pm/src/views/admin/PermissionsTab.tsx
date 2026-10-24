@@ -145,6 +145,7 @@ export function PermissionsTab({
     projectRoles: projectRolesRepo,
     projects: projectsRepo,
     members: membersRepo,
+    projectMembers: projectMembersRepo,
   } = useRepositories()
   const roles = useObservable(() => rolesRepo.liveAll(), [rolesRepo])
   const [auditLimit, setAuditLimit] = useState(20)
@@ -152,6 +153,7 @@ export function PermissionsTab({
   const assignments = useObservable(() => projectRolesRepo.liveAll(), [projectRolesRepo])
   const projects = useObservable(() => projectsRepo.liveAll(), [projectsRepo])
   const members = useObservable(() => membersRepo.liveAll(), [membersRepo])
+  const projectMembers = useObservable(() => projectMembersRepo.liveAll(), [projectMembersRepo])
   const memberMap = useMemo(() => new Map((members ?? []).map((m) => [m.id, m])), [members])
   const projectMap = useMemo(() => new Map((projects ?? []).map((p) => [p.id, p])), [projects])
 
@@ -194,6 +196,19 @@ export function PermissionsTab({
   const [ovRole, setOvRole] = useState(INHERIT)
   const [auditQuery, setAuditQuery] = useState('')
 
+  const accessMemberIds = useMemo(
+    () =>
+      new Set(
+        (projectMembers ?? []).filter((a) => a.projectId === ovProject).map((a) => a.memberId),
+      ),
+    [projectMembers, ovProject],
+  )
+  // 项目访问只对项目成员开放：非项目成员不应有项目级覆盖
+  const accessMembers = useMemo(
+    () => (members ?? []).filter((m) => accessMemberIds.has(m.id)),
+    [members, accessMemberIds],
+  )
+
   const builtins = useMemo(() => (roles ?? []).filter((r) => r.builtin), [roles])
   const custom = useMemo(() => (roles ?? []).filter((r) => !r.builtin), [roles])
   const projectRoles = useMemo(
@@ -234,8 +249,15 @@ export function PermissionsTab({
 
   useEffect(() => {
     if (!ovProject && projects?.length) setOvProject(projects[0].id)
-    if (!ovMember && members?.length) setOvMember(members[0].id)
-  }, [projects, members, ovProject, ovMember])
+  }, [projects, ovProject])
+
+  useEffect(() => {
+    if (!ovProject) return
+    if (!ovMember || !accessMemberIds.has(ovMember)) {
+      const first = (members ?? []).find((m) => accessMemberIds.has(m.id))
+      setOvMember(first?.id ?? '')
+    }
+  }, [ovProject, ovMember, accessMemberIds, members])
 
   const log = (action: string, target: string, detail?: string) => {
     void auditRepo.add({
@@ -533,6 +555,10 @@ export function PermissionsTab({
     role ? (role.builtin ? builtinLabel(role.id) : role.name) : t('projRoleInherit')
   const selectedMember = (members ?? []).find((m) => m.id === ovMember)
   const workspaceRole = roles?.find((r) => r.id === selectedMember?.role)
+  const accessAssignments = useMemo(
+    () => (assignments ?? []).filter((a) => a.projectId === ovProject),
+    [assignments, ovProject],
+  )
   const override = (assignments ?? []).find(
     (a) => a.projectId === ovProject && a.memberId === ovMember,
   )
@@ -849,7 +875,8 @@ export function PermissionsTab({
                 ariaLabel={t('projRoleMember')}
                 value={ovMember}
                 searchable
-                options={(members ?? []).map((m) => ({ label: m.name, value: m.id }))}
+                placeholder={accessMembers.length === 0 ? t('projRoleNoMembers') : undefined}
+                options={accessMembers.map((m) => ({ label: m.name, value: m.id }))}
                 onChange={setOvMember}
               />
             </div>
@@ -859,7 +886,7 @@ export function PermissionsTab({
                 testid="proj-role-role"
                 ariaLabel={t('projRoleRole')}
                 value={ovRole}
-                disabled={isWorkspaceAdmin}
+                disabled={!ovMember || isWorkspaceAdmin}
                 options={[
                   { label: t('projRoleInherit'), value: INHERIT },
                   ...projectRoles.map((r) => ({ label: r.name, value: r.id })),
@@ -871,7 +898,7 @@ export function PermissionsTab({
               type="primary"
               size="small"
               data-testid="proj-role-apply"
-              disabled={isWorkspaceAdmin ? '' : undefined}
+              disabled={!ovMember || isWorkspaceAdmin ? '' : undefined}
               onClick={() => void applyProjectRole()}
             >
               {t('projRoleApply')}
@@ -887,22 +914,31 @@ export function PermissionsTab({
           <div className="proj-role-effective" data-testid="proj-role-effective">
             <div>
               <span>{t('projRoleWorkspaceRole')}</span>
-              <strong>{roleDisplay(workspaceRole)}</strong>
+              <strong>{selectedMember ? roleDisplay(workspaceRole) : '—'}</strong>
             </div>
             <div>
               <span>{t('projRoleOverride')}</span>
-              <strong>{overrideRole ? roleDisplay(overrideRole) : t('projRoleNone')}</strong>
+              <strong>
+                {!selectedMember
+                  ? '—'
+                  : overrideRole
+                    ? roleDisplay(overrideRole)
+                    : t('projRoleNone')}
+              </strong>
             </div>
             <div>
               <span>{t('projRoleEffectiveLabel')}</span>
-              <strong>{roleDisplay(finalRole)}</strong>
+              <strong>{selectedMember ? roleDisplay(finalRole) : '—'}</strong>
             </div>
           </div>
 
-          <p className="admin-panel-title proj-role-list-title">{t('projRoleAssignments')}</p>
-          {(assignments ?? []).length > 0 ? (
+          <p className="admin-panel-title proj-role-list-title">
+            {t('projRoleAssignments')}
+            {accessAssignments.length > 0 ? ` · ${accessAssignments.length}` : ''}
+          </p>
+          {accessAssignments.length > 0 ? (
             <ul className="proj-role-list" data-testid="proj-role-list">
-              {assignments?.map((a) => (
+              {accessAssignments.map((a) => (
                 <li key={a.id}>
                   <span className="proj-role-target">
                     {projectMap.get(a.projectId)?.name ?? a.projectId} /{' '}

@@ -150,7 +150,7 @@ test('P1 viewer 只读：无新建/多选/详情编辑/评论/删除，看板不
 
   const attempted = await page.evaluate(() => {
     const k = document.querySelector('oas-kanban') as HTMLElement & { cards?: BoardCards }
-    const card = (k.cards ?? []).find((x) => x.column !== 'done')
+    const card = (k?.cards ?? []).find((x) => x.column !== 'done')
     if (!card) return null
     k.dispatchEvent(
       new CustomEvent('oas-change', {
@@ -284,7 +284,7 @@ test('P5 看板门禁：member 拖自己的卡持久化，他人的卡不持久�
 
   const own = await page.evaluate(() => {
     const k = document.querySelector('oas-kanban') as HTMLElement & { cards?: BoardCards }
-    const card = (k.cards ?? []).find((x) => x.assigneeId === 'member-2' && x.column !== 'done')
+    const card = (k?.cards ?? []).find((x) => x.assigneeId === 'member-2' && x.column !== 'done')
     if (!card) return null
     k.dispatchEvent(
       new CustomEvent('oas-change', {
@@ -307,7 +307,7 @@ test('P5 看板门禁：member 拖自己的卡持久化，他人的卡不持久�
 
   const other = await page.evaluate(() => {
     const k = document.querySelector('oas-kanban') as HTMLElement & { cards?: BoardCards }
-    const card = (k.cards ?? []).find((x) => x.assigneeId === 'member-1' && x.column !== 'done')
+    const card = (k?.cards ?? []).find((x) => x.assigneeId === 'member-1' && x.column !== 'done')
     if (!card) return null
     k.dispatchEvent(
       new CustomEvent('oas-change', {

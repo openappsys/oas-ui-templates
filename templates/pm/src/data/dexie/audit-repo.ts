@@ -33,7 +33,13 @@ export function createDexieProjectMemberRepository(db: PMDatabase): ProjectMembe
     liveAll: () => fromLiveQuery(() => db.projectMembers.toArray()),
     setMembers: (projectId, memberIds) =>
       db
-        .transaction('rw', db.projectMembers, async () => {
+        .transaction('rw', db.projectMembers, db.projectRoles, async () => {
+          const keep = new Set(memberIds)
+          const overrides = await db.projectRoles.where('projectId').equals(projectId).toArray()
+          const stale = overrides.filter((a) => !keep.has(a.memberId))
+          if (stale.length > 0) {
+            await db.projectRoles.bulkDelete(stale.map((a) => a.id))
+          }
           await db.projectMembers.where('projectId').equals(projectId).delete()
           if (memberIds.length > 0) {
             await db.projectMembers.bulkPut(

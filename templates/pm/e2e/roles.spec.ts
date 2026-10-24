@@ -211,6 +211,40 @@ test('RL3 项目级角色：项目内覆盖生效、项目外继承工作区，�
     .locator('[part="item"][data-value="project:project-1"]')
     .click()
   await expect(page.getByTestId('toolbar-new')).toHaveCount(0)
+
+  // 从项目移除成员时清理其项目角色覆盖（否则留下悬空授权）
+  await switchUser(page, 'member-1')
+  await page.getByTestId('admin-entry').click()
+  await page.getByTestId('admin-nav-projects').click()
+  await page.getByTestId('admin-project-members-project-2').click()
+  await page.getByTestId('admin-project-members-select').evaluate((el) => {
+    const ids = ['member-1', 'member-3', 'member-4', 'member-5']
+    ;(el as HTMLElement & { value?: string[] }).value = ids
+    el.dispatchEvent(new CustomEvent('oas-change', { bubbles: true, detail: { value: ids } }))
+  })
+  await page.getByTestId('admin-project-members-save').click()
+  await page.getByTestId('admin-nav-permissions').click()
+  await page
+    .getByTestId('perm-tabs')
+    .getByRole('tab', { name: /项目访问|Project access/ })
+    .click()
+  await page.getByTestId('proj-role-project').evaluate((el) => {
+    ;(el as HTMLElement & { value?: string }).value = 'project-2'
+    el.dispatchEvent(
+      new CustomEvent('oas-change', { bubbles: true, detail: { value: 'project-2' } }),
+    )
+  })
+  await expect(page.getByTestId('proj-role-list')).toHaveCount(0, { timeout: 10_000 })
+
+  // 空成员项目：无成员可选，应用禁用，预览不冒充角色
+  await page.getByTestId('proj-role-project').evaluate((el) => {
+    ;(el as HTMLElement & { value?: string }).value = 'project-3'
+    el.dispatchEvent(
+      new CustomEvent('oas-change', { bubbles: true, detail: { value: 'project-3' } }),
+    )
+  })
+  await expect(page.getByTestId('proj-role-apply')).toHaveAttribute('disabled', '')
+  await expect(page.getByTestId('proj-role-effective')).toContainText('—')
 })
 
 test('RL4 权限页可用性：复制内置角色、组全选/取消、角色搜索、审计筛选', async ({ page }) => {
