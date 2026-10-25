@@ -894,6 +894,7 @@ function Workspace({
           value: 'group:labels',
           kind: 'group',
           label: t('labels'),
+          count: String(labelRows.length - 1),
           collapseKey: 'labels',
           children: labelRows,
         },
