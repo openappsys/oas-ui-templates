@@ -2828,6 +2828,10 @@ oas-drawer::part(close):focus-visible {
   padding: 0;
   list-style: none;
 }
+.proj-role-list:focus,
+.perm-role-list:focus {
+  outline: none;
+}
 .proj-role-list li {
   display: flex;
   align-items: center;

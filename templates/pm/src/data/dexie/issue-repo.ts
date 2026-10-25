@@ -141,6 +141,15 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
           const stale = notifs.filter((n) => n.issueId === id).map((n) => n.id)
           if (stale.length > 0) await db.notifications.bulkDelete(stale)
           await db.issues.where('parentId').equals(id).modify({ parentId: null })
+          // 清理其他 Issue 的 relations 指向（无索引，purge 低频可接受全表过滤）
+          const referring = await db.issues
+            .filter((i) => (i.relations ?? []).some((r) => r.targetId === id))
+            .toArray()
+          for (const r of referring) {
+            await db.issues.update(r.id, {
+              relations: (r.relations ?? []).filter((x) => x.targetId !== id),
+            })
+          }
         },
       )
     },
@@ -402,6 +411,9 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
 
     liveAssigneeWorkload(projectId: string) {
       return fromLiveQuery(async () => {
+        // 注意：这里不能用 each() 游标——真实 IndexedDB 下 liveQuery + table.each()
+        // 有回归（侧栏成员计数为空，fake-indexeddb 单测无法复现，见 sidebar S3）。
+        // toArray 一次性物化后聚合是已验证正确的行为；内存峰值可接受（仅管理员页订阅）。
         const rows =
           projectId === ALL_PROJECTS
             ? await db.issues.toArray()

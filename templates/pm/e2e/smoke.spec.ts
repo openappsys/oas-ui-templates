@@ -1046,6 +1046,15 @@ test('M23 评论显示三模式：一级线程 / 无限嵌套 / 无嵌套 + 删�
     .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-comment-mode')))
     .toBe('nested')
 
+  // 跨设备跟随：清掉本地缓存，reload 后模式仍由成员档案字段恢复
+  await page.evaluate(() => localStorage.removeItem('oas-pm-comment-mode'))
+  await page.reload()
+  await page.getByTestId('pm-toolbar').waitFor({ timeout: 60_000 })
+  await page.locator('.issue-row').first().click()
+  await page.getByTestId('comments-block').waitFor({ timeout: 10_000 })
+  await expect(page.getByTestId('comment-replies')).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByTestId('comment-reply-item')).toHaveCount(2)
+
   // 切「无嵌套」：全部按时间平铺，无回复容器，回复带「↳ 回复 @作者」标记
   await setMode('flat')
   await expect(page.getByTestId('comment-replies')).toHaveCount(0, { timeout: 10_000 })

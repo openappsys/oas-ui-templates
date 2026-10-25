@@ -90,22 +90,41 @@ export function createDexieAdminRepository(db: PMDatabase): AdminRepository {
         const projects = await db.projects.toArray()
         const now = Date.now()
         const day = 86400000
-        return Promise.all(
-          projects.map(async (p) => {
-            const rows = await db.issues.where('projectId').equals(p.id).toArray()
-            // 软删行不计入健康度（按项目索引取回后本地剔除，行数即项目规模）
-            const own = rows.filter((i) => i.deletedAt == null)
-            const open = own.filter((i) => i.status !== 'done' && i.status !== 'cancelled')
-            return {
-              projectId: p.id,
-              name: p.name,
-              total: own.length,
-              overdue: open.filter((i) => i.dueAt !== null && i.dueAt < now).length,
-              unassigned: open.filter((i) => !i.assigneeId).length,
-              stale: open.filter((i) => i.updatedAt < now - 14 * day).length,
-            }
-          }),
-        )
+        const staleCutoff = now - 14 * day
+        // each() 游标单趟聚合：不 per-project 物化全部 Issue（10 万级下管理页卡顿主因）
+        type Acc = {
+          total: number
+          open: number
+          overdue: number
+          unassigned: number
+          stale: number
+        }
+        const acc = new Map<string, Acc>()
+        for (const p of projects) {
+          acc.set(p.id, { total: 0, open: 0, overdue: 0, unassigned: 0, stale: 0 })
+        }
+        await db.issues.each((i) => {
+          if (i.deletedAt != null) return
+          const a = acc.get(i.projectId)
+          if (!a) return
+          a.total++
+          if (i.status === 'done' || i.status === 'cancelled') return
+          a.open++
+          if (i.dueAt !== null && i.dueAt < now) a.overdue++
+          if (!i.assigneeId) a.unassigned++
+          if (i.updatedAt < staleCutoff) a.stale++
+        })
+        return projects.map((p) => {
+          const a = acc.get(p.id) ?? { total: 0, open: 0, overdue: 0, unassigned: 0, stale: 0 }
+          return {
+            projectId: p.id,
+            name: p.name,
+            total: a.total,
+            overdue: a.overdue,
+            unassigned: a.unassigned,
+            stale: a.stale,
+          }
+        })
       }),
     exportAll: async () => {
       const [

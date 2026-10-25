@@ -69,12 +69,18 @@ function CommentsBlock({
   memberMap,
   currentUser,
   can,
+  preferredMode,
+  onModeChange,
 }: {
   issueId: string
   projectId: string
   memberMap: Map<string, Member>
   currentUser: string
   can: (action: Action, ctx?: Ctx) => boolean
+  /** 成员档案里的显示模式（跨设备跟随）；缺省回落本地偏好 */
+  preferredMode?: CommentMode
+  /** 切换模式时持久化到成员档案（本地 localStorage 同步写一份做缓存兜底） */
+  onModeChange?: (m: CommentMode) => void
 }) {
   const { comments: commentsRepo, activities: activitiesRepo } = useRepositories()
   const comments = useObservable(() => commentsRepo.liveByIssue(issueId), [issueId, commentsRepo])
@@ -83,11 +89,17 @@ function CommentsBlock({
   const replyRef = useRef<HTMLInputElement>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [replyTo, setReplyTo] = useState<string | null>(null)
-  const [mode, setMode] = useState<CommentMode>(() => loadCommentMode())
+  const [mode, setMode] = useState<CommentMode>(() => preferredMode ?? loadCommentMode())
+  // 成员档案字段优先（跨设备跟随）；无档案值回落本地缓存
+  useEffect(() => {
+    if (preferredMode && preferredMode !== mode) setMode(preferredMode)
+    // biome-ignore lint/correctness/useExhaustiveDependencies: 仅跟随档案值，避免本地切换被旧值回写
+  }, [preferredMode])
   const changeMode = (v: string) => {
     const next: CommentMode = v === 'flat' ? 'flat' : v === 'nested' ? 'nested' : 'thread'
     setMode(next)
     storeCommentMode(next)
+    onModeChange?.(next)
   }
 
   const submit = async () => {
@@ -398,7 +410,12 @@ export function IssueDetailDrawer({
   /** 删除成功（软删除）：交给宿主弹「撤销」提示 */
   onDeleted?: (issue: Issue) => void
 }) {
-  const { issues: issuesRepo, activities: activitiesRepo, cycles: cyclesRepo } = useRepositories()
+  const {
+    issues: issuesRepo,
+    activities: activitiesRepo,
+    cycles: cyclesRepo,
+    members: membersRepo,
+  } = useRepositories()
   const issue = useObservable(() => issuesRepo.live(issueId), [issueId, issuesRepo])
   const subs = useObservable(() => issuesRepo.liveSubIssues(issueId), [issueId, issuesRepo])
   // 迭代下拉只列本项目的周期（跨项目周期不可写）；issue 未加载时订阅空项目 id
@@ -934,6 +951,12 @@ export function IssueDetailDrawer({
           memberMap={memberMap}
           currentUser={currentUser}
           can={can}
+          preferredMode={memberMap.get(currentUser)?.commentMode}
+          onModeChange={(m) => {
+            void membersRepo
+              .update(currentUser, { commentMode: m })
+              .catch((e) => console.error('[commentMode]', e))
+          }}
         />
         <DrawerActivities issueId={issue.id} memberMap={memberMap} />
         <div className="detail-foot">

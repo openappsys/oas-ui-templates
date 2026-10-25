@@ -269,6 +269,19 @@ describe('自助资料与身份边界', () => {
     expect(ok.status).toBe(200)
     expect(store.members.find((m) => m.id === me.id)?.name).toBe('New Name')
 
+    const mode = send(store, 'PATCH', `/api/members/${me.id}`, {
+      body: { changes: { commentMode: 'nested' } },
+      bearer: token,
+    })
+    expect(mode.status).toBe(200)
+    expect(store.members.find((m) => m.id === me.id)?.commentMode).toBe('nested')
+
+    const badMode = send(store, 'PATCH', `/api/members/${me.id}`, {
+      body: { changes: { commentMode: 'bogus' } },
+      bearer: token,
+    })
+    expect(badMode.status).toBe(400)
+
     const bad = send(store, 'PATCH', `/api/members/${me.id}`, {
       body: { changes: { role: 'admin' } },
       bearer: token,

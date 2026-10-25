@@ -127,7 +127,8 @@ Endpoint gating:
 | No token | `401` |
 
 Self-service: `PATCH /api/members/:me` skips the admin gate. Without `member:manage`, only
-`name`, `title`, `timezone` and `avatarColor` are accepted; `email` and `role` are admin-managed
+`name`, `title`, `timezone`, `avatarColor` and `commentMode` (`flat|thread|nested`) are accepted;
+`email` and `role` are admin-managed
 (`403 "field is admin-managed"`).
 
 A denied call returns `403` with `{ "error": "permission denied" }`. The frontend also hides these
@@ -632,6 +633,7 @@ type Member = {
   id: string; name: string; email: string; avatarColor: string
   role: string                      // built-in id or custom role id
   title?: string; timezone?: string
+  commentMode?: 'flat' | 'thread' | 'nested'  // comment display preference
 }
 
 type Cycle = {

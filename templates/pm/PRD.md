@@ -106,7 +106,7 @@ OAS PM
 |----|----------|------|
 | **issues** | `id, projectId, key, title, description, status, priority, assigneeId, reporterId, labels[], startAt, dueAt, createdAt, updatedAt, order, parentId?, completedAt?, relations?, cycleId?, deletedAt?` | 工作项；`parentId` 仅一层子任务；`deletedAt` 缺失/null = 在库；`cycleId` 空 = 未入迭代 |
 | **projects** | `id, name, key, description, leadId, createdAt, nextKeyNum?` | 项目；`key` 唯一；`nextKeyNum` 事务内严格递增 |
-| **members** | `id, name, email, avatarColor, role, title?, timezone?` | 成员；`role` 可指向内置或自定义角色 id |
+| **members** | `id, name, email, avatarColor, role, title?, timezone?, commentMode?` | 成员；`role` 可指向内置或自定义角色 id；`commentMode` 为评论显示模式偏好 |
 | **comments** | `id, issueId, authorId, body, createdAt, parentId?` | 纯文本评论 + `@提及` 约定；回复线程（`parentId` 存直接父评论，数据为真实树，渲染模式用户可切） |
 | **savedViews** | `id, name, filters(JSON), createdAt` | 保存的筛选视图（不含 search） |
 | **activities** | `id, issueId, actorId, type, field?, from?, to?, createdAt` | 字段级活动审计 |
@@ -237,7 +237,7 @@ v14 的 `issues` 索引：
 | F-31 | 子任务 | 一层子任务：添加、勾选完成/还原、跳转 | 独立 Issue（`parentId`） |
 | F-32 | 关联 | 添加/移除 `blocks / blocked-by / relates` | 候选集为当前项目前 100 条存活 Issue |
 | F-33 | 标签 | 预置标签 + 自由输入（`oas-dynamic-tags`） | 增删即时保存 |
-| F-34 | 评论 | 添加/编辑/删除；回复线程（数据为真实树）；三种显示模式用户可切：**无嵌套**（时间轴 + ↳标记）/ **一级嵌套**（回复挂根，后代平铺）/ **无限嵌套**（整棵树逐层渲染）；`@中英文名` 高亮 | 成员仅作者本人可改删（admin 不受限）；模式偏好本地持久化 |
+| F-34 | 评论 | 添加/编辑/删除；回复线程（数据为真实树）；三种显示模式用户可切：**无嵌套**（时间轴 + ↳标记）/ **一级嵌套**（回复挂根，后代平铺）/ **无限嵌套**（整棵树逐层渲染）；`@中英文名` 高亮 | 成员仅作者本人可改删（admin 不受限）；模式偏好存成员档案（跨设备跟随）+ 本地缓存兜底 |
 | F-35 | 活动历史 | 字段级 diff（谁/改什么/从→到/何时） | 状态→done 记录 `completedAt` |
 | F-36 | 软删除与撤销 | 删除只写 `deletedAt`，顶部 6 秒撤销条可批量恢复 | `updatedAt` 不变，恢复后回原位 |
 | F-37 | 批量操作 | 改状态/优先级/负责人在事务内逐条写并记活动（`bulk:apply`）；批量删除为软删除（`bulk:delete`） | 已删除行不参与改写 |

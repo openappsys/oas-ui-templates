@@ -1159,6 +1159,11 @@ function routeIssues(
     for (const child of store.issues) {
       if (child.parentId === id) child.parentId = null
     }
+    for (const other of store.issues) {
+      if ((other.relations ?? []).some((r) => r.targetId === id)) {
+        other.relations = (other.relations ?? []).filter((r) => r.targetId !== id)
+      }
+    }
     store.revision += 1
     return ok({ ok: true })
   }
@@ -1336,10 +1341,16 @@ function routeMembers(
     const changes = asRecord(asRecord(body).changes)
     const self = actor.id === member.id
     if (self) {
-      // 自助资料只允许白名单字段；角色仅工作区管理员可自助调整，邮箱仍由管理员维护
+      // 自助资料白名单：角色仅工作区管理员可自助调整，邮箱仍由管理员维护
       const canRole = canAction(store, actor, 'workspace:manage')
       for (const key of Object.keys(changes)) {
         if (key === 'role' && canRole) continue
+        if (key === 'commentMode') {
+          if (!['flat', 'thread', 'nested'].includes(String(changes.commentMode))) {
+            fail(400, 'invalid commentMode')
+          }
+          continue
+        }
         if (!['name', 'title', 'timezone', 'avatarColor'].includes(key)) {
           fail(403, 'field is admin-managed')
         }

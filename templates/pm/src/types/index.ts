@@ -66,6 +66,8 @@ export interface Member {
   /** 个人资料补充字段（可选，旧数据缺省为空） */
   title?: string
   timezone?: string
+  /** 评论显示模式偏好（成员档案字段，跨设备跟随；缺省回落本地缓存） */
+  commentMode?: 'flat' | 'thread' | 'nested'
 }
 
 /** 审计：角色/分配等管理变更（只追加） */

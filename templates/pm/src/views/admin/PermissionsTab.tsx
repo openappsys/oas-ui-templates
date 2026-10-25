@@ -344,6 +344,11 @@ export function PermissionsTab({
     setSaved('')
   }
 
+  const roleListRef = useRef<HTMLElement>(null)
+  const projListRef = useRef<HTMLUListElement>(null)
+  /** 删除/复制后焦点归还角色列表（按钮随行卸载，不归还会落到 body） */
+  const focusRoleList = () => requestAnimationFrame(() => roleListRef.current?.focus())
+
   const duplicateBuiltin = async (builtin: Role) => {
     const id = `role-${nanoid(6)}`
     const created: Role = {
@@ -360,6 +365,7 @@ export function PermissionsTab({
       log('role.create', created.name)
       select(created)
       setSaved(t('permRoleSaved'))
+      focusRoleList()
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     } finally {
@@ -441,6 +447,7 @@ export function PermissionsTab({
       log('role.delete', selected.name)
       setSelectedId('admin')
       setSaved('')
+      focusRoleList()
     } catch {
       setError(t('permRoleInUse'))
     } finally {
@@ -490,6 +497,7 @@ export function PermissionsTab({
         }`,
       )
       setSaved(t('permRoleSaved'))
+      requestAnimationFrame(() => projListRef.current?.focus())
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     }
@@ -695,7 +703,12 @@ export function PermissionsTab({
 
       {tab === 'roles' && canWorkspace && (
         <div className="perm-layout" data-testid="perm-roles-tab">
-          <aside className="perm-role-list" data-testid="admin-custom-roles">
+          <aside
+            className="perm-role-list"
+            tabIndex={-1}
+            ref={roleListRef}
+            data-testid="admin-custom-roles"
+          >
             <oas-input
               value={roleQuery}
               aria-label={t('permSearchRoles')}
@@ -1028,7 +1041,12 @@ export function PermissionsTab({
             {accessAssignments.length > 0 ? ` · ${accessAssignments.length}` : ''}
           </p>
           {accessAssignments.length > 0 ? (
-            <ul className="proj-role-list" data-testid="proj-role-list">
+            <ul
+              className="proj-role-list"
+              tabIndex={-1}
+              ref={projListRef}
+              data-testid="proj-role-list"
+            >
               {accessAssignments.map((a) => (
                 <li key={a.id}>
                   <span className="proj-role-target">
