@@ -51,7 +51,7 @@ export function mentionedMemberIds(body: string, members: Member[]): string[] {
   return out
 }
 
-/** 评论通知规则：@提及 → mention；否则 Issue 负责人收到 comment。
+/** 评论通知规则：@提及 → mention；否则 Issue 负责人收到 comment；关注者收到 comment。
  *  自己触发的不通知自己；负责人被 @ 时只收 mention，不重复收 comment。 */
 export function commentNotificationDrafts(input: {
   issueId: string
@@ -59,6 +59,7 @@ export function commentNotificationDrafts(input: {
   actorId: string
   body: string
   members: Member[]
+  watchers?: string[]
 }): NotificationDraft[] {
   const { issueId, issueAssigneeId, actorId, body, members } = input
   const message = snippet(body)
@@ -73,13 +74,21 @@ export function commentNotificationDrafts(input: {
   if (issueAssigneeId && issueAssigneeId !== actorId && !mentioned.includes(issueAssigneeId)) {
     drafts.push({ memberId: issueAssigneeId, type: 'comment', issueId, actorId, message })
   }
+  // 关注者：非 actor、未被上面覆盖的都收 comment 通知
+  const notified = new Set([actorId, ...mentioned, issueAssigneeId ?? ''])
+  for (const w of input.watchers ?? []) {
+    if (w !== actorId && !notified.has(w)) {
+      drafts.push({ memberId: w, type: 'comment', issueId, actorId, message })
+      notified.add(w)
+    }
+  }
   return drafts
 }
 
 const CLOSING_STATUS: IssueStatus[] = ['done', 'cancelled']
 
-/** 字段变更通知规则：指派给新人 → assigned；关闭类状态 → status 给当前负责人。
- *  自己触发的不通知自己；解除指派不通知。 */
+/** 字段变更通知规则：指派给新人 → assigned；关闭类状态 → status 给当前负责人；
+ *  关注者收到 status 通知。自己触发的不通知自己；解除指派不通知。 */
 export function issueChangeNotificationDrafts(input: {
   issueId: string
   actorId: string
@@ -87,6 +96,7 @@ export function issueChangeNotificationDrafts(input: {
   nextAssigneeId?: string | null
   prevStatus?: IssueStatus
   nextStatus?: IssueStatus
+  watchers?: string[]
 }): NotificationDraft[] {
   const { issueId, actorId, prevAssigneeId } = input
   const out: NotificationDraft[] = []
@@ -108,6 +118,15 @@ export function issueChangeNotificationDrafts(input: {
     !justAssigned
   ) {
     out.push({ memberId: owner, type: 'status', issueId, actorId, message: nextStatus })
+  }
+  // 关注者：非 actor、未被上面覆盖的都收 status 通知
+  const notified = new Set<string>()
+  for (const d of out) notified.add(d.memberId)
+  for (const w of input.watchers ?? []) {
+    if (w !== actorId && !notified.has(w)) {
+      out.push({ memberId: w, type: 'status', issueId, actorId, message: nextStatus ?? '' })
+      notified.add(w)
+    }
   }
   return out
 }

@@ -1610,6 +1610,10 @@ function routeSavedViews(
   if (third) fail(404, 'not found')
   if (method === 'DELETE') {
     if (!canAction(store, actor, 'view:delete')) fail(403, 'permission denied')
+    const view = store.savedViews.find((v) => v.id === second)
+    if (view?.ownerId && view.ownerId !== actor.id) {
+      if (!canAction(store, actor, 'workspace:manage')) fail(403, 'not your view')
+    }
     store.savedViews = store.savedViews.filter((v) => v.id !== second)
     store.revision += 1
     return ok({ ok: true })

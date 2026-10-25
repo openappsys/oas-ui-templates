@@ -34,7 +34,12 @@ export async function notifyComment(
   const members = await db.members.toArray()
   await insertNotificationDrafts(
     db,
-    commentNotificationDrafts({ ...input, issueAssigneeId: issue.assigneeId, members }),
+    commentNotificationDrafts({
+      ...input,
+      issueAssigneeId: issue.assigneeId,
+      members,
+      watchers: issue.watchers ?? [],
+    }),
   )
 }
 
@@ -54,6 +59,7 @@ export async function notifyActivity(
         actorId: entry.actorId,
         prevAssigneeId: issue.assigneeId,
         nextAssigneeId: entry.to ? entry.to : null,
+        watchers: issue.watchers ?? [],
       })
     : issueChangeNotificationDrafts({
         issueId: entry.issueId,
@@ -61,6 +67,7 @@ export async function notifyActivity(
         prevAssigneeId: issue.assigneeId,
         prevStatus: issue.status,
         nextStatus: entry.to as IssueStatus | undefined,
+        watchers: issue.watchers ?? [],
       })
   await insertNotificationDrafts(db, drafts)
 }
