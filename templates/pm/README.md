@@ -43,10 +43,10 @@ pnpm build      # tsc6 类型检查 + vite 产物
 ### 本地模式（默认，生产构建固定此模式）
 
 IndexedDB（Dexie，schema **v14 / 13 张表**）本地持久化；首启自动 seed 演示数据：
-**2 个项目、8 个成员、3 个迭代、2 个示例保存视图、默认 100,000 条 Issue**（确定性 `mulberry32(42)`）。
+**2 个项目、8 个成员、3 个迭代、2 个示例保存视图、默认 20,000 条 Issue（测试可调至 100,000）**（确定性 `mulberry32(42)`）。
 
 - 规模可用 `localStorage['oas-pm-seed-size']` 调整，夹取到 `[1000, 100000]`；空/非法回落 100,000。
-- 实测 10 万条播种 **44–134s**（随机器负载波动）；播种期间显示准备屏，避免 liveQuery 被持续写入反复重启。
+- 实测 **2 万条约 5s**（冷启动，含首屏）；100K 口径 44–134s（随机器负载波动）；播种期间显示准备屏，避免 liveQuery 被持续写入反复重启。
 - 清 `localStorage['oas-pm-seed-v11']` 后刷新会**清表重播**（会丢掉现有数据，谨慎操作）；未清标记的旧库只补内置角色与项目成员，不重播。
 - e2e 每个用例都是全新上下文，固定用 **5,000** 条（`e2e/seed.ts`），与产品默认规模无关。
 - 数据层为 Repository 接口 + React Context 注入，默认 Dexie 实现，可替换为 REST 适配器。
@@ -133,10 +133,10 @@ Typecheck alone: `pnpm exec tsc6 --noEmit` (the TS6 compiler bin in this templat
 ### Local mode (default; production builds always use it)
 
 Local persistence in IndexedDB (Dexie, schema **v14 / 13 tables**). Demo data is seeded on first launch:
-**2 projects, 8 members, 3 cycles, 2 demo saved views, 100,000 issues by default** (deterministic `mulberry32(42)`).
+**2 projects, 8 members, 3 cycles, 2 demo saved views, 20,000 issues by default (tests can raise to 100,000)** (deterministic `mulberry32(42)`).
 
 - Adjust the size with `localStorage['oas-pm-seed-size']` (clamped to `[1000, 100000]`; empty/invalid falls back to 100,000).
-- Measured on 100K rows: **44–134s** (varies with machine load). A preparation screen shows during seeding so live queries are not starved by continuous writes.
+- Measured: **~5s for the 20K default** (cold boot incl. first paint); 100K took 44–134s (varies with machine load). A preparation screen shows during seeding so live queries are not starved by continuous writes.
 - Clear `localStorage['oas-pm-seed-v11']` and reload to **replay the seed** (this clears the tables and loses current data). An already-marked database only gets missing built-in roles and project members; data is not replayed.
 - Every e2e test uses a fresh context, so e2e runs **5,000** rows (`e2e/seed.ts`), independent of the product default.
 - The data layer is a Repository interface injected via React Context; Dexie is the default implementation and can be replaced by a REST adapter.
@@ -175,3 +175,7 @@ src/
 ├── i18n.ts       # zh/en dictionaries + t() + activity-log render mapping
 └── seed-db.ts    # demo data generation (versioned reseed)
 ```
+
+
+
+

@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 
 async function openApp(page: Page) {
-  // 播种规模：截图用例同样走 e2e 默认 5K（产品默认 10 万，截图内容与条数无关）
+  // 播种规模：截图用例同样走 e2e 默认 5K（$12 万，截图内容与条数无关）
   await page.addInitScript(() => localStorage.setItem('oas-pm-seed-size', '5000'))
   await page.goto('/')
   // 预算沿用 10 万口径：与主用例保持同一口径

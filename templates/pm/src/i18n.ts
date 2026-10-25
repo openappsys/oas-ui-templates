@@ -481,7 +481,7 @@ const dict = {
     viewName: '视图名称',
     saveViewPlaceholder: '如：我的进行中',
     aboutDesc:
-      '项目管理模板——React 19。默认实现为 Dexie/IndexedDB（local 模式）；api 模式走 REST 适配层。支持 10W~100W 级 Issue 的仪表盘、列表、看板与甘特图。',
+      '项目管理模板——React 19。默认实现为 Dexie/IndexedDB（local 模式）；api 模式走 REST 适配层。承载 2 万级演示 Issue（可配置至 10 万）的仪表盘、列表、看板与甘特图。',
   },
   en: {
     newIssue: '＋ New Issue',
@@ -960,7 +960,7 @@ const dict = {
     viewName: 'View name',
     saveViewPlaceholder: 'e.g. My in-progress issues',
     aboutDesc:
-      'A project management template built with React 19. The default implementation uses Dexie on IndexedDB (local mode). The api mode uses a REST adapter. Dashboard, list, board, and Gantt views support 100K–1M issues.',
+      'A project-management template on React 19: Dexie/IndexedDB (local mode) by default with a REST adapter for api mode. Dashboard, list, board, and Gantt views over 20K demo issues (configurable up to 100K).',
   },
 } as const
 

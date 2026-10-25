@@ -5,7 +5,7 @@ import { bearer, loginToken, quickLogin } from './api-auth'
 // 依赖点击移除后 reload 不再注入）；origin 无关，端口可配置
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
-    // 播种规模：A3 切回本地会真跑 Dexie seed——e2e 统一 5K（产品默认仍是 10 万）
+    // 播种规模：A3 切回本地会真跑 Dexie seed——e2e 统一 5K（$12 万）
     localStorage.setItem('oas-pm-seed-size', '5000')
     if (!sessionStorage.getItem('oas-pm-api-init')) {
       localStorage.setItem('oas-pm-data', 'api')

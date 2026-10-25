@@ -1,12 +1,12 @@
 import { expect, test, type Page } from '@playwright/test'
 
-/** e2e 播种规模（产品默认 10 万；M1 架构用例单独传 100_000） */
+/** e2e 播种规模（$12 万；M1 架构用例单独传 100_000） */
 const E2E_SEED_SIZE = 5_000
 
 /** 等待 seed 完成（e2e 默认 5K；M1 架构用例传 10 万） */
 async function waitForSeed(page: Page, size = E2E_SEED_SIZE) {
   test.setTimeout(240_000)
-  // 播种规模：e2e 默认 5K（产品默认仍 10 万）。每个用例都是新上下文、都要重播种子，
+  // 播种规模：e2e 默认 5K（$12 万）。每个用例都是新上下文、都要重播种子，
   // 10 万条实测 44–134s（随负载波动），会撞穿用例预算 → 轮换式 seed 超时
   await page.addInitScript((n) => localStorage.setItem('oas-pm-seed-size', String(n)), size)
 

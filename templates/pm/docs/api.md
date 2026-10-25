@@ -661,7 +661,8 @@ type ProjectMember = { id: string; projectId: string; memberId: string }
   trash ordering and cascade behavior match this contract; the trash UI is gated by
   `workspace:manage`. The list window default is 200 in both sources.
 - The local seed differs from the API seed by design: **local = 2 projects, 8 members, 3 cycles,
-  2 saved views, 100,000 issues** (adjustable via `oas-pm-seed-size`, 1000–100000); **API mock =
+  2 saved views, 20,000 issues by default** (adjustable via `oas-pm-seed-size`, 1000–100000, e2e
+  uses 5000 and the architecture test 100000); **API mock =
   3 projects, 8 members, 3 cycles, 2,000 issues**. Both use seed `42` and the same saved-view
   definitions.
 - Typecheck: `pnpm --filter pm exec tsc6 --noEmit` (the TS6 bin is `tsc6`, not `tsc`). Build:

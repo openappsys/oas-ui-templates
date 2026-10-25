@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { closeSettings, openSettings, settingsRadio } from './menus'
 
-/** e2e 播种规模（产品默认 10 万；M1 架构用例单独传 100_000） */
+/** e2e 播种规模（$12 万；M1 架构用例单独传 100_000） */
 const E2E_SEED_SIZE = 5_000
 
 async function waitForSeed(page: Page, size = E2E_SEED_SIZE) {

@@ -162,9 +162,9 @@ export async function seedDatabase(): Promise<void> {
   await db.cycles.bulkPut(cycles)
   const cycleById = new Map(cycles.map((c) => [c.id, c]))
 
-  // 播种规模可配（默认 10 万）：e2e 每用例新上下文都要重播，10 万条在负载波动下
-  // 44–134s，会撞穿用例预算；e2e 用 addInitScript 写 5K。派生规则（日程演示组/
-  // 周期归属按 idx 或末 N 条）都相对 ISSUE_COUNT，不随规模变化
+  // 播种规模可配（默认 2 万，首启秒级；上限 10 万供压测）：e2e 每用例新上下文都要重播，
+  // 10 万条会撞穿用例预算；e2e 用 addInitScript 写 5K（M1 架构用例写 10 万）。
+  // 派生规则（日程演示组/周期归属按 idx 或末 N 条）都相对 ISSUE_COUNT，不随规模变化
   const ISSUE_COUNT = parseSeedSize(localStorage.getItem(SEED_SIZE_KEY))
   const statuses = ['backlog', 'todo', 'in_progress', 'done', 'cancelled'] as const
   const priorities = ['urgent', 'high', 'medium', 'low'] as const

@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 
-/** e2e 播种规模（产品默认 10 万；本 spec 只验选择语义，5K 足够） */
+/** e2e 播种规模（$12 万；本 spec 只验选择语义，5K 足够） */
 const E2E_SEED_SIZE = 5_000
 
 async function waitForSeed(page: Page) {

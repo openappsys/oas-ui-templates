@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 
-/** e2e 播种规模（产品默认 10 万；与其他用例同口径） */
+/** e2e 播种规模（$12 万；与其他用例同口径） */
 const E2E_SEED_SIZE = 5_000
 
 /** seed v10 预置的示例保存视图（名称中英并列，见 src/lib/saved-views.ts） */

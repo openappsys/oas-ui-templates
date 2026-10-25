@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { closeSettings, openSettings, settingsAction } from './menus'
 
-// 播种规模：本 spec 只验文案，不验数据量——e2e 统一 5K（产品默认仍是 10 万），避免每用例重播 10 万条
+// 播种规模：本 spec 只验文案，不验数据量——e2e 统一 5K（$12 万），避免每用例重播 10 万条
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('oas-pm-seed-size', '5000'))
 })
