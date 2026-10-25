@@ -218,6 +218,11 @@ export function IssueListView({
       <span className="issue-key">{i.key}</span>
       <span className="issue-title">
         {i.title}
+        {Array.isArray(i.relations) && i.relations.some((r) => r.type === 'blocked-by') && (
+          <span className="blocked-badge" title={t('blockedTooltip')}>
+            ⛔
+          </span>
+        )}
         {subProgress?.get(i.id) && (
           <span className="sub-progress" style={{ marginLeft: 8 }}>
             <span

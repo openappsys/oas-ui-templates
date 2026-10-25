@@ -1386,6 +1386,16 @@ oas-app-bar.topbar {
   padding-left: 12px;
   border-left: 2px solid var(--oas-color-border, #e2e8f0);
 }
+.board-card-blocked {
+  margin-left: 6px;
+  font-size: 12px;
+  cursor: default;
+}
+.blocked-badge {
+  margin-left: 6px;
+  font-size: 11px;
+  cursor: default;
+}
 .replies-title {
   font-size: 11px;
   color: var(--oas-color-text-secondary, #64748b);

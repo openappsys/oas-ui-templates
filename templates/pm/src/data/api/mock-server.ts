@@ -1600,6 +1600,7 @@ function routeSavedViews(
         name: String(input.name ?? ''),
         filters: JSON.stringify(input.filters ?? {}),
         createdAt: Date.now(),
+        ownerId: actor.id,
       })
       store.revision += 1
       return ok({ ok: true }, 201)

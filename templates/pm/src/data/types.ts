@@ -154,7 +154,7 @@ export interface ActivityRepository {
 
 export interface SavedViewRepository {
   liveAll(): Observable<SavedView[]>
-  create(name: string, filters: unknown): Promise<void>
+  create(name: string, filters: unknown, ownerId?: string | null): Promise<void>
   delete(id: string): Promise<void>
 }
 

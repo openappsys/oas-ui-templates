@@ -1021,6 +1021,18 @@ export function IssueDetailDrawer({
               </oas-button>
             )}
           </oas-popconfirm>
+          <oas-button
+            size="small"
+            data-testid="issue-watch"
+            onClick={() => {
+              const cur = new Set(issue.watchers ?? [])
+              if (cur.has(currentUser)) cur.delete(currentUser)
+              else cur.add(currentUser)
+              void issuesRepo.update(issue.id, { watchers: [...cur] })
+            }}
+          >
+            {(issue.watchers ?? []).includes(currentUser) ? t('unwatch') : t('watch')}
+          </oas-button>
         </div>
       </div>
     </oas-drawer>

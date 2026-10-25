@@ -450,10 +450,10 @@ function Workspace({
     const name = (saveViewNameRef.current?.value ?? '').trim()
     if (!name) return
     const { search: _s, ...rest } = filters
-    await savedViewsRepo.create(name, rest)
+    await savedViewsRepo.create(name, rest, currentUser)
     if (saveViewNameRef.current) saveViewNameRef.current.value = ''
     saveViewRef.current?.removeAttribute('visible')
-  }, [filters, savedViewsRepo, can])
+  }, [filters, savedViewsRepo, can, currentUser])
   useEffect(() => {
     if (view === 'admin' && !canManage) setView('issues')
   }, [view, canManage])
@@ -627,6 +627,14 @@ function Workspace({
   }, [])
 
   const canDeleteView = can('view:delete')
+  // 保存视图可见性：个人视图（ownerId = 当前用户）+ 共享视图（ownerId 为空）
+  const visibleSavedViews = useMemo(
+    () =>
+      (savedViews ?? []).filter(
+        (v) => !v.ownerId || v.ownerId === currentUser || canManageWorkspace,
+      ),
+    [savedViews, currentUser, canManageWorkspace],
+  )
   // 当前生效的保存视图：按筛选等价推导（用户手改筛选后高亮自然回落，不会留下名不副实的高亮）
   const activeSavedViewId = useMemo(
     () => findActiveSavedView(savedViews, filters),
@@ -818,19 +826,19 @@ function Workspace({
       ],
     },
   ]
-  // 保存的视图：有才显示（空组连标题一起不出）
-  if ((savedViews ?? []).length > 0) {
+  // 保存的视图：有才显示（空组连标题一起不出）。只显示共享视图 + 当前用户的个人视图
+  if (visibleSavedViews.length > 0) {
     sideSections.push({
       key: 'saved',
       title: t('savedViews'),
-      rows: (savedViews ?? []).map(
+      rows: visibleSavedViews.map(
         (v): SideRow => ({
           value: `savedview:${v.id}`,
           kind: 'savedview',
           id: v.id,
           label: v.name,
           savedFilters: v.filters,
-          deletable: canDeleteView,
+          deletable: canDeleteView && (!v.ownerId || v.ownerId === currentUser),
           selected: activeSavedViewId === v.id,
           highlight: 'strong',
         }),

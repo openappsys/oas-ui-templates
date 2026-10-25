@@ -130,6 +130,8 @@ export interface SavedView {
   /** Filters JSON（不含 search——搜索是即时动作不进视图） */
   filters: string
   createdAt: number
+  /** 创建者 memberId；null/缺失 = 共享（旧数据视为共享可见） */
+  ownerId?: string | null
 }
 
 export interface Activity {

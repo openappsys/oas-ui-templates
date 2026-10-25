@@ -111,7 +111,16 @@ export function KanbanBoard({
       pr.className = `issue-priority pri-${String(card.priority ?? '')}`
       pr.textContent = String(card.priority ?? '')
       const sp = subProgress?.get(String(card.id ?? ''))
-      if (sp && sp.total > 0) {
+      const isBlocked =
+        Array.isArray(card.relations) &&
+        (card.relations as Array<{ type: string }>).some((r) => r.type === 'blocked-by')
+      if (isBlocked) {
+        const b = document.createElement('span')
+        b.className = 'board-card-blocked'
+        b.textContent = '⛔'
+        b.title = t('blockedTooltip')
+        wrap.append(top, title, pr, b)
+      } else if (sp && sp.total > 0) {
         const chip = document.createElement('span')
         chip.className = 'sub-progress'
         chip.innerHTML = `<span class="sub-progress-bar"><span class="sub-progress-bar-fill" style="width:${Math.round((sp.done / sp.total) * 100)}%"></span></span>${sp.done}/${sp.total}`

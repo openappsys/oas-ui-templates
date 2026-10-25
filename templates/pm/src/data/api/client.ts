@@ -511,8 +511,8 @@ export function createApiRepositories(options: ApiClientOptions = {}): Repositor
       live(async () =>
         asItems<SavedView>(await send<{ items: SavedView[] }>('GET', '/api/saved-views')),
       ),
-    create: async (name, filters) => {
-      await send('POST', '/api/saved-views', undefined, { name, filters })
+    create: async (name, filters, ownerId) => {
+      await send('POST', '/api/saved-views', undefined, { name, filters, ownerId })
       poke()
     },
     delete: async (id) => {
