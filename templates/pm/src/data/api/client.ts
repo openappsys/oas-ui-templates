@@ -252,6 +252,7 @@ export function createApiRepositories(options: ApiClientOptions = {}): Repositor
               status: joinFilter(filters.statusFilter),
               assignee: joinFilter(filters.assigneeFilter),
               priority: joinFilter(filters.priorityFilter),
+              labels: joinFilter(filters.labelFilter ?? []),
               search: filters.search,
               myOnly: filters.myOnly ? '1' : null,
               currentUser,

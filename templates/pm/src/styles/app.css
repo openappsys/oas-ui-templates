@@ -1311,6 +1311,68 @@ oas-app-bar.topbar {
   justify-content: space-between;
   gap: 8px;
 }
+.comment-reply-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 2px 26px;
+}
+.mention-pop {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  z-index: 10;
+  min-width: 180px;
+  background: var(--oas-color-bg-elevated, #fff);
+  border: 1px solid var(--oas-color-border, #e2e8f0);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.1);
+  overflow: hidden;
+}
+.mention-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.mention-option:hover {
+  background: var(--oas-color-bg-hover, #f1f5f9);
+}
+.mention-name {
+  font-weight: 600;
+  color: var(--oas-color-text-primary, #1f2329);
+}
+.mention-title {
+  font-size: 11px;
+  color: var(--oas-color-text-tertiary, #94a3b8);
+}
+.sub-progress {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  color: var(--oas-color-text-secondary, #64748b);
+  font-variant-numeric: tabular-nums;
+}
+.sub-progress-bar {
+  width: 28px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--oas-color-border, #e2e8f0);
+  overflow: hidden;
+}
+.sub-progress-bar-fill {
+  height: 100%;
+  background: var(--oas-color-success, #16a34a);
+  border-radius: 2px;
+}
 .reply-tag {
   font-size: 11px;
   color: var(--oas-color-text-secondary, #64748b);

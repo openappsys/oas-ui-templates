@@ -16,6 +16,7 @@ export type SideKind =
   | 'savedview'
   | 'cycle'
   | 'assignee'
+  | 'label'
   | 'member-more'
   | 'group'
   | 'clear'

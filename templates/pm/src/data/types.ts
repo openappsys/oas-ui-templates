@@ -23,6 +23,7 @@ export interface IssueWindowFilters {
   statusFilter: IssueStatus[]
   assigneeFilter: string[]
   priorityFilter: IssuePriority[]
+  labelFilter?: string[]
   search: string
   myOnly: boolean
   sortBy: 'updatedAt' | 'priority' | 'createdAt'

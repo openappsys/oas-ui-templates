@@ -19,6 +19,7 @@ export function FilterBar({
   statusOptions,
   priorityOptions,
   assigneeOptions,
+  labelOptions,
   cycleOptions,
 }: {
   filters: Filters
@@ -26,12 +27,14 @@ export function FilterBar({
   statusOptions: FilterOption[]
   priorityOptions: FilterOption[]
   assigneeOptions: FilterOption[]
+  labelOptions: FilterOption[]
   cycleOptions: FilterOption[]
 }) {
   const active =
     filters.statusFilter.length > 0 ||
     filters.priorityFilter.length > 0 ||
     filters.assigneeFilter.length > 0 ||
+    filters.labelFilter.length > 0 ||
     filters.cycleFilter !== null
   const setF = <K extends keyof Filters>(k: K, v: Filters[K]) =>
     setFilters((prev) => ({ ...prev, [k]: v }))
@@ -65,6 +68,15 @@ export function FilterBar({
         options={assigneeOptions}
         onChange={(v) => setF('assigneeFilter', v)}
       />
+      <span className="filter-bar-label">{t('labels')}</span>
+      <OMultiSelect
+        testid="filters-label"
+        label={t('labels')}
+        placeholder={t('allLabels')}
+        value={filters.labelFilter}
+        options={labelOptions}
+        onChange={(v) => setF('labelFilter', v)}
+      />
       {/* 迭代单选：周期有序，多选无交集语义（与侧栏迭代组同一契约） */}
       <span className="filter-bar-label">{t('cycles')}</span>
       <OSelect
@@ -86,6 +98,7 @@ export function FilterBar({
             statusFilter: [],
             priorityFilter: [],
             assigneeFilter: [],
+            labelFilter: [],
             cycleFilter: null,
           }))
         }

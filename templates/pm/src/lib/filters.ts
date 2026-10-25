@@ -24,6 +24,8 @@ export interface Filters {
   /** 成员 id 数组；UNASSIGNED 表示未分配 */
   assigneeFilter: string[]
   priorityFilter: IssuePriority[]
+  /** 标签名数组（组内 OR） */
+  labelFilter: string[]
   search: string
   myOnly: boolean
   sortBy: SortBy
@@ -37,6 +39,7 @@ export const DEFAULT_FILTERS: Filters = {
   statusFilter: [],
   assigneeFilter: [],
   priorityFilter: [],
+  labelFilter: [],
   search: '',
   myOnly: false,
   sortBy: 'updatedAt',
@@ -95,6 +98,7 @@ export function normalizeFilters(raw: unknown): Filters {
     statusFilter: toEnumList(rec.statusFilter, ISSUE_STATUSES),
     assigneeFilter: toAssigneeList(rec.assigneeFilter),
     priorityFilter: toEnumList(rec.priorityFilter, ISSUE_PRIORITIES),
+    labelFilter: toAssigneeList(rec.labelFilter),
     search: typeof rec.search === 'string' ? rec.search : '',
     myOnly: rec.myOnly === true,
     sortBy: rec.sortBy === 'priority' || rec.sortBy === 'createdAt' ? rec.sortBy : 'updatedAt',
@@ -120,6 +124,7 @@ export function hasActiveFilters(f: Filters): boolean {
     f.statusFilter.length > 0 ||
     f.assigneeFilter.length > 0 ||
     f.priorityFilter.length > 0 ||
+    f.labelFilter.length > 0 ||
     f.cycleFilter !== null ||
     f.search !== '' ||
     f.myOnly

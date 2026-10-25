@@ -30,6 +30,8 @@ export interface Issue {
   cycleId?: string | null
   /** 软删除时间（null/缺失 = 在库可见）。物理删除只在回收站「永久删除」发生 */
   deletedAt?: number | null
+  /** 关注者（memberId 列表）：关注者收到该 Issue 的所有变更通知 */
+  watchers?: string[]
 }
 
 /** 迭代（Sprint/Cycle）：状态由 now 与区间派生，不落 status 字段——
@@ -54,6 +56,8 @@ export interface Project {
   createdAt: number
   /** Issue key 严格递增计数器（事务内读改写） */
   nextKeyNum?: number
+  /** 归档时间（null/缺失 = 未归档）。归档后主视图不可见，管理台可恢复 */
+  archivedAt?: number | null
 }
 
 export interface Member {
@@ -68,6 +72,8 @@ export interface Member {
   timezone?: string
   /** 评论显示模式偏好（成员档案字段，跨设备跟随；缺省回落本地缓存） */
   commentMode?: 'flat' | 'thread' | 'nested'
+  /** 停用时间（null/缺失 = 在职）。停用后主视图不可见，管理台可恢复 */
+  deactivatedAt?: number | null
 }
 
 /** 审计：角色/分配等管理变更（只追加） */

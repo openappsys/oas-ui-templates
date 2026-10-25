@@ -22,6 +22,7 @@ import {
   type Grouping,
 } from './lib/filters'
 import { useProjectCounts } from './lib/hooks'
+import { useLabelSet } from './lib/labels'
 import {
   loadFilterPlacement,
   loadTheme,
@@ -420,6 +421,7 @@ function Workspace({
     },
     [currentUser, filters.projectId, members, projectRoles, roles, session],
   )
+  const labelSet = useLabelSet()
   const canCreateIssue = can('issue:create')
   // 管理区入口用 member:manage（最低权限）：只给「管理项目」的自定义角色不会打开全局管理
   const canManage = can('member:manage') || can('project:manage') || can('workspace:manage')
@@ -594,6 +596,23 @@ function Workspace({
     () => (projects ?? []).map((p) => ({ label: p.name, value: p.id })),
     [projects],
   )
+  // 标签筛选：从 labelSet 枚举 + 当前窗口计数（liveQuery 会随 labels 变更重算）
+  const labelCounts = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const i of issues ?? []) {
+      if (i.deletedAt != null) continue
+      for (const l of i.labels ?? []) m.set(l, (m.get(l) ?? 0) + 1)
+    }
+    return m
+  }, [issues])
+  const labelFilterOptions = useMemo(() => {
+    const counter = new Map<string, number>()
+    for (const i of issues ?? []) {
+      if (i.deletedAt != null) continue
+      for (const l of i.labels ?? []) counter.set(l, (counter.get(l) ?? 0) + 1)
+    }
+    return [...labelSet].sort().map((l) => ({ label: `${l} (${counter.get(l) ?? 0})`, value: l }))
+  }, [issues, labelSet, lang])
 
   const setF = useCallback(<K extends keyof Filters>(k: K, v: Filters[K]) => {
     setFilters((prev) => ({ ...prev, [k]: v }))
@@ -612,6 +631,7 @@ function Workspace({
       statusFilter: [],
       assigneeFilter: [],
       priorityFilter: [],
+      labelFilter: [],
       cycleFilter: null,
       search: '',
       myOnly: false,
@@ -675,6 +695,27 @@ function Workspace({
         iconColor: PRIORITY_TEXT[p],
         count: counts?.byPriority[p]?.toLocaleString() ?? '…',
         selected: filters.priorityFilter.includes(p),
+        highlight: 'weak',
+      }),
+    ),
+  ]
+  const labelRows: SideRow[] = [
+    {
+      value: 'label:all',
+      kind: 'label',
+      id: 'all',
+      label: t('allLabels'),
+      selected: filters.labelFilter.length === 0,
+      highlight: 'weak',
+    },
+    ...[...labelSet].sort().map(
+      (l): SideRow => ({
+        value: `label:${l}`,
+        kind: 'label',
+        id: l,
+        label: l,
+        count: (labelCounts.get(l) ?? 0).toLocaleString(),
+        selected: filters.labelFilter.includes(l),
         highlight: 'weak',
       }),
     ),
@@ -826,6 +867,13 @@ function Workspace({
           collapseKey: 'members',
           children: assigneeRows,
         },
+        {
+          value: 'group:labels',
+          kind: 'group',
+          label: t('labels'),
+          collapseKey: 'labels',
+          children: labelRows,
+        },
       ],
     })
   }
@@ -867,6 +915,12 @@ function Workspace({
           setFilters((prev) => ({
             ...prev,
             assigneeFilter: row.id === 'all' ? [] : toggleIn(prev.assigneeFilter, row.id as string),
+          }))
+          break
+        case 'label':
+          setFilters((prev) => ({
+            ...prev,
+            labelFilter: row.id === 'all' ? [] : toggleIn(prev.labelFilter, row.id as string),
           }))
           break
         case 'member-more':
@@ -1201,6 +1255,7 @@ function Workspace({
                   statusOptions={statusFilterOptions}
                   priorityOptions={priorityFilterOptions}
                   assigneeOptions={assigneeFilterOptions}
+                  labelOptions={labelFilterOptions}
                   cycleOptions={cycleFilterOptions}
                 />
               )}

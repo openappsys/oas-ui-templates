@@ -89,6 +89,21 @@ function CommentsBlock({
   const replyRef = useRef<HTMLInputElement>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [replyTo, setReplyTo] = useState<string | null>(null)
+  /** @提及补全：输入以 @ 开头的片段时弹出成员候选 */
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null)
+  const mentionCandidates =
+    mentionQuery !== null
+      ? [...memberMap.values()]
+          .filter((m) => m.name.toLowerCase().includes(mentionQuery.toLowerCase()))
+          .slice(0, 5)
+      : []
+  const insertMention = (name: string) => {
+    const el = inputRef.current
+    if (!el) return
+    el.value = el.value.replace(/@[\u4e00-\u9fa5a-zA-Z0-9]*$/, `@${name} `)
+    setMentionQuery(null)
+    el.focus()
+  }
   const [mode, setMode] = useState<CommentMode>(() => preferredMode ?? loadCommentMode())
   // 成员档案字段优先（跨设备跟随）；无档案值回落本地缓存
   useEffect(() => {
@@ -367,7 +382,27 @@ function CommentsBlock({
             : roots.map((root) => renderThread(root))}
       </div>
       {can('comment:create') && (
-        <div className="comment-input-row">
+        <div className="comment-input-row" style={{ position: 'relative' }}>
+          {/* @提及补全：input 后面的非受控检测 + 弹出候选列表 */}
+          {mentionQuery !== null && mentionCandidates.length > 0 && (
+            <div className="mention-pop" data-testid="mention-pop">
+              {mentionCandidates.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  className="mention-option"
+                  data-testid={`mention-option-${m.id}`}
+                  onMouseDown={(e) => {
+                    e.preventDefault()
+                    insertMention(m.name)
+                  }}
+                >
+                  <span className="mention-name">{m.name}</span>
+                  <span className="mention-title">{m.title || ''}</span>
+                </button>
+              ))}
+            </div>
+          )}
           {/* 非受控：draft 只用于提交时读 DOM，受控 value 会在任何一次父级重渲染
               （如标签写库推回）时把用户/脚本刚填的内容清空 */}
           <input
@@ -375,7 +410,21 @@ function CommentsBlock({
             className="comment-input"
             data-testid="comment-input"
             placeholder={t('commentPlaceholder')}
+            onInput={(e) => {
+              const v = (e.target as HTMLInputElement).value ?? ''
+              const m = /@([\u4e00-\u9fa5a-zA-Z0-9]*)$/.exec(v)
+              setMentionQuery(m ? (m[1] ?? '') : null)
+            }}
             onKeyDown={(e) => {
+              if (mentionQuery !== null && mentionCandidates.length > 0 && e.key === 'Enter') {
+                e.preventDefault()
+                insertMention(mentionCandidates[0].name)
+                return
+              }
+              if (e.key === 'Escape' && mentionQuery !== null) {
+                setMentionQuery(null)
+                return
+              }
               if (e.key === 'Enter') void submit()
             }}
           />

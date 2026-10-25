@@ -560,6 +560,11 @@ function windowIssues(store: MockStore, q: URLSearchParams): Issue[] {
     const want = new Set(assignees)
     out = out.filter((i) => want.has(i.assigneeId ?? UNASSIGNED))
   }
+  const labels = csvQuery(q, 'labels')
+  if (labels.length) {
+    const want = new Set(labels)
+    out = out.filter((i) => (i.labels ?? []).some((l) => want.has(l)))
+  }
   if (q.get('myOnly') === '1') {
     const me = q.get('currentUser') ?? ''
     out = out.filter((i) => i.assigneeId === me)

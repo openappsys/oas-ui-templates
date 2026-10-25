@@ -234,6 +234,10 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
           const want = new Set(filters.priorityFilter)
           out = out.filter((i) => want.has(i.priority))
         }
+        if (filters.labelFilter?.length) {
+          const want = new Set(filters.labelFilter)
+          out = out.filter((i) => (i.labels ?? []).some((l) => want.has(l)))
+        }
         if (filters.cycleFilter) {
           // 当前迭代需要周期区间——同一次查询里读 cycles 表，liveQuery 会跟踪该读取，
           // 周期起止被改后窗口自动重算。具体周期 id 已在上面直取，这里再过滤等于空操作

@@ -26,6 +26,7 @@ describe('normalizeFilters', () => {
       statusFilter: ['todo'],
       assigneeFilter: ['member-3'],
       priorityFilter: ['urgent'],
+      labelFilter: [],
       search: '',
       myOnly: true,
       sortBy: 'priority',
