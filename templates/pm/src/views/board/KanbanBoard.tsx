@@ -14,6 +14,15 @@ interface KanbanElement extends HTMLElement {
   renderCard?: ((card: Record<string, unknown>) => Node | string) | null
 }
 
+/* WIP 限制（提示语义）：各状态列的建议上限，超限列头计数转警示色 */
+const WIP_LIMIT: Record<string, number> = {
+  backlog: 60,
+  todo: 40,
+  in_progress: 30,
+  done: 80,
+  cancelled: 80,
+}
+
 export function KanbanBoard({
   issues,
   subProgress,
@@ -35,7 +44,13 @@ export function KanbanBoard({
   const lang = getLang()
   // biome-ignore lint/correctness/useExhaustiveDependencies: statusLabel() 读模块级语言态，lang 是语言切换时的重算触发器
   const columns = useMemo(
-    () => ISSUE_STATUSES.map((s) => ({ key: s, title: statusLabel(s) })),
+    () =>
+      ISSUE_STATUSES.map((s) => ({
+        key: s,
+        title: statusLabel(s),
+        // WIP 限制（提示语义非阻断）：单列卡片数超限 → 列头计数警示 + data-over-limit
+        limit: WIP_LIMIT[s],
+      })),
     [lang],
   )
 

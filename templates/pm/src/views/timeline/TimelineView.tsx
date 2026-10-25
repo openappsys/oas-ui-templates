@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRepositories } from '@/data/context'
 import { useObservable } from '@/data/use-observable'
 import type { Issue } from '@/types'
 import { PRIORITY_TEXT } from '@/lib/colors'
 import { t } from '@/i18n'
+import { OSegmented } from '@/components/oas-wrappers'
 import type { Action, Ctx } from '@/permission/policy'
 
 /* ── 时间线（oas-gantt） ── */
@@ -32,10 +33,20 @@ export function TimelineView({
   const { issues: issuesRepo, projects: projectsRepo } = useRepositories()
   const projects = useObservable(() => projectsRepo.liveAll(), [projectsRepo])
   const ganttRef = useRef<GanttElement>(null)
+  // 时间窗：时间轴是范围驱动语义，按天窗过滤而非滚动续载
+  // 时间窗：时间轴是范围驱动语义，按天窗过滤而非滚动续载
+  const [windowDays, setWindowDays] = useState<30 | 90 | null>(30)
+  const visibleIssues = useMemo(
+    () =>
+      windowDays === null
+        ? issues
+        : issues.filter((i) => Date.now() - i.createdAt <= windowDays * 86400000),
+    [issues, windowDays],
+  )
 
   // can 进依赖：身份/成员变化时 disabled（无编辑权限禁拖）要随任务数据重建
   const tasks = useMemo(() => {
-    const dueTasks = issues
+    const dueTasks = visibleIssues
       .filter((i) => i.dueAt !== null && i.dueAt > i.createdAt)
       .slice(0, 50)
       .map((i) => ({
@@ -58,7 +69,7 @@ export function TimelineView({
         dependencies: idx > 0 ? [{ id: arr[idx - 1].id, type: 'fs' as const }] : undefined,
       }))
     // urgent 且无截止日期 → 创建里程碑（单点；不占 50 条名额、不进 fs 链）
-    const milestones = issues
+    const milestones = visibleIssues
       .filter((i) => i.priority === 'urgent' && i.dueAt === null)
       .slice(0, 5)
       .map((i) => ({
@@ -125,6 +136,18 @@ export function TimelineView({
   return (
     <div className="timeline-page">
       <h1 className="sr-only">{t('timeline')}</h1>
+      <div className="tl-window-bar" data-testid="tl-window-bar">
+        <OSegmented
+          testid="tl-window-seg"
+          value={String(windowDays ?? 'all')}
+          options={[
+            { label: t('last30'), value: '30' },
+            { label: t('last90'), value: '90' },
+            { label: t('allRange'), value: 'all' },
+          ]}
+          onChange={(v) => setWindowDays(v === 'all' ? null : (Number(v) as 30 | 90))}
+        />
+      </div>
       <oas-gantt
         ref={ganttRef}
         data-testid="gantt"

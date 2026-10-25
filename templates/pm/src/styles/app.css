@@ -3045,3 +3045,14 @@ oas-drawer::part(close):focus-visible {
   font-weight: 600;
   color: var(--oas-color-text-secondary, #64748b);
 }
+
+/* ── 时间线时间窗切换 ── */
+.tl-window-bar {
+  display: flex;
+  justify-content: flex-end;
+  padding-bottom: 8px;
+}
+.tl-window-bar oas-segmented {
+  display: block;
+  font-size: 12px;
+}

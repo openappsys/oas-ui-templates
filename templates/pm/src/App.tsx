@@ -11,9 +11,11 @@ import { CYCLE_SIDEBAR_LIMIT, CURRENT_CYCLE, NO_CYCLE, currentCycleIds } from '.
 import { byCreatedDesc, findActiveSavedView } from './lib/saved-views'
 import {
   ALL_PROJECTS,
+  BOARD_WINDOW,
   DEFAULT_FILTERS,
   LIST_WINDOW,
   LIST_WINDOW_STEP,
+  TIMELINE_WINDOW,
   hasActiveFilters,
   parseFilters,
   toggleIn,
@@ -378,6 +380,11 @@ function Workspace({
   const retryWindow = useCallback(() => setWindowRetry((n) => n + 1), [])
   const issueWindow = useIssueWindow(filters, currentUser, listLimit, windowRetry)
   const issues = issueWindow.value
+  // 看板/时间线独立窗口：不复用列表的触底续载窗口（拖拽定序与时间轴语义都不适合无限增长）
+  const boardWindow = useIssueWindow(filters, currentUser, BOARD_WINDOW, windowRetry)
+  const boardIssues = boardWindow.value
+  const timelineWindow = useIssueWindow(filters, currentUser, TIMELINE_WINDOW, windowRetry)
+  const timelineIssues = timelineWindow.value
   const counts = useProjectCounts(filters.projectId)
   const members = useMembers()
   const roles = useRoles()
@@ -1312,7 +1319,7 @@ function Workspace({
               {view === 'board' && (
                 <ErrorBoundary key={view}>
                   <KanbanBoard
-                    issues={issues ?? []}
+                    issues={boardIssues ?? []}
                     subProgress={subProgress}
                     memberMap={memberMap}
                     onOpenIssue={setSelectedId}
@@ -1322,7 +1329,7 @@ function Workspace({
               )}
               {view === 'timeline' && (
                 <ErrorBoundary key={view}>
-                  <TimelineView issues={issues ?? []} can={can} />
+                  <TimelineView issues={timelineIssues ?? []} can={can} />
                 </ErrorBoundary>
               )}
               {view === 'resource' && (

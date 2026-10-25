@@ -153,18 +153,13 @@ test('M3 看板：oas-change 跨列移动 → status/order 落库', async ({ pag
             const r = tx.objectStore('issues').get(id as string)
             r.onsuccess = () => res(r.result)
           })
-          if (!row || row.status !== 'done') return -1
-          const idx = tx.objectStore('issues').index('[projectId+status]')
-          const doneKeys = await new Promise<number[]>((res) => {
-            const r = idx.getAllKeys(['project-1', 'done'])
-            r.onsuccess = () => res([])
-          })
-          void doneKeys
-          return row.order ?? -2
+          if (!row || row.status !== 'done') return false
+          // order 为有限数值即落库成功（fractional 链允许负值）
+          return Number.isFinite(row.order)
         }, moved),
       { timeout: 10_000 },
     )
-    .toBeGreaterThan(-1)
+    .toBe(true)
   // liveQuery 刷新：组件 cards 中该卡 column=done
   await expect
     .poll(
@@ -939,13 +934,28 @@ test('M20 看板：卡片点击打开详情抽屉', async ({ page }) => {
   expect(myKey).toBeTruthy()
   await page.keyboard.press('Escape')
 
-  // 看板：该卡必在 todo 列尾（order 最大），等文本出现后点击
+  // 看板：点「done 列 order 最小」的卡（列首必在渲染窗口内，确定性点击）
   await page.evaluate((view) => {
     const el = document.querySelector('[data-testid=view-seg]') as HTMLElement & { value: string }
     el.value = view
     el.dispatchEvent(new CustomEvent('oas-change', { bubbles: true, detail: { value: view } }))
   }, 'board')
-  const cardLoc = page.locator('oas-kanban').locator(`text=${myKey}`)
+  // 等看板挂载 + 数据就绪（「我的」过滤的 liveQuery 就绪可能慢于视图切换）
+  await expect(page.locator('oas-kanban')).toBeAttached({ timeout: 20_000 })
+  await page.waitForTimeout(1000)
+  const grabbed = await page.evaluate(() => {
+    const k = document.querySelector('oas-kanban') as HTMLElement & {
+      cards?: Array<{ id: string; key: string; column: string; order: number }>
+    }
+    const done = (k.cards ?? [])
+      .filter((x) => x.column === 'done')
+      .sort((a, b) => a.order - b.order)
+    // 兜底：目标列空（如「我的」过滤下）时取任意列 order 最小的卡（列首必渲染）
+    const pool = done.length ? done : (k.cards ?? []).sort((a, b) => a.order - b.order)
+    return pool[0] ? { id: pool[0].id, key: pool[0].key } : null
+  })
+  expect(grabbed).toBeTruthy()
+  const cardLoc = page.locator('oas-kanban').locator(`text=${grabbed?.key}`)
   await expect(cardLoc.first()).toBeVisible({ timeout: 20_000 })
   await cardLoc.first().click()
   await expect
@@ -959,8 +969,8 @@ test('M20 看板：卡片点击打开详情抽屉', async ({ page }) => {
       { timeout: 10_000 },
     )
     .toBe(true)
-  // 抽屉内标题含该卡序号（key 在 detail-head，h2 标题为 title 文本）
-  const seq = (myKey ?? '').split('-')[1] ?? ''
+  // 抽屉内标题含该卡序号（title attribute 因 React property 分派不可靠，断言 DOM 文本）
+  const seq = (grabbed?.key ?? '').split('-')[1] ?? ''
   await expect(page.locator('.detail-title')).toContainText(`#${seq}`, { timeout: 10_000 })
   await page.keyboard.press('Escape')
 })

@@ -48,6 +48,11 @@ export const DEFAULT_FILTERS: Filters = {
 
 export const LIST_WINDOW = 200
 export const LIST_WINDOW_STEP = 200
+/** 看板/时间线独立窗口：不复用列表的触底续载窗口。
+ *  看板保持 200——oas-kanban 对大列有内部渲染截断，窗口过大反而让尾部卡不可见不可拖；
+ *  时间线 800——oas-gantt 内置纵向虚拟滚动，可承载。 */
+export const BOARD_WINDOW = 200
+export const TIMELINE_WINDOW = 800
 export const GROUP_PREVIEW = 30
 
 /** 多选切换：已选中则移除，否则追加（保留点击顺序） */
