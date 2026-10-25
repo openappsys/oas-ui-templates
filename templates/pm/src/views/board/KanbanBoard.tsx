@@ -16,11 +16,13 @@ interface KanbanElement extends HTMLElement {
 
 export function KanbanBoard({
   issues,
+  subProgress,
   memberMap,
   onOpenIssue,
   can,
 }: {
   issues: Issue[]
+  subProgress?: Map<string, { done: number; total: number }>
   memberMap: Map<string, Member>
   onOpenIssue: (id: string) => void
   can: (action: Action, ctx?: Ctx) => boolean
@@ -108,7 +110,15 @@ export function KanbanBoard({
       const pr = document.createElement('span')
       pr.className = `issue-priority pri-${String(card.priority ?? '')}`
       pr.textContent = String(card.priority ?? '')
-      wrap.append(top, title, pr)
+      const sp = subProgress?.get(String(card.id ?? ''))
+      if (sp && sp.total > 0) {
+        const chip = document.createElement('span')
+        chip.className = 'sub-progress'
+        chip.innerHTML = `<span class="sub-progress-bar"><span class="sub-progress-bar-fill" style="width:${Math.round((sp.done / sp.total) * 100)}%"></span></span>${sp.done}/${sp.total}`
+        wrap.append(top, title, pr, chip)
+      } else {
+        wrap.append(top, title, pr)
+      }
       return wrap
     }
   }, [columns, cards, memberMap, canDragCard])

@@ -20,6 +20,7 @@ import { VirtualIssueList } from './VirtualIssueList'
 /* ── Issue 列表（筛选/排序/分组工具条） ── */
 export function IssueListView({
   issues,
+  subProgress,
   error,
   onRetry,
   total,
@@ -39,6 +40,7 @@ export function IssueListView({
   onDeleted,
 }: {
   issues: Issue[] | undefined
+  subProgress?: Map<string, { done: number; total: number }>
   /** 窗口订阅失败（首次加载/重试失败）：有数据时保留旧表，无数据时显示错误态 */
   error?: unknown
   onRetry?: () => void
@@ -214,7 +216,31 @@ export function IssueListView({
         />
       )}
       <span className="issue-key">{i.key}</span>
-      <span className="issue-title">{i.title}</span>
+      <span className="issue-title">
+        {i.title}
+        {subProgress?.get(i.id) && (
+          <span className="sub-progress" style={{ marginLeft: 8 }}>
+            <span
+              className="sub-progress-bar"
+              style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: 4 }}
+            >
+              <span
+                className="sub-progress-bar-fill"
+                style={{
+                  display: 'block',
+                  height: '100%',
+                  width: `${Math.round(
+                    ((subProgress.get(i.id)?.done ?? 0) / (subProgress.get(i.id)?.total || 1)) *
+                      100,
+                  )}%`,
+                  background: 'var(--oas-color-success, #16a34a)',
+                }}
+              />
+            </span>
+            {subProgress.get(i.id)?.done}/{subProgress.get(i.id)?.total}
+          </span>
+        )}
+      </span>
       <span className="issue-assignee">
         <Avatar member={memberMap.get(i.assigneeId ?? '')} size={18} />
         <span className="issue-assignee-name">

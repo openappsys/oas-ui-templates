@@ -387,6 +387,14 @@ function Workspace({
   const cycles = useCycles(filters.projectId)
   const cycleCounts = useCycleCountTotals(filters.projectId)
   const memberCounts = useFullAssigneeCounts(filters.projectId, counts?.total)
+  const subProgressRows = useObservable(
+    () => issuesRepo.liveSubProgress(filters.projectId),
+    [issuesRepo, filters.projectId],
+  )
+  const subProgress = useMemo(
+    () => new Map((subProgressRows ?? []).map((r) => [r.parentId, r])),
+    [subProgressRows],
+  )
   const memberMap = useMemo(() => new Map((members ?? []).map((m) => [m.id, m])), [members])
   const can = useCallback(
     (action: Action, ctx?: Ctx) => {
@@ -1272,6 +1280,7 @@ function Workspace({
                 <ErrorBoundary key={view}>
                   <IssueListView
                     issues={issues}
+                    subProgress={subProgress}
                     error={issueWindow.error}
                     onRetry={retryWindow}
                     total={counts?.total ?? issues?.length ?? 0}
@@ -1296,6 +1305,7 @@ function Workspace({
                 <ErrorBoundary key={view}>
                   <KanbanBoard
                     issues={issues ?? []}
+                    subProgress={subProgress}
                     memberMap={memberMap}
                     onOpenIssue={setSelectedId}
                     can={can}
