@@ -106,6 +106,9 @@ export interface IssueRepository {
   liveByCreatedSince(sinceMs: number): Observable<Issue[]>
   listAll(limit: number): Promise<Issue[]>
   liveAssigneeWorkload(projectId: string): Observable<Array<{ memberId: string; count: number }>>
+  liveSubProgress(
+    projectId: string,
+  ): Observable<Array<{ parentId: string; done: number; total: number }>>
   bulkGet(ids: string[]): Promise<Array<Issue | undefined>>
   updateMany(updates: Array<{ id: string; changes: Partial<Issue> }>): Promise<void>
   bulkApply(

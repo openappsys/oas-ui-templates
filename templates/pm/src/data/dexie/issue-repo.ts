@@ -411,8 +411,8 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
 
     liveAssigneeWorkload(projectId: string) {
       return fromLiveQuery(async () => {
-        // 注意：这里不能用 each() 游标——真实 IndexedDB 下 liveQuery + table.each()
-        // 有回归（侧栏成员计数为空，fake-indexeddb 单测无法复现，见 sidebar S3）。
+        // 注意：这里不能用 each() 游标——真实 IndexedDB 下 liveQuery + 表遍历有回归
+        // （侧栏成员计数为空，fake-indexeddb 单测无法复现，见 sidebar S3）。
         // toArray 一次性物化后聚合是已验证正确的行为；内存峰值可接受（仅管理员页订阅）。
         const rows =
           projectId === ALL_PROJECTS
@@ -425,6 +425,24 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
           map.set(i.assigneeId, (map.get(i.assigneeId) ?? 0) + 1)
         }
         return [...map.entries()].map(([memberId, count]) => ({ memberId, count }))
+      })
+    },
+
+    /** 子任务进度：parentId 索引只遍历有父的行（小子集），聚合出每个父的 done/total */
+    liveSubProgress(projectId: string) {
+      return fromLiveQuery(async () => {
+        // parentId 索引不含 null 行：天然只遍历子任务（小子集），物化无压力
+        const rows = await db.issues.where('parentId').above('').toArray()
+        const map = new Map<string, { done: number; total: number }>()
+        for (const i of rows) {
+          if (!notDeleted(i) || !i.parentId) continue
+          if (projectId !== ALL_PROJECTS && i.projectId !== projectId) continue
+          const e = map.get(i.parentId) ?? { done: 0, total: 0 }
+          e.total++
+          if (i.status === 'done') e.done++
+          map.set(i.parentId, e)
+        }
+        return [...map.entries()].map(([parentId, p]) => ({ parentId, ...p }))
       })
     },
 

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRepositories } from '@/data/context'
 import { activeDataSource } from '@/data/source'
 import { t, type Lang } from '@/i18n'
+import { DEFAULT_SEED_SIZE } from '@/lib/seed-size'
 import { OSelect } from '@/components/oas-wrappers'
 import type { ThemePreference } from '@/lib/preferences'
 
@@ -29,6 +30,9 @@ export function SettingsTab({
   const fileRef = useRef<HTMLInputElement>(null)
   const resetPopRef = useRef<HTMLElement>(null)
   const wipePopRef = useRef<HTMLElement>(null)
+  const [seedSize, setSeedSize] = useState<string>(
+    () => localStorage.getItem('oas-pm-seed-size') ?? String(DEFAULT_SEED_SIZE),
+  )
 
   const showError = useCallback((msg: string) => {
     setError(msg)
@@ -224,6 +228,24 @@ export function SettingsTab({
               {t('adminWipeAll')}
             </oas-button>
           </oas-popconfirm>
+        </div>
+        <div className="admin-seed-row">
+          <span className="admin-field-label">{t('adminSeedSize')}</span>
+          <OSelect
+            testid="admin-seed-size"
+            ariaLabel={t('adminSeedSize')}
+            value={seedSize}
+            options={[
+              { label: '20,000', value: '20000' },
+              { label: '50,000', value: '50000' },
+              { label: '100,000', value: '100000' },
+            ]}
+            onChange={(v) => {
+              setSeedSize(v)
+              localStorage.setItem('oas-pm-seed-size', v)
+            }}
+          />
+          <span className="admin-hint">{t('adminSeedSizeHint')}</span>
         </div>
       </div>
     </div>

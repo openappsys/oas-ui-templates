@@ -327,6 +327,14 @@ export function createApiRepositories(options: ApiClientOptions = {}): Repositor
           ),
         ),
       ),
+    liveSubProgress: (projectId) =>
+      live(async () =>
+        asItems<{ parentId: string; done: number; total: number }>(
+          await send<{
+            items: Array<{ parentId: string; done: number; total: number }>
+          }>('GET', '/api/issues/sub-progress', buildQuery({ projectId })),
+        ),
+      ),
     bulkGet: async (ids) => {
       const rows = asItems<Issue | null>(
         await send<{ items: Array<Issue | null> }>(

@@ -1109,6 +1109,22 @@ function routeIssues(
       items: [...counts.entries()].map(([memberId, count]) => ({ memberId, count })),
     })
   }
+  if (second === 'sub-progress' && method === 'GET') {
+    const projectId = q.get('projectId') ?? ''
+    const allProjects = projectId === ALL_PROJECTS
+    const map = new Map<string, { done: number; total: number }>()
+    for (const issue of store.issues) {
+      if (!notDeleted(issue) || !issue.parentId) continue
+      if (!allProjects && issue.projectId !== projectId) continue
+      const e = map.get(issue.parentId) ?? { done: 0, total: 0 }
+      e.total++
+      if (issue.status === 'done') e.done++
+      map.set(issue.parentId, e)
+    }
+    return ok({
+      items: [...map.entries()].map(([parentId, p]) => ({ parentId, ...p })),
+    })
+  }
   if (second === 'bulk-apply' && method === 'POST') {
     bulkApply(store, body, actor)
     store.revision += 1
