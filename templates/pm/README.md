@@ -24,7 +24,7 @@
 
 ## 运行
 
-**依赖前置**：`@oas-ui/ui`、`@oas-ui/theme`、`@oas-ui/icons` 通过 `link:` 指向本地 oas-ui 工作副本（`D:/dev/oas-ui/packages/*`，当前 2.6.4），需先在该仓库构建出 `dist`。`templates/pm/package.json` 与锁文件刻意保留本地 link 状态、**不提交**（提交时只 stage 显式路径，排除这两个文件）。
+**依赖前置**：`@oas-ui/ui`、`@oas-ui/theme`、`@oas-ui/icons`、`@oas-ui/i18n` 四个包通过 `link:` **绝对路径**指向本地 oas-ui 工作副本（`link:D:/dev/oas-ui/packages/*`，当前 2.6.4；i18n 必须与 ui 同实例），需先在该仓库构建出 `dist`。注意 link 必须写绝对路径——相对路径会被 pnpm 按错误基准写符号链接，导致断链。`templates/pm/package.json` 与锁文件刻意保留本地 link 状态、**不提交**（提交时只 stage 显式路径，排除这两个文件）。
 
 ```bash
 pnpm install
@@ -114,7 +114,7 @@ A production-grade frontend baseline: Repository data layer (REST-adapter ready)
 
 ## Run
 
-**Dependency prerequisite**: `@oas-ui/ui`, `@oas-ui/theme` and `@oas-ui/icons` are `link:` dependencies pointing at a local oas-ui checkout (`D:/dev/oas-ui/packages/*`, currently 2.6.4); build its `dist` first. Also depends on the published `@oas-ui/i18n ^2.6.4` (built-in component copy). `templates/pm/package.json` and the lockfile intentionally keep the local link state and are **not committed** (stage explicit paths only, excluding those two files).
+**Dependency prerequisite**: `@oas-ui/ui`, `@oas-ui/theme`, `@oas-ui/icons` and `@oas-ui/i18n` are `link:` dependencies pointing at a local oas-ui checkout via **absolute paths** (`link:D:/dev/oas-ui/packages/*`, currently 2.6.4; i18n must be the same instance as ui); build its `dist` first. Note the link specifiers must be absolute — pnpm writes relative ones with a wrong symlink base and they break. `templates/pm/package.json` and the lockfile intentionally keep the local link state and are **not committed** (stage explicit paths only, excluding those two files).
 
 ```bash
 pnpm install
