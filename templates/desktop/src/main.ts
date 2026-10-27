@@ -1,3 +1,4 @@
+import './analytics'
 // @ts-expect-error side-effect register (css-only package, no type entry)
 import '@oas-ui/theme'
 import '@oas-ui/theme/skins.css'

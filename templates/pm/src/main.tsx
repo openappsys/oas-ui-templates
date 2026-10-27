@@ -1,4 +1,5 @@
 import { StrictMode } from 'react'
+import './analytics'
 import { createRoot } from 'react-dom/client'
 // @ts-expect-error css-only package
 import '@oas-ui/theme'

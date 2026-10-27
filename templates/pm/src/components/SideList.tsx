@@ -127,6 +127,12 @@ function rowIcon(row: SideRow): string {
  *  组件只认 active/active-by-group 一套 .active 视觉；强/弱两级只能由宿主补规则
  *  （AGENTS 记录的集成模式：宿主自绘行样式需注入 shadow stylesheet） */
 const TIER_STYLES = `
+  /* oas-sidebar 的 avatarText 通道仍渲染 18px 空 .icon 占位（上游行为），
+     有头像的行隐藏之，避免头像与文字间出现双倍空白 */
+  .item:has(.item-avatar) .icon {
+    display: none;
+  }
+
   .item[data-value^='status:'].active,
   .item[data-value^='priority:'].active,
   .item[data-value^='assignee:'].active {
