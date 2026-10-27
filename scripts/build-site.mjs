@@ -28,15 +28,21 @@ const families = readdirSync(templatesRoot, { withFileTypes: true })
 // dist 内部产物（每个模板的子目录）在循环里逐项清空再写，行为等价。
 function safeRm(p) {
   if (!existsSync(p)) return
-  try {
-    rmSync(p, { recursive: true, force: true })
-  } catch (e) {
-    if (e && (e.code === 'EPERM' || e.code === 'EBUSY' || e.code === 'ENOTEMPTY')) {
-      console.warn(
-        `warn: could not clean ${p} (${e.code}); existing files will be overwritten in place.`,
-      )
-    } else {
-      throw e
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      rmSync(p, { recursive: true, force: true })
+      return
+    } catch (e) {
+      if (e && (e.code === 'EPERM' || e.code === 'EBUSY' || e.code === 'ENOTEMPTY')) {
+        if (attempt === 3) {
+          throw new Error(
+            `could not clean ${p} (${e.code}) after 3 attempts — 关闭占用该目录的进程后重试`,
+          )
+        }
+        execSync(`timeout /t 2 /nobreak >nul`, { shell: 'cmd.exe' })
+      } else {
+        throw e
+      }
     }
   }
 }
@@ -103,7 +109,14 @@ for (const family of families) {
     const target = join(outDir, family)
     safeRm(target)
     mkdirSync(target, { recursive: true })
-    cpSync(distDir, target, { recursive: true })
+    cpSync(distDir, target, { recursive: true, force: true })
+    const srcIdx = join(distDir, 'index.html')
+    const dstIdx = join(target, 'index.html')
+    if (existsSync(srcIdx) && readFileSync(srcIdx, 'utf8') !== readFileSync(dstIdx, 'utf8')) {
+      throw new Error(
+        `copy verification failed for /${family}/ — index.html 未更新（目标被占用？）`,
+      )
+    }
     deployed.push(family)
     process.stdout.write(`  -> /${family}/\n`)
     continue
@@ -125,7 +138,14 @@ for (const family of families) {
     const target = join(outDir, relPath)
     safeRm(target)
     mkdirSync(target, { recursive: true })
-    cpSync(distDir, target, { recursive: true })
+    cpSync(distDir, target, { recursive: true, force: true })
+    const srcIdx2 = join(distDir, 'index.html')
+    const dstIdx2 = join(target, 'index.html')
+    if (existsSync(srcIdx2) && readFileSync(srcIdx2, 'utf8') !== readFileSync(dstIdx2, 'utf8')) {
+      throw new Error(
+        `copy verification failed for /${relPath}/ — index.html 未更新（目标被占用？）`,
+      )
+    }
     deployed.push(relPath)
     process.stdout.write(`  -> /${relPath}/\n`)
   }
