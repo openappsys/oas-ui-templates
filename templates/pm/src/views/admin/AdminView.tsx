@@ -1,6 +1,6 @@
 import { t, type DictKey, type Lang } from '@/i18n'
 import type { Member } from '@/types'
-import type { ThemePreference } from '@/lib/preferences'
+import type { CommentMode, ThemePreference } from '@/lib/preferences'
 import { ConfigTab } from './ConfigTab'
 import { CyclesTab } from './CyclesTab'
 import { MembersTab } from './MembersTab'
@@ -43,6 +43,8 @@ export function AdminView({
   onSetTheme,
   lang,
   onSetLang,
+  commentModeDefault,
+  onSetCommentModeDefault,
   canProject,
   canMember,
   canWorkspace,
@@ -58,6 +60,8 @@ export function AdminView({
   onSetTheme: (pref: ThemePreference) => void
   lang: Lang
   onSetLang: (lang: Lang) => void
+  commentModeDefault: CommentMode
+  onSetCommentModeDefault: (m: CommentMode) => void
   canProject: boolean
   canMember: boolean
   canWorkspace: boolean
@@ -116,6 +120,8 @@ export function AdminView({
             onSetTheme={onSetTheme}
             lang={lang}
             onSetLang={onSetLang}
+            commentModeDefault={commentModeDefault}
+            onSetCommentModeDefault={onSetCommentModeDefault}
           />
         )}
       </main>

@@ -4,7 +4,7 @@ import { activeDataSource } from '@/data/source'
 import { t, type Lang } from '@/i18n'
 import { DEFAULT_SEED_SIZE } from '@/lib/seed-size'
 import { OSelect } from '@/components/oas-wrappers'
-import type { ThemePreference } from '@/lib/preferences'
+import type { CommentMode, ThemePreference } from '@/lib/preferences'
 
 export function SettingsTab({
   currentUser,
@@ -12,12 +12,16 @@ export function SettingsTab({
   onSetTheme,
   lang,
   onSetLang,
+  commentModeDefault,
+  onSetCommentModeDefault,
 }: {
   currentUser: string
   themePref: ThemePreference
   onSetTheme: (pref: ThemePreference) => void
   lang: Lang
   onSetLang: (lang: Lang) => void
+  commentModeDefault: CommentMode
+  onSetCommentModeDefault: (m: CommentMode) => void
 }) {
   const { admin } = useRepositories()
   // 启动时决断、不热切换：这里只取展示文案，不构成实现分支
@@ -165,6 +169,25 @@ export function SettingsTab({
             onChange={(v) => onSetTheme(v as ThemePreference)}
           />
         </div>
+      </div>
+      <div className="admin-panel">
+        <p className="admin-panel-title">{t('adminComments')}</p>
+        <div className="admin-field-row">
+          <span>{t('adminCommentMode')}</span>
+          <OSelect
+            testid="admin-settings-comment-mode"
+            value={commentModeDefault}
+            options={[
+              { label: t('modeFlat'), value: 'flat' },
+              { label: t('modeThread'), value: 'thread' },
+              { label: t('modeNested'), value: 'nested' },
+            ]}
+            onChange={(v) => onSetCommentModeDefault(v as CommentMode)}
+          />
+        </div>
+      </div>
+      <div className="admin-panel">
+        <p className="admin-panel-title">{t('adminAppearance')}</p>
         <div className="admin-field-row">
           <span>{t('adminLanguage')}</span>
           <OSelect

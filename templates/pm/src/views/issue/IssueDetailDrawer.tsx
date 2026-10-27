@@ -70,6 +70,7 @@ function CommentsBlock({
   currentUser,
   can,
   preferredMode,
+  commentModeDefault,
   onModeChange,
 }: {
   issueId: string
@@ -77,8 +78,10 @@ function CommentsBlock({
   memberMap: Map<string, Member>
   currentUser: string
   can: (action: Action, ctx?: Ctx) => boolean
-  /** 成员档案里的显示模式（跨设备跟随）；缺省回落本地偏好 */
+  /** 成员档案里的显示模式（跨设备跟随）；缺省回落 Admin 全局默认 */
   preferredMode?: CommentMode
+  /** Admin 设置的全局默认（settings 表） */
+  commentModeDefault?: CommentMode
   /** 切换模式时持久化到成员档案（本地 localStorage 同步写一份做缓存兜底） */
   onModeChange?: (m: CommentMode) => void
 }) {
@@ -104,12 +107,15 @@ function CommentsBlock({
     setMentionQuery(null)
     el.focus()
   }
-  const [mode, setMode] = useState<CommentMode>(() => preferredMode ?? loadCommentMode())
-  // 成员档案字段优先（跨设备跟随）；无档案值回落本地缓存
+  const [mode, setMode] = useState<CommentMode>(
+    () => preferredMode ?? commentModeDefault ?? loadCommentMode(),
+  )
+  // 成员档案字段优先（跨设备跟随）；再回落 Admin 全局默认（settings 表），最后本地缓存
   useEffect(() => {
-    if (preferredMode && preferredMode !== mode) setMode(preferredMode)
-    // biome-ignore lint/correctness/useExhaustiveDependencies: 仅跟随档案值，避免本地切换被旧值回写
-  }, [preferredMode])
+    const effective = preferredMode ?? commentModeDefault
+    if (effective && effective !== mode) setMode(effective)
+    // biome-ignore lint/correctness/useExhaustiveDependencies: 仅跟随档案/全局值，避免本地切换被旧值回写
+  }, [preferredMode, commentModeDefault])
   const changeMode = (v: string) => {
     const next: CommentMode = v === 'flat' ? 'flat' : v === 'nested' ? 'nested' : 'thread'
     setMode(next)
@@ -450,6 +456,9 @@ export function IssueDetailDrawer({
   onClose,
   can,
   onDeleted,
+  preferredMode,
+  commentModeDefault,
+  onModeChange,
 }: {
   issueId: string
   memberMap: Map<string, Member>
@@ -458,6 +467,12 @@ export function IssueDetailDrawer({
   can: (action: Action, ctx?: Ctx) => boolean
   /** 删除成功（软删除）：交给宿主弹「撤销」提示 */
   onDeleted?: (issue: Issue) => void
+  /** 成员档案里的嵌套显示模式（跨设备跟随）；缺省回落 Admin 全局默认 */
+  preferredMode?: CommentMode
+  /** Admin 设置的全局默认（settings 表） */
+  commentModeDefault?: CommentMode
+  /** 切换模式时同步到成员档案 */
+  onModeChange?: (m: CommentMode) => void
 }) {
   const {
     issues: issuesRepo,
@@ -1000,7 +1015,7 @@ export function IssueDetailDrawer({
           memberMap={memberMap}
           currentUser={currentUser}
           can={can}
-          preferredMode={memberMap.get(currentUser)?.commentMode}
+          preferredMode={memberMap.get(currentUser)?.commentMode ?? commentModeDefault}
           onModeChange={(m) => {
             void membersRepo
               .update(currentUser, { commentMode: m })
