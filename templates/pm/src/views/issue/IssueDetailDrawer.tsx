@@ -107,12 +107,13 @@ function CommentsBlock({
     setMentionQuery(null)
     el.focus()
   }
+  // 优先级（高→低）：本地缓存（设备级）→ 成员档案（跨设备）→ Admin 全局默认 → 内置
   const [mode, setMode] = useState<CommentMode>(
-    () => preferredMode ?? commentModeDefault ?? loadCommentMode(),
+    () => loadCommentMode() ?? preferredMode ?? commentModeDefault ?? 'thread',
   )
   // 成员档案字段优先（跨设备跟随）；再回落 Admin 全局默认（settings 表），最后本地缓存
   useEffect(() => {
-    const effective = preferredMode ?? commentModeDefault
+    const effective = loadCommentMode() ?? preferredMode ?? commentModeDefault
     if (effective && effective !== mode) setMode(effective)
     // biome-ignore lint/correctness/useExhaustiveDependencies: 仅跟随档案/全局值，避免本地切换被旧值回写
   }, [preferredMode, commentModeDefault])
