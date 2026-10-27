@@ -33,6 +33,7 @@ import {
   storeFilterPlacement,
   storeTheme,
   type FilterPlacement,
+  type CommentMode,
   type ThemePreference,
 } from './lib/preferences'
 import { applyTheme } from './lib/theme'
@@ -284,6 +285,16 @@ function Workspace({
     setLang(next)
   }, [lang])
   const [themePref, setThemePref] = useState<ThemePreference>(loadTheme())
+  // 评论嵌套默认模式（Admin 全局设置，settings 表；个人偏好在 member 表覆盖它）
+  const { settings: settingsRepo } = useRepositories()
+  const commentModeDefault = useObservable(
+    () => settingsRepo.live<CommentMode>('comment-mode-default'),
+    [settingsRepo],
+  )
+  const setCommentModeDefault = useCallback(
+    (m: CommentMode) => void settingsRepo.set('comment-mode-default', m),
+    [settingsRepo],
+  )
   // 筛选位置：偏好持久化在 localStorage，切换即时生效（同一份 Filters，两处渲染天然同步）
   const [placement, setPlacement] = useState<FilterPlacement>(loadFilterPlacement)
   const changePlacement = useCallback((next: FilterPlacement) => {
@@ -1015,6 +1026,8 @@ function Workspace({
     if (!modal) return
     const input = modal.querySelector('oas-input') as HTMLElement & { value?: string }
     const title = (input?.value ?? '').trim()
+    const descEl = modal.querySelector('oas-textarea') as HTMLElement & { value?: string }
+    const description = descEl?.value ?? ''
     const errEl = modal.querySelector<HTMLElement>('[data-testid="create-error"]')
     if (!title) {
       if (errEl) errEl.hidden = false
@@ -1028,6 +1041,7 @@ function Workspace({
     const created = await issuesRepo.create({
       projectId,
       title,
+      description,
       status,
       priority,
       assigneeId: assigneeId || null,
@@ -1037,6 +1051,7 @@ function Workspace({
     // 记下真实项目：全部项目作用域下下次新建默认落到同一个项目
     setLastProjectId(projectId)
     if (input) input.value = ''
+    if (descEl) descEl.value = ''
     createRef.current?.removeAttribute('visible')
   }, [
     createProjectId,
@@ -1239,6 +1254,8 @@ function Workspace({
             onSetTheme={applyThemeAndStore}
             lang={lang}
             onSetLang={setLangAndApply}
+            commentModeDefault={commentModeDefault ?? 'thread'}
+            onSetCommentModeDefault={setCommentModeDefault}
             canProject={canManageProjects}
             canMember={canManageMembers}
             canWorkspace={canManageWorkspace}
@@ -1358,6 +1375,15 @@ function Workspace({
               {t('titleRequired')}
             </p>
           </div>
+          <div className="create-field">
+            <label htmlFor="create-desc">{t('description')}</label>
+            {/* 纯文本多行描述（与抽屉编辑器一致；富文本归 oas-editor），可选，缺省 '' */}
+            <oas-textarea
+              data-testid="create-desc"
+              placeholder={t('createDescPlaceholder')}
+              style={{ minHeight: 72 }}
+            />
+          </div>
           <div className="create-row">
             <div className="create-field">
               <label htmlFor="create-project">{t('project')}</label>
@@ -1406,6 +1432,10 @@ function Workspace({
                 if (!modal) return
                 const input = modal.querySelector('oas-input') as HTMLElement & { value?: string }
                 if (input) input.value = ''
+                const descEl = modal.querySelector('oas-textarea') as HTMLElement & {
+                  value?: string
+                }
+                if (descEl) descEl.value = ''
                 const errEl = modal.querySelector<HTMLElement>('[data-testid="create-error"]')
                 if (errEl) errEl.hidden = true
                 modal.removeAttribute('visible')
@@ -1430,7 +1460,9 @@ function Workspace({
           issueId={selectedId}
           memberMap={memberMap}
           currentUser={currentUser}
+          commentModeDefault={commentModeDefault ?? 'thread'}
           onClose={() => setSelectedId(null)}
+          onModeChange={(m) => void membersRepo.update(currentUser, { commentMode: m })}
           can={can}
           onDeleted={(issue) => showUndo([issue.id], issue.key)}
         />

@@ -704,6 +704,7 @@ function notifyActivityStored(store: MockStore, activity: Activity): void {
 interface CreateIssueBody {
   projectId: string
   title: string
+  description?: string
   status: IssueStatus
   priority: IssuePriority
   assigneeId: string | null
@@ -726,7 +727,7 @@ function createIssue(store: MockStore, raw: unknown, actor: Member): Issue {
     projectId: project.id,
     key: `${project.key}-${keyNum}`,
     title: String(input.title ?? ''),
-    description: '',
+    description: String(input.description ?? ''),
     status: input.status ?? 'todo',
     priority: input.priority ?? 'medium',
     assigneeId: input.assigneeId ?? null,

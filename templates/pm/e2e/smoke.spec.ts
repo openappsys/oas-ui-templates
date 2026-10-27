@@ -267,6 +267,8 @@ test('M5 工具栏：新建 Issue 全流程 + CSV 导出 + 关于弹窗', async 
   await page.getByTestId('create-submit').click()
   await expect(page.getByTestId('create-error')).toBeVisible()
   await fillOInput(page, 'create-title', 'E2E 新建测试 Issue')
+  // 新建即可写描述（可选多行，纯文本）
+  await fillOInput(page, 'create-desc', 'E2E 新建描述：验收标准 A')
   await setOSelect(page, 'create-status', 'todo')
   await setOSelect(page, 'create-priority', 'high')
   await page.getByTestId('create-submit').click()
@@ -290,6 +292,40 @@ test('M5 工具栏：新建 Issue 全流程 + CSV 导出 + 关于弹窗', async 
       { timeout: 10_000 },
     )
     .toBe('E2E 新建测试 Issue')
+
+  // 创建时填写的描述 → 详情抽屉可见（随建落库）
+  await setView(page, 'issues')
+  await page
+    .locator('.issue-row')
+    .first()
+    .evaluate((el) => {
+      el.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          () =>
+            (document.querySelector('[data-testid=detail-drawer]') as { opened?: boolean })
+              ?.opened ?? false,
+        ),
+      { timeout: 10_000 },
+    )
+    .toBe(true)
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          () =>
+            (document.querySelector('[data-testid=detail-desc]') as { value?: string })?.value ??
+            '',
+        ),
+      { timeout: 10_000 },
+    )
+    .toBe('E2E 新建描述：验收标准 A')
+  // 关抽屉（Esc），继续 CSV/关于流程
+  await page.keyboard.press('Escape')
+  await expect(page.getByTestId('detail-drawer')).toHaveCount(0, { timeout: 10_000 })
 
   // CSV 导出
   const dl = page.waitForEvent('download', { timeout: 10_000 })

@@ -88,7 +88,7 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
         projectId: input.projectId,
         key: `${projectKey}-${keyNum}`,
         title: input.title,
-        description: '',
+        description: input.description ?? '',
         status: input.status,
         priority: input.priority,
         assigneeId: input.assigneeId,

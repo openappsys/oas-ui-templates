@@ -56,6 +56,8 @@ export interface CreatedDayCount {
 export interface CreateIssueInput {
   projectId: string
   title: string
+  /** 可选描述（纯文本）；缺省 '' —— 新建弹窗的描述域，详情抽屉可继续编辑 */
+  description?: string
   status: IssueStatus
   priority: IssuePriority
   assigneeId: string | null
