@@ -20,6 +20,7 @@
 
 ## 红线
 
+- **git push 只能由用户手动执行**，agent 一律不推（含验证性 push）——需要同步远端时明确告知用户由其操作
 - **不留任何 bug 才算完成**——e2e 全绿 ≠ 没问题，需截图/人工验收界面
 - **用组件库前先查 API**（`node_modules/.pnpm/@oas-ui+ui@*/.../dist/types/**.d.ts` 与 docs），以应用尽用，没有的自己造
 - **Web Components 与 React 19 集成的已知坑**（遇到先对照）：
