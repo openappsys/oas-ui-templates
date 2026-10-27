@@ -47,6 +47,12 @@ export interface CycleIssueCount {
   cancelled: number
 }
 
+/** 创建趋势的单日计数：day = UTC 'MM-DD'（与视图坐标轴同键），仅含有数据的日期，零日由视图补齐 */
+export interface CreatedDayCount {
+  day: string
+  count: number
+}
+
 export interface CreateIssueInput {
   projectId: string
   title: string
@@ -104,7 +110,7 @@ export interface IssueRepository {
   liveCycleIssues(projectId: string, cycleId: string): Observable<Issue[]>
   liveSubIssues(parentId: string): Observable<Issue[]>
   liveRelationCandidates(projectId: string, limit: number): Observable<Issue[]>
-  liveByCreatedSince(sinceMs: number): Observable<Issue[]>
+  liveCreatedDailyCounts(sinceMs: number): Observable<CreatedDayCount[]>
   listAll(limit: number): Promise<Issue[]>
   liveAssigneeWorkload(projectId: string): Observable<Array<{ memberId: string; count: number }>>
   liveSubProgress(

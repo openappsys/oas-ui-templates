@@ -1062,13 +1062,22 @@ function routeIssues(
       }),
     })
   }
-  if (second === 'created-since' && method === 'GET') {
+  if (second === 'created-trend' && method === 'GET') {
+    // 与 Dexie 实现同口径：createdAt ∈ [since, now] 的未删行按 UTC 'MM-DD' 分桶计数
     const since = Number(q.get('since') ?? 0)
     const now = Date.now()
-    const rows = store.issues
-      .filter((i) => notDeleted(i) && i.createdAt >= since && i.createdAt <= now)
-      .sort((a, b) => a.createdAt - b.createdAt || cmpKey(a.id, b.id))
-    return ok({ items: rows })
+    const dayOf = (ms: number) => new Date(ms).toISOString().slice(5, 10)
+    const counts = new Map<string, number>()
+    for (const i of store.issues) {
+      if (!notDeleted(i) || i.createdAt < since || i.createdAt > now) continue
+      const day = dayOf(i.createdAt)
+      counts.set(day, (counts.get(day) ?? 0) + 1)
+    }
+    return ok({
+      items: [...counts.entries()]
+        .map(([day, count]) => ({ day, count }))
+        .sort((a, b) => (a.day < b.day ? -1 : 1)),
+    })
   }
   if (second === 'relation-candidates' && method === 'GET') {
     const projectId = q.get('projectId') ?? ''

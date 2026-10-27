@@ -78,25 +78,23 @@ export function DashboardView({
     () => ({ colors: ISSUE_STATUSES.map((s) => STATUS_COLOR[s]) }),
     [],
   )
-  // 近 30 天创建趋势（createdAt 索引范围取数，按天聚合）
+  // 近 30 天创建趋势（createdAt 索引键按天计数，不物化完整行；零日由视图按坐标轴补齐）
   const trendFrom = useMemo(() => Date.now() - 30 * 86400000, [])
-  const trendRows = useObservable(
-    () => issuesRepo.liveByCreatedSince(trendFrom),
+  const trendCounts = useObservable(
+    () => issuesRepo.liveCreatedDailyCounts(trendFrom),
     [issuesRepo, trendFrom],
   )
   const trend = useMemo(() => {
-    if (!trendRows) return undefined
+    if (!trendCounts) return undefined
     const day = 86400000
-    const byDay = new Map<string, number>()
+    const byDay = new Map(trendCounts.map((r) => [r.day, r.count]))
+    const out: Array<{ label: string; value: number }> = []
     for (let i = 30; i >= 0; i--) {
-      byDay.set(new Date(Date.now() - i * day).toISOString().slice(5, 10), 0)
+      const label = new Date(Date.now() - i * day).toISOString().slice(5, 10)
+      out.push({ label, value: byDay.get(label) ?? 0 })
     }
-    for (const r of trendRows) {
-      const k = new Date(r.createdAt).toISOString().slice(5, 10)
-      if (byDay.has(k)) byDay.set(k, (byDay.get(k) ?? 0) + 1)
-    }
-    return [...byDay.entries()].map(([label, value]) => ({ label, value }))
-  }, [trendRows])
+    return out
+  }, [trendCounts])
 
   // 迭代两张卡：当前迭代燃尽 + 近 6 期完成量（口径见 lib/cycle-charts）。
   // 不 memo：数据量是周期级（≤ 十几个），且 now 每次渲染都要取真时钟，缓存反而拦了时钟推进

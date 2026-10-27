@@ -24,6 +24,7 @@ import type {
   CreateCommentInput,
   CreateCycleInput,
   CreateIssueInput,
+  CreatedDayCount,
   CycleIssueCount,
   CycleRepository,
   GlobalStats,
@@ -304,12 +305,12 @@ export function createApiRepositories(options: ApiClientOptions = {}): Repositor
           ),
         ),
       ),
-    liveByCreatedSince: (sinceMs) =>
+    liveCreatedDailyCounts: (sinceMs) =>
       live(async () =>
-        asItems<Issue>(
-          await send<{ items: Issue[] }>(
+        asItems<CreatedDayCount>(
+          await send<{ items: CreatedDayCount[] }>(
             'GET',
-            '/api/issues/created-since',
+            '/api/issues/created-trend',
             buildQuery({ since: sinceMs }),
           ),
         ),

@@ -1142,7 +1142,9 @@ describe('dexie issue repository — 软删除与回收站', () => {
 
     expect(await first(repo.liveSubIssues('keep'))).toEqual([])
     expect((await first(repo.liveRelationCandidates('p1', 100))).map((r) => r.id)).toEqual(['keep'])
-    expect((await first(repo.liveByCreatedSince(0))).map((r) => r.id)).toEqual(['keep'])
+    expect((await first(repo.liveCreatedDailyCounts(0))).map((r) => `${r.day}=${r.count}`)).toEqual(
+      ['01-01=1'],
+    )
     const workload = await first(repo.liveAssigneeWorkload('p1'))
     expect(workload).toEqual([{ memberId: 'm1', count: 1 }])
     expect((await first(repo.liveCycleIssues('p1', 'c1'))).map((r) => r.id)).toEqual(['keep'])

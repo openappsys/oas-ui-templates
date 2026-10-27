@@ -587,7 +587,7 @@ describe('派生查询与聚合', () => {
     expect(rows.every((r) => r.memberId)).toBe(true)
   })
 
-  it('sub-issues / relation-candidates / bulkGet / listAll / created-since', () => {
+  it('sub-issues / relation-candidates / bulkGet / listAll / created-trend', () => {
     const store = createMockStore({ now: FIXED })
     const parent = store.issues[0]
     const subs = items<Issue>(call(store, 'GET', `/api/issues/${parent.id}/sub-issues`))
@@ -617,14 +617,17 @@ describe('派生查询与聚合', () => {
     expect(all.map((i) => i.id)).toEqual([...all.map((i) => i.id)].sort())
 
     const since = FIXED - 30 * DAY
-    const recent = items<Issue>(
-      call(store, 'GET', '/api/issues/created-since', { query: { since: String(since) } }),
+    const trend = items<{ day: string; count: number }>(
+      call(store, 'GET', '/api/issues/created-trend', { query: { since: String(since) } }),
     )
-    expect(recent.length).toBeGreaterThan(0)
-    expect(recent.every((i) => i.createdAt >= since)).toBe(true)
-    expect(recent.map((i) => i.createdAt)).toEqual(
-      [...recent.map((i) => i.createdAt)].sort((x, y) => x - y),
+    expect(trend.length).toBeGreaterThan(0)
+    expect(trend.reduce((sum, r) => sum + r.count, 0)).toBeGreaterThan(0)
+    expect(trend.map((r) => r.day)).toEqual([...trend.map((r) => r.day)].sort())
+    // 计数与原始行数对得上（与 created-since 旧口径同总和；notDeleted = deletedAt 缺失/null）
+    const raw = store.issues.filter(
+      (i) => i.deletedAt == null && i.createdAt >= since && i.createdAt <= FIXED,
     )
+    expect(trend.reduce((sum, r) => sum + r.count, 0)).toBe(raw.length)
   })
 })
 

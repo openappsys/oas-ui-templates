@@ -242,8 +242,8 @@ describe('契约：同一份 seed 下 Dexie 与 API 输出相同', () => {
       await first(dexie.issues.liveRelationCandidates(projectId, 25)),
     )
     const since = FIXED - 400 * 86_400_000
-    expect(await first(api.issues.liveByCreatedSince(since))).toEqual(
-      await first(dexie.issues.liveByCreatedSince(since)),
+    expect(await first(api.issues.liveCreatedDailyCounts(since))).toEqual(
+      await first(dexie.issues.liveCreatedDailyCounts(since)),
     )
   })
 
@@ -806,8 +806,8 @@ describe('契约：同一份 seed 下 Dexie 与 API 输出相同', () => {
     expect(await first(api.issues.liveRelationCandidates(projectId, 50))).toEqual(
       await first(dexie.issues.liveRelationCandidates(projectId, 50)),
     )
-    expect(await first(api.issues.liveByCreatedSince(FIXED - 400 * 86_400_000))).toEqual(
-      await first(dexie.issues.liveByCreatedSince(FIXED - 400 * 86_400_000)),
+    expect(await first(api.issues.liveCreatedDailyCounts(FIXED - 400 * 86_400_000))).toEqual(
+      await first(dexie.issues.liveCreatedDailyCounts(FIXED - 400 * 86_400_000)),
     )
     expect(await first(api.issues.liveAssigneeWorkload(projectId))).toEqual(
       await first(dexie.issues.liveAssigneeWorkload(projectId)),

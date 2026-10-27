@@ -10,6 +10,7 @@ import { issueChangeNotificationDrafts } from '@/lib/notify'
 import { PRIORITY_WEIGHT } from '@/lib/order'
 import type {
   CreateIssueInput,
+  CreatedDayCount,
   CycleIssueCount,
   IssueRepository,
   IssueWindowFilters,
@@ -399,12 +400,31 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
       })
     },
 
-    liveByCreatedSince(sinceMs: number): Observable<Issue[]> {
-      return fromLiveQuery(async () =>
-        (await db.issues.where('createdAt').between(sinceMs, Date.now()).toArray()).filter(
-          notDeleted,
-        ),
-      )
+    /** 创建趋势：createdAt 索引 .keys() 只读索引键（不物化完整行——10 万行场景从「行深克隆+GC」
+     *  降为「数字数组」），按天分桶；软删行是小集合，单独读取后按 createdAt 逐日扣除
+     *  （索引键序列无法按 id 过滤）。day 键与视图坐标轴同源：UTC 'MM-DD' */
+    liveCreatedDailyCounts(sinceMs: number): Observable<CreatedDayCount[]> {
+      return fromLiveQuery(async () => {
+        const [keys, deletedRows] = await Promise.all([
+          db.issues.where('createdAt').between(sinceMs, Date.now(), true, true).keys(),
+          db.issues.where('deletedAt').above(0).toArray(),
+        ])
+        const dayOf = (ms: number) => new Date(ms).toISOString().slice(5, 10)
+        const counts = new Map<string, number>()
+        for (const k of keys) {
+          const day = dayOf(k as number)
+          counts.set(day, (counts.get(day) ?? 0) + 1)
+        }
+        for (const row of deletedRows) {
+          if (row.createdAt < sinceMs) continue
+          const day = dayOf(row.createdAt)
+          if (counts.has(day)) counts.set(day, (counts.get(day) ?? 0) - 1)
+        }
+        return [...counts.entries()]
+          .filter(([, count]) => count > 0)
+          .map(([day, count]) => ({ day, count }))
+          .sort((a, b) => (a.day < b.day ? -1 : 1))
+      })
     },
 
     async listAll(limit: number): Promise<Issue[]> {
