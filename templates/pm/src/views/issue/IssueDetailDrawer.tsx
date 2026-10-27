@@ -13,7 +13,7 @@ import { activityTypeLabel, dateLocale, priorityLabel, relationLabel, statusLabe
 import { useRepositories } from '@/data/context'
 import { useObservable } from '@/data/use-observable'
 import { useLabelSet } from '@/lib/labels'
-import { loadCommentMode, storeCommentMode, type CommentMode } from '@/lib/preferences'
+import type { CommentMode } from '@/lib/preferences'
 import {
   bucketOf,
   bucketToDueAt,
@@ -107,20 +107,20 @@ function CommentsBlock({
     setMentionQuery(null)
     el.focus()
   }
-  // 优先级（高→低）：本地缓存（设备级）→ 成员档案（跨设备）→ Admin 全局默认 → 内置
+  // 优先级（高→低）：成员档案（profile）→ Admin 全局默认 → 内置。
+  // 刻意不用 localStorage——评论结构是协作语义偏好，设备间不一致会伤害讨论
   const [mode, setMode] = useState<CommentMode>(
-    () => loadCommentMode() ?? preferredMode ?? commentModeDefault ?? 'thread',
+    () => preferredMode ?? commentModeDefault ?? 'thread',
   )
   // 成员档案字段优先（跨设备跟随）；再回落 Admin 全局默认（settings 表），最后本地缓存
   useEffect(() => {
-    const effective = loadCommentMode() ?? preferredMode ?? commentModeDefault
+    const effective = preferredMode ?? commentModeDefault
     if (effective && effective !== mode) setMode(effective)
     // biome-ignore lint/correctness/useExhaustiveDependencies: 仅跟随档案/全局值，避免本地切换被旧值回写
   }, [preferredMode, commentModeDefault])
   const changeMode = (v: string) => {
     const next: CommentMode = v === 'flat' ? 'flat' : v === 'nested' ? 'nested' : 'thread'
     setMode(next)
-    storeCommentMode(next)
     onModeChange?.(next)
   }
 
