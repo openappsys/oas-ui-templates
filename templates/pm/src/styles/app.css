@@ -2208,10 +2208,7 @@ oas-drawer::part(close):focus-visible {
   gap: 10px;
 }
 
-/* 设置页（System settings）：标签列 + 控件列两栏 grid，收窄栏宽提升可读性 */
-.admin-settings {
-  max-width: 760px;
-}
+/* 设置页（System settings）：标签列 + 控件列两栏 grid（面板与其他管理页同宽撑满） */
 .admin-settings .admin-panel {
   margin-bottom: 16px;
 }
