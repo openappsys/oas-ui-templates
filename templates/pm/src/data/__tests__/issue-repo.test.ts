@@ -1153,6 +1153,43 @@ describe('dexie issue repository — 软删除与回收站', () => {
     expect(await first(repo.liveTrash())).toMatchObject([{ id: 'gone' }])
   })
 
+  it('liveAssignedTo / reviewOnly 窗口 / 交付过渡 review 通知', async () => {
+    await db.issues.bulkAdd([
+      seedIssue(db, { id: 'a1', assigneeId: 'agent-1' }),
+      seedIssue(db, { id: 'a2', assigneeId: 'agent-1', status: 'done' }),
+      seedIssue(db, { id: 'h1', assigneeId: 'member-2' }),
+      seedIssue(db, { id: 'gone', assigneeId: 'agent-1', deletedAt: 5 }),
+    ])
+    const repo = createDexieIssueRepository(db)
+
+    // 指派查询：含 done、排除软删行；空入参返回空
+    const assigned = await first(repo.liveAssignedTo(['agent-1']))
+    expect(assigned.map((r) => r.id).sort()).toEqual(['a1', 'a2'])
+    expect(await first(repo.liveAssignedTo([]))).toEqual([])
+
+    // reviewOnly 窗口谓词
+    const base: IssueWindowFilters = {
+      projectId: 'p1',
+      statusFilter: [],
+      assigneeFilter: [],
+      priorityFilter: [],
+      labelFilter: [],
+      search: '',
+      myOnly: false,
+      reviewOnly: true,
+      sortBy: 'updatedAt',
+      cycleFilter: null,
+    }
+    expect(await first(repo.liveWindow(base, 'm1'))).toEqual([])
+    await repo.update('a1', { reviewRequired: true })
+    const win = await first(repo.liveWindow(base, 'm1'))
+    expect(win.map((r) => r.id)).toEqual(['a1'])
+
+    // 交付过渡（false→true）产生 review 通知：到报告人，actor（agent-1）排除
+    const notifs = (await db.notifications.toArray()).filter((n) => n.type === 'review')
+    expect(notifs.map((n) => [n.memberId, n.issueId])).toEqual([['m1', 'a1']])
+  })
+
   it('窗口按未删行补足 limit（删除行不占名额）', async () => {
     const now = 1_000_000
     await db.issues.bulkAdd([

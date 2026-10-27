@@ -41,6 +41,8 @@ export function MembersTab({
   const nameRef = useRef<HTMLElement & { value?: string }>(null)
   const emailRef = useRef<HTMLElement & { value?: string }>(null)
   const [newRole, setNewRole] = useState('member')
+  // 新建成员种类：human（缺省）/ agent（AI 执行者，可被指派、自动推进）
+  const [newKind, setNewKind] = useState<'human' | 'agent'>('human')
   const [fieldError, setFieldError] = useState('')
   const [error, setError] = useState('')
   const [query, setQuery] = useState('')
@@ -88,6 +90,7 @@ export function MembersTab({
 
   const openModal = useCallback(() => {
     setNewRole('member')
+    setNewKind('human')
     setFieldError('')
     if (nameRef.current) nameRef.current.value = ''
     if (emailRef.current) emailRef.current.value = ''
@@ -117,6 +120,7 @@ export function MembersTab({
         email,
         role: newRole,
         avatarColor: PALETTE[(listRef.current?.length ?? 0) % PALETTE.length],
+        kind: newKind === 'agent' ? 'agent' : 'human',
       })
       modalRef.current?.removeAttribute('visible')
     } catch (e) {
@@ -124,7 +128,7 @@ export function MembersTab({
     } finally {
       inFlightRef.current = false
     }
-  }, [membersRepo, newRole, showError])
+  }, [membersRepo, newRole, newKind, showError])
 
   const changeRole = useCallback(
     async (id: string, role: string, sel: SelectEl, prev: string) => {
@@ -190,7 +194,9 @@ export function MembersTab({
     () =>
       filtered.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE).map((m) => ({
         id: m.id,
-        name: m.id === currentUser ? `${m.name}${t('adminMe')}` : m.name,
+        name:
+          (m.id === currentUser ? `${m.name}${t('adminMe')}` : m.name) +
+          (m.kind === 'agent' ? ` ${t('memberAgentTag')}` : ''),
         email: m.email,
         role: m.role,
         inProgress: workloadMap.get(m.id)?.toLocaleString() ?? '…',
@@ -327,6 +333,18 @@ export function MembersTab({
               value={newRole}
               options={roleOptions}
               onChange={(v) => setNewRole(v)}
+            />
+          </div>
+          <div className="create-field">
+            <label htmlFor="admin-member-kind-new">{t('adminMemberKind')}</label>
+            <OSelect
+              testid="admin-member-kind-new"
+              value={newKind}
+              options={[
+                { label: t('memberKindHuman'), value: 'human' },
+                { label: t('memberKindAgent'), value: 'agent' },
+              ]}
+              onChange={(v) => setNewKind(v === 'agent' ? 'agent' : 'human')}
             />
           </div>
           {fieldError && (

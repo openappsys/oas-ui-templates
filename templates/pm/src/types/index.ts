@@ -34,6 +34,8 @@ export interface Issue {
   deletedAt?: number | null
   /** 关注者（memberId 列表）：关注者收到该 Issue 的所有变更通知 */
   watchers?: string[]
+  /** agent 交付待验收（仅 agent 执行者写入）：true = 进入验收队列，人通过后才可流转 done */
+  reviewRequired?: boolean
 }
 
 /** 迭代（Sprint/Cycle）：状态由 now 与区间派生，不落 status 字段——
@@ -69,6 +71,8 @@ export interface Member {
   avatarColor: string
   /** 角色 id：内置 admin/member/viewer，或自定义角色 id */
   role: string
+  /** 成员种类：human = 人（缺省，旧数据无此字段）；agent = AI 执行者（可被指派、自动推进、交付待人审） */
+  kind?: MemberKind
   /** 个人资料补充字段（可选，旧数据缺省为空） */
   title?: string
   timezone?: string
@@ -77,6 +81,9 @@ export interface Member {
   /** 停用时间（null/缺失 = 在职）。停用后主视图不可见，管理台可恢复 */
   deactivatedAt?: number | null
 }
+
+/** 成员种类：agent 无登录态（不进认证账号表），仅作为指派目标与活动 actor 存在 */
+export type MemberKind = 'human' | 'agent'
 
 /** 审计：角色/分配等管理变更（只追加） */
 export interface AuditEntry {
@@ -148,7 +155,14 @@ export interface Activity {
   createdAt: number
 }
 
-export type NotificationType = 'mention' | 'assigned' | 'comment' | 'status' | 'cycle' | 'system'
+export type NotificationType =
+  | 'mention'
+  | 'assigned'
+  | 'comment'
+  | 'status'
+  | 'cycle'
+  | 'review'
+  | 'system'
 
 /** 站内通知：接收者视角的一行，读态由 readAt 表达（null = 未读） */
 export interface Notification {

@@ -129,7 +129,13 @@ export function KanbanBoard({
       const isBlocked =
         Array.isArray(card.relations) &&
         (card.relations as Array<{ type: string }>).some((r) => r.type === 'blocked-by')
-      if (isBlocked) {
+      const isReview = card.reviewRequired === true
+      if (isReview) {
+        const b = document.createElement('span')
+        b.className = 'review-badge'
+        b.textContent = t('reviewBadge')
+        wrap.append(top, title, pr, b)
+      } else if (isBlocked) {
         const b = document.createElement('span')
         b.className = 'board-card-blocked'
         b.textContent = '⛔'

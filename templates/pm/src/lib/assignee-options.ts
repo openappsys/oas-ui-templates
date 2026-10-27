@@ -12,7 +12,7 @@ export function buildAssigneeOptions(
   return [
     { label: `${labels.unassigned} (${counts.get(UNASSIGNED) ?? 0})`, value: UNASSIGNED },
     ...(members ?? []).map((m) => ({
-      label: `${m.name} (${counts.get(m.id) ?? 0})`,
+      label: `${m.kind === 'agent' ? '🤖 ' : ''}${m.name} (${counts.get(m.id) ?? 0})`,
       value: m.id,
     })),
   ]

@@ -1396,6 +1396,36 @@ oas-app-bar.topbar {
   font-size: 11px;
   cursor: default;
 }
+.agent-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  margin-bottom: 12px;
+  border: 1px solid var(--oas-color-border, #e5e7eb);
+  border-left: 3px solid #6366f1;
+  border-radius: 6px;
+  background: var(--oas-color-fill-quaternary, rgba(99, 102, 241, 0.06));
+  font-size: 13px;
+}
+.agent-strip-text {
+  flex: 1;
+  min-width: 0;
+}
+.agent-review-actions {
+  flex-shrink: 0;
+}
+.review-badge {
+  margin-left: 6px;
+  font-size: 11px;
+  padding: 0 6px;
+  border-radius: 999px;
+  border: 1px solid #f59e0b;
+  color: #b45309;
+  background: rgba(245, 158, 11, 0.12);
+  cursor: default;
+  white-space: nowrap;
+}
 .replies-title {
   font-size: 11px;
   color: var(--oas-color-text-secondary, #64748b);

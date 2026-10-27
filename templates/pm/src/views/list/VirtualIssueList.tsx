@@ -45,6 +45,18 @@ function ensureRowStyles(root: ShadowRoot | null): void {
       text-overflow: ellipsis;
       white-space: nowrap;
     }
+    .issue-row .review-badge {
+      display: inline-block;
+      margin-left: 6px;
+      padding: 0 6px;
+      border-radius: 999px;
+      border: 1px solid #f59e0b;
+      color: #b45309;
+      background: rgba(245, 158, 11, 0.12);
+      font-size: 11px;
+      line-height: 16px;
+      vertical-align: middle;
+    }
     .issue-row .row-check {
       width: 14px;
       height: 14px;
@@ -184,7 +196,15 @@ function renderIssueRow(
     return s
   }
   add('issue-key', issue.key)
-  add('issue-title', issue.title)
+  const titleSpan = add('issue-title', issue.title)
+  // 待验收徽标挂在标题单元格内（行是固定列数 grid，append 到行会掉进隐式行被压没）
+  if (issue.reviewRequired === true) {
+    const badge = document.createElement('span')
+    badge.className = 'review-badge'
+    badge.setAttribute('data-testid', 'review-badge')
+    badge.textContent = t('reviewBadge')
+    titleSpan.appendChild(badge)
+  }
   const m = memberMap.get(issue.assigneeId ?? '')
   const av = document.createElement('oas-avatar')
   av.setAttribute('size', '20')

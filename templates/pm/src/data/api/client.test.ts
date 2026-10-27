@@ -245,6 +245,10 @@ describe('契约：同一份 seed 下 Dexie 与 API 输出相同', () => {
     expect(await first(api.issues.liveCreatedDailyCounts(since))).toEqual(
       await first(dexie.issues.liveCreatedDailyCounts(since)),
     )
+    // agent 调度数据源：指派查询双端同构（含 agent 成员）
+    expect(await first(api.issues.liveAssignedTo(['member-1', 'agent-coder']))).toEqual(
+      await first(dexie.issues.liveAssignedTo(['member-1', 'agent-coder'])),
+    )
   })
 
   it('listAll / bulkGet / get / live 一致', async () => {
@@ -815,6 +819,29 @@ describe('契约：同一份 seed 下 Dexie 与 API 输出相同', () => {
     expect(await first(api.admin.liveGlobalStats())).toEqual(
       await first(dexie.admin.liveGlobalStats()),
     )
+  })
+
+  it('agent 交付待验收：reviewRequired 过渡在双端产生同一规则的 review 通知', async () => {
+    // 各取一条 issue 改派给 agent 再交付（actor=agent，通知到 reporter，排除 actor）
+    const dexieTarget = store.issues.find(
+      (i) => i.projectId === projectId && i.reporterId !== 'agent-coder',
+    )!
+    const apiTarget = store.issues.find(
+      (i) => i.projectId === projectId && i.id !== dexieTarget.id && i.reporterId !== 'agent-coder',
+    )!
+    await dexie.issues.update(dexieTarget.id, { assigneeId: 'agent-coder' })
+    await dexie.issues.update(dexieTarget.id, { reviewRequired: true })
+    await api.issues.update(apiTarget.id, { assigneeId: 'agent-coder' })
+    await api.issues.update(apiTarget.id, { reviewRequired: true })
+
+    const dNotifs = (await db.notifications.toArray()).filter((n) => n.type === 'review')
+    const aNotifs = store.notifications.filter((n) => n.type === 'review')
+    expect(dNotifs.map((n) => [n.memberId, n.issueId])).toEqual([
+      [dexieTarget.reporterId, dexieTarget.id],
+    ])
+    expect(aNotifs.map((n) => [n.memberId, n.issueId])).toEqual([
+      [apiTarget.reporterId, apiTarget.id],
+    ])
   })
 
   it('export 信封同构、import 跨模式往返', async () => {

@@ -6,7 +6,7 @@ import { ISSUE_PRIORITIES, ISSUE_STATUSES } from '@/types'
 import { fromLiveQuery, type Observable } from '@/data/observable'
 import { cycleFilterPredicate, CURRENT_CYCLE, NO_CYCLE } from '@/lib/cycles'
 import { ALL_PROJECTS, LIST_WINDOW, UNASSIGNED } from '@/lib/filters'
-import { issueChangeNotificationDrafts } from '@/lib/notify'
+import { issueChangeNotificationDrafts, reviewNotificationDrafts } from '@/lib/notify'
 import { PRIORITY_WEIGHT } from '@/lib/order'
 import type {
   CreateIssueInput,
@@ -110,6 +110,20 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
       const row = await db.issues.get(id)
       if (!row || !notDeleted(row)) return
       await db.issues.update(id, { ...changes, updatedAt: Date.now() })
+      // agent 交付进入待验收（false→true 过渡）：报告人 + 关注者收 review 通知。
+      // 放在 update 仓库层而非调用方——任何写入路径（调度器/人）都走同一规则；
+      // actor 取指派的 agent（交付者）
+      if (changes.reviewRequired === true && row.reviewRequired !== true) {
+        await insertNotificationDrafts(
+          db,
+          reviewNotificationDrafts({
+            issueId: id,
+            actorId: row.assigneeId ?? '',
+            reporterId: row.reporterId,
+            watchers: row.watchers ?? [],
+          }),
+        )
+      }
     },
 
     /** 软删除：只写 deletedAt，行留在库里供回收站恢复。updatedAt 不动——
@@ -231,6 +245,7 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
           out = out.filter((i) => want.has(i.assigneeId ?? UNASSIGNED))
         }
         if (filters.myOnly) out = out.filter((i) => i.assigneeId === currentUser)
+        if (filters.reviewOnly) out = out.filter((i) => i.reviewRequired === true)
         if (filters.priorityFilter.length) {
           const want = new Set(filters.priorityFilter)
           out = out.filter((i) => want.has(i.priority))
@@ -424,6 +439,16 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
           .filter(([, count]) => count > 0)
           .map(([day, count]) => ({ day, count }))
           .sort((a, b) => (a.day < b.day ? -1 : 1))
+      })
+    },
+
+    /** 指派给指定成员（agent 调度用）的在库 Issue：assigneeId 索引 anyOf 直取，
+     *  含 done/cancelled（调度器按状态自行判定），软删行排除。输出按 id 升序（与 listAll 同契约） */
+    liveAssignedTo(memberIds: string[]): Observable<Issue[]> {
+      return fromLiveQuery(async () => {
+        if (memberIds.length === 0) return []
+        const rows = await db.issues.where('assigneeId').anyOf(memberIds).toArray()
+        return alive(rows, await deletedIds(db)).sort(byIdAsc)
       })
     },
 

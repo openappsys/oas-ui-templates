@@ -34,6 +34,44 @@ const LABELS = ['frontend', 'backend', 'design', 'bug', 'feature', 'tech-debt', 
 
 export const SEED_MARKER_KEY = 'oas-pm-seed-v11'
 
+/** agent 执行者（种子与旧库迁移共用定义）：可被指派、由调度器模拟推进。
+ *  不进认证账号（无法登录），id 前缀 agent- 与人 member-N 区分 */
+const AGENT_MEMBERS: Member[] = [
+  {
+    id: 'agent-coder',
+    name: '编码助手',
+    email: 'agent-coder@agents.internal',
+    avatarColor: '#6366f1',
+    role: 'member',
+    kind: 'agent',
+    title: 'Autonomous coding agent',
+  },
+  {
+    id: 'agent-qa',
+    name: '测试助手',
+    email: 'agent-qa@agents.internal',
+    avatarColor: '#0d9488',
+    role: 'member',
+    kind: 'agent',
+    title: 'QA agent',
+  },
+]
+/** agent 的项目归属：与种子矩阵同形（project-1 双 agent，project-2 编码 agent） */
+const agentProjectMemberRows = (
+  projectIds: string[],
+): Array<{
+  id: string
+  projectId: string
+  memberId: string
+}> => {
+  const rows: Array<{ id: string; projectId: string; memberId: string }> = []
+  for (const pid of projectIds) {
+    const agents = pid === 'project-1' ? AGENT_MEMBERS : AGENT_MEMBERS.slice(0, 1)
+    for (const a of agents) rows.push({ id: `${pid}:${a.id}`, projectId: pid, memberId: a.id })
+  }
+  return rows
+}
+
 export async function seedDatabase(): Promise<void> {
   // seed 版本标记：调整 seed 逻辑后 bump。标记只表示「本浏览器已完成初始化」——
   // 不再用 issueCount>0 作为条件，否则清空/导入空备份后刷新会重播演示数据并覆盖用户新数据
@@ -62,9 +100,19 @@ export async function seedDatabase(): Promise<void> {
     }
     await db.settings.put({ key: marker, value: true, updatedAt: Date.now() })
   }
+  // v16：agent 执行者成员（旧库升级补插，只跑一次；管理员删除后不会被下次启动灌回）
+  const ensureAgentMembers = async () => {
+    const marker = 'migration:agent-members-v16'
+    if (await db.settings.get(marker)) return
+    await db.members.bulkPut(AGENT_MEMBERS)
+    const projects = await db.projects.toArray()
+    await db.projectMembers.bulkPut(agentProjectMemberRows(projects.map((p) => p.id)))
+    await db.settings.put({ key: marker, value: true, updatedAt: Date.now() })
+  }
   if (marked) {
     await ensureRoles()
     await ensureProjectMembers()
+    await ensureAgentMembers()
     return
   }
   // 旧 seed 数据（v1 的 updatedAt 走了未来时间戳）/ 中断残留 清表重播；
@@ -83,7 +131,8 @@ export async function seedDatabase(): Promise<void> {
     avatarColor: AVATAR_PALETTE[i % AVATAR_PALETTE.length],
     role: (i === 0 ? 'admin' : i < 3 ? 'member' : 'viewer') as Member['role'],
   }))
-  await db.members.bulkPut(members)
+  const agents = AGENT_MEMBERS
+  await db.members.bulkPut([...members, ...agents])
 
   const projects: Project[] = [
     {
@@ -107,13 +156,14 @@ export async function seedDatabase(): Promise<void> {
   ]
   await db.projects.bulkPut(projects)
 
-  // v14：项目成员（负责人候选/成员筛选只取当前项目成员）。project-1 全员，project-2 前 5 人
+  // v14：项目成员（负责人候选/成员筛选只取当前项目成员）。project-1 全员+双 agent，project-2 前 5 人+编码 agent
   await db.projectMembers.bulkPut([
     ...members.map((m) => ({
       id: `project-1:${m.id}`,
       projectId: 'project-1',
       memberId: m.id,
     })),
+    ...agentProjectMemberRows(['project-1', 'project-2']),
     ...members.slice(0, 5).map((m) => ({
       id: `project-2:${m.id}`,
       projectId: 'project-2',

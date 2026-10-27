@@ -24,6 +24,7 @@ import {
   type Grouping,
 } from './lib/filters'
 import { useProjectCounts } from './lib/hooks'
+import { startAgentScheduler } from './lib/agent-runner'
 import { useLabelSet } from './lib/labels'
 import {
   loadFilterPlacement,
@@ -85,6 +86,7 @@ function useIssueWindow(f: Filters, currentUser: string, listLimit: number, retr
           priorityFilter: f.priorityFilter,
           search: f.search,
           myOnly: f.myOnly,
+          reviewOnly: f.reviewOnly,
           sortBy: f.sortBy,
           cycleFilter: f.cycleFilter,
         },
@@ -98,6 +100,7 @@ function useIssueWindow(f: Filters, currentUser: string, listLimit: number, retr
       f.priorityFilter,
       f.search,
       f.myOnly,
+      f.reviewOnly,
       f.sortBy,
       f.cycleFilter,
       currentUser,
@@ -274,6 +277,8 @@ function Workspace({
     savedViews: savedViewsRepo,
     members: membersRepo,
   } = useRepositories()
+  // agent 调度器需要的完整仓库集（Dexie/API 共用，写入走当前数据源的同一条管道）
+  const allRepos = useRepositories()
   // 当前登录身份：API 模式取会话成员；Dexie 模式沿用 localStorage 演示身份（默认张伟，头像点击切换）
   const [currentUser, setCurrentUser] = useState(
     () => session?.id ?? localStorage.getItem('oas-pm-user') ?? 'member-1',
@@ -414,6 +419,26 @@ function Workspace({
     [subProgressRows],
   )
   const memberMap = useMemo(() => new Map((members ?? []).map((m) => [m.id, m])), [members])
+  // agent 调度器：存在 agent 成员即启动。以 id 串为依赖（成员表任何字段变化都会新数组，
+  // 重启调度会让在途 run 重复派发——只有 agent 名册本身变化才值得重启）
+  const agentKey = useMemo(
+    () =>
+      (members ?? [])
+        .filter((m) => m.kind === 'agent' && !m.deactivatedAt)
+        .map((m) => m.id)
+        .join(','),
+    [members],
+  )
+  useEffect(() => {
+    if (!agentKey) return
+    let fast = false
+    try {
+      fast = localStorage.getItem('oas-pm-agent-speed') === 'fast'
+    } catch {
+      // 隐私模式等 localStorage 不可用：按正常档跑
+    }
+    return startAgentScheduler({ repos: allRepos, agentIds: agentKey.split(','), fast })
+  }, [allRepos, agentKey])
   const can = useCallback(
     (action: Action, ctx?: Ctx) => {
       // 角色取成员表；表被清空/未到时用会话快照，避免 admin 掉成 viewer
@@ -512,7 +537,10 @@ function Workspace({
   const memberOptions = useMemo(
     () => [
       { label: t('resourceUnassigned'), value: '__none__' },
-      ...[...(members ?? [])].map((m) => ({ label: m.name, value: m.id })),
+      ...[...(members ?? [])].map((m) => ({
+        label: m.kind === 'agent' ? `🤖 ${m.name}` : m.name,
+        value: m.id,
+      })),
     ],
     [members, lang],
   )
@@ -567,7 +595,7 @@ function Workspace({
         value: `assignee:${m.id}`,
         kind: 'assignee',
         id: m.id,
-        label: m.name,
+        label: m.kind === 'agent' ? `🤖 ${m.name}` : m.name,
         count: (memberCounts?.get(m.id) ?? 0).toLocaleString(),
         avatarText: m.name[0],
         avatarColor: m.avatarColor,
@@ -669,6 +697,7 @@ function Workspace({
       cycleFilter: null,
       search: '',
       myOnly: false,
+      reviewOnly: false,
     }))
   }, [])
 
@@ -873,6 +902,13 @@ function Workspace({
       divider: true,
       rows: [
         {
+          value: 'filter:review',
+          kind: 'review',
+          label: t('reviewQueue'),
+          selected: filters.reviewOnly,
+          highlight: filters.reviewOnly ? 'weak' : undefined,
+        },
+        {
           value: 'group:status',
           kind: 'group',
           label: t('status'),
@@ -929,6 +965,10 @@ function Workspace({
           break
         case 'view':
           setF('myOnly', row.id === 'my')
+          break
+        case 'review':
+          // 待验收队列：toggle 开关（再点取消）
+          setFilters((prev) => ({ ...prev, reviewOnly: !prev.reviewOnly }))
           break
         case 'status':
           // 组内 OR：点击行即 toggle；「全部」行清空该组

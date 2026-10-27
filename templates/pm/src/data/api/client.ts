@@ -256,6 +256,7 @@ export function createApiRepositories(options: ApiClientOptions = {}): Repositor
               labels: joinFilter(filters.labelFilter ?? []),
               search: filters.search,
               myOnly: filters.myOnly ? '1' : null,
+              reviewOnly: filters.reviewOnly ? '1' : null,
               currentUser,
               sortBy: filters.sortBy,
               cycle: filters.cycleFilter,
@@ -335,6 +336,16 @@ export function createApiRepositories(options: ApiClientOptions = {}): Repositor
           await send<{
             items: Array<{ parentId: string; done: number; total: number }>
           }>('GET', '/api/issues/sub-progress', buildQuery({ projectId })),
+        ),
+      ),
+    liveAssignedTo: (memberIds) =>
+      live(async () =>
+        asItems<Issue>(
+          await send<{ items: Issue[] }>(
+            'GET',
+            '/api/issues/assigned-to',
+            buildQuery({ memberIds: memberIds.join(',') }),
+          ),
         ),
       ),
     bulkGet: async (ids) => {

@@ -13,19 +13,23 @@ const memberRows = (page: Page) =>
       )
   })
 
-test('SC1 项目成员收窄：project-1 全员、project-2 5 人，切换项目即刷新成员组', async ({ page }) => {
+test('SC1 项目成员收窄：project-1 全员（含 agent）、project-2 5 人+编码 agent，切换项目即刷新成员组', async ({
+  page,
+}) => {
   await waitForSeed(page)
-  expect((await memberRows(page)).length).toBe(8)
+  // 8 人 + 2 agent 执行者
+  expect((await memberRows(page)).length).toBe(10)
   await page
     .getByTestId('side-list')
     .locator('[part="item"][data-value="project:project-2"]')
     .click()
-  await expect.poll(async () => (await memberRows(page)).length, { timeout: 10_000 }).toBe(5)
+  // 5 人 + 编码 agent
+  await expect.poll(async () => (await memberRows(page)).length, { timeout: 10_000 }).toBe(6)
   await page
     .getByTestId('side-list')
     .locator('[part="item"][data-value="project:project-1"]')
     .click()
-  await expect.poll(async () => (await memberRows(page)).length, { timeout: 10_000 }).toBe(8)
+  await expect.poll(async () => (await memberRows(page)).length, { timeout: 10_000 }).toBe(10)
 })
 
 test('SC2 目录可搜索 + 项目成员维护：裁到 2 人后项目-2 成员组只剩 2 人', async ({ page }) => {

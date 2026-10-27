@@ -1,6 +1,7 @@
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef, useEffect, useSyncExternalStore } from 'react'
 import type { Comment, Issue, IssuePriority, IssueStatus, Member } from '@/types'
 import { ISSUE_PRIORITIES, ISSUE_STATUSES } from '@/types'
+import { subscribeAgentRuns, getAgentRunsSnapshot } from '@/lib/agent-runner'
 import {
   OSelect,
   OCheckbox,
@@ -559,6 +560,9 @@ export function IssueDetailDrawer({
     }
   }, [issue?.id, issue?.labels, issuesRepo, can])
 
+  // agent 执行进度（调度器单例状态）：负责人是 agent 且未交付时显示工作条
+  const agentRuns = useSyncExternalStore(subscribeAgentRuns, getAgentRunsSnapshot)
+
   // biome-ignore lint/correctness/useExhaustiveDependencies: 切 issue 时即便 description 相同也必须重置脏态/textarea，防 A 的未保存编辑带进 B
   useEffect(() => {
     setDescDirty(false)
@@ -624,6 +628,9 @@ export function IssueDetailDrawer({
   if (!issue) return <oas-drawer ref={drawerRef} />
 
   const relationTarget = (id: string) => relCandidates?.find((x) => x.id === id)
+  // agent 语义派生：负责人是否 agent / 本 Issue 的执行进度
+  const assigneeMember = issue.assigneeId ? memberMap.get(issue.assigneeId) : undefined
+  const run = agentRuns.get(issue.id)
   const save = (changes: Partial<Issue>) => {
     if (!issue) return
     // 细粒度权限：只改状态/负责人时，不要求完整 issue:edit
@@ -680,7 +687,10 @@ export function IssueDetailDrawer({
   saveRef.current = save
   const memberOptions = [
     { label: t('resourceUnassigned'), value: '__none__' },
-    ...[...memberMap.values()].map((m) => ({ label: m.name, value: m.id })),
+    ...[...memberMap.values()].map((m) => ({
+      label: m.kind === 'agent' ? `🤖 ${m.name}` : m.name,
+      value: m.id,
+    })),
   ]
   const cycleOptions = [
     { label: t('noCycle'), value: '__none__' },
@@ -813,6 +823,56 @@ export function IssueDetailDrawer({
             )}
           </div>
         </div>
+        {/* agent 工作条 / 验收面板：负责人是 agent（执行中）或存在待验收交付时出现。
+            验收两键走两次 save：清 reviewRequired 要 issue:edit，状态流转走 change-status——
+            与字段级权限矩阵对齐，viewer 永远看不到按钮（下方条件已含 canEdit） */}
+        {(issue.reviewRequired ||
+          (assigneeMember?.kind === 'agent' &&
+            issue.status !== 'done' &&
+            issue.status !== 'cancelled')) && (
+          <div
+            className="agent-strip"
+            data-testid={issue.reviewRequired ? 'agent-review-panel' : 'agent-strip'}
+          >
+            {issue.reviewRequired ? (
+              <>
+                <span className="agent-strip-text">
+                  🤖 {t('agentDelivered').replace('{name}', assigneeMember?.name ?? '')}
+                </span>
+                {canEdit && (
+                  <div className="quit-actions agent-review-actions">
+                    <oas-button
+                      size="small"
+                      type="primary"
+                      data-testid="review-approve"
+                      onClick={() => {
+                        save({ reviewRequired: false })
+                        save({ status: 'done' })
+                      }}
+                    >
+                      {t('reviewApprove')}
+                    </oas-button>
+                    <oas-button
+                      size="small"
+                      data-testid="review-reject"
+                      onClick={() => {
+                        save({ reviewRequired: false })
+                        save({ status: 'todo' })
+                      }}
+                    >
+                      {t('reviewReject')}
+                    </oas-button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <span className="agent-strip-text" data-testid="agent-running">
+                🤖 {t('agentWorking').replace('{name}', assigneeMember?.name ?? '')}
+                {run ? ` · ${run.step}/${run.total}` : ''}
+              </span>
+            )}
+          </div>
+        )}
         <div className="detail-subs-block">
           <span>
             {t('subtasks')}（{subs?.length ?? 0}）

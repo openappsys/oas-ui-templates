@@ -26,6 +26,8 @@ export interface IssueWindowFilters {
   labelFilter?: string[]
   search: string
   myOnly: boolean
+  /** 仅看 agent 交付待验收 */
+  reviewOnly?: boolean
   sortBy: 'updatedAt' | 'priority' | 'createdAt'
   /** 迭代单选：null = 不限，'__current__' = 当前迭代（按 now 派生），'__none__' = 未入迭代，
    *  其他值为 cycleId。与 assignee/priority 同口径：窗口截断后再内存过滤 */
@@ -115,6 +117,8 @@ export interface IssueRepository {
   liveSubIssues(parentId: string): Observable<Issue[]>
   liveRelationCandidates(projectId: string, limit: number): Observable<Issue[]>
   liveCreatedDailyCounts(sinceMs: number): Observable<CreatedDayCount[]>
+  /** 指派给指定成员（agent 调度用）的在库 Issue；空数组返回空流 */
+  liveAssignedTo(memberIds: string[]): Observable<Issue[]>
   listAll(limit: number): Promise<Issue[]>
   liveAssigneeWorkload(projectId: string): Observable<Array<{ memberId: string; count: number }>>
   liveSubProgress(

@@ -223,6 +223,11 @@ export function IssueListView({
             ⛔
           </span>
         )}
+        {i.reviewRequired === true && (
+          <span className="review-badge" data-testid="review-badge">
+            {t('reviewBadge')}
+          </span>
+        )}
         {subProgress?.get(i.id) && (
           <span className="sub-progress" style={{ marginLeft: 8 }}>
             <span

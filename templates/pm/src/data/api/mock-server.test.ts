@@ -95,12 +95,13 @@ const makeIssue = (over: Partial<Issue> & { id: string }): Issue => ({
 })
 
 describe('mock seed', () => {
-  it('同参数两次播种完全相等（2K issues / 3 项目 / 8 成员）', () => {
+  it('同参数两次播种完全相等（2K issues / 3 项目 / 10 成员含 2 agent）', () => {
     const a = createMockStore({ now: FIXED })
     const b = createMockStore({ now: FIXED })
     expect(a.issues).toHaveLength(MOCK_ISSUE_COUNT)
     expect(a.projects).toHaveLength(3)
-    expect(a.members).toHaveLength(8)
+    expect(a.members).toHaveLength(10)
+    expect(a.members.filter((m) => m.kind === 'agent')).toHaveLength(2)
     expect(a.cycles).toHaveLength(3)
     expect(tables(a)).toEqual(tables(b))
     expect(a.comments.length).toBeGreaterThan(0)
@@ -1035,14 +1036,17 @@ describe('admin 聚合', () => {
       done: number
     }
     expect(stats.projects).toBe(3)
-    expect(stats.members).toBe(8)
+    expect(stats.members).toBe(10)
     expect(stats.issues).toBe(MOCK_ISSUE_COUNT)
     expect(stats.done).toBe(store.issues.filter((i) => i.status === 'done').length)
 
     const workload = items<{ memberId: string; total: number; todo: number; done: number }>(
       call(store, 'GET', '/api/admin/workload'),
     )
-    expect(workload.map((w) => w.memberId)).toEqual(store.members.map((m) => m.id))
+    // memberWorkload 按 id 升序（agent-* 排在 member-* 前）
+    expect(workload.map((w) => w.memberId)).toEqual(
+      [...store.members].sort((a, b) => (a.id < b.id ? -1 : 1)).map((m) => m.id),
+    )
     const m1 = workload[0]
     expect(m1.total).toBe(store.issues.filter((i) => i.assigneeId === m1.memberId).length)
     expect(m1.done).toBe(

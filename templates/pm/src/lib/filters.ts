@@ -28,6 +28,8 @@ export interface Filters {
   labelFilter: string[]
   search: string
   myOnly: boolean
+  /** 仅看 agent 交付待验收（reviewRequired） */
+  reviewOnly: boolean
   sortBy: SortBy
   /** 迭代单选（周期有序，多选无意义）：null = 全部迭代，CURRENT_CYCLE = 当前迭代，
    *  NO_CYCLE = 未入迭代，其余为 cycleId。与项目作用域正交 */
@@ -42,6 +44,7 @@ export const DEFAULT_FILTERS: Filters = {
   labelFilter: [],
   search: '',
   myOnly: false,
+  reviewOnly: false,
   sortBy: 'updatedAt',
   cycleFilter: null,
 }
@@ -106,6 +109,7 @@ export function normalizeFilters(raw: unknown): Filters {
     labelFilter: toAssigneeList(rec.labelFilter),
     search: typeof rec.search === 'string' ? rec.search : '',
     myOnly: rec.myOnly === true,
+    reviewOnly: rec.reviewOnly === true,
     sortBy: rec.sortBy === 'priority' || rec.sortBy === 'createdAt' ? rec.sortBy : 'updatedAt',
     // 迭代 id 无法穷举校验：任意非空字符串保留（含 __current__ / __none__ 哨兵）；
     // 旧视图没有该字段 → null（全部迭代）
@@ -132,6 +136,7 @@ export function hasActiveFilters(f: Filters): boolean {
     f.labelFilter.length > 0 ||
     f.cycleFilter !== null ||
     f.search !== '' ||
-    f.myOnly
+    f.myOnly ||
+    f.reviewOnly
   )
 }

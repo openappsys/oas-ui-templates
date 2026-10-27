@@ -9,6 +9,7 @@ import { ALL_PROJECTS, LIST_WINDOW, UNASSIGNED } from '../../lib/filters.ts'
 import {
   commentNotificationDrafts,
   issueChangeNotificationDrafts,
+  reviewNotificationDrafts,
   type NotificationDraft,
 } from '../../lib/notify.ts'
 import { PRIORITY_WEIGHT } from '../../lib/order.ts'
@@ -151,6 +152,31 @@ function buildSeed(seed: number, now: number): SeedTables {
     avatarColor: AVATAR_COLORS[i % AVATAR_COLORS.length],
     role: (i === 0 ? 'admin' : i < 3 ? 'member' : 'viewer') as MemberRole,
   }))
+  // agent 执行者：与 Dexie 种子同 id/同名（agent-coder/project-1+2，agent-qa/project-1），
+  // 不进认证账号（login 只认 user1-4 演示账号）
+  const agents: Member[] = [
+    {
+      id: 'agent-coder',
+      name: '编码助手',
+      email: 'agent-coder@agents.internal',
+      avatarColor: '#6366f1',
+      role: 'member' as MemberRole,
+      kind: 'agent',
+      title: 'Autonomous coding agent',
+    },
+    {
+      id: 'agent-qa',
+      name: '测试助手',
+      email: 'agent-qa@agents.internal',
+      avatarColor: '#0d9488',
+      role: 'member' as MemberRole,
+      kind: 'agent',
+      title: 'QA agent',
+    },
+  ]
+  // allMembers = 人 + agent（进 members 表/项目成员矩阵）；
+  // issue 派单池只用 humans——agent 不预派发（否则 API 模式一启动调度器就在 2K 条上churn）
+  const allMembers = [...members, ...agents]
 
   const projects: Project[] = [
     {
@@ -321,7 +347,7 @@ function buildSeed(seed: number, now: number): SeedTables {
   return {
     issues,
     projects,
-    members,
+    members: allMembers,
     comments,
     // 示例保存视图：与 Dexie seed 共用 lib/saved-views 的定义（两种数据源首屏入口同形）
     savedViews: demoSavedViewRows(now),
@@ -333,7 +359,7 @@ function buildSeed(seed: number, now: number): SeedTables {
     audit: [],
     projectRoles: [],
     projectMembers: [
-      ...members.map((m) => ({
+      ...allMembers.map((m) => ({
         id: `project-1:${m.id}`,
         projectId: 'project-1',
         memberId: m.id,
@@ -343,6 +369,12 @@ function buildSeed(seed: number, now: number): SeedTables {
         projectId: 'project-2',
         memberId: m.id,
       })),
+      // 与 Dexie 种子同形：project-2 加编码 agent
+      {
+        id: 'project-2:agent-coder',
+        projectId: 'project-2',
+        memberId: 'agent-coder',
+      },
       ...members.slice(2, 7).map((m) => ({
         id: `project-3:${m.id}`,
         projectId: 'project-3',
@@ -568,6 +600,9 @@ function windowIssues(store: MockStore, q: URLSearchParams): Issue[] {
   if (q.get('myOnly') === '1') {
     const me = q.get('currentUser') ?? ''
     out = out.filter((i) => i.assigneeId === me)
+  }
+  if (q.get('reviewOnly') === '1') {
+    out = out.filter((i) => i.reviewRequired === true)
   }
   const priorities = csvQuery(q, 'priority')
   if (priorities.length) {
@@ -1140,6 +1175,17 @@ function routeIssues(
       items: [...map.entries()].map(([parentId, p]) => ({ parentId, ...p })),
     })
   }
+  if (second === 'assigned-to' && method === 'GET') {
+    // 指派给指定成员（agent 调度用）：与 Dexie anyOf(assigneeId) 同口径，含 done/cancelled；
+    // 输出按 id 升序（与 Dexie 实现同契约）
+    const ids = csvQuery(q, 'memberIds')
+    const want = new Set(ids)
+    return ok({
+      items: store.issues
+        .filter((i) => notDeleted(i) && want.has(i.assigneeId ?? ''))
+        .sort(byIdAsc),
+    })
+  }
   if (second === 'bulk-apply' && method === 'POST') {
     bulkApply(store, body, actor)
     store.revision += 1
@@ -1225,6 +1271,7 @@ function routeIssues(
         'parentId',
         'relations',
         'completedAt',
+        'reviewRequired',
       ]
       for (const key of allowed) {
         if (key in raw) changes[key] = raw[key]
@@ -1252,7 +1299,20 @@ function routeIssues(
       if (needsEdit && !canAction(store, actor, 'issue:edit', row.projectId, ctx)) {
         fail(403, 'permission denied')
       }
+      // agent 交付进入待验收（false→true 过渡）：报告人 + 关注者收 review 通知（与 Dexie update 同规则）
+      const wasReview = row.reviewRequired === true
       updateIssue(store, id, changes)
+      if (changes.reviewRequired === true && !wasReview) {
+        pushNotificationDrafts(
+          store,
+          reviewNotificationDrafts({
+            issueId: id,
+            actorId: row.assigneeId ?? actor.id,
+            reporterId: row.reporterId,
+            watchers: row.watchers ?? [],
+          }),
+        )
+      }
     }
     store.revision += 1
     return ok({ ok: true })

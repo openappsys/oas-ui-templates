@@ -130,3 +130,21 @@ export function issueChangeNotificationDrafts(input: {
   }
   return out
 }
+
+/** agent 交付待验收：报告人 + 关注者收到 review 通知（agent 自己是 actor，天然排除）。
+ *  人审是 agent 工作流的必需闭环——没有这条通知，交付会静默躺在队列里 */
+export function reviewNotificationDrafts(input: {
+  issueId: string
+  actorId: string
+  reporterId: string | null
+  watchers?: string[]
+}): NotificationDraft[] {
+  const out: NotificationDraft[] = []
+  const seen = new Set<string>([input.actorId])
+  for (const memberId of [input.reporterId, ...(input.watchers ?? [])]) {
+    if (!memberId || seen.has(memberId)) continue
+    seen.add(memberId)
+    out.push({ memberId, type: 'review', issueId: input.issueId, actorId: input.actorId })
+  }
+  return out
+}

@@ -12,6 +12,7 @@ const TYPE_ICON: Record<Notification['type'], string> = {
   comment: 'form',
   status: 'check-circle',
   cycle: 'clock',
+  review: 'check-circle',
   system: 'info',
 }
 
@@ -34,6 +35,8 @@ function describe(n: Notification, issue: Issue | undefined, memberMap: Map<stri
       }
     case 'cycle':
       return { text: t('notifyCycle').replace('{name}', n.message ?? '') }
+    case 'review':
+      return { text: fill(t('notifyReview')) }
     default:
       return { text: n.message || t('notifySystem') }
   }

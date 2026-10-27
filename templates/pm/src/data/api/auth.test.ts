@@ -97,7 +97,7 @@ describe('mock 认证：login / me / logout', () => {
     expect(send(store, 'POST', '/api/admin/wipe', { bearer: token }).status).toBe(200)
     expect(store.members).toHaveLength(0)
     expect(send(store, 'POST', '/api/admin/reset', { bearer: token }).status).toBe(200)
-    expect(store.members).toHaveLength(8)
+    expect(store.members).toHaveLength(10)
   })
 
   it('登录端点之外的所有端点都要求 Bearer（含 revision 轮询）', () => {
@@ -133,7 +133,7 @@ describe('服务端权限：admin 专属端点 403', () => {
       expect({ method, path, status: res.status }).toEqual({ method, path, status: 403 })
     }
     expect(store.projects).toHaveLength(3)
-    expect(store.members).toHaveLength(8)
+    expect(store.members).toHaveLength(10)
     expect(store.revision).toBe(0)
   })
 

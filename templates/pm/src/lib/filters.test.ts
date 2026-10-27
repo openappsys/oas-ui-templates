@@ -29,6 +29,7 @@ describe('normalizeFilters', () => {
       labelFilter: [],
       search: '',
       myOnly: true,
+      reviewOnly: false,
       sortBy: 'priority',
       cycleFilter: null,
     })

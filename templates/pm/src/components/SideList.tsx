@@ -20,6 +20,7 @@ export type SideKind =
   | 'member-more'
   | 'group'
   | 'clear'
+  | 'review'
 
 export interface SideRow {
   /** 行唯一键，同时是 e2e 的 data-value 锚点（status:all / priority:urgent / project:x / view:my …） */
@@ -114,6 +115,9 @@ function rowIcon(row: SideRow): string {
       return 'filter'
     case 'clear':
       return 'close'
+    case 'review':
+      // agent 交付待验收队列入口
+      return 'check-circle'
     default:
       return 'menu'
   }

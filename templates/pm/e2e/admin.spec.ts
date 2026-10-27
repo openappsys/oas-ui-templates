@@ -106,7 +106,8 @@ test('A1 管理总览：入口 → 统计/工作量/健康度 → 行点击回�
     .toBe(2)
   await expect
     .poll(async () => statNumber(await page.getByTestId('admin-stat-members').textContent()))
-    .toBe(8)
+    // 8 人 + 2 个 agent 执行者（agent-coder / agent-qa）
+    .toBe(10)
   await expect(page.getByTestId('admin-stat-done')).toContainText(/[1-9]/)
 
   await expect
