@@ -63,6 +63,8 @@ export interface CreateIssueInput {
   assigneeId: string | null
   reporterId: string
   parentId?: string | null
+  /** 该 Issue 的评论嵌套模式（空 = 跟随成员/全局默认） */
+  commentNesting?: 'flat' | 'thread' | 'nested' | null
   order?: number
 }
 

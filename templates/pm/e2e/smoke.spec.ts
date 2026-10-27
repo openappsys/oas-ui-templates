@@ -1088,8 +1088,17 @@ test('M23 评论显示三模式：一级线程 / 无限嵌套 / 无嵌套 + 删�
   await page.getByTestId('reply-send').click()
   await expect(replies.getByTestId('comment-reply-item')).toHaveCount(2, { timeout: 10_000 })
   await expect(replies).toContainText('E2E 二级回复')
+  // 持久化断言走抽屉 OSelect 的值（localStorage 层已按设备级语义移除，不再作为真源）
   await expect
-    .poll(() => page.evaluate(() => localStorage.getItem('oas-pm-comment-mode')))
+    .poll(
+      async () =>
+        page.evaluate(
+          () =>
+            (document.querySelector('[data-testid=comment-mode]') as { value?: string })?.value ??
+            '',
+        ),
+      { timeout: 10_000 },
+    )
     .toBe('nested')
 
   // 跨设备跟随：清掉本地缓存，reload 后模式仍由成员档案字段恢复

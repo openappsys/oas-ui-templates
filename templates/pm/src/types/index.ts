@@ -24,6 +24,8 @@ export interface Issue {
   parentId?: string | null
   /** 状态流转为 done 的时间（燃尽/完成趋势用） */
   completedAt?: number | null
+  /** 该 Issue 的评论嵌套模式（空 = 跟随成员/全局） */
+  commentNesting?: 'flat' | 'thread' | 'nested' | null
   /** 关联：blocks / blocked-by / relates */
   relations?: Array<{ type: 'blocks' | 'blocked-by' | 'relates'; targetId: string }>
   /** 所属迭代（空 = 未入迭代）。历史数据无此字段，读取处一律按 null 处理 */

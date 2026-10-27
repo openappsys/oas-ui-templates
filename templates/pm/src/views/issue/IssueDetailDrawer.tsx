@@ -1016,7 +1016,9 @@ export function IssueDetailDrawer({
           memberMap={memberMap}
           currentUser={currentUser}
           can={can}
-          preferredMode={memberMap.get(currentUser)?.commentMode ?? commentModeDefault}
+          preferredMode={
+            issue.commentNesting ?? memberMap.get(currentUser)?.commentMode ?? commentModeDefault
+          }
           onModeChange={(m) => {
             void membersRepo
               .update(currentUser, { commentMode: m })
