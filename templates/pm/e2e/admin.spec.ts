@@ -406,6 +406,8 @@ test('A11 数据闭环：导出 JSON（含权限表）→ 清空保留管理员 
   await page.reload()
   await expect(page.getByTestId('pm-toolbar')).toBeVisible({ timeout: 10_000 })
   await page.getByTestId('admin-entry').click()
+  // hash 路由会停留在刷新前的页签（设置页）；统计在总览页，显式切回
+  await page.getByTestId('admin-nav-overview').click()
   await expect
     .poll(async () => statNumber(await page.getByTestId('admin-stat-issues').textContent()), {
       timeout: 120_000,

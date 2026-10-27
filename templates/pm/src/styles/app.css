@@ -2208,6 +2208,44 @@ oas-drawer::part(close):focus-visible {
   gap: 10px;
 }
 
+/* 设置页（System settings）：标签列 + 控件列两栏 grid，收窄栏宽提升可读性 */
+.admin-settings {
+  max-width: 760px;
+}
+.admin-settings .admin-panel {
+  margin-bottom: 16px;
+}
+.admin-settings .admin-field-row {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+}
+.admin-settings .admin-field-row + .admin-field-row {
+  margin-top: 14px;
+}
+.admin-settings .admin-source-row,
+.admin-settings .admin-seed-row {
+  margin-bottom: 0;
+}
+.admin-settings .admin-data-row {
+  margin-top: 14px;
+}
+.admin-field-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.admin-field-label > span {
+  width: auto;
+  font-size: 13px;
+}
+.admin-field-label .admin-field-hint {
+  font-size: 12px;
+  color: var(--oas-color-text-secondary, #64748b);
+}
+
 .admin-import-file {
   font-size: 12px;
   color: var(--oas-color-text-secondary, #64748b);

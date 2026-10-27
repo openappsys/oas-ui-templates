@@ -66,6 +66,29 @@ import { ProfileDrawer } from './components/ProfileDrawer'
 
 type View = 'dashboard' | 'issues' | 'board' | 'timeline' | 'resource' | 'schedule' | 'admin'
 
+const ROUTE_VIEWS: View[] = [
+  'dashboard',
+  'issues',
+  'board',
+  'timeline',
+  'resource',
+  'schedule',
+  'admin',
+]
+
+/** hash → 功能页（#/<view> 或 #/admin/<tab>）；未知路径返回 null（保持当前页） */
+function parseViewHash(hash: string): { view: View; adminTab?: AdminTab } | null {
+  const m = /^#\/([a-z]+)(?:\/([a-z-]+))?/.exec(hash)
+  if (!m) return null
+  const view = m[1] as View
+  if (!ROUTE_VIEWS.includes(view)) return null
+  return { view, adminTab: m[2] as AdminTab | undefined }
+}
+
+function hashForView(view: View, adminTab: AdminTab): string {
+  return view === 'admin' ? `#/admin/${adminTab}` : `#/${view}`
+}
+
 /** 删除撤销窗口：提示条存活时长（超时后仍可从管理台回收站恢复） */
 const UNDO_MS = 6000
 /** 侧栏成员组最多铺 20 行；更多走「查看全部成员」可搜索多选 */
@@ -376,8 +399,14 @@ function Workspace({
     setCurrentUser(id)
     localStorage.setItem('oas-pm-user', id)
   }, [])
-  const [view, setView] = useState<View>('issues')
-  const [adminTab, setAdminTab] = useState<AdminTab>('overview')
+  // 功能页 ↔ URL hash（#/dashboard … #/admin/<tab>）：静态站点零服务端配置的通行做法。
+  // 初始 hash 决定首屏；popstate/hashchange 应用后退/前进与手改地址
+  const [view, setView] = useState<View>(
+    () => parseViewHash(window.location.hash)?.view ?? 'issues',
+  )
+  const [adminTab, setAdminTab] = useState<AdminTab>(
+    () => parseViewHash(window.location.hash)?.adminTab ?? 'overview',
+  )
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS)
   const [grouping, setGrouping] = useState<Grouping>('none')
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -500,6 +529,26 @@ function Workspace({
   useEffect(() => {
     if (view === 'admin' && !canManage) setView('issues')
   }, [view, canManage])
+  // 功能页变化写 hash（pushState：后退可回溯导航）；无权限 admin 由上面的守卫拉回
+  useEffect(() => {
+    const h = hashForView(view, adminTab)
+    if (window.location.hash !== h) window.history.pushState(null, '', h)
+  }, [view, adminTab])
+  // 后退/前进与手改地址 → 应用到视图（admin 深链越权 tab 由 AdminView effectiveTab 兜底）
+  useEffect(() => {
+    const apply = () => {
+      const p = parseViewHash(window.location.hash)
+      if (!p) return
+      setView(p.view)
+      if (p.view === 'admin' && p.adminTab) setAdminTab(p.adminTab)
+    }
+    window.addEventListener('popstate', apply)
+    window.addEventListener('hashchange', apply)
+    return () => {
+      window.removeEventListener('popstate', apply)
+      window.removeEventListener('hashchange', apply)
+    }
+  }, [])
   const openProject = useCallback((projectId: string) => {
     // 换项目即离开原项目的迭代：cycleFilter 复位（周期 id 不跨项目复用）
     setFilters((prev) => ({ ...prev, projectId, statusFilter: [], cycleFilter: null }))

@@ -142,7 +142,7 @@ export function SettingsTab({
   }, [wipeAll])
 
   return (
-    <div className="admin-crud-page" data-testid="admin-tab-settings">
+    <div className="admin-crud-page admin-settings" data-testid="admin-tab-settings">
       <h1 className="page-h1">{t('adminSettingsTitle')}</h1>
       {error && (
         <oas-alert type="error" className="admin-crud-error" data-testid="admin-data-error">
@@ -155,9 +155,11 @@ export function SettingsTab({
         </oas-alert>
       )}
       <div className="admin-panel">
-        <p className="admin-panel-title">{t('adminAppearance')}</p>
+        <p className="admin-panel-title">{t('adminAppearanceLang')}</p>
         <div className="admin-field-row">
-          <span>{t('adminTheme')}</span>
+          <div className="admin-field-label">
+            <span>{t('adminTheme')}</span>
+          </div>
           <OSelect
             testid="admin-settings-theme"
             value={themePref}
@@ -169,11 +171,28 @@ export function SettingsTab({
             onChange={(v) => onSetTheme(v as ThemePreference)}
           />
         </div>
+        <div className="admin-field-row">
+          <div className="admin-field-label">
+            <span>{t('adminLanguage')}</span>
+          </div>
+          <OSelect
+            testid="admin-settings-lang"
+            value={lang}
+            options={[
+              { label: t('langZh'), value: 'zh' },
+              { label: t('langEn'), value: 'en' },
+            ]}
+            onChange={(v) => onSetLang(v as Lang)}
+          />
+        </div>
       </div>
       <div className="admin-panel">
         <p className="admin-panel-title">{t('adminComments')}</p>
         <div className="admin-field-row">
-          <span>{t('adminCommentMode')}</span>
+          <div className="admin-field-label">
+            <span>{t('adminCommentModeLabel')}</span>
+            <span className="admin-field-hint">{t('adminCommentModeHint')}</span>
+          </div>
           <OSelect
             testid="admin-settings-comment-mode"
             value={commentModeDefault}
@@ -186,25 +205,12 @@ export function SettingsTab({
           />
         </div>
       </div>
-      <div className="admin-panel">
-        <p className="admin-panel-title">{t('adminAppearance')}</p>
-        <div className="admin-field-row">
-          <span>{t('adminLanguage')}</span>
-          <OSelect
-            testid="admin-settings-lang"
-            value={lang}
-            options={[
-              { label: t('langZh'), value: 'zh' },
-              { label: t('langEn'), value: 'en' },
-            ]}
-            onChange={(v) => onSetLang(v as Lang)}
-          />
-        </div>
-      </div>
       <div className="admin-panel" data-testid="admin-data-actions">
         <p className="admin-panel-title">{t('adminData')}</p>
         <div className="admin-field-row admin-source-row">
-          <span>{t('adminDataSource')}</span>
+          <div className="admin-field-label">
+            <span>{t('adminDataSource')}</span>
+          </div>
           <strong className="admin-source-value" data-testid="admin-data-source">
             {t(dataSource === 'api' ? 'adminDataSourceApi' : 'adminDataSourceLocal')}
           </strong>
@@ -252,8 +258,11 @@ export function SettingsTab({
             </oas-button>
           </oas-popconfirm>
         </div>
-        <div className="admin-seed-row">
-          <span className="admin-field-label">{t('adminSeedSize')}</span>
+        <div className="admin-field-row admin-seed-row">
+          <div className="admin-field-label">
+            <span>{t('adminSeedSize')}</span>
+            <span className="admin-field-hint">{t('adminSeedSizeHint')}</span>
+          </div>
           <OSelect
             testid="admin-seed-size"
             ariaLabel={t('adminSeedSize')}
@@ -268,7 +277,6 @@ export function SettingsTab({
               localStorage.setItem('oas-pm-seed-size', v)
             }}
           />
-          <span className="admin-hint">{t('adminSeedSizeHint')}</span>
         </div>
       </div>
     </div>
