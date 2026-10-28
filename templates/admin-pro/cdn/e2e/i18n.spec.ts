@@ -200,12 +200,30 @@ test('语言包加载失败可重试：第一次 404 组件维持中文，重试
   await expect(page.locator('#md-del-pop [part="cancel"]')).toHaveText('Cancel')
   // 失败不永久缓存：确有第二次真实请求
   expect(attempts).toBe(2)
-  // 除「精确 EN_PACK_URL 上的一次人为 404」外，console 零告警；pageerror 零容忍
-  // （Chromium 记 "Failed to load resource"；Firefox 对无 CORS 头的失败模块请求记 Cross-Origin Request Blocked，
-  //  两者均绑定到被拦截的 en.js URL 上，不按通用文本吞任意资源错误）
-  const unexpected = consoleErrors.filter(
-    (e) => !(firstEnUrl && (e.url === firstEnUrl || e.text.includes(firstEnUrl))),
-  )
-  expect(unexpected, '除人为 404 外 console 零告警').toEqual([])
+  // 豁免判定（AND 三条件，缺一不可）：
+  //   ① 来源 URL 精确等于真实 en.js 请求（不是文本包含）；
+  //   ② 文本匹配人为失败的两引擎预期形态之一（Chromium "Failed to load resource … 404" /
+  //      Firefox "Cross-Origin Request Blocked"）；
+  //   ③ 豁免数量恰好 1——同 URL 的其他文本、额外错误一律保留进 unexpected 并失败。
+  // 豁免判定（按引擎预期形态，URL 精确性两种口径均钉死）：
+  //   Chromium：location.url 精确等于 en.js 请求 URL，且文本为 "Failed to load resource … 404"；
+  //   Firefox：拦截条目无资源 URL 归因，文本内嵌完整 en.js URL 且为 "Cross-Origin Request Blocked"。
+  // 文本嵌 URL 但来源/形态不符的一律不豁免；豁免数量必须恰好 1。
+  const isExpectedInjected404 = (e: { text: string; url: string }): boolean =>
+    firstEnUrl !== '' &&
+    ((e.url === firstEnUrl && /Failed to load resource.*404/.test(e.text)) ||
+      (/Cross-Origin Request Blocked/.test(e.text) && e.text.includes(firstEnUrl)))
+  const exempted = consoleErrors.filter((e) => isExpectedInjected404(e))
+  const unexpected = consoleErrors.filter((e) => !exempted.includes(e))
+  expect(exempted.length, '人为 404 的豁免必须恰好 1 条').toBe(1)
+  expect(unexpected, '除人为 404 外 console 零告警（同 URL 其他文本/额外错误不被吞）').toEqual([])
+  // 内嵌反证：文本嵌 en.js URL 但来源 URL 字段不符的错误不满足豁免判定
+  // （证明额外同 URL 异常不会被吞——豁免不是按「文本包含 URL」单条件放行）
+  const synthetic = {
+    text: `Failed to load resource: the server responded with a status of 404 (Not Found) — ${firstEnUrl}`,
+    url: 'http://localhost:5190/not-the-en-pack',
+  }
+  expect(isExpectedInjected404(synthetic), '来源不符的错误不得被豁免').toBe(false)
+  // pageerror 零容忍
   expect(pageErrors, 'pageerror 零容忍').toEqual([])
 })
