@@ -127,9 +127,9 @@ function installedVersion(root) {
 
 function run(root, target, checkOnly) {
   let files = 0
-  let changed = 0
   const stale = []
   const invalid = []
+  const writes = []
 
   function scanFile(path, kind) {
     files++
@@ -141,11 +141,7 @@ function run(root, target, checkOnly) {
     }
     if (plan.stale) {
       if (checkOnly) stale.push(path.replaceAll('\\', '/'))
-      else {
-        writeFileSync(path, plan.next)
-        changed++
-        console.log(`  ${path.replaceAll('\\', '/')}`)
-      }
+      else writes.push({ path, next: plan.next })
     }
   }
 
@@ -187,7 +183,12 @@ function run(root, target, checkOnly) {
     }
     console.log(`check ok：${files} 个文件（html theme/ui + i18n.js 语言包）均已对齐 @${target}`)
   } else {
-    console.log(`done：${changed}/${files} 个文件 → @${target}`)
+    // 两阶段写入：全部预期文件读取并审计通过后才统一落盘，后置结构错误不得留下部分写入
+    for (const { path, next } of writes) {
+      writeFileSync(path, next)
+      console.log(`  ${path.replaceAll('\\', '/')}`)
+    }
+    console.log(`done：${writes.length}/${files} 个文件 → @${target}`)
   }
 }
 
@@ -201,6 +202,19 @@ function fixtureHtml(theme, ui) {
 }
 function fixtureI18n(i18n) {
   return `const EN_PACK_URL = 'https://unpkg.com/@oas-ui/i18n@${i18n}/dist/en.js'\nexport {}\n`
+}
+
+function snapshotFixture(root) {
+  const snapshots = new Map()
+  function walk(dir) {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const path = join(dir, entry.name)
+      if (entry.isDirectory()) walk(path)
+      else snapshots.set(path, readFileSync(path))
+    }
+  }
+  walk(root)
+  return snapshots
 }
 
 function selfTest() {
@@ -411,6 +425,37 @@ function selfTest() {
       expectHtml: fixtureHtml(OK, OK),
       expectI18n: fixtureI18n(OK),
     },
+    // —— final fix wave：任何后置结构错误都必须保持全部 fixture 逐字节不变 ——
+    {
+      name: '合法 stale html + 缺失 i18n.js → exit 1 且全部文件零写入',
+      setup(root) {
+        mkdirSync(join(root, 'templates/admin-pro/cdn'), { recursive: true })
+        mkdirSync(join(root, 'templates/admin-pro/cdn-mpa/js'), { recursive: true })
+        writeFileSync(join(root, 'templates/admin-pro/cdn/index.html'), fixtureHtml(OK, '2.5.9'))
+        writeFileSync(join(root, 'templates/admin-pro/cdn-mpa/index.html'), fixtureHtml(OK, OK))
+        writeFileSync(join(root, 'templates/admin-pro/cdn-mpa/js/i18n.js'), fixtureI18n(OK))
+      },
+      check: 1,
+      write: 1,
+      expectUnchanged: true,
+    },
+    {
+      name: '合法 stale html + malformed i18n.js → exit 1 且全部文件零写入',
+      setup(root) {
+        mkdirSync(join(root, 'templates/admin-pro/cdn'), { recursive: true })
+        mkdirSync(join(root, 'templates/admin-pro/cdn-mpa/js'), { recursive: true })
+        writeFileSync(join(root, 'templates/admin-pro/cdn/index.html'), fixtureHtml(OK, '2.5.9'))
+        writeFileSync(
+          join(root, 'templates/admin-pro/cdn/i18n.js'),
+          "const U = 'https://unpkg.com/@oas-ui/i18n@2.6/dist/en.js'\n",
+        )
+        writeFileSync(join(root, 'templates/admin-pro/cdn-mpa/index.html'), fixtureHtml(OK, OK))
+        writeFileSync(join(root, 'templates/admin-pro/cdn-mpa/js/i18n.js'), fixtureI18n(OK))
+      },
+      check: 1,
+      write: 1,
+      expectUnchanged: true,
+    },
   ]
 
   let failed = 0
@@ -433,6 +478,7 @@ function selfTest() {
       writeFileSync(join(root, 'templates/admin-pro/cdn-mpa/index.html'), fixtureHtml(OK, OK))
       writeFileSync(join(root, 'templates/admin-pro/cdn-mpa/js/i18n.js'), fixtureI18n(OK))
     }
+    const before = c.expectUnchanged ? snapshotFixture(root) : null
     // 显式版本且无 --root 的用例：cwd 指向临时根——tmp 无 node_modules，若 CLI 回退 installedVersion 会抛错退出
     const check =
       c.check === null
@@ -457,6 +503,13 @@ function selfTest() {
     if (c.expectI18n !== undefined) {
       const i18nAfter = readFileSync(i18nFile, 'utf8')
       if (i18nAfter !== c.expectI18n) problems.push('i18n.js 未按预期改写')
+    }
+    if (before) {
+      for (const [path, bytes] of before) {
+        if (!existsSync(path)) problems.push(`fixture 文件被删除：${path}`)
+        else if (!readFileSync(path).equals(bytes))
+          problems.push(`结构失败后 fixture 被部分写入：${path.replaceAll('\\', '/')}`)
+      }
     }
     if (problems.length > 0) {
       failed++

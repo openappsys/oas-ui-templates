@@ -28,6 +28,7 @@ npx serve .
 
 - `pnpm --filter admin-pro-cdn build`：纯拷贝产出 `dist/`（零编译）
 - `pnpm --filter admin-pro-cdn test:e2e`：Playwright e2e（unpkg 请求拦截到本地 node_modules，离线稳定）
+- 未发布集成批的发布、依赖/lockfile、URL pins、全量验证与 push/部署强制顺序见[仓根 README](../../../README.md#unreleased-cdn-batch)
 - 仓根 `pnpm site` 自动聚合到 `site/dist/admin-pro/cdn/`
 
 ## <a id="en"></a> [中文](#zh) | English
@@ -59,4 +60,5 @@ npx serve .
 
 - `pnpm --filter admin-pro-cdn build`: plain copy to `dist/` (zero compilation)
 - `pnpm --filter admin-pro-cdn test:e2e`: Playwright e2e (unpkg requests intercepted to local node_modules — offline-stable)
+- For the mandatory release, dependency/lockfile, URL pin, full-verification, and push/deployment order for an unreleased integration batch, see the [root README](../../../README.md#unreleased-cdn-batch-en)
 - Aggregated by root `pnpm site` into `site/dist/admin-pro/cdn/`

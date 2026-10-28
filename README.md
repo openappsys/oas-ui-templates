@@ -32,6 +32,24 @@ e2e（需本地 Chromium）：
 pnpm --filter admin-pro-vanilla test:e2e
 ```
 
+### <a id="unreleased-cdn-batch"></a> 未发布 CDN 集成批：强制交付顺序
+
+当前两个 CDN 模板 pin/lock 的 `2.6.4` 发布物不包含 `OASUI.setLocale`，所以未发布集成批不能靠再跑一次 `pnpm install` 自然转绿。必须严格按以下顺序交付：
+
+1. 由用户决定目标版本，并先发布主仓同版本的 `@oas-ui/ui` 与 `@oas-ui/i18n`。
+2. 显式更新 `templates/admin-pro/cdn` 与 `templates/admin-pro/cdn-mpa` 的 `@oas-ui/ui`、`@oas-ui/theme`、`@oas-ui/i18n` 依赖及根 `pnpm-lock.yaml`，不等待 semver range 自动吸收未发布源码。
+3. 运行 `node scripts/bump-cdn.mjs <目标版本>`，用 bump-cdn 更新两个模板全部 HTML 的 theme/ui URL pins 与两个 `i18n.js` 的 i18n URL pin。
+4. 在干净工作区执行干净 install，再跑 SPA/MPA 全量 e2e 与 CDN 结构门禁：
+
+   ```bash
+   pnpm install --frozen-lockfile
+   pnpm --filter admin-pro-cdn test:e2e
+   pnpm --filter admin-pro-cdn-mpa test:e2e
+   pnpm cdn:check
+   ```
+
+5. 只有上述验证全部通过后，才允许模板仓 push 或部署；不得跳过测试或修改 CI 来掩盖当前失败。
+
 ## 网站 / 发布
 
 仓库可一键构建为**单站**：门户首页 + 各模版作为子路径（hash 路由，无需服务端 fallback）。
@@ -108,6 +126,24 @@ e2e (requires a local Chromium):
 ```bash
 pnpm --filter admin-pro-vanilla test:e2e
 ```
+
+### <a id="unreleased-cdn-batch-en"></a> Unreleased CDN integration batch: mandatory delivery order
+
+The `2.6.4` artifacts currently pinned by both CDN templates and the lockfile do not include `OASUI.setLocale`. An unreleased integration batch therefore cannot turn green merely by running `pnpm install` again. Deliver it in this exact order:
+
+1. The user decides the target version and publishes matching `@oas-ui/ui` and `@oas-ui/i18n` releases from the main repository first.
+2. Explicitly update the `@oas-ui/ui`, `@oas-ui/theme`, and `@oas-ui/i18n` dependencies in both `templates/admin-pro/cdn` and `templates/admin-pro/cdn-mpa`, plus the root `pnpm-lock.yaml`; do not wait for a semver range to absorb unreleased source.
+3. Run `node scripts/bump-cdn.mjs <target-version>` to update every theme/ui URL pin in both templates' HTML files and the i18n URL pin in both `i18n.js` files.
+4. In a clean workspace, perform a clean install, then run the full SPA/MPA e2e suites and the CDN structural gate:
+
+   ```bash
+   pnpm install --frozen-lockfile
+   pnpm --filter admin-pro-cdn test:e2e
+   pnpm --filter admin-pro-cdn-mpa test:e2e
+   pnpm cdn:check
+   ```
+
+5. Only after all of these checks pass may the template repository be pushed or deployed. Do not skip tests or change CI to hide the current failures.
 
 ## Website / Publishing
 
