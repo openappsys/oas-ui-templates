@@ -32,7 +32,7 @@ npx serve .
 
 ## 已知边界
 
-- 组件内置文案跟随语言切换（v2.6.4 起：页面加载即对齐 `OASUI.setLocale`；英文包加载完成前组件短暂保持中文，到达即刷新）
+- 组件内置文案跟随语言切换（当前源码未发布：页面加载即对齐 `OASUI.setLocale`；线上可用版本以包含 setLocale 的发布版为准。英文包加载完成前组件短暂保持中文，到达即刷新）
 - 演示数据存 localStorage（`oas-admin-cdn-mpa.*` 独立命名空间），清 storage 即重置
 
 ## 在本仓库中
@@ -74,7 +74,7 @@ npx serve .
 
 ## Known boundaries
 
-- Component built-in texts follow the language switch (since v2.6.4: `OASUI.setLocale` aligned at page load; components stay Chinese briefly until the English pack arrives, then refresh)
+- Component built-in texts follow the language switch (current source unreleased: `OASUI.setLocale` aligned at page load; the runtime-capable version is whichever release ships with setLocale. Components stay Chinese briefly until the English pack arrives, then refresh)
 - Demo data persists to localStorage (`oas-admin-cdn-mpa.*` namespace, isolated); clear storage to reset
 
 ## In this repo

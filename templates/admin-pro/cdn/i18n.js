@@ -4,7 +4,7 @@
 // setLocale(module.default)。成功 Promise 缓存（重复切换零下载）；失败不永久缓存、下次切换自动重试；
 // 慢包返回前用户已切回中文的迟到结果直接丢弃（不覆盖中文）。
 // 同步锚定 ①：index.html <head> 内有同逻辑的 FOUC 内联脚本，改 KEY / matchBrowser 须两处同步
-// 同步锚定 ②：COMPONENT_VERSION 必须与 index.html 钉死的 @oas-ui/ui@ 同版（scripts/bump-cdn.mjs 同时校验两个 pin）
+// 同步锚定 ②：EN_PACK_URL 必须与 index.html 钉死的 @oas-ui/ui@ 同版（scripts/bump-cdn.mjs 同时校验两个 pin）
 // 词典按「壳层 / 页面」拆分在 i18n/ 目录（单文件 ≤400 行约束），此处仅负责合并与切换
 import zhCore from './i18n/zh.js'
 import zhPages from './i18n/zh-pages.js'

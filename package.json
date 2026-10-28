@@ -11,7 +11,7 @@
     "test": "pnpm -r test",
     "check": "biome check .",
     "up": "pnpm -r up --latest",
-    "cdn:check": "node scripts/bump-cdn.mjs --check",
+    "cdn:check": "node scripts/bump-cdn.mjs --self-test && node scripts/bump-cdn.mjs --check",
     "cdn:bump": "node scripts/bump-cdn.mjs"
   },
   "devDependencies": {
