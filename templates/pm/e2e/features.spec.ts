@@ -117,22 +117,33 @@ test('M24 里程碑：侧栏组过滤 + 甘特里程碑条 + 抽屉选择 + 管�
     .toBe('milestone-1')
   await page.keyboard.press('Escape')
 
-  // 6) 管理：Admin → 迭代 tab → 里程碑新建 → 行出现 → 删除 → 行消失
+  // 6) 管理：Admin → 迭代 tab → 里程碑新建（含描述）→ 卡片 +1 → 行内改名 → 删除回落
   await page.getByTestId('admin-entry').click()
   await page.getByTestId('admin-nav-cycles').click()
   await expect(page.getByTestId('admin-milestones')).toBeVisible({ timeout: 10_000 })
+  const cardsBefore = await page.locator('.ms-card').count()
   await page.getByTestId('admin-milestone-new-name').fill('M3 · e2e 里程碑')
+  await page.getByTestId('admin-milestone-new-desc').fill('e2e 建的验证行')
   await page.getByTestId('admin-milestone-add').click()
-  await expect(page.locator('.ms-row', { hasText: 'M3 · e2e 里程碑' })).toBeVisible({
-    timeout: 10_000,
-  })
-  const m3Del = page
-    .locator('.ms-row', { hasText: 'M3 · e2e 里程碑' })
-    .getByTestId(/^admin-milestone-del-/)
-  await m3Del.click()
-  await expect(page.locator('.ms-row', { hasText: 'M3 · e2e 里程碑' })).toHaveCount(0, {
-    timeout: 10_000,
-  })
+  // 卡片数 +1（名称在 input value 里，hasText 不可用；用计数 + toHaveValue 断言）
+  await expect
+    .poll(() => page.locator('.ms-card').count(), { timeout: 10_000 })
+    .toBe(cardsBefore + 1)
+  // 新建无 dueAt → dueAt 升序排在最前，取 first
+  const newCard = page.locator('.ms-card').first()
+  const lastName = newCard.locator('input[data-testid^=admin-milestone-name-]')
+  await expect(lastName).toHaveValue('M3 · e2e 里程碑', { timeout: 10_000 })
+  // 进度聚合行存在（新建为 0/0）
+  await expect(newCard.locator('[data-testid^=admin-milestone-progress-]')).toContainText('0')
+  // 行内改名（Enter 失焦保存 → value 回读）
+  await lastName.fill('M3 · 改名后')
+  await lastName.press('Enter')
+  await expect(lastName).toHaveValue('M3 · 改名后', { timeout: 10_000 })
+  // 删除 → 卡片数回落
+  await newCard.getByTestId(/^admin-milestone-del-/).click()
+  await expect
+    .poll(() => page.locator('.ms-card').count(), { timeout: 10_000 })
+    .toBe(cardsBefore)
 })
 
 test('M25 合并重复：评论/子任务迁移 + duplicate 关系 + 源卡入回收站', async ({ page }) => {
@@ -242,16 +253,16 @@ test('M26 工时：记录/汇总 + 估算落库 + 看板卡徽章', async ({ pag
   await expect(item).toContainText('1h 30m')
   await expect(item).toContainText('e2e 编码实现')
 
-  // 估算 3（Enter 即失焦落库）→ 工时区标题出现「估算 3」
+  // 估算 3（小时，Enter 即失焦落库）→ 工时区标题出现「估算 3h」
   await page.getByTestId('detail-estimate').fill('3')
   await page.getByTestId('detail-estimate').press('Enter')
-  await expect(page.getByTestId('worklog-block')).toContainText('估算 3', { timeout: 10_000 })
+  await expect(page.getByTestId('worklog-block')).toContainText('估算 3h', { timeout: 10_000 })
 
-  // 列表：该 Issue updatedAt 被保存顶到首行 → 行内 3pt 徽章
+  // 列表：该 Issue updatedAt 被保存顶到首行 → 行内 3h 徽章
   await page.keyboard.press('Escape')
   const firstRow = page.locator('.issue-row').first()
   await expect(firstRow.locator('.issue-key')).toHaveText(key, { timeout: 15_000 })
-  await expect(firstRow.locator('.estimate-badge')).toHaveText('3pt', { timeout: 10_000 })
+  await expect(firstRow.locator('.estimate-badge')).toHaveText('3h', { timeout: 10_000 })
 
   // 看板：cards 数据通道带 estimate（DOM 卡片有列内渲染截断，属性通道是确定性断言）
   await setView(page, 'board')

@@ -456,13 +456,28 @@ export function CyclesTab({ lang }: { lang: Lang }) {
 
 /* ── 里程碑管理（M24）：简版行内 CRUD——名称 + 目标日期即建，删除自动解除 Issue 归属 ── */
 function MilestonesPanel() {
-  const { milestones: milestonesRepo, projects: projectsRepo } = useRepositories()
+  const {
+    milestones: milestonesRepo,
+    issues: issuesRepo,
+    projects: projectsRepo,
+  } = useRepositories()
   const projects = useObservable(() => projectsRepo.liveAll(), [projectsRepo])
   const [projectId, setProjectId] = useState('project-1')
   const rows = useObservable(() => milestonesRepo.live(projectId), [milestonesRepo, projectId])
+  // 进度聚合（每里程碑 在库总数 / done 类别完成数）
+  const progressRows = useObservable(
+    () => milestonesRepo.liveMilestoneProgress(projectId),
+    [milestonesRepo, projectId],
+  )
+  const progressById = useMemo(
+    () => new Map((progressRows ?? []).map((p) => [p.milestoneId, p])),
+    [progressRows],
+  )
   const nameRef = useRef<HTMLInputElement>(null)
   const dateRef = useRef<HTMLInputElement>(null)
+  const descRef = useRef<HTMLInputElement>(null)
   const [error, setError] = useState('')
+  const now = Date.now()
 
   const create = async () => {
     const name = (nameRef.current?.value ?? '').trim()
@@ -471,19 +486,23 @@ function MilestonesPanel() {
       return
     }
     const day = dateRef.current?.value ?? ''
+    const desc = (descRef.current?.value ?? '').trim()
     setError('')
     await milestonesRepo.create({
       projectId,
       name,
       dueAt: day ? dayInputToTs(day) : null,
+      ...(desc ? { description: desc } : {}),
     })
     if (nameRef.current) nameRef.current.value = ''
     if (dateRef.current) dateRef.current.value = ''
+    if (descRef.current) descRef.current.value = ''
   }
 
   return (
     <div className="admin-panel" data-testid="admin-milestones">
       <p className="admin-panel-title">{t('milestone')}</p>
+      <p className="admin-field-hint">{t('msEditHint')}</p>
       <div className="admin-field-row">
         <div className="admin-field-label">
           <span>{t('project')}</span>
@@ -501,27 +520,116 @@ function MilestonesPanel() {
         </p>
       )}
       <div className="ms-table">
-        {(rows ?? []).map((m) => (
-          <div className="ms-row" key={m.id} data-testid={`admin-milestone-row-${m.id}`}>
-            <span className="ms-name">{m.name}</span>
-            <span className="ms-date">
-              {m.dueAt ? new Date(m.dueAt).toLocaleDateString() : '—'}
-            </span>
-            {m.description && <span className="ms-desc">{m.description}</span>}
-            <button
-              type="button"
-              className="states-del"
-              data-testid={`admin-milestone-del-${m.id}`}
-              title={t('milestoneDelete')}
-              onClick={() => {
-                setError('')
-                void milestonesRepo.delete(m.id)
-              }}
-            >
-              ×
-            </button>
-          </div>
-        ))}
+        {(rows ?? []).map((m) => {
+          const prog = progressById.get(m.id)
+          const total = prog?.total ?? 0
+          const done = prog?.done ?? 0
+          const pct = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0
+          const overdue = m.dueAt !== null && m.dueAt < now && done < total
+          const allDone = total > 0 && done >= total
+          return (
+            <div className="ms-card" key={m.id} data-testid={`admin-milestone-row-${m.id}`}>
+              <div className="ms-card-head">
+                {/* 名称/日期行内编辑（key 重挂回显，失焦保存） */}
+                <input
+                  className="comment-input ms-edit-name"
+                  data-testid={`admin-milestone-name-${m.id}`}
+                  key={`${m.id}:${m.name}`}
+                  defaultValue={m.name}
+                  onBlur={(e) => {
+                    const name = e.target.value.trim()
+                    if (name && name !== m.name) void milestonesRepo.update(m.id, { name })
+                    else e.target.value = m.name
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+                  }}
+                />
+                <input
+                  type="date"
+                  className="ms-edit-date"
+                  data-testid={`admin-milestone-date-${m.id}`}
+                  key={`${m.id}:${m.dueAt ?? ''}`}
+                  defaultValue={m.dueAt ? tsToDayInput(m.dueAt) : ''}
+                  onBlur={(e) => {
+                    const day = e.target.value
+                    const next = day ? dayInputToTs(day) : null
+                    if (next !== (m.dueAt ?? null))
+                      void milestonesRepo.update(m.id, { dueAt: next })
+                  }}
+                />
+                <span className="ms-due-note">
+                  {m.dueAt
+                    ? t('milestoneDue').replace('{date}', new Date(m.dueAt).toLocaleDateString())
+                    : ''}
+                </span>
+                {overdue && (
+                  <oas-tag
+                    size="small"
+                    type="danger"
+                    data-testid={`admin-milestone-overdue-${m.id}`}
+                  >
+                    {t('milestoneOverdue')}
+                  </oas-tag>
+                )}
+                {allDone && (
+                  <oas-tag
+                    size="small"
+                    type="success"
+                    data-testid={`admin-milestone-alldone-${m.id}`}
+                  >
+                    {t('msAllDone')}
+                  </oas-tag>
+                )}
+                <button
+                  type="button"
+                  className="states-del"
+                  data-testid={`admin-milestone-del-${m.id}`}
+                  title={t('milestoneDelete')}
+                  onClick={() => {
+                    setError('')
+                    void milestonesRepo.delete(m.id)
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+              <input
+                className="ms-edit-desc"
+                data-testid={`admin-milestone-desc-${m.id}`}
+                key={`${m.id}:${m.description ?? ''}`}
+                placeholder={t('msDescPlaceholder')}
+                defaultValue={m.description ?? ''}
+                onBlur={(e) => {
+                  const desc = e.target.value.trim()
+                  if (desc !== (m.description ?? '')) {
+                    void milestonesRepo.update(
+                      m.id,
+                      desc ? { description: desc } : { description: '' },
+                    )
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+                }}
+              />
+              <div className="ms-progress-row" data-testid={`admin-milestone-progress-${m.id}`}>
+                <div className="ms-progress-track" aria-hidden>
+                  <div
+                    className={`ms-progress-fill${overdue ? ' is-overdue' : ''}`}
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+                <span className="ms-progress-text">
+                  {t('msProgress')
+                    .replace('{done}', String(done))
+                    .replace('{total}', String(total))}
+                  {total > 0 ? ` · ${pct}%` : ''}
+                </span>
+              </div>
+            </div>
+          )
+        })}
         {(rows ?? []).length === 0 && (
           <p className="worklog-empty" data-testid="admin-milestones-empty">
             {t('milestoneEmpty')}
@@ -534,6 +642,15 @@ function MilestonesPanel() {
           className="comment-input states-name"
           data-testid="admin-milestone-new-name"
           placeholder={t('milestoneNamePlaceholder')}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') void create()
+          }}
+        />
+        <input
+          ref={descRef}
+          className="comment-input ms-new-desc"
+          data-testid="admin-milestone-new-desc"
+          placeholder={t('msDescPlaceholder')}
           onKeyDown={(e) => {
             if (e.key === 'Enter') void create()
           }}

@@ -92,6 +92,10 @@ function WorklogBlock({
   // 分钟 → 人读时长（90 → 1h 30m；45 → 45m）
   const fmt = (m: number) =>
     m >= 60 ? `${Math.floor(m / 60)}h${m % 60 ? ` ${m % 60}m` : ''}` : `${m}m`
+  // 估算单位 = 小时（与工时分钟可换算对比）；有估算时展示 记录/估算 进度
+  const estMinutes = estimate && estimate > 0 ? Math.round(estimate * 60) : null
+  const pct = estMinutes ? Math.min(100, Math.round((total / estMinutes) * 100)) : 0
+  const over = estMinutes !== null && total > estMinutes
   const add = async () => {
     const minutes = Math.round(Number(minutesRef.current?.value ?? 0))
     if (!Number.isFinite(minutes) || minutes <= 0) return
@@ -111,9 +115,20 @@ function WorklogBlock({
   return (
     <div className="detail-worklog-block" data-testid="worklog-block">
       <span>
-        {t('worklogTitle')}（{fmt(total)}
-        {estimate && estimate > 0 ? ` / ${t('estimateLabel')} ${estimate}` : ''}）
+        {t('worklogTitle')}（{t('worklogLogged')} {fmt(total)}
+        {estMinutes ? ` / ${t('estimateLabel')} ${fmt(estMinutes)}` : ''}）
       </span>
+      {estMinutes !== null && (
+        <div className="worklog-progress-row" data-testid="worklog-progress">
+          <div className="worklog-progress-track" aria-hidden>
+            <div
+              className={`worklog-progress-fill${over ? ' is-over' : ''}`}
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+          <span className="worklog-progress-text">{pct}%</span>
+        </div>
+      )}
       <div className="worklog-list">
         {(logs ?? []).map((l) => (
           <div key={l.id} className="worklog-item" data-testid="worklog-item">
@@ -900,7 +915,8 @@ export function IssueDetailDrawer({
             />
           </div>
           <div className="detail-field">
-            <span>{t('estimateLabel')}</span>
+            {/* 估算单位 = 小时（与工时记录分钟可换算对比；徽章/工时区都以 h 显示） */}
+            <span>{t('estimateLabel')} (h)</span>
             {/* 估算：失焦落库（数字为空/0 清空），Enter 即失焦；key 重挂保证切 issue 回显 */}
             <input
               key={`${issue.id}:${issue.estimate ?? ''}`}

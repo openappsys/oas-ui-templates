@@ -146,6 +146,10 @@ export interface MilestoneRepository {
   all(projectId: string): Promise<Milestone[]>
   live(projectId: string): Observable<Milestone[]>
   get(id: string): Promise<Milestone | undefined>
+  /** 里程碑进度聚合（面板进度条）：每里程碑 在库总数 / done 类别完成数 */
+  liveMilestoneProgress(
+    projectId: string,
+  ): Observable<Array<{ milestoneId: string; total: number; done: number }>>
   create(input: {
     projectId: string
     name: string

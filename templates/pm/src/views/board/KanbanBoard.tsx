@@ -143,7 +143,7 @@ export function KanbanBoard({
       if (est > 0) {
         const badge = document.createElement('span')
         badge.className = 'estimate-badge'
-        badge.textContent = `${est}pt`
+        badge.textContent = `${est}h`
         badge.title = t('estimateLabel')
         top.appendChild(badge)
       }

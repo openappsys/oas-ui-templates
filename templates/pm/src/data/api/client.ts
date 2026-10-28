@@ -652,6 +652,12 @@ export function createApiRepositories(options: ApiClientOptions = {}): Repositor
         asItems<Milestone>(await send('GET', '/api/milestones', buildQuery({ projectId }))),
       ),
     get: async (id) => send('GET', `/api/milestones/${encodeURIComponent(id)}`),
+    liveMilestoneProgress: (projectId: string) =>
+      live(async () =>
+        asItems<{ milestoneId: string; total: number; done: number }>(
+          await send('GET', '/api/milestone-progress', buildQuery({ projectId })),
+        ),
+      ),
     create: async (input) => {
       const body = await send<{ milestone: Milestone }>('POST', '/api/milestones', undefined, input)
       poke()

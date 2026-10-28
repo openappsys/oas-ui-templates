@@ -218,12 +218,12 @@ function renderIssueRow(
     badge.textContent = t('reviewBadge')
     titleSpan.appendChild(badge)
   }
-  // 估算徽章（M26）：estimate > 0 时标题旁展示
+  // 估算徽章（M26，单位小时）：estimate > 0 时标题旁展示
   if ((issue.estimate ?? 0) > 0) {
     const badge = document.createElement('span')
     badge.className = 'estimate-badge'
     badge.setAttribute('data-testid', 'estimate-badge')
-    badge.textContent = `${issue.estimate}pt`
+    badge.textContent = `${issue.estimate}h`
     badge.title = t('estimateLabel')
     titleSpan.appendChild(badge)
   }

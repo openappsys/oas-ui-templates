@@ -1841,6 +1841,27 @@ function worklogMinutes(store: MockStore, projectId: string) {
   return [...byMember.entries()].map(([memberId, minutes]) => ({ memberId, minutes }))
 }
 
+function milestoneProgress(store: MockStore, projectId: string) {
+  const allProjects = projectId === ALL_PROJECTS
+  const doneIds = new Set(
+    store.workflowStates.filter((s) => s.category === 'done').map((s) => s.id),
+  )
+  const milestones = allProjects
+    ? store.milestones
+    : store.milestones.filter((m) => m.projectId === projectId)
+  return milestones.map((m) => {
+    const rows = store.issues.filter(
+      (i) => notDeleted(i) && i.milestoneId === m.id && (allProjects || i.projectId === projectId),
+    )
+    return {
+      milestoneId: m.id,
+      total: rows.length,
+      done: rows.filter((i) => (doneIds.size === 0 ? i.status === 'done' : doneIds.has(i.status)))
+        .length,
+    }
+  })
+}
+
 function routeMilestones(
   store: MockStore,
   method: string,
@@ -2369,6 +2390,9 @@ function route(store: MockStore, req: ApiRequest, member: Member | null): ApiRes
       if (third === 'worklogs')
         return routeIssueWorklogs(store, method, second, req.body, member as Member)
       return routeIssues(store, method, second, third, q, req.body, member as Member)
+    case 'milestone-progress':
+      if (method !== 'GET') fail(405, 'method not allowed')
+      return ok({ items: milestoneProgress(store, q.get('projectId') ?? 'project-1') })
     case 'milestones':
       return routeMilestones(store, method, second, q, req.body)
     case 'workflow-states':

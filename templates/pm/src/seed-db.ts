@@ -117,11 +117,48 @@ export async function seedDatabase(): Promise<void> {
       DEFAULT_WORKFLOW_STATES.map((s) => ({ ...s, projectId: 'workspace' })),
     )
   }
+  // v17b：里程碑示例（旧库升级补播——空表才播，不覆盖用户数据）。
+  // 同时给 seed 形态的 project-1 行（id = issue-project-1-<n>）按序号前 8/8 挂 M1/M2，
+  // 让侧栏里程碑组/甘特条目在老浏览器里开箱有内容；用户自建行（nanoid/new id）不受影响
+  const ensureMilestones = async () => {
+    if ((await db.milestones.count()) > 0) return
+    const now2 = Date.now()
+    const day2 = 86400000
+    await db.milestones.bulkPut([
+      {
+        id: 'milestone-1',
+        projectId: 'project-1',
+        name: 'M1 · 公开版',
+        dueAt: now2 + 14 * day2,
+        description: '首个对外发布里程碑',
+        createdAt: now2,
+      },
+      {
+        id: 'milestone-2',
+        projectId: 'project-1',
+        name: 'M2 · 移动端适配',
+        dueAt: now2 + 30 * day2,
+        createdAt: now2,
+      },
+    ])
+    const rows = (await db.issues.where('projectId').equals('project-1').toArray())
+      .filter((i) => /^issue-project-1-\d+$/.test(i.id))
+      .sort((a, b) => Number(a.id.slice(18)) - Number(b.id.slice(18)))
+    const updates: Array<{ id: string; changes: Partial<Issue> }> = []
+    rows
+      .slice(0, 8)
+      .forEach((r) => updates.push({ id: r.id, changes: { milestoneId: 'milestone-1' } }))
+    rows
+      .slice(8, 16)
+      .forEach((r) => updates.push({ id: r.id, changes: { milestoneId: 'milestone-2' } }))
+    for (const u of updates) await db.issues.update(u.id, u.changes)
+  }
   if (marked) {
     await ensureRoles()
     await ensureProjectMembers()
     await ensureAgentMembers()
     await ensureWorkflowStates()
+    await ensureMilestones()
     return
   }
   // 旧 seed 数据（v1 的 updatedAt 走了未来时间戳）/ 中断残留 清表重播；
