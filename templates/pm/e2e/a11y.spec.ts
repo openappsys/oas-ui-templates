@@ -237,8 +237,30 @@ async function snapshotInfo(page: Page): Promise<{
   h1: string[]
 }> {
   const snap = await page.locator('body').ariaSnapshot()
-  const named =
-    /button|link|textbox|combobox|checkbox|radio|switch|tab|menuitem|searchbox|slider|spinbutton|dialog|alertdialog/
+  // 交互角色显式集合（精确匹配，不用子串正则）：此前 table/tablist/tabpanel 靠 `tab` 子串、
+  // radiogroup 靠 `radio` 子串「捎带」进扫描——行为上已覆盖，但依赖正则子串的巧合，一旦词表
+  // 调整（如改词边界或删 `tab`）就会静默漏检。显式 Set 是把既有覆盖明确化并防回流，不是从
+  // 漏检变为覆盖（对应 docs/a11y-audit.md 第 7 节）。
+  const named = new Set([
+    'button',
+    'link',
+    'textbox',
+    'combobox',
+    'checkbox',
+    'radio',
+    'switch',
+    'tab',
+    'tabpanel',
+    'tablist',
+    'menuitem',
+    'searchbox',
+    'slider',
+    'spinbutton',
+    'dialog',
+    'alertdialog',
+    'radiogroup',
+    'table',
+  ])
   const landmarks: Record<string, number> = {}
   const unnamed: { role: string; line: string }[] = []
   const h1: string[] = []
@@ -255,7 +277,7 @@ async function snapshotInfo(page: Page): Promise<{
       landmarks[role] = (landmarks[role] ?? 0) + 1
     }
     if (role === 'heading' && line.includes('[level=1]')) h1.push(line)
-    if (!named.test(role)) continue
+    if (!named.has(role)) continue
     if (new RegExp(`^- ${role}(:|$)`).test(line)) unnamed.push({ role, line })
   }
   return { unnamed, landmarks, h1 }
