@@ -1,20 +1,9 @@
 import { expect, test } from '@playwright/test'
-import { login, openNavItem } from './_helpers'
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { login, mockOasRuntime, openNavItem } from './_helpers'
 
-const CDN_JS = readFileSync(join(import.meta.dirname, '../node_modules/@oas-ui/ui/dist/cdn.js'))
-const THEME_CSS = readFileSync(join(import.meta.dirname, '../node_modules/@oas-ui/theme/index.css'))
-
-// unpkg 运行时引用 → 本地 node_modules 副本（离线稳定）
-// 必须显式 contentType：string body 默认 text/html，<link rel=stylesheet> 严格 MIME 检查会被静默拦截
+// unpkg 运行时引用 → 本地 node_modules 真实文件路径回填（离线稳定；i18n 语言包不能当 cdn.js 回填）
 test.beforeEach(async ({ page }) => {
-  await page.route('**unpkg.com/@oas-ui/**', (route) => {
-    const url = route.request().url()
-    if (url.endsWith('.css'))
-      return route.fulfill({ body: THEME_CSS, contentType: 'text/css; charset=utf-8' })
-    return route.fulfill({ body: CDN_JS, contentType: 'application/javascript; charset=utf-8' })
-  })
+  mockOasRuntime(page)
 })
 
 test('登录 → dashboard 渲染统计卡与趋势图', async ({ page }) => {

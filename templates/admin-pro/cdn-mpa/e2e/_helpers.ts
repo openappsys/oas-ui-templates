@@ -1,20 +1,20 @@
 // e2e/_helpers.ts —— e2e 公共工具：运行时 mock、登录助手、localStorage 写入
 // viewer 角色分支说明：登录页角色选择已上线（session 存 name/role/loginAt），
 // 但既有用例仍按 admin 全量断言编写，viewer 只读路径由 smoke 验证覆盖。
-import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Page } from '@playwright/test'
 
-const CDN_JS = readFileSync(join(import.meta.dirname, '../node_modules/@oas-ui/ui/dist/cdn.js'))
-const THEME_CSS = readFileSync(join(import.meta.dirname, '../node_modules/@oas-ui/theme/index.css'))
-
-// unpkg 运行时引用 → 本地 node_modules 副本（离线稳定；与 smoke.spec.ts 同款约定）
+// unpkg 运行时引用 → 本地 node_modules 真实文件路径回填（离线稳定）。
+// path 形式按扩展名推断 MIME；i18n 语言包（dist/en.js + 相对 locales/en.js）必须
+// 按真实路径回填——不能把所有请求都当 cdn.js（否则 module.default 不存在，切英文静默失效）。
 export function mockOasRuntime(page: Page): void {
   page.route('**unpkg.com/@oas-ui/**', (route) => {
     const url = route.request().url()
-    if (url.endsWith('.css'))
-      return route.fulfill({ body: THEME_CSS, contentType: 'text/css; charset=utf-8' })
-    return route.fulfill({ body: CDN_JS, contentType: 'application/javascript; charset=utf-8' })
+    const rel = decodeURIComponent(url.split('@oas-ui/')[1].split('?')[0]).replace(
+      /^(theme|ui|i18n)@[\d.]+\//,
+      '$1/',
+    )
+    route.fulfill({ path: join(import.meta.dirname, '../node_modules/@oas-ui', rel) })
   })
 }
 

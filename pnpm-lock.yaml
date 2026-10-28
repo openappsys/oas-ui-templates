@@ -175,6 +175,9 @@ importers:
 
   templates/admin-pro/cdn:
     devDependencies:
+      '@oas-ui/i18n':
+        specifier: ^2.6.4
+        version: 2.6.4
       '@oas-ui/theme':
         specifier: ^2.6.4
         version: 2.6.4
@@ -187,6 +190,9 @@ importers:
 
   templates/admin-pro/cdn-mpa:
     devDependencies:
+      '@oas-ui/i18n':
+        specifier: ^2.6.4
+        version: 2.6.4
       '@oas-ui/theme':
         specifier: ^2.6.4
         version: 2.6.4

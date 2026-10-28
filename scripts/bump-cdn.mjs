@@ -1,6 +1,7 @@
 /**
  * CDN 模板版本对齐：把 cdn / cdn-mpa 全部 html 里钉死的 unpkg 版本
- * （@oas-ui/theme@x.y.z、@oas-ui/ui@x.y.z）改成目标版本。
+ * （@oas-ui/theme@x.y.z、@oas-ui/ui@x.y.z）与两个 i18n.js 里动态 import 的语言包版本
+ * （@oas-ui/i18n@x.y.z，必须与 ui 同版，避免「新壳 + 旧语言包」）改成目标版本。
  *
  * 用法：
  *   node scripts/bump-cdn.mjs            # 对齐到本地 node_modules 已装的 @oas-ui/ui 版本
@@ -11,8 +12,11 @@ import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const root = process.cwd()
-const dirs = ['templates/admin-pro/cdn', 'templates/admin-pro/cdn-mpa']
-const VERSION_RE = /(@oas-ui\/(?:theme|ui)@)(\d+\.\d+\.\d+)/g
+// html：theme/ui 两个 pin；js：i18n 语言包 pin（动态 import 的真实文件路径，与 ui 同 release line）
+const htmlDirs = ['templates/admin-pro/cdn', 'templates/admin-pro/cdn-mpa']
+const pinnedJsFiles = ['templates/admin-pro/cdn/i18n.js', 'templates/admin-pro/cdn-mpa/js/i18n.js']
+const HTML_VERSION_RE = /(@oas-ui\/(?:theme|ui)@)(\d+\.\d+\.\d+)/g
+const I18N_VERSION_RE = /(@oas-ui\/i18n@)(\d+\.\d+\.\d+)/g
 
 function installedVersion() {
   for (const tpl of ['react', 'vue', 'svelte', 'vanilla-html']) {
@@ -37,32 +41,39 @@ if (!/^\d+\.\d+\.\d+$/.test(target)) {
 let files = 0
 let changed = 0
 const stale = []
-for (const dir of dirs) {
-  for (const name of readdirSync(join(root, dir))) {
-    if (!name.endsWith('.html')) continue
-    files++
-    const p = join(root, dir, name)
-    const src = readFileSync(p, 'utf8')
-    const next = src.replace(VERSION_RE, (_, prefix) => `${prefix}${target}`)
-    if (next !== src) {
-      if (checkOnly) {
-        stale.push(`${dir}/${name}`)
-      } else {
-        writeFileSync(p, next)
-        changed++
-        console.log(`  ${dir}/${name}`)
-      }
+
+function scanFile(path, re) {
+  files++
+  const src = readFileSync(path, 'utf8')
+  const next = src.replace(re, (_, prefix) => `${prefix}${target}`)
+  if (next !== src) {
+    if (checkOnly) {
+      stale.push(path.replaceAll('\\', '/'))
+    } else {
+      writeFileSync(path, next)
+      changed++
+      console.log(`  ${path.replaceAll('\\', '/')}`)
     }
   }
 }
 
+for (const dir of htmlDirs) {
+  for (const name of readdirSync(join(root, dir))) {
+    if (!name.endsWith('.html')) continue
+    scanFile(join(root, dir, name), HTML_VERSION_RE)
+  }
+}
+for (const rel of pinnedJsFiles) {
+  scanFile(join(root, rel), I18N_VERSION_RE)
+}
+
 if (checkOnly) {
   if (stale.length > 0) {
-    console.error(`以下 html 的 unpkg 版本未对齐到 ${target}：`)
+    console.error(`以下文件的 unpkg 版本未对齐到 ${target}（theme/ui/i18n 三个 pin 同版）：`)
     for (const s of stale) console.error(`  ${s}`)
     process.exit(1)
   }
-  console.log(`check ok：${files} 个 html 均已对齐 @2.5.x → @${target}`)
+  console.log(`check ok：${files} 个文件（html theme/ui + i18n.js 语言包）均已对齐 @${target}`)
 } else {
-  console.log(`done：${changed}/${files} 个 html → @${target}`)
+  console.log(`done：${changed}/${files} 个文件 → @${target}`)
 }

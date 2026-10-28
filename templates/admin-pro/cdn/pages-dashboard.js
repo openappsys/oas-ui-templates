@@ -218,6 +218,9 @@ export function renderDashboard(el) {
 
   function renderTop5(rows) {
     const list = el.querySelector('#top5-list')
+    // stale 守卫补充：语言切换等同文档重渲会复用同一个 #view 节点（el.isConnected 恒真），
+    // 导航离开后 #top5-list 已不存在——迟到数据必须放弃续写，否则 innerHTML 写 null 抛 TypeError
+    if (!list) return
     if (rows.length === 0) {
       list.innerHTML = `<oas-empty description="${t('dashboard.noTop5')}"></oas-empty>`
       return

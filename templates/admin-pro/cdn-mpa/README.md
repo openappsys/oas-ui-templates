@@ -8,6 +8,8 @@
 
 功能：登录（任意非空用户名）· 真实跳转导航 · 仪表盘（统计卡 + oas-chart 渐变趋势）· 用户管理（oas-table 搜索/分页/弹窗 CRUD/popconfirm 删除）· 基础表单（oas-form 校验）· 中英切换（saved > navigator 嗅探：zh 系列 → zh-CN，其余一律 en；切换即整页 reload）。
 
+组件内置文案联动：每页加载即按当前语言对齐组件内置 registry（`OASUI.setLocale`）——英文时动态加载与 cdn.js 同版本的纯数据语言包 `@oas-ui/i18n/dist/en.js`（成功缓存、失败下次启动重试），到达即广播刷新；语言包版本钉在 `js/i18n.js` 的 URL 字面量里，与各页 HTML 的 ui 版本由 `scripts/bump-cdn.mjs` 一并对齐。
+
 ## 使用
 
 ```bash
@@ -30,7 +32,7 @@ npx serve .
 
 ## 已知边界
 
-- **组件内置文案（popconfirm 确定/取消、table 空态等）恒为 zh-CN**：cdn.js IIFE 内联了 i18n registry，外部无法接管；应用层文案（壳层/页面）中英切换不受影响
+- 组件内置文案跟随语言切换（v2.6.4 起：页面加载即对齐 `OASUI.setLocale`；英文包加载完成前组件短暂保持中文，到达即刷新）
 - 演示数据存 localStorage（`oas-admin-cdn-mpa.*` 独立命名空间），清 storage 即重置
 
 ## 在本仓库中
@@ -48,6 +50,8 @@ Zero-build **MPA (multi-page application)** lightweight admin template: one HTML
 A counterpart to `admin-pro/cdn` (SPA: hash router + JS-rendered pages): same CDN delivery, different architecture.
 
 Features: login (any non-empty username) · real-link navigation · dashboard (stat cards + oas-chart gradient trend) · user management (oas-table search/pagination/modal CRUD/popconfirm delete) · basic form (oas-form validation) · zh-CN/en switch (saved > navigator sniffing: zh\* → zh-CN, everything else → en; switching reloads the page).
+
+Component built-in texts follow the switch: each page load aligns the built-in component registry (`OASUI.setLocale`) with the current language — for English it dynamically loads the pure-data locale pack `@oas-ui/i18n/dist/en.js` pinned to the same version as cdn.js (success cached, failures retried on next load), refreshing components on arrival. The locale pack version is pinned in the `js/i18n.js` URL literal and kept in sync with the ui version in each page's HTML by `scripts/bump-cdn.mjs`.
 
 ## Usage
 
@@ -70,7 +74,7 @@ npx serve .
 
 ## Known boundaries
 
-- **Component built-in texts (popconfirm OK/Cancel, table empty state, etc.) stay zh-CN**: cdn.js inlines the i18n registry inside its IIFE bundle and cannot be taken over externally; app-level copy (shell/pages) switches freely
+- Component built-in texts follow the language switch (since v2.6.4: `OASUI.setLocale` aligned at page load; components stay Chinese briefly until the English pack arrives, then refresh)
 - Demo data persists to localStorage (`oas-admin-cdn-mpa.*` namespace, isolated); clear storage to reset
 
 ## In this repo

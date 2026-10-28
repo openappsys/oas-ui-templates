@@ -3,12 +3,14 @@ import { expect, test, type Page } from '@playwright/test'
 import { join } from 'node:path'
 
 /** unpkg 拦截回填 → 本地 node_modules 产物（离线稳定，与 smoke.spec.ts 同约定）。
- *  2.5.9 起用 path 形式回填（body 形式对 2.3MB 大产物存在截断/头缺失风险） */
+ *  2.5.9 起用 path 形式回填（body 形式对 2.3MB 大产物存在截断/头缺失风险）；
+ *  i18n 纳入映射：组件语言包走真实文件路径（dist/en.js + 相对 locales/en.js），
+ *  不能把所有请求都当 cdn.js 回填（否则语言包 module.default 不存在、切英文静默失效）。 */
 export async function mockCdnRuntime(page: Page): Promise<void> {
   await page.route('**unpkg.com/@oas-ui/**', (route) => {
     const url = route.request().url()
     const rel = decodeURIComponent(url.split('@oas-ui/')[1].split('?')[0]).replace(
-      /^(theme|ui)@[\d.]+\//,
+      /^(theme|ui|i18n)@[\d.]+\//,
       '$1/',
     )
     route.fulfill({ path: join(import.meta.dirname, '../node_modules/@oas-ui', rel) })
