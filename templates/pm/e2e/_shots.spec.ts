@@ -376,6 +376,13 @@ async function captureAdminTabs(page: Page, suffix: string) {
     timeout: 10_000,
   })
 
+  // 里程碑独立页（M24）：卡片列表 + 进度聚合入镜
+  await page.getByTestId('admin-nav-milestones').click()
+  await expect(page.getByTestId('admin-tab-milestones')).toBeVisible({ timeout: 10_000 })
+  await expect(page.locator('.ms-card').first()).toBeVisible({ timeout: 15_000 })
+  await page.waitForTimeout(900)
+  await page.screenshot({ path: `shots/pm-admin-milestones${suffix}.png` })
+
   await page.getByTestId('admin-nav-config').click()
   await expect(page.getByTestId('admin-config-labels')).toBeVisible({ timeout: 10_000 })
   await expect(page.getByTestId('admin-config-priorities')).toBeVisible()

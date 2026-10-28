@@ -117,10 +117,10 @@ test('M24 里程碑：侧栏组过滤 + 甘特里程碑条 + 抽屉选择 + 管�
     .toBe('milestone-1')
   await page.keyboard.press('Escape')
 
-  // 6) 管理：Admin → 迭代 tab → 里程碑新建（含描述）→ 卡片 +1 → 行内改名 → 删除回落
+  // 6) 管理：独立「里程碑」页 → 新建（含描述）→ 卡片 +1 → 行内改名 → 删除回落
   await page.getByTestId('admin-entry').click()
-  await page.getByTestId('admin-nav-cycles').click()
-  await expect(page.getByTestId('admin-milestones')).toBeVisible({ timeout: 10_000 })
+  await page.getByTestId('admin-nav-milestones').click()
+  await expect(page.getByTestId('admin-tab-milestones')).toBeVisible({ timeout: 10_000 })
   const cardsBefore = await page.locator('.ms-card').count()
   await page.getByTestId('admin-milestone-new-name').fill('M3 · e2e 里程碑')
   await page.getByTestId('admin-milestone-new-desc').fill('e2e 建的验证行')
@@ -141,9 +141,7 @@ test('M24 里程碑：侧栏组过滤 + 甘特里程碑条 + 抽屉选择 + 管�
   await expect(lastName).toHaveValue('M3 · 改名后', { timeout: 10_000 })
   // 删除 → 卡片数回落
   await newCard.getByTestId(/^admin-milestone-del-/).click()
-  await expect
-    .poll(() => page.locator('.ms-card').count(), { timeout: 10_000 })
-    .toBe(cardsBefore)
+  await expect.poll(() => page.locator('.ms-card').count(), { timeout: 10_000 }).toBe(cardsBefore)
 })
 
 test('M25 合并重复：评论/子任务迁移 + duplicate 关系 + 源卡入回收站', async ({ page }) => {
