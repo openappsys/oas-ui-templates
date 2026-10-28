@@ -346,6 +346,8 @@ export function CyclesTab({ lang }: { lang: Lang }) {
         />
       </div>
 
+      <MilestonesPanel />
+
       <oas-modal ref={modalRef} no-footer data-testid="admin-cycle-modal">
         <div className="create-body">
           <div className="create-field">
@@ -448,6 +450,109 @@ export function CyclesTab({ lang }: { lang: Lang }) {
           </div>
         </div>
       </oas-modal>
+    </div>
+  )
+}
+
+/* ── 里程碑管理（M24）：简版行内 CRUD——名称 + 目标日期即建，删除自动解除 Issue 归属 ── */
+function MilestonesPanel() {
+  const { milestones: milestonesRepo, projects: projectsRepo } = useRepositories()
+  const projects = useObservable(() => projectsRepo.liveAll(), [projectsRepo])
+  const [projectId, setProjectId] = useState('project-1')
+  const rows = useObservable(() => milestonesRepo.live(projectId), [milestonesRepo, projectId])
+  const nameRef = useRef<HTMLInputElement>(null)
+  const dateRef = useRef<HTMLInputElement>(null)
+  const [error, setError] = useState('')
+
+  const create = async () => {
+    const name = (nameRef.current?.value ?? '').trim()
+    if (!name) {
+      setError(t('milestoneName'))
+      return
+    }
+    const day = dateRef.current?.value ?? ''
+    setError('')
+    await milestonesRepo.create({
+      projectId,
+      name,
+      dueAt: day ? dayInputToTs(day) : null,
+    })
+    if (nameRef.current) nameRef.current.value = ''
+    if (dateRef.current) dateRef.current.value = ''
+  }
+
+  return (
+    <div className="admin-panel" data-testid="admin-milestones">
+      <p className="admin-panel-title">{t('milestone')}</p>
+      <div className="admin-field-row">
+        <div className="admin-field-label">
+          <span>{t('project')}</span>
+        </div>
+        <OSelect
+          testid="admin-milestones-project"
+          value={projectId}
+          options={(projects ?? []).map((p) => ({ label: p.name, value: p.id }))}
+          onChange={setProjectId}
+        />
+      </div>
+      {error && (
+        <p className="admin-cycle-warn" data-testid="admin-milestones-error">
+          {error}
+        </p>
+      )}
+      <div className="ms-table">
+        {(rows ?? []).map((m) => (
+          <div className="ms-row" key={m.id} data-testid={`admin-milestone-row-${m.id}`}>
+            <span className="ms-name">{m.name}</span>
+            <span className="ms-date">
+              {m.dueAt ? new Date(m.dueAt).toLocaleDateString() : '—'}
+            </span>
+            {m.description && <span className="ms-desc">{m.description}</span>}
+            <button
+              type="button"
+              className="states-del"
+              data-testid={`admin-milestone-del-${m.id}`}
+              title={t('milestoneDelete')}
+              onClick={() => {
+                setError('')
+                void milestonesRepo.delete(m.id)
+              }}
+            >
+              ×
+            </button>
+          </div>
+        ))}
+        {(rows ?? []).length === 0 && (
+          <p className="worklog-empty" data-testid="admin-milestones-empty">
+            {t('milestoneEmpty')}
+          </p>
+        )}
+      </div>
+      <div className="states-add-row">
+        <input
+          ref={nameRef}
+          className="comment-input states-name"
+          data-testid="admin-milestone-new-name"
+          placeholder={t('milestoneNamePlaceholder')}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') void create()
+          }}
+        />
+        <input
+          ref={dateRef}
+          type="date"
+          className="states-color ms-date-input"
+          data-testid="admin-milestone-new-date"
+        />
+        <oas-button
+          size="small"
+          type="primary"
+          data-testid="admin-milestone-add"
+          onClick={() => void create()}
+        >
+          {t('create')}
+        </oas-button>
+      </div>
     </div>
   )
 }

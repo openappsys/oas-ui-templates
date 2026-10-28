@@ -32,6 +32,7 @@ describe('normalizeFilters', () => {
       reviewOnly: false,
       sortBy: 'priority',
       cycleFilter: null,
+      milestoneFilter: null,
     })
   })
 
@@ -62,15 +63,16 @@ describe('normalizeFilters', () => {
     expect(f.sortBy).toBe('createdAt')
   })
 
-  it('非法值丢弃、重复值去重、非字符串忽略', () => {
+  it('状态 id 任意非空字符串保留（自定义工作流状态）；去重、非字符串忽略', () => {
     const f = normalizeFilters({
-      statusFilter: ['todo', 'bogus', 'todo', 42, null, 'done'],
+      statusFilter: ['todo', 'bogus', 'todo', 42, null, 'done', ''],
       priorityFilter: ['urgent', 'nope'],
       assigneeFilter: ['member-1', 'member-1', '', 7],
       sortBy: 'random',
       myOnly: 'yes',
     })
-    expect(f.statusFilter).toEqual(['todo', 'done'])
+    // 状态维度与 projectId 同口径：无法穷举校验（Admin 自定义态 id 不在内置枚举里）
+    expect(f.statusFilter).toEqual(['todo', 'bogus', 'done'])
     expect(f.priorityFilter).toEqual(['urgent'])
     expect(f.assigneeFilter).toEqual(['member-1'])
     expect(f.sortBy).toBe('updatedAt')

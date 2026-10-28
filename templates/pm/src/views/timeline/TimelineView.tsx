@@ -6,7 +6,6 @@ import { PRIORITY_TEXT } from '@/lib/colors'
 import { t } from '@/i18n'
 import { OSegmented } from '@/components/oas-wrappers'
 import type { Action, Ctx } from '@/permission/policy'
-
 /* ── 时间线（oas-gantt） ── */
 interface GanttElement extends HTMLElement {
   tasks?: unknown[]
@@ -26,12 +25,20 @@ const toDate = (ms: number) => new Date(ms).toISOString().slice(0, 10)
 export function TimelineView({
   issues,
   can,
+  projectId,
 }: {
   issues: Issue[]
   can: (action: Action, ctx?: Ctx) => boolean
+  /** 项目作用域（里程碑条目按项目订阅） */
+  projectId: string
 }) {
-  const { issues: issuesRepo, projects: projectsRepo } = useRepositories()
+  const {
+    issues: issuesRepo,
+    projects: projectsRepo,
+    milestones: milestonesRepo,
+  } = useRepositories()
   const projects = useObservable(() => projectsRepo.liveAll(), [projectsRepo])
+  const msRows = useObservable(() => milestonesRepo.live(projectId), [milestonesRepo, projectId])
   const ganttRef = useRef<GanttElement>(null)
   // 时间窗：时间轴是范围驱动语义，按天窗过滤而非滚动续载
   // 时间窗：时间轴是范围驱动语义，按天窗过滤而非滚动续载
@@ -80,7 +87,19 @@ export function TimelineView({
         parent: projects === undefined ? undefined : `proj-${i.projectId}`,
         disabled: !can('issue:edit', { issue: i }),
       }))
-    const children = [...milestones, ...dueTasks]
+    // 里程碑条目（M24）：milestones 表的真实里程碑（有目标日期才上甘特）。
+    // id 加 ms- 前缀避免与 issue id 冲突；task-change 里查不到 issue 行自然不写回
+    const msEntries = (msRows ?? [])
+      .filter((m) => m.dueAt !== null)
+      .map((m) => ({
+        id: `ms-${m.id}`,
+        name: `${t('milestone')} · ${m.name}`,
+        start: toDate(m.dueAt as number),
+        type: 'milestone' as const,
+        parent: projects === undefined ? undefined : `proj-${m.projectId}`,
+        disabled: true,
+      }))
+    const children = [...msEntries, ...milestones, ...dueTasks]
     // 项目分组 summary：日期聚合自子任务（start 最早 / end 最晚，里程碑按起点计）
     const summaries = (projects ?? [])
       .map((p) => {
@@ -101,7 +120,7 @@ export function TimelineView({
     // summary 附在数组末尾：组件按 parent 指针组树（组内嵌套与数组位置无关），
     // tasks property 读回保持 issue 在前——甘特写回用 tasks[0] 定位 issue
     return [...children, ...summaries]
-  }, [issues, can, projects])
+  }, [visibleIssues, can, projects, msRows])
 
   useEffect(() => {
     if (ganttRef.current) ganttRef.current.tasks = tasks

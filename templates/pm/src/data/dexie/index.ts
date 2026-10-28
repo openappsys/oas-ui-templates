@@ -12,6 +12,9 @@ import { createDexieSettingsRepository } from './settings-repo'
 import { createDexieNotificationRepository } from './notification-repo'
 import { createDexieAdminRepository } from './admin-repo'
 import { createDexieRoleRepository } from './role-repo'
+import { createDexieMilestoneRepository } from './milestone-repo'
+import { createDexieWorkflowStateRepository } from './workflow-state-repo'
+import { createDexieWorklogRepository } from './worklog-repo'
 import {
   createDexieAuditRepository,
   createDexieProjectMemberRepository,
@@ -34,6 +37,9 @@ export function createDexieRepositories(database: PMDatabase): Repositories {
     projectRoles: createDexieProjectRoleRepository(database),
     projectMembers: createDexieProjectMemberRepository(database),
     admin: createDexieAdminRepository(database),
+    milestones: createDexieMilestoneRepository(database),
+    workflowStates: createDexieWorkflowStateRepository(database),
+    worklogs: createDexieWorklogRepository(database),
   }
 }
 

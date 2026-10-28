@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useRepositories } from '@/data/context'
-import type { Issue, IssueStatus, Member } from '@/types'
-import { ISSUE_STATUSES } from '@/types'
-import { getLang, statusLabel, t } from '@/i18n'
+import type { Issue, Member, WorkflowState } from '@/types'
+import { getLang, t } from '@/i18n'
+import { isDoneCategory, workflowStateLabel } from '@/lib/statuses'
 import { betweenOrder } from '@/lib/order'
 import { AVATAR_UNASSIGNED } from '@/lib/colors'
 import type { Action, Ctx } from '@/permission/policy'
@@ -22,6 +22,13 @@ const WIP_LIMIT: Record<string, number> = {
   done: 80,
   cancelled: 80,
 }
+/** 自定义状态（无内置 WIP 值）按类别给建议上限 */
+const WIP_BY_CATEGORY: Record<WorkflowState['category'], number> = {
+  todo: 40,
+  started: 30,
+  done: 80,
+  cancelled: 80,
+}
 
 export function KanbanBoard({
   issues,
@@ -29,12 +36,15 @@ export function KanbanBoard({
   memberMap,
   onOpenIssue,
   can,
+  states,
 }: {
   issues: Issue[]
   subProgress?: Map<string, { done: number; total: number }>
   memberMap: Map<string, Member>
   onOpenIssue: (id: string) => void
   can: (action: Action, ctx?: Ctx) => boolean
+  /** 项目工作流状态（App 传入，列序即 order 序） */
+  states: WorkflowState[]
 }) {
   const { issues: issuesRepo } = useRepositories()
   const boardRef = useRef<KanbanElement>(null)
@@ -42,16 +52,16 @@ export function KanbanBoard({
   onOpenIssueRef.current = onOpenIssue
 
   const lang = getLang()
-  // biome-ignore lint/correctness/useExhaustiveDependencies: statusLabel() 读模块级语言态，lang 是语言切换时的重算触发器
+  // biome-ignore lint/correctness/useExhaustiveDependencies: workflowStateLabel() 读模块级语言态，lang 是语言切换时的重算触发器
   const columns = useMemo(
     () =>
-      ISSUE_STATUSES.map((s) => ({
-        key: s,
-        title: statusLabel(s),
+      states.map((s) => ({
+        key: s.id,
+        title: workflowStateLabel(s),
         // WIP 限制（提示语义非阻断）：单列卡片数超限 → 列头计数警示 + data-over-limit
-        limit: WIP_LIMIT[s],
+        limit: WIP_LIMIT[s.id] ?? WIP_BY_CATEGORY[s.category],
       })),
-    [lang],
+    [lang, states],
   )
 
   // 列内显示顺序 = cards 数组序：按 order 升序铺入
@@ -67,6 +77,7 @@ export function KanbanBoard({
           key: i.key,
           priority: i.priority,
           assigneeId: i.assigneeId ?? '',
+          estimate: i.estimate ?? null,
         })),
     [issues],
   )
@@ -74,6 +85,9 @@ export function KanbanBoard({
   const issueMap = useMemo(() => new Map(issues.map((i) => [i.id, i])), [issues])
   const gateRef = useRef({ can, issueMap })
   gateRef.current = { can, issueMap }
+  // 拖拽落库读最新状态类别（completedAt 语义跟 done 类别走，不随 states 变化重挂监听）
+  const statesRef = useRef(states)
+  statesRef.current = states
 
   const canDragCard = useCallback((id: string): boolean => {
     const it = gateRef.current.issueMap.get(id)
@@ -125,6 +139,14 @@ export function KanbanBoard({
       const pr = document.createElement('span')
       pr.className = `issue-priority pri-${String(card.priority ?? '')}`
       pr.textContent = String(card.priority ?? '')
+      const est = Number(card.estimate ?? 0)
+      if (est > 0) {
+        const badge = document.createElement('span')
+        badge.className = 'estimate-badge'
+        badge.textContent = `${est}pt`
+        badge.title = t('estimateLabel')
+        top.appendChild(badge)
+      }
       const sp = subProgress?.get(String(card.id ?? ''))
       const isBlocked =
         Array.isArray(card.relations) &&
@@ -151,7 +173,7 @@ export function KanbanBoard({
       }
       return wrap
     }
-  }, [columns, cards, memberMap, canDragCard])
+  }, [columns, cards, memberMap, canDragCard, subProgress])
 
   // oas-change（from/to/index/ids）→ 落点前后卡 order 取中值落库（status 变更/列内排序统一）
   useEffect(() => {
@@ -168,7 +190,7 @@ export function KanbanBoard({
         }>
       ).detail
       if (!d?.id || !d.to) return
-      const to = d.to as IssueStatus
+      const to = d.to as string
       const ids = (d.ids ?? [d.id]).filter((iid) => canDragCard(iid))
       if (ids.length === 0) return
       const colCards = (el.cards ?? []).filter((c) => c.column === to)
@@ -186,7 +208,9 @@ export function KanbanBoard({
           changes: {
             status: to,
             order: betweenOrder(prevOrder, nextOrder),
-            completedAt: to === 'done' ? Date.now() : null,
+            completedAt: isDoneCategory(statesRef.current.find((s) => s.id === to))
+              ? Date.now()
+              : null,
           },
         }
       })

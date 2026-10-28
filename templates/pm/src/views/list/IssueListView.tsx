@@ -13,6 +13,7 @@ import {
   type SortBy,
   type Grouping,
 } from '@/lib/filters'
+import { useWorkflowStates } from '@/lib/statuses'
 import { isOverlayOpen, registerKey } from '@/lib/keyboard'
 import { selectionState, toggleAll } from '@/lib/selection'
 import { VirtualIssueList } from './VirtualIssueList'
@@ -63,6 +64,7 @@ export function IssueListView({
   /** 批量删除成功：交给宿主弹「撤销」提示 */
   onDeleted?: (ids: string[]) => void
 }) {
+  const workflowStates = useWorkflowStates(filters.projectId)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [cursorIndex, setCursorIndex] = useState(-1)
   const list = issues ?? []
@@ -423,6 +425,7 @@ export function IssueListView({
           cursorIndex={cursorIndex}
           onNearBottom={onNearBottom}
           lang={getLang()}
+          states={workflowStates}
         />
       )}
       <BulkBar
@@ -431,6 +434,7 @@ export function IssueListView({
         onDone={clearSelection}
         can={can}
         onDeleted={onDeleted}
+        states={workflowStates}
       />
     </div>
   )

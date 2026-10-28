@@ -1,6 +1,8 @@
 // ── 核心实体 ───────────────────────────────────────────────────────────
 
-export type IssueStatus = 'backlog' | 'todo' | 'in_progress' | 'done' | 'cancelled'
+/** 内置五态 + 自定义状态 id（Admin 可加任意状态；`(string & {})` 保留内置值自动补全）。
+ *  状态的名称/颜色/类别以 workflowStates 表为准，此处仅是 id 的合法域 */
+export type IssueStatus = 'backlog' | 'todo' | 'in_progress' | 'done' | 'cancelled' | (string & {})
 export type IssuePriority = 'urgent' | 'high' | 'medium' | 'low'
 export type MemberRole = 'admin' | 'member' | 'viewer'
 
@@ -26,8 +28,15 @@ export interface Issue {
   completedAt?: number | null
   /** 该 Issue 的评论嵌套模式（空 = 跟随成员/全局） */
   commentNesting?: 'flat' | 'thread' | 'nested' | null
+  /** 所属里程碑（空 = 不属于任何里程碑） */
+  milestoneId?: string | null
+  /** 估算（故事点/人日，纯数字） */
+  estimate?: number | null
   /** 关联：blocks / blocked-by / relates */
-  relations?: Array<{ type: 'blocks' | 'blocked-by' | 'relates'; targetId: string }>
+  relations?: Array<{
+    type: 'blocks' | 'blocked-by' | 'relates' | 'duplicate'
+    targetId: string
+  }>
   /** 所属迭代（空 = 未入迭代）。历史数据无此字段，读取处一律按 null 处理 */
   cycleId?: string | null
   /** 软删除时间（null/缺失 = 在库可见）。物理删除只在回收站「永久删除」发生 */
@@ -215,4 +224,38 @@ export const PRIORITY_LABEL: Record<IssuePriority, string> = {
   high: 'High',
   medium: 'Medium',
   low: 'Low',
+}
+
+export interface Milestone {
+  id: string
+  projectId: string
+  name: string
+  /** 目标日期（毫秒时间戳） */
+  dueAt: number | null
+  description?: string
+  createdAt: number
+}
+
+export interface WorkflowState {
+  id: string
+  projectId: string
+  /** 展示名 */
+  name: string
+  /** 类别（决定行为语义：todo/started/done/cancelled） */
+  category: 'todo' | 'started' | 'done' | 'cancelled'
+  color?: string
+  /** 排序（小在前） */
+  order: number
+}
+
+export interface Worklog {
+  id: string
+  issueId: string
+  memberId: string
+  /** 工时（分钟） */
+  minutes: number
+  /** 记录日期（毫秒时间戳，当日 0 点） */
+  date: number
+  note?: string
+  createdAt: number
 }

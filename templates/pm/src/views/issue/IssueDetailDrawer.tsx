@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect, useSyncExternalStore } from 'react'
 import type { Comment, Issue, IssuePriority, IssueStatus, Member } from '@/types'
-import { ISSUE_PRIORITIES, ISSUE_STATUSES } from '@/types'
+import { ISSUE_PRIORITIES } from '@/types'
 import { subscribeAgentRuns, getAgentRunsSnapshot } from '@/lib/agent-runner'
 import {
   OSelect,
@@ -14,6 +14,7 @@ import { activityTypeLabel, dateLocale, priorityLabel, relationLabel, statusLabe
 import { useRepositories } from '@/data/context'
 import { useObservable } from '@/data/use-observable'
 import { useLabelSet } from '@/lib/labels'
+import { isDoneCategory, useWorkflowStates, workflowStateLabel } from '@/lib/statuses'
 import type { CommentMode } from '@/lib/preferences'
 import {
   bucketOf,
@@ -31,9 +32,12 @@ import type { Action, Ctx } from '@/permission/policy'
 function DrawerActivities({
   issueId,
   memberMap,
+  stateNames,
 }: {
   issueId: string
   memberMap: Map<string, Member>
+  /** 工作流状态名映射（自定义状态走 Admin 命名，内置态回退 i18n） */
+  stateNames?: Map<string, string>
 }) {
   const { activities: activitiesRepo } = useRepositories()
   const acts = useObservable(() => activitiesRepo.liveByIssue(issueId), [issueId, activitiesRepo])
@@ -50,7 +54,10 @@ function DrawerActivities({
             </span>
             <span className="activity-text">
               {activityTypeLabel(a.type)}
-              {a.type === 'status' && a.to ? ` → ${statusLabel(a.to)}` : ''}
+              {a.type === 'status' && a.to
+                ? ` → ${stateNames?.get(a.to) ?? statusLabel(a.to)}`
+                : ''}
+              {a.type === 'merge' && a.to ? ` ${a.to}` : ''}
               {a.field && a.type !== 'status' && a.to ? ` → ${a.to}` : ''}
             </span>
             <span className="activity-time">
@@ -59,6 +66,115 @@ function DrawerActivities({
           </div>
         ))}
       </div>
+    </div>
+  )
+}
+
+/* ── 工时记录（详情抽屉）：记录/删除工时 + 估算对照 ── */
+function WorklogBlock({
+  issueId,
+  memberMap,
+  currentUser,
+  estimate,
+  canEdit,
+}: {
+  issueId: string
+  memberMap: Map<string, Member>
+  currentUser: string
+  estimate: number | null
+  canEdit: boolean
+}) {
+  const { worklogs: worklogsRepo } = useRepositories()
+  const logs = useObservable(() => worklogsRepo.liveByIssue(issueId), [issueId, worklogsRepo])
+  const minutesRef = useRef<HTMLInputElement>(null)
+  const noteRef = useRef<HTMLInputElement>(null)
+  const total = (logs ?? []).reduce((sum, l) => sum + l.minutes, 0)
+  // 分钟 → 人读时长（90 → 1h 30m；45 → 45m）
+  const fmt = (m: number) =>
+    m >= 60 ? `${Math.floor(m / 60)}h${m % 60 ? ` ${m % 60}m` : ''}` : `${m}m`
+  const add = async () => {
+    const minutes = Math.round(Number(minutesRef.current?.value ?? 0))
+    if (!Number.isFinite(minutes) || minutes <= 0) return
+    const d = new Date()
+    const date = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+    const note = (noteRef.current?.value ?? '').trim()
+    await worklogsRepo.add({
+      issueId,
+      memberId: currentUser,
+      minutes,
+      date,
+      ...(note ? { note } : {}),
+    })
+    if (minutesRef.current) minutesRef.current.value = ''
+    if (noteRef.current) noteRef.current.value = ''
+  }
+  return (
+    <div className="detail-worklog-block" data-testid="worklog-block">
+      <span>
+        {t('worklogTitle')}（{fmt(total)}
+        {estimate && estimate > 0 ? ` / ${t('estimateLabel')} ${estimate}` : ''}）
+      </span>
+      <div className="worklog-list">
+        {(logs ?? []).map((l) => (
+          <div key={l.id} className="worklog-item" data-testid="worklog-item">
+            <span className="worklog-who">
+              {memberMap.get(l.memberId)?.name ?? t('actorUnknown')}
+            </span>
+            <span className="worklog-minutes">{fmt(l.minutes)}</span>
+            <span className="worklog-date">
+              {new Date(l.date).toLocaleDateString(dateLocale())}
+            </span>
+            {l.note && <span className="worklog-note">{l.note}</span>}
+            {canEdit && (
+              <button
+                type="button"
+                className="worklog-del"
+                data-testid="worklog-del"
+                aria-label={t('worklogDelete')}
+                title={t('worklogDelete')}
+                onClick={() => void worklogsRepo.remove(l.id)}
+              >
+                ×
+              </button>
+            )}
+          </div>
+        ))}
+        {(logs ?? []).length === 0 && (
+          <p className="worklog-empty" data-testid="worklog-empty">
+            {t('worklogEmpty')}
+          </p>
+        )}
+      </div>
+      {canEdit && (
+        <div className="worklog-add-row">
+          <input
+            ref={minutesRef}
+            type="number"
+            min="1"
+            step="15"
+            className="comment-input worklog-minutes-input"
+            data-testid="worklog-minutes"
+            aria-label={t('worklogMinutesLabel')}
+            placeholder={t('worklogMinutesLabel')}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') void add()
+            }}
+          />
+          <input
+            ref={noteRef}
+            className="comment-input worklog-note-input"
+            data-testid="worklog-note"
+            aria-label={t('worklogNote')}
+            placeholder={t('worklogNotePlaceholder')}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') void add()
+            }}
+          />
+          <oas-button size="small" data-testid="worklog-add" onClick={() => void add()}>
+            {t('worklogAdd')}
+          </oas-button>
+        </div>
+      )}
     </div>
   )
 }
@@ -481,9 +597,16 @@ export function IssueDetailDrawer({
     activities: activitiesRepo,
     cycles: cyclesRepo,
     members: membersRepo,
+    milestones: milestonesRepo,
   } = useRepositories()
   const issue = useObservable(() => issuesRepo.live(issueId), [issueId, issuesRepo])
   const subs = useObservable(() => issuesRepo.liveSubIssues(issueId), [issueId, issuesRepo])
+  // 工作流状态/里程碑：本项目作用域（issue 未加载时空 id，加载后重订阅）
+  const workflowStates = useWorkflowStates(issue?.projectId ?? '')
+  const milestones = useObservable(
+    () => milestonesRepo.live(issue?.projectId ?? ''),
+    [milestonesRepo, issue?.projectId],
+  )
   // 迭代下拉只列本项目的周期（跨项目周期不可写）；issue 未加载时订阅空项目 id
   const projectCycles = useObservable(
     () => cyclesRepo.liveAll(issue?.projectId ?? ''),
@@ -603,6 +726,15 @@ export function IssueDetailDrawer({
 
   // 关联选择 state：必须在早退之前（hooks 顺序恒定）
   const [relType, setRelType] = useState('__none__')
+  // 合并入口（M25）：面板开合 + 目标选择，切 issue 即复位（effect 体不引用 issueId，
+  // 它是复位触发器——同下方 customSel 复位先例）
+  const [mergeOpen, setMergeOpen] = useState(false)
+  const [mergeTarget, setMergeTarget] = useState('__none__')
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 复位以 issueId 变化为触发
+  useEffect(() => {
+    setMergeOpen(false)
+    setMergeTarget('__none__')
+  }, [issueId])
   // 「自定义」档瞬态：换档 custom 不写库（§3.1-1），仅靠此标记让 picker 先出现；
   // dueAt/切换 issue 变化即复位，稳态回显永远 = f(issue.dueAt)（无交互记忆）
   const [customSel, setCustomSel] = useState(false)
@@ -626,6 +758,17 @@ export function IssueDetailDrawer({
   }, [canEdit])
 
   if (!issue) return <oas-drawer ref={drawerRef} />
+
+  // 工作流状态派生：名称解析 / done·todo 语义 id（自定义状态按类别兜底）
+  const stById = new Map(workflowStates.map((s) => [s.id, s]))
+  const stName = (id: string) => {
+    const s = stById.get(id)
+    return s ? workflowStateLabel(s) : statusLabel(id)
+  }
+  const stateNames = new Map(workflowStates.map((s) => [s.id, workflowStateLabel(s)]))
+  const doneId = workflowStates.find((s) => s.category === 'done')?.id ?? 'done'
+  const todoId =
+    workflowStates.find((s) => s.category === 'todo' && s.id !== 'backlog')?.id ?? 'todo'
 
   const relationTarget = (id: string) => relCandidates?.find((x) => x.id === id)
   // agent 语义派生：负责人是否 agent / 本 Issue 的执行进度
@@ -658,15 +801,30 @@ export function IssueDetailDrawer({
       dueAt: 'dueAt',
       startAt: 'startAt',
       cycleId: 'cycleId',
+      milestoneId: 'milestone',
+      estimate: 'estimate',
     }
     // 迭代的活动记录写周期名而非 id：历史里出现 nanoid 对读者无意义
     const cycleName = (id: string | null | undefined) =>
       id == null ? '' : ((projectCycles ?? []).find((c) => c.id === id)?.name ?? id)
+    // 里程碑同口径：活动写里程碑名
+    const milestoneName = (id: string | null | undefined) =>
+      id == null ? '' : ((milestones ?? []).find((m) => m.id === id)?.name ?? id)
     const acts: Promise<unknown>[] = []
     for (const k of Object.keys(changes) as Array<keyof Issue>) {
       if (k === 'updatedAt' || !(k in FIELD_LABEL)) continue
-      const to = k === 'cycleId' ? cycleName(changes.cycleId) : String(changes[k] ?? '')
-      const from = k === 'cycleId' ? cycleName(issue.cycleId) : String(issue[k] ?? '')
+      const to =
+        k === 'cycleId'
+          ? cycleName(changes.cycleId)
+          : k === 'milestoneId'
+            ? milestoneName(changes.milestoneId)
+            : String(changes[k] ?? '')
+      const from =
+        k === 'cycleId'
+          ? cycleName(issue.cycleId)
+          : k === 'milestoneId'
+            ? milestoneName(issue.milestoneId)
+            : String(issue[k] ?? '')
       if (from === to) continue
       acts.push(
         activitiesRepo.log({
@@ -678,7 +836,10 @@ export function IssueDetailDrawer({
           to,
         }),
       )
-      if (k === 'status') changes.completedAt = to === 'done' ? Date.now() : null
+      if (k === 'status') {
+        // completedAt 语义跟 done 类别走：自定义完成态同样落完成时间
+        changes.completedAt = isDoneCategory(stById.get(String(changes.status))) ? Date.now() : null
+      }
     }
     Promise.all(acts)
       .then(() => issuesRepo.update(issue.id, changes))
@@ -714,9 +875,51 @@ export function IssueDetailDrawer({
               testid="detail-status"
               ariaLabel={t('status')}
               value={issue.status}
-              options={ISSUE_STATUSES.map((s) => ({ label: statusLabel(s), value: s }))}
+              options={workflowStates.map((s) => ({ label: workflowStateLabel(s), value: s.id }))}
               onChange={(v) => save({ status: v as IssueStatus })}
               disabled={!canChangeStatus}
+            />
+          </div>
+          <div className="detail-field">
+            <span>{t('milestone')}</span>
+            <OSelect
+              testid="detail-milestone"
+              ariaLabel={t('milestone')}
+              value={issue.milestoneId ?? '__none__'}
+              options={[
+                { label: t('milestoneNone'), value: '__none__' },
+                ...(milestones ?? []).map((m) => ({
+                  label: m.dueAt
+                    ? `${m.name} · ${new Date(m.dueAt).toLocaleDateString(dateLocale())}`
+                    : m.name,
+                  value: m.id,
+                })),
+              ]}
+              onChange={(v) => save({ milestoneId: v === '__none__' ? null : v })}
+              disabled={!canEdit}
+            />
+          </div>
+          <div className="detail-field">
+            <span>{t('estimateLabel')}</span>
+            {/* 估算：失焦落库（数字为空/0 清空），Enter 即失焦；key 重挂保证切 issue 回显 */}
+            <input
+              key={`${issue.id}:${issue.estimate ?? ''}`}
+              type="number"
+              min="0"
+              step="1"
+              className="comment-input estimate-input"
+              data-testid="detail-estimate"
+              aria-label={t('estimateLabel')}
+              defaultValue={issue.estimate ?? ''}
+              disabled={!canEdit}
+              onBlur={(e) => {
+                const n = Math.round(Number(e.target.value))
+                const next = Number.isFinite(n) && n > 0 ? n : null
+                if (next !== (issue.estimate ?? null)) save({ estimate: next })
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+              }}
             />
           </div>
           <div className="detail-field">
@@ -829,8 +1032,8 @@ export function IssueDetailDrawer({
             与字段级权限矩阵对齐，viewer 永远看不到按钮（下方条件已含 canEdit） */}
         {(issue.reviewRequired ||
           (assigneeMember?.kind === 'agent' &&
-            issue.status !== 'done' &&
-            issue.status !== 'cancelled')) && (
+            !isDoneCategory(stById.get(issue.status)) &&
+            stById.get(issue.status)?.category !== 'cancelled')) && (
           <div
             className="agent-strip"
             data-testid={issue.reviewRequired ? 'agent-review-panel' : 'agent-strip'}
@@ -884,20 +1087,20 @@ export function IssueDetailDrawer({
                 <OCheckbox
                   className="row-check"
                   testid="row-check"
-                  checked={s.status === 'done'}
+                  checked={isDoneCategory(stById.get(s.status))}
                   disabled={!can('issue:change-status', { issue: s })}
                   onChange={async () => {
-                    const done = s.status === 'done'
+                    const done = isDoneCategory(stById.get(s.status))
                     // 先写活动再改状态：通知生成读取「当前 issue」作为 from，顺序反了会丢状态通知
                     await activitiesRepo.log({
                       issueId: s.id,
                       actorId: currentUser,
                       type: 'status',
                       field: '状态',
-                      to: done ? 'todo' : 'done',
+                      to: done ? todoId : doneId,
                     })
                     await issuesRepo.update(s.id, {
-                      status: done ? 'todo' : 'done',
+                      status: done ? todoId : doneId,
                       completedAt: done ? null : Date.now(),
                       updatedAt: Date.now(),
                     })
@@ -905,7 +1108,7 @@ export function IssueDetailDrawer({
                 />
                 {/* biome-ignore lint/a11y/useSemanticElements: 行内项与多选框/标签并列、样式契约为 span，不换 <button> */}
                 <span
-                  className={`issue-title${s.status === 'done' ? ' sub-done' : ''}`}
+                  className={`issue-title${isDoneCategory(stById.get(s.status)) ? ' sub-done' : ''}`}
                   style={{ cursor: 'pointer' }}
                   role="button"
                   tabIndex={0}
@@ -916,8 +1119,11 @@ export function IssueDetailDrawer({
                 >
                   {s.key} {s.title}
                 </span>
-                <oas-tag size="small" type={s.status === 'done' ? 'success' : 'info'}>
-                  {statusLabel(s.status)}
+                <oas-tag
+                  size="small"
+                  type={isDoneCategory(stById.get(s.status)) ? 'success' : 'info'}
+                >
+                  {stName(s.status)}
                 </oas-tag>
               </div>
             ))}
@@ -966,7 +1172,7 @@ export function IssueDetailDrawer({
           <div className="detail-labels">
             {(issue.relations ?? []).map((r, i) => {
               const target = relationTarget(r.targetId)
-              const relLabel = `${relationLabel(r.type)} ${target?.key ?? r.targetId.slice(0, 10)}`
+              const relLabel = `${relationLabel(r.type)} ${target?.key ?? t('notifyIssueGone')}`
               return canEdit ? (
                 <TagChip
                   key={`${r.type}-${r.targetId}`}
@@ -998,6 +1204,7 @@ export function IssueDetailDrawer({
                   { label: t('relOptBlocks'), value: 'blocks' },
                   { label: t('relOptBlockedBy'), value: 'blocked-by' },
                   { label: t('relOptRelates'), value: 'relates' },
+                  { label: t('relOptDuplicate'), value: 'duplicate' },
                 ]}
                 onChange={setRelType}
               />
@@ -1071,6 +1278,13 @@ export function IssueDetailDrawer({
             )}
           </div>
         </div>
+        <WorklogBlock
+          issueId={issue.id}
+          memberMap={memberMap}
+          currentUser={currentUser}
+          estimate={issue.estimate ?? null}
+          canEdit={canEdit}
+        />
         <CommentsBlock
           issueId={issue.id}
           projectId={issue.projectId}
@@ -1086,13 +1300,59 @@ export function IssueDetailDrawer({
               .catch((e) => console.error('[commentMode]', e))
           }}
         />
-        <DrawerActivities issueId={issue.id} memberMap={memberMap} />
+        <DrawerActivities issueId={issue.id} memberMap={memberMap} stateNames={stateNames} />
         <div className="detail-foot">
           <span className="detail-dates">
             {t('detailDates')
               .replace('{created}', new Date(issue.createdAt).toLocaleDateString(dateLocale()))
               .replace('{updated}', new Date(issue.updatedAt).toLocaleString(dateLocale()))}
           </span>
+          {canDelete && (
+            <oas-button
+              size="small"
+              data-testid="merge-open"
+              onClick={() => setMergeOpen(!mergeOpen)}
+            >
+              {t('mergeInto')}
+            </oas-button>
+          )}
+          {mergeOpen && (
+            <div className="merge-panel" data-testid="merge-panel">
+              <span className="merge-panel-text">{t('mergePick')}</span>
+              <OSelect
+                testid="merge-target"
+                ariaLabel={t('mergeInto')}
+                value={mergeTarget}
+                options={[
+                  { label: t('mergeSearch'), value: '__none__' },
+                  ...(relCandidates ?? [])
+                    .filter((x) => x.id !== issue.id)
+                    .map((x) => ({
+                      label: `${x.key} ${x.title.slice(0, 18)}`,
+                      value: x.id,
+                    })),
+                ]}
+                onChange={setMergeTarget}
+              />
+              <oas-button
+                size="small"
+                type="danger"
+                data-testid="merge-confirm"
+                disabled={mergeTarget === '__none__'}
+                onClick={() => {
+                  if (mergeTarget === '__none__') return
+                  const source = issue
+                  void issuesRepo.mergeInto(source.id, mergeTarget, currentUser).then(() => {
+                    // 源卡软删 → 复用删除回调弹「撤销」，抽屉关闭
+                    onDeletedRef.current?.(source)
+                    onClose()
+                  })
+                }}
+              >
+                {t('mergeConfirm')}
+              </oas-button>
+            </div>
+          )}
           <oas-popconfirm ref={popRef} title={t('adminDeleteConfirm')} data-testid="detail-delete">
             {canDelete && (
               <oas-button type="danger" data-testid="detail-delete-btn">

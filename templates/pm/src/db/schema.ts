@@ -12,6 +12,9 @@ import type {
   AuditEntry,
   ProjectRoleAssignment,
   ProjectMember,
+  Milestone,
+  WorkflowState,
+  Worklog,
 } from '@/types'
 
 export interface SettingRow {
@@ -34,6 +37,9 @@ export class PMDatabase extends Dexie {
   audit!: EntityTable<AuditEntry, 'id'>
   projectRoles!: EntityTable<ProjectRoleAssignment, 'id'>
   projectMembers!: EntityTable<ProjectMember, 'id'>
+  milestones!: EntityTable<Milestone, 'id'>
+  workflowStates!: EntityTable<WorkflowState, 'id'>
+  worklogs!: EntityTable<Worklog, 'id'>
 
   constructor(name = 'oas-pm') {
     super(name)
@@ -218,6 +224,27 @@ export class PMDatabase extends Dexie {
       audit: 'id, at, actorId, action',
       projectRoles: 'id, projectId, memberId, [projectId+memberId]',
       projectMembers: 'id, projectId, memberId, [projectId+memberId]',
+    })
+    // v16：里程碑 + 自定义工作流状态 + 工时（三表只增；issues 增 milestoneId 索引。
+    // 复合索引 [projectId+dueAt]/[projectId+order] 首字段均有独立索引，符合 Dexie 约束）
+    this.version(16).stores({
+      issues:
+        'id, projectId, key, status, priority, assigneeId, parentId, cycleId, milestoneId, createdAt, updatedAt, deletedAt, [projectId+status], [projectId+priority], [projectId+assigneeId], [projectId+updatedAt], [projectId+status+updatedAt], [assigneeId+status], [status+updatedAt], [projectId+cycleId], [projectId+milestoneId]',
+      projects: 'id, key',
+      members: 'id, role',
+      comments: 'id, issueId, parentId, [issueId+createdAt]',
+      savedViews: 'id, name',
+      activities: 'id, issueId, [issueId+createdAt], createdAt',
+      settings: 'key',
+      cycles: 'id, projectId, [projectId+startAt]',
+      notifications: 'id, memberId, createdAt, [memberId+createdAt], [memberId+readAt]',
+      roles: 'id, name',
+      audit: 'id, at, actorId, action',
+      projectRoles: 'id, projectId, memberId, [projectId+memberId]',
+      projectMembers: 'id, projectId, memberId, [projectId+memberId]',
+      milestones: 'id, projectId, [projectId+dueAt]',
+      workflowStates: 'id, projectId, [projectId+order]',
+      worklogs: 'id, issueId, memberId, [issueId+createdAt], [memberId+createdAt]',
     })
   }
 }

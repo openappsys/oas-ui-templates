@@ -4,9 +4,10 @@ import type { Observer } from '@/data/observable'
 import { useObservable } from '@/data/use-observable'
 import { parseFilters } from '@/lib/filters'
 import type { Action, Ctx } from '@/permission/policy'
-import type { IssuePriority, IssueStatus, SavedView } from '../types'
-import { ISSUE_PRIORITIES, ISSUE_STATUSES } from '../types'
-import { priorityLabel, statusLabel, t } from '@/i18n'
+import type { IssuePriority, IssueStatus, SavedView, WorkflowState } from '../types'
+import { ISSUE_PRIORITIES } from '../types'
+import { priorityLabel, t } from '@/i18n'
+import { workflowStateLabel } from '@/lib/statuses'
 import { OSelect } from './oas-wrappers'
 
 /** 批量操作浮条：选中集 → 批量改状态/优先级/负责人/删除（写活动历史） */
@@ -16,6 +17,7 @@ export function BulkBar({
   onDone,
   can,
   onDeleted,
+  states,
 }: {
   selectedIds: Set<string>
   currentUser: string
@@ -23,6 +25,8 @@ export function BulkBar({
   can: (action: Action, ctx?: Ctx) => boolean
   /** 删除成功回调（id 列表）：宿主据此弹「撤销」条 */
   onDeleted?: (ids: string[]) => void
+  /** 项目工作流状态（宿主传入，与筛选/看板同源） */
+  states: WorkflowState[]
 }) {
   const [status, setStatus] = useState('')
   const [priority, setPriority] = useState('')
@@ -65,7 +69,7 @@ export function BulkBar({
         disabled={!canApply}
         options={[
           { label: t('bulkSetStatus'), value: '' },
-          ...ISSUE_STATUSES.map((s) => ({ label: statusLabel(s), value: s })),
+          ...states.map((s) => ({ label: workflowStateLabel(s), value: s.id })),
         ]}
         onChange={setStatus}
       />

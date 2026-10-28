@@ -6,6 +6,7 @@ import { mulberry32 } from './lib/prng'
 import { demoSavedViewRows } from './lib/saved-views'
 import { SEED_SIZE_KEY, parseSeedSize } from './lib/seed-size'
 import { BUILTIN_ROLES } from './lib/builtin-roles'
+import { DEFAULT_WORKFLOW_STATES } from './lib/workflow'
 
 const NAMES = ['张伟', '李娜', '王强', '赵敏', '刘洋', '陈静', '杨帆', '周琳']
 const TITLES = [
@@ -109,10 +110,18 @@ export async function seedDatabase(): Promise<void> {
     await db.projectMembers.bulkPut(agentProjectMemberRows(projects.map((p) => p.id)))
     await db.settings.put({ key: marker, value: true, updatedAt: Date.now() })
   }
+  // v17：工作流状态默认态（工作区级一套，全项目共用；管理员改坏删光后也由此兜底）
+  const ensureWorkflowStates = async () => {
+    if ((await db.workflowStates.count()) > 0) return
+    await db.workflowStates.bulkPut(
+      DEFAULT_WORKFLOW_STATES.map((s) => ({ ...s, projectId: 'workspace' })),
+    )
+  }
   if (marked) {
     await ensureRoles()
     await ensureProjectMembers()
     await ensureAgentMembers()
+    await ensureWorkflowStates()
     return
   }
   // 旧 seed 数据（v1 的 updatedAt 走了未来时间戳）/ 中断残留 清表重播；
@@ -228,6 +237,8 @@ export async function seedDatabase(): Promise<void> {
     Date.UTC(nb.getUTCFullYear(), nb.getUTCMonth(), nb.getUTCDate() + addDays, hour)
 
   console.time(`seed:${ISSUE_COUNT}`)
+  // 里程碑挂载计数器（project-1 前 8+8 条挂 M1/M2，确定性数量供 e2e 断言）
+  let msTagged = 0
   // 按 start 步进而非 chunk 计数：规模可能不是 CHUNK 的整数倍（夹取区间是 [1000, 100000]）
   for (let start = 0; start < ISSUE_COUNT; start += CHUNK) {
     const batch: Issue[] = []
@@ -294,6 +305,13 @@ export async function seedDatabase(): Promise<void> {
       // 迭代归属只读 idx/dueAt（不抽 rand，否则随机流平移、e2e 锚定的 issue id 会漂移）；
       // 项目 2 没有周期 → 全部留在「未入迭代」
       const cycleId = proj.id === 'project-1' ? demoCycleIdFor(idx, dueAt, cycles) : null
+      // 里程碑归属（project-1 计数器取前 8+8 条，不消耗 rand 随机流保持不变）：
+      // 侧栏里程碑组点过滤要有确定性的非空结果；其余全部「无里程碑」
+      let milestoneId: string | null = null
+      if (proj.id === 'project-1' && msTagged < 16) {
+        milestoneId = msTagged < 8 ? 'milestone-1' : 'milestone-2'
+        msTagged += 1
+      }
       const cycle = cycleId === null ? undefined : cycleById.get(cycleId)
       // 完成时刻改为「周期区间内按 idx 均匀铺开」（lib/cycles.demoDoneAt）：
       // 旧的 createdAt + 1~5 天 会落到周期起点之前，燃尽首日一次扣完 → 实际线永远平直
@@ -322,6 +340,7 @@ export async function seedDatabase(): Promise<void> {
         updatedAt,
         completedAt,
         order: idx,
+        milestoneId,
         cycleId,
       })
     }
@@ -332,5 +351,26 @@ export async function seedDatabase(): Promise<void> {
   // v10：示例保存视图。此前 savedViews 只有用户自建、seed 后为空——首屏侧栏「已保存视图」组与
   // 工具条下拉都没有内容，入口不可发现。定义与 API mock 共用 lib/saved-views，两源首屏一致
   await db.savedViews.bulkPut(demoSavedViewRows(now))
+  // v17：工作流状态默认态（每项目一套内置五态）+ 示例里程碑（project-1 两条）
+  await db.workflowStates.bulkPut(
+    DEFAULT_WORKFLOW_STATES.map((s) => ({ ...s, projectId: 'workspace' })),
+  )
+  await db.milestones.bulkPut([
+    {
+      id: 'milestone-1',
+      projectId: 'project-1',
+      name: 'M1 · 公开版',
+      dueAt: now + 14 * day,
+      description: '首个对外发布里程碑',
+      createdAt: now,
+    },
+    {
+      id: 'milestone-2',
+      projectId: 'project-1',
+      name: 'M2 · 移动端适配',
+      dueAt: now + 30 * day,
+      createdAt: now,
+    },
+  ])
   localStorage.setItem(SEED_MARKER_KEY, '1')
 }

@@ -2,9 +2,9 @@ import { useMemo } from 'react'
 import { useRepositories } from '@/data/context'
 import { useObservable } from '@/data/use-observable'
 import type { Cycle, IssueStatus, Member } from '@/types'
-import { ISSUE_STATUSES } from '@/types'
 import { statusLabel, t } from '@/i18n'
 import { STATUS_COLOR } from '@/lib/colors'
+import { useWorkflowStates, workflowStateColor, workflowStateLabel } from '@/lib/statuses'
 import { useProjectCounts } from '@/lib/hooks'
 import { Chart } from '@/components/Chart'
 import { toChartData } from '@/lib/chart-data'
@@ -50,6 +50,7 @@ export function DashboardView({
 }) {
   const { issues: issuesRepo, members: membersRepo, cycles: cyclesRepo } = useRepositories()
   const counts = useProjectCounts(projectId)
+  const states = useWorkflowStates(projectId)
   const members = useObservable(() => membersRepo.liveAll(), [membersRepo])
   const cycles = useObservable(() => cyclesRepo.liveAll(projectId), [cyclesRepo, projectId])
   const cycleCounts = useObservable(
@@ -69,15 +70,23 @@ export function DashboardView({
       .slice(0, 6)
   }, [members, workload])
 
-  const statusData = ISSUE_STATUSES.map((s) => ({
-    label: statusLabel(s),
-    value: counts?.byStatus[s] ?? 0,
+  const statusData = states.map((s) => ({
+    label: workflowStateLabel(s),
+    value: counts?.byStatus[s.id] ?? 0,
   }))
-  // 环形图 4 色调色板循环会让「已完成/已取消」错色：按 series 顺序显式给 5 段状态色
+  // 环形图 4 色调色板循环会让「已完成/已取消」错色：按 series 顺序显式给每段状态色
   const statusChartOptions = useMemo(
-    () => ({ colors: ISSUE_STATUSES.map((s) => STATUS_COLOR[s]) }),
-    [],
+    () => ({ colors: states.map((s) => workflowStateColor(s)) }),
+    [states],
   )
+  // 核心三卡（待办/进行/已完成）按类别聚合：自定义同类状态并入内置统计口径
+  const statValue = (id: IssueStatus) => {
+    const st = states.find((s) => s.id === id)
+    if (!st) return counts?.byStatus[id] ?? 0
+    return states
+      .filter((x) => x.category === st.category)
+      .reduce((sum, x) => sum + (counts?.byStatus[x.id] ?? 0), 0)
+  }
   // 近 30 天创建趋势（createdAt 索引键按天计数，不物化完整行；零日由视图按坐标轴补齐）
   const trendFrom = useMemo(() => Date.now() - 30 * 86400000, [])
   const trendCounts = useObservable(
@@ -129,7 +138,7 @@ export function DashboardView({
             title={statusLabel(s)}
           >
             <span slot="value" style={{ color: STATUS_COLOR[s] }}>
-              {(counts?.byStatus[s] ?? 0).toLocaleString()}
+              {statValue(s).toLocaleString()}
             </span>
           </oas-statistic>
         ))}

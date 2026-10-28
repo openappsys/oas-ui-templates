@@ -13,6 +13,9 @@ import type {
   ProjectMember,
   ProjectRoleAssignment,
   SavedView,
+  Milestone,
+  WorkflowState,
+  Worklog,
 } from '@/types'
 import { ApiError, errorMessage } from './errors'
 import { clearToken, getToken, sessionEvents, type SessionEvents } from './session'
@@ -32,12 +35,15 @@ import type {
   IssueWindowFilters,
   MemberRepository,
   MemberWorkload,
+  MilestoneRepository,
   NotificationRepository,
   ProjectCounts,
   ProjectHealth,
   ProjectRepository,
   Repositories,
   RoleRepository,
+  WorkflowStateRepository,
+  WorklogRepository,
   AuditRepository,
   ProjectMemberRepository,
   ProjectRoleRepository,
@@ -260,6 +266,7 @@ export function createApiRepositories(options: ApiClientOptions = {}): Repositor
               currentUser,
               sortBy: filters.sortBy,
               cycle: filters.cycleFilter,
+              milestone: filters.milestoneFilter,
               limit,
             }),
           ),
@@ -369,6 +376,16 @@ export function createApiRepositories(options: ApiClientOptions = {}): Repositor
     bulkDelete: async (ids) => {
       await send('POST', '/api/issues/bulk-delete', undefined, { ids })
       poke()
+    },
+    mergeInto: async (sourceId: string, targetId: string, actorId: string) => {
+      const body = await send<{ issue: Issue }>(
+        'POST',
+        `/api/issues/${encodeURIComponent(sourceId)}/merge`,
+        undefined,
+        { targetId, actorId },
+      )
+      poke()
+      return body.issue
     },
   }
 
@@ -627,6 +644,101 @@ export function createApiRepositories(options: ApiClientOptions = {}): Repositor
     },
   }
 
+  const milestonesRepo: MilestoneRepository = {
+    all: async (projectId: string) =>
+      asItems<Milestone>(await send('GET', '/api/milestones', buildQuery({ projectId }))),
+    live: (projectId: string) =>
+      live(async () =>
+        asItems<Milestone>(await send('GET', '/api/milestones', buildQuery({ projectId }))),
+      ),
+    get: async (id) => send('GET', `/api/milestones/${encodeURIComponent(id)}`),
+    create: async (input) => {
+      const body = await send<{ milestone: Milestone }>('POST', '/api/milestones', undefined, input)
+      poke()
+      return body.milestone
+    },
+    update: async (id: string, changes: Partial<Milestone>) => {
+      await send('PATCH', `/api/milestones/${encodeURIComponent(id)}`, undefined, changes)
+      poke()
+    },
+    delete: async (id: string) => {
+      await send('DELETE', `/api/milestones/${encodeURIComponent(id)}`)
+      poke()
+    },
+  }
+
+  const workflowStatesRepo: WorkflowStateRepository = {
+    all: async (projectId: string) =>
+      asItems<WorkflowState>(await send('GET', '/api/workflow-states', buildQuery({ projectId }))),
+    live: (projectId: string) =>
+      live(async () =>
+        asItems<WorkflowState>(
+          await send('GET', '/api/workflow-states', buildQuery({ projectId })),
+        ),
+      ),
+    ensureDefaults: async (projectId) => {
+      await send('POST', '/api/workflow-states/ensure', undefined, { projectId })
+      poke()
+    },
+    create: async (input) => {
+      const body = await send<{ state: WorkflowState }>(
+        'POST',
+        '/api/workflow-states',
+        undefined,
+        input,
+      )
+      poke()
+      return body.state
+    },
+    update: async (id: string, changes: Partial<WorkflowState>) => {
+      await send('PATCH', `/api/workflow-states/${encodeURIComponent(id)}`, undefined, changes)
+      poke()
+    },
+    delete: async (id: string) => {
+      await send('DELETE', `/api/workflow-states/${encodeURIComponent(id)}`)
+      poke()
+    },
+    reorder: async (orderedIds: string[]) => {
+      await send('POST', '/api/workflow-states/reorder', undefined, { orderedIds })
+      poke()
+    },
+  }
+
+  const worklogsRepo: WorklogRepository = {
+    liveByIssue: (issueId: string) =>
+      live(async () =>
+        asItems<Worklog>(await send('GET', `/api/issues/${encodeURIComponent(issueId)}/worklogs`)),
+      ),
+    add: async (input: {
+      issueId: string
+      memberId: string
+      minutes: number
+      date: number
+      note?: string
+    }) => {
+      await send(
+        'POST',
+        `/api/issues/${encodeURIComponent(input.issueId)}/worklogs`,
+        undefined,
+        input,
+      )
+      poke()
+    },
+    remove: async (id: string) => {
+      await send('DELETE', `/api/worklogs/${encodeURIComponent(id)}`)
+      poke()
+    },
+    liveMemberMinutes: (projectId: string) =>
+      live(async () => {
+        const body = await send<{ items: Array<{ memberId: string; minutes: number }> }>(
+          'GET',
+          '/api/worklog-minutes',
+          buildQuery({ projectId }),
+        )
+        return body.items
+      }),
+  }
+
   return {
     issues,
     projects,
@@ -642,6 +754,9 @@ export function createApiRepositories(options: ApiClientOptions = {}): Repositor
     settings,
     notifications,
     admin,
+    milestones: milestonesRepo,
+    workflowStates: workflowStatesRepo,
+    worklogs: worklogsRepo,
   }
 }
 

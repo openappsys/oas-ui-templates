@@ -6,8 +6,11 @@ import type {
   IssuePriority,
   IssueStatus,
   Member,
+  Milestone,
   Notification,
   Project,
+  WorkflowState,
+  Worklog,
   SavedView,
   Role,
   AuditEntry,
@@ -32,6 +35,8 @@ export interface IssueWindowFilters {
   /** 迭代单选：null = 不限，'__current__' = 当前迭代（按 now 派生），'__none__' = 未入迭代，
    *  其他值为 cycleId。与 assignee/priority 同口径：窗口截断后再内存过滤 */
   cycleFilter: string | null
+  /** 里程碑单选；缺省 = 不限（旧调用方无需感知该维度） */
+  milestoneFilter?: string | null
 }
 
 export interface ProjectCounts {
@@ -132,6 +137,54 @@ export interface IssueRepository {
     actorId: string,
   ): Promise<void>
   bulkDelete(ids: string[]): Promise<void>
+  /** 合并重复 Issue：source 的评论/活动/子任务/关系/工时/关注者/标签迁移到 target，
+   *  target 记 duplicate 关系，source 软删入回收站。返回 target（迁移后的最新行） */
+  mergeInto(sourceId: string, targetId: string, actorId: string): Promise<Issue | undefined>
+}
+
+export interface MilestoneRepository {
+  all(projectId: string): Promise<Milestone[]>
+  live(projectId: string): Observable<Milestone[]>
+  get(id: string): Promise<Milestone | undefined>
+  create(input: {
+    projectId: string
+    name: string
+    dueAt: number | null
+    description?: string
+  }): Promise<Milestone>
+  update(id: string, changes: Partial<Milestone>): Promise<void>
+  delete(id: string): Promise<void>
+}
+
+export interface WorkflowStateRepository {
+  live(projectId: string): Observable<WorkflowState[]>
+  all(projectId: string): Promise<WorkflowState[]>
+  ensureDefaults(projectId: string): Promise<void>
+  create(input: {
+    projectId: string
+    name: string
+    category: WorkflowState['category']
+    color?: string
+    /** 排序值；缺省 = 追加到末尾（实现方取当前时间） */
+    order?: number
+  }): Promise<WorkflowState>
+  update(id: string, changes: Partial<WorkflowState>): Promise<void>
+  delete(id: string): Promise<void>
+  reorder(orderedIds: string[]): Promise<void>
+}
+
+export interface WorklogRepository {
+  liveByIssue(issueId: string): Observable<Worklog[]>
+  add(input: {
+    issueId: string
+    memberId: string
+    minutes: number
+    date: number
+    note?: string
+  }): Promise<void>
+  remove(id: string): Promise<void>
+  /** 成员工时合计（毫秒时间戳当天起） */
+  liveMemberMinutes(projectId: string): Observable<Array<{ memberId: string; minutes: number }>>
 }
 
 export interface ProjectRepository {
@@ -256,6 +309,9 @@ export interface ProjectMemberRepository {
 }
 
 export interface Repositories {
+  milestones: MilestoneRepository
+  workflowStates: WorkflowStateRepository
+  worklogs: WorklogRepository
   issues: IssueRepository
   projects: ProjectRepository
   members: MemberRepository

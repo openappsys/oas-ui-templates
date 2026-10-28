@@ -5,7 +5,8 @@ import {
   CURRENT_CYCLE,
   NO_CYCLE,
 } from '../../lib/cycles.ts'
-import { ALL_PROJECTS, LIST_WINDOW, UNASSIGNED } from '../../lib/filters.ts'
+import { ALL_PROJECTS, LIST_WINDOW, NO_MILESTONE, UNASSIGNED } from '../../lib/filters.ts'
+import { DEFAULT_WORKFLOW_STATES } from '../../lib/workflow.ts'
 import {
   commentNotificationDrafts,
   issueChangeNotificationDrafts,
@@ -33,6 +34,9 @@ import {
   type AuditEntry,
   type ProjectRoleAssignment,
   type SavedView,
+  type Milestone,
+  type WorkflowState,
+  type Worklog,
 } from '../../types/index.ts'
 import { demoSavedViewRows } from '../../lib/saved-views.ts'
 import { BUILTIN_ROLES } from '../../lib/builtin-roles.ts'
@@ -58,6 +62,9 @@ export interface SeedTables {
   audit: AuditEntry[]
   projectRoles: ProjectRoleAssignment[]
   projectMembers: ProjectMember[]
+  milestones: Milestone[]
+  workflowStates: WorkflowState[]
+  worklogs: Worklog[]
 }
 
 export interface MockStore extends SeedTables {
@@ -250,6 +257,8 @@ function buildSeed(seed: number, now: number): SeedTables {
     },
   ]
   const cycleById = new Map(cycles.map((c) => [c.id, c]))
+  // 里程碑挂载计数器（与 seed-db 同口径）
+  let msTagged = 0
   for (let i = 0; i < MOCK_ISSUE_COUNT; i++) {
     const roll = rand()
     const project = roll < 0.5 ? projects[0] : roll < 0.8 ? projects[1] : projects[2]
@@ -278,6 +287,12 @@ function buildSeed(seed: number, now: number): SeedTables {
     // 否则已结束的 Sprint 2 一条都分不到（迭代归属只按 dueAt 落在 [startAt, endAt) 判定）
     const dueAt = rand() > 0.35 ? now + (Math.floor(rand() * 63) - 42) * DAY : null
     const cycleId = project.id === 'project-1' ? demoCycleIdFor(i, dueAt, cycles) : null
+    // 里程碑归属与 Dexie seed 同口径（project-1 计数器前 8+8 条）：两源数量一致
+    let milestoneId: string | null = null
+    if (project.id === 'project-1' && msTagged < 16) {
+      milestoneId = msTagged < 8 ? 'milestone-1' : 'milestone-2'
+      msTagged += 1
+    }
     const cycle = cycleId === null ? undefined : cycleById.get(cycleId)
     issues.push({
       id: `issue-${project.id}-${i + 1}`,
@@ -305,6 +320,7 @@ function buildSeed(seed: number, now: number): SeedTables {
       order: i,
       parentId: i > 0 && i % 100 === 0 ? issues[0].id : null,
       cycleId,
+      milestoneId,
     })
   }
 
@@ -360,6 +376,25 @@ function buildSeed(seed: number, now: number): SeedTables {
     notifications: [],
     roles: BUILTIN_ROLES.map((r) => ({ ...r, permissions: [...r.permissions] })),
     audit: [],
+    milestones: [
+      {
+        id: 'milestone-1',
+        projectId: 'project-1',
+        name: 'M1 · 公开版',
+        dueAt: now + 14 * 86400000,
+        description: '首个对外发布里程碑',
+        createdAt: now,
+      },
+      {
+        id: 'milestone-2',
+        projectId: 'project-1',
+        name: 'M2 · 移动端适配',
+        dueAt: now + 30 * 86400000,
+        createdAt: now,
+      },
+    ],
+    workflowStates: DEFAULT_WORKFLOW_STATES.map((s) => ({ ...s, projectId: 'workspace' })),
+    worklogs: [],
     projectRoles: [],
     projectMembers: [
       ...allMembers.map((m) => ({
@@ -557,8 +592,11 @@ function windowIssues(store: MockStore, q: URLSearchParams): Issue[] {
   const statusSet = new Set(statuses)
   const search = (q.get('search') ?? '').trim()
   const cycleFilter = q.get('cycle') ?? ''
+  const milestoneFilter = q.get('milestone') ?? ''
   const directCycle =
     cycleFilter && cycleFilter !== CURRENT_CYCLE && cycleFilter !== NO_CYCLE ? cycleFilter : null
+  const directMilestone =
+    milestoneFilter && milestoneFilter !== NO_MILESTONE ? milestoneFilter : null
 
   let out: Issue[]
   if (search) {
@@ -580,6 +618,18 @@ function windowIssues(store: MockStore, q: URLSearchParams): Issue[] {
           (statusSet.size === 0 || statusSet.has(i.status)),
       )
       .sort(byUpdatedDesc)
+  } else if (directMilestone) {
+    // 里程碑直取（与 Dexie [projectId+milestoneId] 索引同口径）
+    out = store.issues
+      .filter(
+        (i) =>
+          notDeleted(i) &&
+          (allProjects || i.projectId === projectId) &&
+          i.milestoneId === directMilestone &&
+          (statusSet.size === 0 || statusSet.has(i.status)),
+      )
+      .sort(byUpdatedDesc)
+      .slice(0, limit)
   } else {
     const rows = store.issues.filter(
       (i) =>
@@ -611,6 +661,11 @@ function windowIssues(store: MockStore, q: URLSearchParams): Issue[] {
   if (priorities.length) {
     const want = new Set(priorities)
     out = out.filter((i) => want.has(i.priority))
+  }
+  if (milestoneFilter) {
+    out = out.filter((i) =>
+      milestoneFilter === NO_MILESTONE ? i.milestoneId == null : i.milestoneId === milestoneFilter,
+    )
   }
   if (cycleFilter) {
     // 与 Dexie 同口径：具体周期已在上面直取（此处是空操作）；当前迭代需要周期区间
@@ -658,10 +713,17 @@ function cycleIssueCounts(store: MockStore, projectId: string): CycleIssueCount[
 
 function issueCounts(store: MockStore, projectId: string) {
   const allProjects = projectId === ALL_PROJECTS
-  const byStatus = Object.fromEntries(ISSUE_STATUSES.map((s) => [s, 0])) as Record<
-    IssueStatus,
-    number
-  >
+  // 状态维度 = 内置五态 + 自定义状态（自定义态在扫描中出现才入表，避免空表刷屏）
+  const byStatus = Object.fromEntries(
+    [
+      ...ISSUE_STATUSES,
+      ...new Set(
+        store.issues
+          .filter((i) => notDeleted(i) && (allProjects || i.projectId === projectId))
+          .map((i) => i.status),
+      ),
+    ].map((s) => [s, 0]),
+  ) as Record<IssueStatus, number>
   // 优先级计数与 byStatus 同口径（全量、跳过软删、按项目作用域）
   const byPriority = Object.fromEntries(ISSUE_PRIORITIES.map((p) => [p, 0])) as Record<
     IssuePriority,
@@ -944,6 +1006,9 @@ function exportEnvelope(store: MockStore) {
       audit: [...store.audit].sort(byIdAsc),
       projectRoles: [...store.projectRoles].sort(byIdAsc),
       projectMembers: [...store.projectMembers].sort(byIdAsc),
+      milestones: [...store.milestones].sort(byIdAsc),
+      workflowStates: [...store.workflowStates].sort(byIdAsc),
+      worklogs: [...store.worklogs].sort(byIdAsc),
     },
   })
 }
@@ -977,7 +1042,14 @@ function importEnvelope(store: MockStore, raw: unknown): void {
     audit: rows('audit') as AuditEntry[],
     projectRoles: rows('projectRoles') as ProjectRoleAssignment[],
     projectMembers: rows('projectMembers') as ProjectMember[],
+    milestones: rows('milestones') as Milestone[],
+    workflowStates: rows('workflowStates') as WorkflowState[],
+    worklogs: rows('worklogs') as Worklog[],
   })
+  // 旧备份不含工作流状态：补一套内置态，避免看板/抽屉空列
+  if (next.workflowStates.length === 0) {
+    next.workflowStates = DEFAULT_WORKFLOW_STATES.map((s) => ({ ...s, projectId: 'workspace' }))
+  }
   // v9 备份不含角色：补内置角色，避免成员角色指向不存在的行
   if (next.roles.length === 0) {
     next.roles = BUILTIN_ROLES.map((r) => ({ ...r, permissions: [...r.permissions] }))
@@ -1012,6 +1084,9 @@ function wipeStore(store: MockStore, keepMemberId?: string): void {
   store.audit = []
   store.projectRoles = []
   store.projectMembers = []
+  store.milestones = []
+  store.worklogs = []
+  store.workflowStates = DEFAULT_WORKFLOW_STATES.map((s) => ({ ...s, projectId: 'workspace' }))
 }
 
 function globalStats(store: MockStore) {
@@ -1205,6 +1280,60 @@ function routeIssues(
     if (method !== 'GET') fail(405, 'method not allowed')
     const rows = store.issues.filter((i) => notDeleted(i) && i.parentId === id).sort(byIdAsc)
     return ok({ items: rows })
+  }
+  if (third === 'merge') {
+    if (method !== 'POST') fail(405, 'method not allowed')
+    const source = mustFindIssue(store, id)
+    const targetId = String(asRecord(body).targetId ?? '')
+    const target = store.issues.find((i) => i.id === targetId)
+    if (!target || !notDeleted(target)) fail(404, 'target issue not found')
+    if (!notDeleted(source)) fail(409, 'source issue is deleted')
+    if (source.id === target.id) fail(400, 'cannot merge into itself')
+    if (source.projectId !== target.projectId) fail(400, 'cross-project merge is not supported')
+    const now = Date.now()
+    // 1) 评论/活动/工时/子任务整批迁移
+    for (const c of store.comments) if (c.issueId === source.id) c.issueId = target.id
+    for (const a of store.activities) if (a.issueId === source.id) a.issueId = target.id
+    for (const w of store.worklogs) if (w.issueId === source.id) w.issueId = target.id
+    for (const child of store.issues) {
+      if (child.parentId === source.id) child.parentId = target.id
+    }
+    // 2) 关系改指 + duplicate 关系
+    const seen = new Set((target.relations ?? []).map((r) => `${r.type}:${r.targetId}`))
+    const nextTargetRelations = [...(target.relations ?? [])]
+    for (const r of source.relations ?? []) {
+      const k = `${r.type}:${r.targetId}`
+      if (seen.has(k)) continue
+      seen.add(k)
+      nextTargetRelations.push(r)
+    }
+    if (!seen.has(`duplicate:${source.id}`)) {
+      nextTargetRelations.push({ type: 'duplicate', targetId: source.id })
+    }
+    target.relations = nextTargetRelations
+    target.labels = [...new Set([...(target.labels ?? []), ...(source.labels ?? [])])]
+    target.watchers = [...new Set([...(target.watchers ?? []), ...(source.watchers ?? [])])]
+    target.updatedAt = now
+    store.activities.push({
+      id: nextId(store, 'act'),
+      issueId: target.id,
+      actorId: actor.id,
+      type: 'merge',
+      to: source.key,
+      createdAt: now,
+    })
+    // 3) 其余 issue 指向 source 的关系改指 target；源卡软删
+    for (const other of store.issues) {
+      if (other.id === target.id || (other.relations ?? []).length === 0) continue
+      if ((other.relations ?? []).some((r) => r.targetId === source.id)) {
+        other.relations = (other.relations ?? []).map((r) =>
+          r.targetId === source.id ? { ...r, targetId: target.id } : r,
+        )
+      }
+    }
+    source.deletedAt = now
+    store.revision += 1
+    return ok({ issue: target })
   }
   if (third === 'restore') {
     if (method !== 'POST') fail(405, 'method not allowed')
@@ -1696,6 +1825,181 @@ function routeSavedViews(
 
 /** 迭代：GET 列表（projectId 省略或 __all__ = 跨项目）/ POST / PATCH / DELETE。
  *  删除时不删 Issue，只把归属清空（与 Dexie 实现一致） */
+function ensureWorkflowStates(store: MockStore): void {
+  if (store.workflowStates.length > 0) return
+  for (const s of DEFAULT_WORKFLOW_STATES)
+    store.workflowStates.push({ ...s, projectId: 'workspace' })
+}
+
+function worklogMinutes(store: MockStore, projectId: string) {
+  const ids = new Set(store.issues.filter((i) => i.projectId === projectId).map((i) => i.id))
+  const byMember = new Map<string, number>()
+  for (const w of store.worklogs) {
+    if (!ids.has(w.issueId)) continue
+    byMember.set(w.memberId, (byMember.get(w.memberId) ?? 0) + w.minutes)
+  }
+  return [...byMember.entries()].map(([memberId, minutes]) => ({ memberId, minutes }))
+}
+
+function routeMilestones(
+  store: MockStore,
+  method: string,
+  second: string | undefined,
+  q: URLSearchParams,
+  body: unknown,
+): ApiResponse {
+  if (!second) {
+    if (method === 'GET') {
+      const projectId = q.get('projectId') ?? ''
+      const rows = store.milestones
+        .filter((m) => projectId === '' || projectId === '__all__' || m.projectId === projectId)
+        .sort((a, b) => (a.dueAt ?? Infinity) - (b.dueAt ?? Infinity))
+      return ok({ items: rows })
+    }
+    if (method === 'POST') {
+      const input = asRecord(body)
+      const milestone: Milestone = {
+        id: nextId(store, 'milestone'),
+        projectId: String(input.projectId ?? ''),
+        name: String(input.name ?? ''),
+        dueAt: input.dueAt == null ? null : Number(input.dueAt),
+        ...(typeof input.description === 'string' ? { description: input.description } : {}),
+        createdAt: Date.now(),
+      }
+      store.milestones.push(milestone)
+      store.revision += 1
+      return ok({ milestone }, 201)
+    }
+    fail(405, 'method not allowed')
+  }
+  const milestone = store.milestones.find((m) => m.id === second)
+  if (!milestone) fail(404, 'milestone not found')
+  if (method === 'GET') return ok({ milestone })
+  if (method === 'PATCH') {
+    Object.assign(milestone, asRecord(asRecord(body).changes))
+    store.revision += 1
+    return ok({ ok: true })
+  }
+  if (method === 'DELETE') {
+    const now = Date.now()
+    for (const issue of store.issues) {
+      if (issue.milestoneId !== second) continue
+      issue.milestoneId = null
+      issue.updatedAt = now
+    }
+    store.milestones = store.milestones.filter((m) => m.id !== second)
+    store.revision += 1
+    return ok({ ok: true })
+  }
+  fail(405, 'method not allowed')
+}
+
+function routeWorkflowStates(
+  store: MockStore,
+  method: string,
+  second: string | undefined,
+  third: string | undefined,
+  body: unknown,
+): ApiResponse {
+  if (!second) {
+    if (method === 'GET') {
+      // 工作区级一套：全量返回（order 升序）；空表先播种内置态
+      ensureWorkflowStates(store)
+      const rows = [...store.workflowStates].sort((a, b) => a.order - b.order)
+      return ok({ items: rows })
+    }
+    if (method === 'POST') {
+      const input = asRecord(body)
+      ensureWorkflowStates(store)
+      const state: WorkflowState = {
+        id: nextId(store, 'state'),
+        projectId: 'workspace',
+        name: String(input.name ?? ''),
+        category: (input.category ?? 'todo') as WorkflowState['category'],
+        ...(typeof input.color === 'string' ? { color: input.color } : {}),
+        order: Number(input.order ?? Date.now()),
+      }
+      store.workflowStates.push(state)
+      store.revision += 1
+      return ok({ state }, 201)
+    }
+    fail(405, 'method not allowed')
+  }
+  if (second === 'ensure' && method === 'POST') {
+    ensureWorkflowStates(store)
+    return ok({ ok: true })
+  }
+  if (second === 'reorder' && method === 'POST') {
+    const orderedIds = asRecord(body).orderedIds
+    if (Array.isArray(orderedIds)) {
+      orderedIds.forEach((id, i) => {
+        const row = store.workflowStates.find((s) => s.id === id)
+        if (row) row.order = i
+      })
+      store.revision += 1
+    }
+    return ok({ ok: true })
+  }
+  if (third) fail(404, 'not found')
+  const state = store.workflowStates.find((s) => s.id === second)
+  if (!state) fail(404, 'workflow state not found')
+  if (method === 'GET') return ok({ state })
+  if (method === 'PATCH') {
+    Object.assign(state, asRecord(asRecord(body).changes))
+    store.revision += 1
+    return ok({ ok: true })
+  }
+  if (method === 'DELETE') {
+    store.workflowStates = store.workflowStates.filter((s) => s.id !== second)
+    store.revision += 1
+    return ok({ ok: true })
+  }
+  fail(405, 'method not allowed')
+}
+
+function routeIssueWorklogs(
+  store: MockStore,
+  method: string,
+  issueId: string | undefined,
+  body: unknown,
+  actor: Member,
+): ApiResponse {
+  const issue = store.issues.find((i) => i.id === issueId)
+  if (!issue) fail(404, 'issue not found')
+  if (method === 'GET') {
+    const rows = store.worklogs
+      .filter((w) => w.issueId === issueId)
+      .sort((a, b) => b.createdAt - a.createdAt)
+    return ok({ items: rows })
+  }
+  if (method === 'POST') {
+    const input = asRecord(body)
+    const row: Worklog = {
+      id: nextId(store, 'worklog'),
+      issueId: String(issueId),
+      memberId: String(input.memberId ?? actor.id),
+      minutes: Math.max(1, Math.round(Number(input.minutes ?? 0))),
+      date: Number(input.date ?? startOfToday()),
+      ...(typeof input.note === 'string' ? { note: input.note } : {}),
+      createdAt: Date.now(),
+    }
+    store.worklogs.push(row)
+    store.revision += 1
+    return ok({ worklog: row }, 201)
+  }
+  fail(405, 'method not allowed')
+}
+
+function routeWorklogs(store: MockStore, method: string, second: string | undefined): ApiResponse {
+  if (!second) fail(404, 'not found')
+  if (method === 'DELETE') {
+    store.worklogs = store.worklogs.filter((w) => w.id !== second)
+    store.revision += 1
+    return ok({ ok: true })
+  }
+  fail(405, 'method not allowed')
+}
+
 function routeCycles(
   store: MockStore,
   method: string,
@@ -2062,7 +2366,20 @@ function route(store: MockStore, req: ApiRequest, member: Member | null): ApiRes
       if (method !== 'GET') fail(405, 'method not allowed')
       return ok({ revision: store.revision })
     case 'issues':
+      if (third === 'worklogs')
+        return routeIssueWorklogs(store, method, second, req.body, member as Member)
       return routeIssues(store, method, second, third, q, req.body, member as Member)
+    case 'milestones':
+      return routeMilestones(store, method, second, q, req.body)
+    case 'workflow-states':
+      return routeWorkflowStates(store, method, second, third, req.body)
+    case 'worklogs':
+      return routeWorklogs(store, method, second)
+    case 'worklog-minutes':
+      if (method !== 'GET') fail(405, 'method not allowed')
+      return ok({
+        items: worklogMinutes(store, q.get('projectId') ?? 'project-1'),
+      })
     case 'projects':
       return routeProjects(store, method, second, third, req.body)
     case 'members':

@@ -207,6 +207,12 @@ async function captureDrawerAndCreate(page: Page, suffix: string) {
   await page.waitForTimeout(800)
   await page.screenshot({ path: `shots/pm-drawer${suffix}.png` })
 
+  // 工时记录区（M26）：滚到 worklog 块入镜
+  const worklog = page.getByTestId('worklog-block')
+  await worklog.evaluate((el) => el.scrollIntoView({ block: 'center' }))
+  await page.waitForTimeout(400)
+  await page.screenshot({ path: `shots/pm-drawer-worklog${suffix}.png` })
+
   await page.keyboard.press('Escape')
   await page.waitForTimeout(600)
   await page.getByTestId('toolbar-new').click()
@@ -388,6 +394,15 @@ async function captureAdminTabs(page: Page, suffix: string) {
   await expect(page.getByTestId('admin-data-actions')).toBeVisible({ timeout: 10_000 })
   await page.waitForTimeout(1200)
   await page.screenshot({ path: `shots/pm-admin-settings${suffix}.png` })
+
+  // 工作流状态面板（M27）：滚动到面板再截，保证新功能区块入镜
+  const statesPanel = page.getByTestId('admin-workflow-states')
+  if (await statesPanel.count()) {
+    await statesPanel.evaluate((el) => el.scrollIntoView({ block: 'start' }))
+    await expect(statesPanel.getByTestId('admin-states-table')).toBeVisible({ timeout: 10_000 })
+    await page.waitForTimeout(600)
+    await page.screenshot({ path: `shots/pm-admin-states${suffix}.png` })
+  }
 }
 
 async function captureReadonlyDrawer(page: Page, suffix: string) {

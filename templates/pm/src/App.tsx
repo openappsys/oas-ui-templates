@@ -1,11 +1,12 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import type { Cycle, IssuePriority, IssueStatus, Member, Project } from './types'
-import { ISSUE_PRIORITIES, ISSUE_STATUSES } from './types'
+import { ISSUE_PRIORITIES } from './types'
 import { OMultiSelect, OSelect, OTabs } from './components/oas-wrappers'
 import { FilterBar } from './components/FilterBar'
 import { t, loadLang, setLang, statusLabel, priorityLabel, type Lang } from './i18n'
 import { useSavedViews } from './components/BulkBar'
-import { PRIORITY_TEXT, STATUS_COLOR } from './lib/colors'
+import { PRIORITY_TEXT } from './lib/colors'
+import { useWorkflowStates, workflowStateColor, workflowStateLabel } from './lib/statuses'
 import { buildAssigneeOptions } from './lib/assignee-options'
 import { CYCLE_SIDEBAR_LIMIT, CURRENT_CYCLE, NO_CYCLE, currentCycleIds } from './lib/cycles'
 import { byCreatedDesc, findActiveSavedView } from './lib/saved-views'
@@ -112,6 +113,7 @@ function useIssueWindow(f: Filters, currentUser: string, listLimit: number, retr
           reviewOnly: f.reviewOnly,
           sortBy: f.sortBy,
           cycleFilter: f.cycleFilter,
+          milestoneFilter: f.milestoneFilter,
         },
         currentUser,
         listLimit,
@@ -126,6 +128,7 @@ function useIssueWindow(f: Filters, currentUser: string, listLimit: number, retr
       f.reviewOnly,
       f.sortBy,
       f.cycleFilter,
+      f.milestoneFilter,
       currentUser,
       listLimit,
       retryNonce,
@@ -162,6 +165,12 @@ function useProjects(): Project[] | undefined {
 function useCycles(projectId: string): Cycle[] | undefined {
   const { cycles } = useRepositories()
   return useObservable(() => cycles.liveAll(projectId), [cycles, projectId])
+}
+
+/** 当前项目作用域下的里程碑（dueAt 升序）；「全部项目」= 跨项目并集（甘特/侧栏组共用） */
+function useMilestones(projectId: string) {
+  const { milestones } = useRepositories()
+  return useObservable(() => milestones.live(projectId), [milestones, projectId])
 }
 
 /** 迭代组计数：cycleId → 该周期工作项总数（侧栏角标用）。
@@ -408,6 +417,12 @@ function Workspace({
     () => parseViewHash(window.location.hash)?.adminTab ?? 'overview',
   )
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS)
+  // 项目工作流状态：筛选/侧栏/看板列/创建选择器/CSV 全部同源（Admin 可自定义）
+  const workflowStates = useWorkflowStates(filters.projectId)
+  const stateNameById = useMemo(
+    () => new Map(workflowStates.map((s) => [s.id, workflowStateLabel(s)])),
+    [workflowStates],
+  )
   const [grouping, setGrouping] = useState<Grouping>('none')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [paletteOpen, setPaletteOpen] = useState(false)
@@ -438,6 +453,7 @@ function Workspace({
   const projects = useProjects()
   const cycles = useCycles(filters.projectId)
   const cycleCounts = useCycleCountTotals(filters.projectId)
+  const milestones = useMilestones(filters.projectId)
   const memberCounts = useFullAssigneeCounts(filters.projectId, counts?.total)
   const subProgressRows = useObservable(
     () => issuesRepo.liveSubProgress(filters.projectId),
@@ -550,8 +566,14 @@ function Workspace({
     }
   }, [])
   const openProject = useCallback((projectId: string) => {
-    // 换项目即离开原项目的迭代：cycleFilter 复位（周期 id 不跨项目复用）
-    setFilters((prev) => ({ ...prev, projectId, statusFilter: [], cycleFilter: null }))
+    // 换项目即离开原项目的迭代/里程碑：周期与里程碑 id 都不跨项目复用
+    setFilters((prev) => ({
+      ...prev,
+      projectId,
+      statusFilter: [],
+      cycleFilter: null,
+      milestoneFilter: null,
+    }))
     setView('issues')
   }, [])
   // 全部项目作用域下新建 Issue 必须落到一个真实项目（key 前缀来自项目）：
@@ -664,16 +686,12 @@ function Workspace({
     return rows
   }, [scopedMembers, memberCounts, filters.assigneeFilter, counts?.total, lang])
   // 顶部筛选栏/侧栏共用同一批选项（含全量计数后缀）：两处控件文案必须同源，
-  // 否则「同一筛选两处看」会读到不同计数
-  // biome-ignore lint/correctness/useExhaustiveDependencies: lang 是语言切换时的重算触发器
-  const statusFilterOptions = useMemo(
-    () =>
-      ISSUE_STATUSES.map((s) => ({
-        label: `${statusLabel(s)} (${counts?.byStatus[s] ?? 0})`,
-        value: s,
-      })),
-    [counts, lang],
-  )
+  // 否则「同一筛选两处看」会读到不同计数。不 memo：量级 = 状态数（≤ 十几个），
+  // 且 workflowStateLabel 读模块级语言态，随渲染重算才能在切语言时同步
+  const statusFilterOptions = workflowStates.map((s) => ({
+    label: `${workflowStateLabel(s)} (${counts?.byStatus[s.id] ?? 0})`,
+    value: s.id,
+  }))
   // biome-ignore lint/correctness/useExhaustiveDependencies: lang 是语言切换时的重算触发器
   const priorityFilterOptions = useMemo(
     () =>
@@ -744,6 +762,7 @@ function Workspace({
       priorityFilter: [],
       labelFilter: [],
       cycleFilter: null,
+      milestoneFilter: null,
       search: '',
       myOnly: false,
       reviewOnly: false,
@@ -776,15 +795,15 @@ function Workspace({
       count: counts?.total.toLocaleString() ?? '…',
       selected: filters.statusFilter.length === 0,
     },
-    ...ISSUE_STATUSES.map(
+    ...workflowStates.map(
       (s): SideRow => ({
-        value: `status:${s}`,
+        value: `status:${s.id}`,
         kind: 'status',
-        id: s,
-        label: statusLabel(s),
-        statusColor: STATUS_COLOR[s],
-        count: counts?.byStatus[s]?.toLocaleString() ?? '…',
-        selected: filters.statusFilter.includes(s),
+        id: s.id,
+        label: workflowStateLabel(s),
+        statusColor: workflowStateColor(s),
+        count: counts?.byStatus[s.id]?.toLocaleString() ?? '…',
+        selected: filters.statusFilter.includes(s.id),
         highlight: 'weak',
       }),
     ),
@@ -869,6 +888,28 @@ function Workspace({
         count: (cycleCounts.get(c.id) ?? 0).toLocaleString(),
         selected: filters.cycleFilter === c.id,
         highlight: 'strong',
+      }),
+    ),
+  ]
+
+  // 里程碑组（M24）：单选语义同迭代——点行即选中，再点取消；「无里程碑」哨兵行兜底未归属
+  const milestoneRows: SideRow[] = [
+    {
+      value: 'milestone:all',
+      kind: 'milestone',
+      id: 'all',
+      label: t('allMilestones'),
+      selected: filters.milestoneFilter === null,
+    },
+    ...(milestones ?? []).map(
+      (m): SideRow => ({
+        value: `milestone:${m.id}`,
+        kind: 'milestone',
+        id: m.id,
+        label: m.name,
+        count: m.dueAt ? new Date(m.dueAt).toLocaleDateString() : undefined,
+        selected: filters.milestoneFilter === m.id,
+        highlight: 'weak',
       }),
     ),
   ]
@@ -979,6 +1020,13 @@ function Workspace({
           children: cycleRows,
         },
         {
+          value: 'group:milestones',
+          kind: 'group',
+          label: t('milestone'),
+          collapseKey: 'milestones',
+          children: milestoneRows,
+        },
+        {
           value: 'group:members',
           kind: 'group',
           label: t('members'),
@@ -1003,13 +1051,14 @@ function Workspace({
       switch (row.kind) {
         case 'project':
           // 点项目行 = 离开「全部项目」；点「全部项目」= 跨项目作用域（记住上次真实项目供新建 Issue）。
-          // 换项目时迭代筛选复位：周期 id 只在本项目内有意义
+          // 换项目时迭代/里程碑筛选复位：周期与里程碑 id 只在本项目内有意义
           if (row.id && row.id !== ALL_PROJECTS) setLastProjectId(row.id)
           setFilters((prev) => ({
             ...prev,
             projectId: row.id ?? '',
             statusFilter: [],
             cycleFilter: null,
+            milestoneFilter: null,
           }))
           break
         case 'view':
@@ -1059,6 +1108,15 @@ function Workspace({
           }))
           break
         }
+        case 'milestone': {
+          // 单选切换（同迭代）：再点取消；「全部里程碑」行清空
+          const next = row.id === 'all' ? null : (row.id ?? null)
+          setFilters((prev) => ({
+            ...prev,
+            milestoneFilter: prev.milestoneFilter === next ? null : next,
+          }))
+          break
+        }
         case 'savedview':
           if (row.savedFilters) applySavedView(row.savedFilters)
           break
@@ -1091,7 +1149,7 @@ function Workspace({
         [
           i.key,
           esc(i.title),
-          esc(statusLabel(i.status)),
+          esc(stateNameById.get(i.status) ?? statusLabel(i.status)),
           esc(priorityLabel(i.priority)),
           esc(memberMap.get(i.assigneeId ?? '')?.name ?? ''),
           new Date(i.createdAt).toISOString().slice(0, 10),
@@ -1105,7 +1163,7 @@ function Workspace({
     a.download = `oas-pm-issues-${Date.now()}.csv`
     a.click()
     URL.revokeObjectURL(url)
-  }, [issues, memberMap])
+  }, [issues, memberMap, stateNameById])
 
   const [createStatus, setCreateStatus] = useState<IssueStatus>('todo')
   const [createPriority, setCreatePriority] = useState<IssuePriority>('medium')
@@ -1434,12 +1492,17 @@ function Workspace({
                     memberMap={memberMap}
                     onOpenIssue={setSelectedId}
                     can={can}
+                    states={workflowStates}
                   />
                 </ErrorBoundary>
               )}
               {view === 'timeline' && (
                 <ErrorBoundary key={view}>
-                  <TimelineView issues={timelineIssues ?? []} can={can} />
+                  <TimelineView
+                    issues={timelineIssues ?? []}
+                    can={can}
+                    projectId={filters.projectId}
+                  />
                 </ErrorBoundary>
               )}
               {view === 'resource' && (
@@ -1492,7 +1555,7 @@ function Workspace({
               <OSelect
                 testid="create-status"
                 value={createStatus}
-                options={ISSUE_STATUSES.map((s) => ({ label: statusLabel(s), value: s }))}
+                options={workflowStates.map((s) => ({ label: workflowStateLabel(s), value: s.id }))}
                 onChange={(v) => setCreateStatus(v as IssueStatus)}
               />
             </div>

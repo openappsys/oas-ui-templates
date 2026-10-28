@@ -4,6 +4,7 @@ import { fromLiveQuery } from '@/data/observable'
 import type { AdminRepository, GlobalStats, MemberWorkload, ProjectHealth } from '@/data/types'
 import type { IssueStatus } from '@/types'
 import { BUILTIN_ROLES } from '@/lib/builtin-roles'
+import { DEFAULT_WORKFLOW_STATES } from '@/lib/workflow'
 import { SEED_MARKER_KEY } from '@/seed-db'
 
 export function createDexieAdminRepository(db: PMDatabase): AdminRepository {
@@ -21,6 +22,9 @@ export function createDexieAdminRepository(db: PMDatabase): AdminRepository {
     db.audit,
     db.projectRoles,
     db.projectMembers,
+    db.milestones,
+    db.workflowStates,
+    db.worklogs,
   ]
   /** 清空业务数据，但保留内置角色与当前管理员——否则清空后无法再进入设置恢复备份 */
   const wipeAll = (keepMemberId?: string) =>
@@ -54,10 +58,10 @@ export function createDexieAdminRepository(db: PMDatabase): AdminRepository {
       fromLiveQuery(async (): Promise<MemberWorkload[]> => {
         const [members, deleted] = await Promise.all([db.members.toArray(), deletedRows()])
         // 软删行从成员计数里扣除（按 assignee 归组后逐成员减）
-        const deletedByMember = new Map<string, Partial<Record<IssueStatus, number>>>()
+        const deletedByMember = new Map<string, Record<string, number>>()
         for (const row of deleted) {
           if (!row.assigneeId) continue
-          const acc = deletedByMember.get(row.assigneeId) ?? {}
+          const acc: Record<string, number> = deletedByMember.get(row.assigneeId) ?? {}
           acc[row.status] = (acc[row.status] ?? 0) + 1
           deletedByMember.set(row.assigneeId, acc)
         }
@@ -141,6 +145,9 @@ export function createDexieAdminRepository(db: PMDatabase): AdminRepository {
         audit,
         projectRoles,
         projectMembers,
+        milestones,
+        workflowStates,
+        worklogs,
       ] = await Promise.all([
         db.issues.toArray(),
         db.projects.toArray(),
@@ -155,6 +162,9 @@ export function createDexieAdminRepository(db: PMDatabase): AdminRepository {
         db.audit.toArray(),
         db.projectRoles.toArray(),
         db.projectMembers.toArray(),
+        db.milestones.toArray(),
+        db.workflowStates.toArray(),
+        db.worklogs.toArray(),
       ])
       return JSON.stringify({
         app: 'oas-pm',
@@ -174,6 +184,9 @@ export function createDexieAdminRepository(db: PMDatabase): AdminRepository {
           audit,
           projectRoles,
           projectMembers,
+          milestones,
+          workflowStates,
+          worklogs,
         },
       })
     },
@@ -204,6 +217,10 @@ export function createDexieAdminRepository(db: PMDatabase): AdminRepository {
         [db.audit, rows('audit')],
         [db.projectRoles, rows('projectRoles')],
         [db.projectMembers, rows('projectMembers')],
+        // v16 新表：旧备份缺 key 时 rows() 回空数组 → 清空后由工作流状态兜底重播
+        [db.milestones, rows('milestones')],
+        [db.workflowStates, rows('workflowStates')],
+        [db.worklogs, rows('worklogs')],
       ]
       await db.transaction('rw', allTables, async () => {
         for (const t of allTables) await t.clear()
@@ -211,6 +228,15 @@ export function createDexieAdminRepository(db: PMDatabase): AdminRepository {
         // v9 备份不含角色：恢复后补内置角色，避免成员角色指向不存在的行
         if ((await db.roles.count()) === 0) {
           for (const role of BUILTIN_ROLES) await db.roles.put(role)
+        }
+        // 旧备份不含工作流状态：按项目补默认态，避免看板/抽屉空列
+        if ((await db.workflowStates.count()) === 0) {
+          const projectIds = new Set((await db.issues.toArray()).map((i) => i.projectId))
+          for (const pid of projectIds) {
+            await db.workflowStates.bulkPut(
+              DEFAULT_WORKFLOW_STATES.map((s) => ({ ...s, projectId: pid })),
+            )
+          }
         }
       })
     },

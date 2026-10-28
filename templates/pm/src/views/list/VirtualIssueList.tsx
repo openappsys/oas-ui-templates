@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react'
-import type { Issue, Member } from '@/types'
+import type { Issue, Member, WorkflowState } from '@/types'
 import { priorityLabel, statusLabel, t } from '@/i18n'
 import { AVATAR_UNASSIGNED, PRIORITY_TEXT, STATUS_TEXT } from '@/lib/colors'
+import { workflowStateColor, workflowStateLabel } from '@/lib/statuses'
 
 /** 行样式注入所在 shadow root（每次渲染幂等）：light CSS 不穿透，inline grid 在该容器不稳 */
 function ensureRowStyles(root: ShadowRoot | null): void {
@@ -53,6 +54,17 @@ function ensureRowStyles(root: ShadowRoot | null): void {
       border: 1px solid #f59e0b;
       color: #b45309;
       background: rgba(245, 158, 11, 0.12);
+      font-size: 11px;
+      line-height: 16px;
+      vertical-align: middle;
+    }
+    .issue-row .estimate-badge {
+      display: inline-block;
+      margin-left: 6px;
+      padding: 0 6px;
+      border-radius: 999px;
+      border: 1px solid rgba(100, 116, 139, 0.45);
+      color: #64748b;
       font-size: 11px;
       line-height: 16px;
       vertical-align: middle;
@@ -170,6 +182,7 @@ function renderIssueRow(
   toggleSelect: (id: string) => void,
   showCheckbox: boolean,
   isCursor: boolean,
+  states?: WorkflowState[],
 ) {
   element.textContent = ''
   element.style.display = 'block'
@@ -205,6 +218,15 @@ function renderIssueRow(
     badge.textContent = t('reviewBadge')
     titleSpan.appendChild(badge)
   }
+  // 估算徽章（M26）：estimate > 0 时标题旁展示
+  if ((issue.estimate ?? 0) > 0) {
+    const badge = document.createElement('span')
+    badge.className = 'estimate-badge'
+    badge.setAttribute('data-testid', 'estimate-badge')
+    badge.textContent = `${issue.estimate}pt`
+    badge.title = t('estimateLabel')
+    titleSpan.appendChild(badge)
+  }
   const m = memberMap.get(issue.assigneeId ?? '')
   const av = document.createElement('oas-avatar')
   av.setAttribute('size', '20')
@@ -227,8 +249,10 @@ function renderIssueRow(
   add(`issue-priority pri-${issue.priority}`, priorityLabel(issue.priority), {
     color: PRIORITY_TEXT[issue.priority],
   })
-  add(`issue-status st-${issue.status}`, statusLabel(issue.status), {
-    color: STATUS_TEXT[issue.status],
+  // 状态名/色：项目工作流状态优先（自定义态走 Admin 命名/配色），缺省回退内置词典
+  const st = states?.find((s) => s.id === issue.status)
+  add(`issue-status st-${issue.status}`, st ? workflowStateLabel(st) : statusLabel(issue.status), {
+    color: st ? workflowStateColor(st) : STATUS_TEXT[issue.status],
   })
   row.addEventListener('click', () => onSelect(issue.id))
   row.addEventListener('keydown', (e) => {
@@ -269,6 +293,7 @@ export function VirtualIssueList({
   cursorIndex,
   onNearBottom,
   lang,
+  states,
 }: {
   issues: Issue[]
   onSelect: (id: string) => void
@@ -279,6 +304,8 @@ export function VirtualIssueList({
   cursorIndex: number
   onNearBottom: () => void
   lang: string
+  /** 项目工作流状态（宿主传入；缺省回退内置词典） */
+  states?: WorkflowState[]
 }) {
   const listRef = useRef<HTMLElement>(null)
   const lastTopRef = useRef(0)
@@ -291,6 +318,7 @@ export function VirtualIssueList({
     showCheckbox,
     cursorIndex,
     onNearBottom,
+    states,
     rowCount: issues.length,
   })
   renderRef.current = {
@@ -301,6 +329,7 @@ export function VirtualIssueList({
     showCheckbox,
     cursorIndex,
     onNearBottom,
+    states,
     rowCount: issues.length,
   }
   const nearRef = useRef(false)
@@ -326,6 +355,7 @@ export function VirtualIssueList({
         renderRef.current.toggleSelect,
         renderRef.current.showCheckbox,
         d.index === renderRef.current.cursorIndex,
+        renderRef.current.states,
       )
     }
     el.addEventListener('oas-item', onItem)

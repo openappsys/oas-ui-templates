@@ -15,6 +15,7 @@ export type SideKind =
   | 'priority'
   | 'savedview'
   | 'cycle'
+  | 'milestone'
   | 'assignee'
   | 'label'
   | 'member-more'
@@ -91,6 +92,10 @@ registerIcon(
   'pm-priority-flag',
   '<path d="M4 2.5 V13.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M4 3.2 H11.6 L10.1 5.9 L11.6 8.6 H4" fill="currentColor"/>',
 )
+registerIcon(
+  'pm-milestone',
+  '<path d="M8 1.5 L14.5 8 L8 14.5 L1.5 8 Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>',
+)
 
 /** 行图标：状态行用色点、优先级行用旗标，其余沿用图标库名 */
 function rowIcon(row: SideRow): string {
@@ -107,6 +112,9 @@ function rowIcon(row: SideRow): string {
     case 'cycle':
       // refresh = 周期循环；当前迭代与具体周期同一图标，靠分组内高亮区分
       return 'refresh'
+    case 'milestone':
+      // diamond = 里程碑
+      return 'pm-milestone'
     case 'assignee':
       return 'user'
     case 'member-more':
@@ -129,6 +137,7 @@ function rowIcon(row: SideRow): string {
 const TIER_STYLES = `
   .item[data-value^='status:'].active,
   .item[data-value^='priority:'].active,
+  .item[data-value^='milestone:'].active,
   .item[data-value^='assignee:'].active {
     background: color-mix(in srgb, var(--oas-color-primary) 7%, transparent);
     color: var(--oas-color-text-primary);
@@ -137,12 +146,14 @@ const TIER_STYLES = `
   }
   .item[data-value^='status:'].active .icon,
   .item[data-value^='priority:'].active .icon,
+  .item[data-value^='milestone:'].active .icon,
   .item[data-value^='assignee:'].active .icon {
     color: var(--oas-color-primary-text);
   }
   .item[data-value='status:all'].active,
   .item[data-value='priority:all'].active,
   .item[data-value='cycle:all'].active,
+  .item[data-value='milestone:all'].active,
   .item[data-value='assignee:all'].active {
     background: none;
     color: var(--oas-color-text-primary);

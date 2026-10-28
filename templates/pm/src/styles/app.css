@@ -3121,3 +3121,225 @@ oas-drawer::part(close):focus-visible {
   display: block;
   font-size: 12px;
 }
+
+/* ── 工时记录（详情抽屉） ── */
+.detail-worklog-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  margin-top: 4px;
+}
+.detail-worklog-block > span {
+  font-size: 12px;
+  color: var(--oas-color-text-secondary, #6b7280);
+}
+.worklog-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 160px;
+  overflow-y: auto;
+}
+.worklog-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.worklog-who {
+  color: var(--oas-color-text-primary, #111827);
+  min-width: 56px;
+}
+.worklog-minutes {
+  font-weight: 600;
+  color: var(--oas-color-primary, #0b6cff);
+}
+.worklog-date {
+  color: var(--oas-color-text-secondary, #6b7280);
+}
+.worklog-note {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--oas-color-text-secondary, #6b7280);
+}
+.worklog-del {
+  appearance: none;
+  border: none;
+  background: none;
+  color: var(--oas-color-text-secondary, #6b7280);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 4px;
+  border-radius: 6px;
+}
+.worklog-del:hover {
+  color: var(--oas-color-danger, #dc2626);
+  background: color-mix(in srgb, var(--oas-color-danger, #dc2626) 8%, transparent);
+}
+.worklog-empty {
+  margin: 0;
+  font-size: 12px;
+  color: var(--oas-color-text-secondary, #6b7280);
+}
+.worklog-add-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.worklog-minutes-input {
+  flex: 0 0 84px;
+}
+.worklog-note-input {
+  flex: 1;
+}
+
+/* ── 合并重复 Issue（详情抽屉底栏面板） ── */
+.merge-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--oas-color-border, #e2e8f0);
+  border-radius: 10px;
+  background: var(--oas-color-bg, #fff);
+  width: 100%;
+}
+.merge-panel-text {
+  font-size: 12px;
+  color: var(--oas-color-text-secondary, #6b7280);
+}
+
+/* ── 估算输入（详情抽屉）与卡片徽章 ── */
+.estimate-input {
+  flex: 0 0 96px;
+}
+.estimate-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--oas-color-text-secondary, #64748b);
+  border: 1px solid var(--oas-color-border, #e2e8f0);
+  border-radius: 999px;
+  padding: 0 6px;
+  line-height: 16px;
+}
+
+/* ── 工作流状态管理（Admin 设置） ── */
+.states-table {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 10px 0;
+}
+.states-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.states-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  flex: none;
+}
+.states-name {
+  flex: 1;
+  min-width: 0;
+  height: 30px;
+}
+.states-row oas-select {
+  flex: 0 0 120px;
+}
+.states-color {
+  width: 32px;
+  height: 30px;
+  padding: 2px;
+  border: 1px solid var(--oas-color-border, #e2e8f0);
+  border-radius: 8px;
+  background: var(--oas-color-bg, #fff);
+  cursor: pointer;
+}
+.states-count {
+  flex: 0 0 48px;
+  text-align: right;
+  font-size: 12px;
+  color: var(--oas-color-text-secondary, #6b7280);
+  font-variant-numeric: tabular-nums;
+}
+.states-move,
+.states-del {
+  appearance: none;
+  border: 1px solid var(--oas-color-border, #e2e8f0);
+  background: var(--oas-color-bg, #fff);
+  color: var(--oas-color-text-secondary, #6b7280);
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1;
+}
+.states-move:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.states-del:hover {
+  color: var(--oas-color-danger, #dc2626);
+  border-color: var(--oas-color-danger, #dc2626);
+}
+.states-add-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.states-add-row .states-name {
+  flex: 1;
+  height: 30px;
+}
+.states-add-row oas-select {
+  flex: 0 0 120px;
+}
+
+/* ── 里程碑管理（Admin 迭代 tab） ── */
+.ms-table {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 10px 0;
+}
+.ms-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.ms-row .states-del {
+  margin-left: auto;
+  flex: none;
+}
+.ms-name {
+  font-weight: 500;
+  min-width: 120px;
+}
+.ms-date {
+  color: var(--oas-color-text-secondary, #6b7280);
+  font-variant-numeric: tabular-nums;
+}
+.ms-desc {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--oas-color-text-secondary, #6b7280);
+  font-size: 12px;
+}
+.ms-date-input {
+  width: 40px;
+  padding: 0 4px;
+  flex: none;
+}

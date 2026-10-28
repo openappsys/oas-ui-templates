@@ -1,17 +1,15 @@
 // 相对路径而非 @ 别名：vite.config.ts 直接加载 mock-server.ts，进而解析本模块——
 // 配置加载阶段的别名尚未注册，裸别名会被 Node 当成包名解析失败
-import {
-  ISSUE_PRIORITIES,
-  ISSUE_STATUSES,
-  type IssuePriority,
-  type IssueStatus,
-} from '../types/index.ts'
+import { ISSUE_PRIORITIES, type IssuePriority, type IssueStatus } from '../types/index.ts'
 
 export type SortBy = 'updatedAt' | 'priority' | 'createdAt'
 export type Grouping = 'none' | 'priority' | 'assignee'
 
 /** 负责人筛选中「未分配」的哨兵值：成员 id 不会取此值 */
 export const UNASSIGNED = '__none__'
+
+/** 「无里程碑」哨兵：里程碑 id 不会取此值 */
+export const NO_MILESTONE = '__none_milestone__'
 
 /** 项目作用域的「全部项目」哨兵：项目 id 不会取此值。
  *  projectId 仍是单值单选（不是多选维度）——交叉项目工作台只需要一个 workspace 级作用域 */
@@ -34,6 +32,8 @@ export interface Filters {
   /** 迭代单选（周期有序，多选无意义）：null = 全部迭代，CURRENT_CYCLE = 当前迭代，
    *  NO_CYCLE = 未入迭代，其余为 cycleId。与项目作用域正交 */
   cycleFilter: string | null
+  /** 里程碑单选：null = 全部里程碑，NO_MILESTONE = 无里程碑，其余为 milestoneId */
+  milestoneFilter: string | null
 }
 
 export const DEFAULT_FILTERS: Filters = {
@@ -47,6 +47,7 @@ export const DEFAULT_FILTERS: Filters = {
   reviewOnly: false,
   sortBy: 'updatedAt',
   cycleFilter: null,
+  milestoneFilter: null,
 }
 
 export const LIST_WINDOW = 200
@@ -103,7 +104,8 @@ export function normalizeFilters(raw: unknown): Filters {
       typeof rec.projectId === 'string' && rec.projectId !== ''
         ? rec.projectId
         : DEFAULT_FILTERS.projectId,
-    statusFilter: toEnumList(rec.statusFilter, ISSUE_STATUSES),
+    // 状态 id 同 projectId：任意非空字符串保留（自定义工作流状态无法穷举校验）
+    statusFilter: toAssigneeList(rec.statusFilter),
     assigneeFilter: toAssigneeList(rec.assigneeFilter),
     priorityFilter: toEnumList(rec.priorityFilter, ISSUE_PRIORITIES),
     labelFilter: toAssigneeList(rec.labelFilter),
@@ -115,6 +117,11 @@ export function normalizeFilters(raw: unknown): Filters {
     // 旧视图没有该字段 → null（全部迭代）
     cycleFilter:
       typeof rec.cycleFilter === 'string' && rec.cycleFilter !== '' ? rec.cycleFilter : null,
+    // 里程碑 id 无法穷举校验：任意非空字符串保留（含 __none_milestone__ 哨兵）
+    milestoneFilter:
+      typeof rec.milestoneFilter === 'string' && rec.milestoneFilter !== ''
+        ? rec.milestoneFilter
+        : null,
   }
 }
 
@@ -135,6 +142,7 @@ export function hasActiveFilters(f: Filters): boolean {
     f.priorityFilter.length > 0 ||
     f.labelFilter.length > 0 ||
     f.cycleFilter !== null ||
+    f.milestoneFilter !== null ||
     f.search !== '' ||
     f.myOnly ||
     f.reviewOnly

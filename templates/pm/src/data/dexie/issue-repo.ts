@@ -5,6 +5,7 @@ import type { Issue, IssuePriority, IssueStatus } from '@/types'
 import { ISSUE_PRIORITIES, ISSUE_STATUSES } from '@/types'
 import { fromLiveQuery, type Observable } from '@/data/observable'
 import { cycleFilterPredicate, CURRENT_CYCLE, NO_CYCLE } from '@/lib/cycles'
+import { NO_MILESTONE } from '@/lib/filters'
 import { ALL_PROJECTS, LIST_WINDOW, UNASSIGNED } from '@/lib/filters'
 import { issueChangeNotificationDrafts, reviewNotificationDrafts } from '@/lib/notify'
 import { PRIORITY_WEIGHT } from '@/lib/order'
@@ -190,6 +191,12 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
         const statuses = filters.statusFilter
         const search = filters.search.trim()
         const directCycle = concreteCycle(filters.cycleFilter)
+        // 里程碑直取：具体里程碑 id 走索引（归属是少数派群体，窗口后过滤会被截断）；
+        // NO_MILESTONE（无里程碑）是多数派，保留窗口后过滤语义
+        const directMilestone =
+          filters.milestoneFilter && filters.milestoneFilter !== NO_MILESTONE
+            ? filters.milestoneFilter
+            : null
         const deleted = await deletedIds(db)
         // 已删除行不占窗口名额：多取 deleted.size 条再剔回 limit
         const pad = limit + deleted.size
@@ -208,6 +215,17 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
           // 迭代直取：整周期范围内筛状态（不分片、不按 updatedAt 截断）
           const want = new Set(statuses)
           out = alive(await cycleOwnedRows(db, pid, directCycle), deleted).sort(byUpdatedDesc)
+          if (want.size) out = out.filter((i) => want.has(i.status))
+        } else if (directMilestone) {
+          // 里程碑直取：[projectId+milestoneId] 索引（v16），同周期直取不分片
+          const want = new Set(statuses)
+          out = alive(
+            await db.issues
+              .where('[projectId+milestoneId]')
+              .equals([pid, directMilestone])
+              .toArray(),
+            deleted,
+          ).sort(byUpdatedDesc)
           if (want.size) out = out.filter((i) => want.has(i.status))
         } else if (statuses.length === 0) {
           const source = allProjects
@@ -254,6 +272,13 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
           const want = new Set(filters.labelFilter)
           out = out.filter((i) => (i.labels ?? []).some((l) => want.has(l)))
         }
+        if (filters.milestoneFilter) {
+          // 里程碑单选：哨兵 = 无里程碑，其余按 milestoneId 精确匹配
+          out =
+            filters.milestoneFilter === NO_MILESTONE
+              ? out.filter((i) => i.milestoneId == null)
+              : out.filter((i) => i.milestoneId === filters.milestoneFilter)
+        }
         if (filters.cycleFilter) {
           // 当前迭代需要周期区间——同一次查询里读 cycles 表，liveQuery 会跟踪该读取，
           // 周期起止被改后窗口自动重算。具体周期 id 已在上面直取，这里再过滤等于空操作
@@ -273,17 +298,24 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
         // 直取路径在「筛选 + 排序」后分页（列表滚动续载即放大 limit）；
         // 搜索分支沿用 2000 上限不分页，窗口分支已在取数时截断
         if (directCycle && !search) out = out.slice(0, limit)
+        if (directMilestone && !search) out = out.slice(0, limit)
         return out
       })
     },
 
     liveCounts(projectId: string): Observable<ProjectCounts> {
       return fromLiveQuery(async () => {
+        // 状态维度 = 内置五态 + 该工作区的自定义状态（Admin 加的状态也要有计数）
+        const states = await db.workflowStates.toArray()
+        const customIds = [...new Set(states.map((s) => s.id))].filter(
+          (id) => !(ISSUE_STATUSES as string[]).includes(id),
+        )
+        const statusIds: string[] = [...ISSUE_STATUSES, ...customIds]
         // 全部项目：全局计数（单列 status 索引）；否则项目内计数（复合索引）
         const allProjects = projectId === ALL_PROJECTS
         const [total, ...byStatus] = await Promise.all([
           allProjects ? db.issues.count() : db.issues.where('projectId').equals(projectId).count(),
-          ...ISSUE_STATUSES.map((s: IssueStatus) =>
+          ...statusIds.map((s) =>
             allProjects
               ? db.issues.where('status').equals(s).count()
               : db.issues.where('[projectId+status]').equals([projectId, s]).count(),
@@ -302,7 +334,7 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
         const deleted = (await db.issues.where('deletedAt').above(0).toArray()).filter(
           (i) => allProjects || i.projectId === projectId,
         )
-        const deletedByStatus = new Map<IssueStatus, number>()
+        const deletedByStatus = new Map<string, number>()
         const deletedByPriority = new Map<IssuePriority, number>()
         for (const i of deleted) {
           deletedByStatus.set(i.status, (deletedByStatus.get(i.status) ?? 0) + 1)
@@ -311,7 +343,7 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
         return {
           total: total - deleted.length,
           byStatus: Object.fromEntries(
-            ISSUE_STATUSES.map((s, i) => [s, byStatus[i] - (deletedByStatus.get(s) ?? 0)]),
+            statusIds.map((s, i) => [s, byStatus[i] - (deletedByStatus.get(s) ?? 0)]),
           ) as Record<IssueStatus, number>,
           byPriority: Object.fromEntries(
             ISSUE_PRIORITIES.map((p, i) => [
@@ -517,78 +549,98 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
       patch: { status?: IssueStatus; priority?: IssuePriority; assigneeId?: string | null },
       actorId: string,
     ): Promise<void> {
-      await db.transaction('rw', db.issues, db.activities, db.notifications, async () => {
-        const now = Date.now()
-        for (const id of ids) {
-          // 通知规则需要变更前的负责人/状态（活动先写、字段后写，与单条编辑路径同序）
-          const prior = await db.issues.get(id)
-          // 已删除行不参与批量改写：删除后残留的选中集不该把行「写活」
-          if (!prior || !notDeleted(prior)) continue
-          const acts: Array<Promise<unknown>> = []
-          if (patch.status) {
-            acts.push(
-              db.activities.add({
-                id: nanoid(),
-                issueId: id,
-                actorId,
-                type: 'status',
-                field: 'status',
-                to: patch.status,
-                createdAt: now,
-              }),
-            )
+      // workflowStates 也在事务内：completedAt 语义要读项目状态类别（未列表的表在事务作用域内不可访问）
+      await db.transaction(
+        'rw',
+        db.issues,
+        db.activities,
+        db.notifications,
+        db.workflowStates,
+        async () => {
+          const now = Date.now()
+          for (const id of ids) {
+            // 通知规则需要变更前的负责人/状态（活动先写、字段后写，与单条编辑路径同序）
+            const prior = await db.issues.get(id)
+            // 已删除行不参与批量改写：删除后残留的选中集不该把行「写活」
+            if (!prior || !notDeleted(prior)) continue
+            const acts: Array<Promise<unknown>> = []
+            if (patch.status) {
+              acts.push(
+                db.activities.add({
+                  id: nanoid(),
+                  issueId: id,
+                  actorId,
+                  type: 'status',
+                  field: 'status',
+                  to: patch.status,
+                  createdAt: now,
+                }),
+              )
+            }
+            if (patch.priority) {
+              acts.push(
+                db.activities.add({
+                  id: nanoid(),
+                  issueId: id,
+                  actorId,
+                  type: 'priority',
+                  field: 'priority',
+                  to: patch.priority,
+                  createdAt: now,
+                }),
+              )
+            }
+            if (patch.assigneeId !== undefined) {
+              acts.push(
+                db.activities.add({
+                  id: nanoid(),
+                  issueId: id,
+                  actorId,
+                  type: 'assignee',
+                  field: 'assigneeId',
+                  to: patch.assigneeId ?? '',
+                  createdAt: now,
+                }),
+              )
+            }
+            await Promise.all(acts)
+            if (prior) {
+              // 批量指派/关闭也走同一套规则：自己触发的不通知自己，解除指派不通知
+              await insertNotificationDrafts(
+                db,
+                issueChangeNotificationDrafts({
+                  issueId: id,
+                  actorId,
+                  prevAssigneeId: prior.assigneeId,
+                  nextAssigneeId: 'assigneeId' in patch ? (patch.assigneeId ?? null) : undefined,
+                  prevStatus: prior.status,
+                  nextStatus: patch.status,
+                }),
+              )
+            }
+            const changes: Partial<Issue> = { updatedAt: now }
+            if (patch.status) {
+              changes.status = patch.status
+              // completedAt 语义跟 done 类别走（自定义完成态同样落完成时间）
+              const states = await db.workflowStates
+                .where('projectId')
+                .equals(prior.projectId)
+                .toArray()
+              const doneIds = new Set(states.filter((s) => s.category === 'done').map((s) => s.id))
+              changes.completedAt = (
+                doneIds.size > 0
+                  ? doneIds.has(patch.status)
+                  : patch.status === 'done'
+              )
+                ? now
+                : null
+            }
+            if (patch.priority) changes.priority = patch.priority
+            if (patch.assigneeId !== undefined) changes.assigneeId = patch.assigneeId
+            await db.issues.update(id, changes)
           }
-          if (patch.priority) {
-            acts.push(
-              db.activities.add({
-                id: nanoid(),
-                issueId: id,
-                actorId,
-                type: 'priority',
-                field: 'priority',
-                to: patch.priority,
-                createdAt: now,
-              }),
-            )
-          }
-          if (patch.assigneeId !== undefined) {
-            acts.push(
-              db.activities.add({
-                id: nanoid(),
-                issueId: id,
-                actorId,
-                type: 'assignee',
-                field: 'assigneeId',
-                to: patch.assigneeId ?? '',
-                createdAt: now,
-              }),
-            )
-          }
-          await Promise.all(acts)
-          if (prior) {
-            // 批量指派/关闭也走同一套规则：自己触发的不通知自己，解除指派不通知
-            await insertNotificationDrafts(
-              db,
-              issueChangeNotificationDrafts({
-                issueId: id,
-                actorId,
-                prevAssigneeId: prior.assigneeId,
-                nextAssigneeId: 'assigneeId' in patch ? (patch.assigneeId ?? null) : undefined,
-                prevStatus: prior.status,
-                nextStatus: patch.status,
-              }),
-            )
-          }
-          const changes: Partial<Issue> = { updatedAt: now }
-          if (patch.status) {
-            changes.status = patch.status
-            changes.completedAt = patch.status === 'done' ? now : null
-          }
-          if (patch.priority) changes.priority = patch.priority
-          if (patch.assigneeId !== undefined) changes.assigneeId = patch.assigneeId
-          await db.issues.update(id, changes)
-        }
-      })
+        },
+      )
     },
 
     async bulkDelete(ids: string[]): Promise<void> {
@@ -601,6 +653,104 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
           await db.issues.update(id, { deletedAt: now })
         }
       })
+    },
+
+    async mergeInto(sourceId: string, targetId: string, actorId: string) {
+      return db.transaction(
+        'rw',
+        db.issues,
+        db.comments,
+        db.activities,
+        db.worklogs,
+        db.notifications,
+        async () => {
+          const now = Date.now()
+          if (sourceId === targetId) return db.issues.get(targetId)
+          const source = await db.issues.get(sourceId)
+          const target = await db.issues.get(targetId)
+          if (!source || !target || !notDeleted(source) || !notDeleted(target)) return target
+          if (source.projectId !== target.projectId) return target
+
+          // 1) 评论/活动/工时整批迁移（createdAt 保留，时间线连续）
+          const comments = await db.comments.where('issueId').equals(sourceId).toArray()
+          await Promise.all(comments.map((c) => db.comments.update(c.id, { issueId: targetId })))
+          const acts = await db.activities.where('issueId').equals(sourceId).toArray()
+          await Promise.all(acts.map((a) => db.activities.update(a.id, { issueId: targetId })))
+          const logs = await db.worklogs.where('issueId').equals(sourceId).toArray()
+          await Promise.all(logs.map((w) => db.worklogs.update(w.id, { issueId: targetId })))
+
+          // 2) 子任务重挂到 target
+          const subs = await db.issues.where('parentId').equals(sourceId).toArray()
+          await Promise.all(
+            subs.map((s) => db.issues.update(s.id, { parentId: targetId, updatedAt: now })),
+          )
+
+          // 3) 关系改指：全项目里指向 source 的关系一律改指 target；source 的关系并入 target（按 type+targetId 去重）
+          const projectIssues = await db.issues
+            .where('projectId')
+            .equals(source.projectId)
+            .toArray()
+          const seen = new Set((target.relations ?? []).map((r) => `${r.type}:${r.targetId}`))
+          const nextTargetRelations = [...(target.relations ?? [])]
+          for (const row of projectIssues) {
+            if (row.deletedAt != null || !row.relations?.length) continue
+            let changed = false
+            const relations = row.relations
+              .map((r) => (r.targetId === sourceId ? { ...r, targetId } : r))
+              .filter((r) => {
+                if (row.id !== targetId) return true
+                // target 自己的关系去重（source 的并入会出现重复指向）
+                const k = `${r.type}:${r.targetId}`
+                if (seen.has(k)) return false
+                seen.add(k)
+                return true
+              })
+            if (row.id === targetId) {
+              nextTargetRelations.length = 0
+              nextTargetRelations.push(...relations)
+              changed = true
+            } else if (relations.length !== row.relations.length) {
+              changed = true
+            }
+            if (changed) {
+              await db.issues.update(row.id, {
+                relations: row.id === targetId ? nextTargetRelations : relations,
+                updatedAt: row.id === targetId ? now : row.updatedAt,
+              })
+            }
+          }
+          // source 的关系搬到 target（target 没有过的才加）
+          for (const r of source.relations ?? []) {
+            const k = `${r.type}:${r.targetId}`
+            if (k === `duplicate:${sourceId}` || seen.has(k)) continue
+            seen.add(k)
+            nextTargetRelations.push(r)
+          }
+          // 4) duplicate 关系（target ← source）+ 标签/关注者并集
+          if (!seen.has(`duplicate:${sourceId}`)) {
+            nextTargetRelations.push({ type: 'duplicate', targetId: sourceId })
+          }
+          const labels = [...new Set([...(target.labels ?? []), ...(source.labels ?? [])])]
+          const watchers = [...new Set([...(target.watchers ?? []), ...(source.watchers ?? [])])]
+          await db.activities.add({
+            id: nanoid(),
+            issueId: targetId,
+            actorId,
+            type: 'merge',
+            to: source.key,
+            createdAt: now,
+          })
+          await db.issues.update(targetId, {
+            relations: nextTargetRelations,
+            ...(labels.length !== (target.labels ?? []).length ? { labels } : {}),
+            ...(watchers.length !== (target.watchers ?? []).length ? { watchers } : {}),
+            updatedAt: now,
+          })
+          // 5) 源卡软删入回收站（可撤销恢复）
+          await db.issues.update(sourceId, { deletedAt: now })
+          return db.issues.get(targetId)
+        },
+      )
     },
   }
 }
