@@ -69,8 +69,9 @@ function auditDeclarations(decls, label, target, exactlyOne) {
 }
 
 function rewriteDeclarations(content, pkg, target) {
-  const re = new RegExp(`@oas-ui\\/${pkg}@\\d+\\.\\d+\\.\\d+(?=\\/|['"\`]|\\s|$)`, 'g')
-  return content.replace(re, (whole) => whole.slice(0, whole.length - target.length) + target)
+  const re = new RegExp(`@oas-ui\\/${pkg}@(\\d+\\.\\d+\\.\\d+)(?=\\/|['"\`]|\\s|$)`, 'g')
+  // 按捕获的旧版本长度截断（不能用 target 长度——2.6.4→2.10.0 / 反向会吞字符或残留旧段）
+  return content.replace(re, (whole, ver) => whole.slice(0, whole.length - ver.length) + target)
 }
 
 function rewritePin(content, kind, target) {
@@ -371,6 +372,45 @@ function selfTest() {
       expectHtml: fixtureHtml('2.5.7', '2.5.7'),
       expectI18n: fixtureI18n('2.5.7'),
     },
+    // —— fix round 3：改写截断按旧版本长度（短→长 / 长→短 双向不损坏） ——
+    {
+      name: '短→长（2.6.4→2.10.0）：html theme/ui 与 i18n.js 完整改写不损坏',
+      target: '2.10.0',
+      setup(root) {
+        mkdirSync(join(root, 'templates/admin-pro/cdn'), { recursive: true })
+        mkdirSync(join(root, 'templates/admin-pro/cdn-mpa/js'), { recursive: true })
+        writeFileSync(join(root, 'templates/admin-pro/cdn/index.html'), fixtureHtml(OK, OK))
+        writeFileSync(join(root, 'templates/admin-pro/cdn/i18n.js'), fixtureI18n(OK))
+        writeFileSync(join(root, 'templates/admin-pro/cdn-mpa/index.html'), fixtureHtml(OK, OK))
+        writeFileSync(join(root, 'templates/admin-pro/cdn-mpa/js/i18n.js'), fixtureI18n(OK))
+      },
+      check: 1,
+      write: 0,
+      expectHtml: fixtureHtml('2.10.0', '2.10.0'),
+      expectI18n: fixtureI18n('2.10.0'),
+    },
+    {
+      name: '长→短（2.10.0→2.6.4）：html theme/ui 与 i18n.js 完整改写不损坏',
+      target: '2.6.4',
+      setup(root) {
+        mkdirSync(join(root, 'templates/admin-pro/cdn'), { recursive: true })
+        mkdirSync(join(root, 'templates/admin-pro/cdn-mpa/js'), { recursive: true })
+        writeFileSync(
+          join(root, 'templates/admin-pro/cdn/index.html'),
+          fixtureHtml('2.10.0', '2.10.0'),
+        )
+        writeFileSync(join(root, 'templates/admin-pro/cdn/i18n.js'), fixtureI18n('2.10.0'))
+        writeFileSync(
+          join(root, 'templates/admin-pro/cdn-mpa/index.html'),
+          fixtureHtml('2.10.0', '2.10.0'),
+        )
+        writeFileSync(join(root, 'templates/admin-pro/cdn-mpa/js/i18n.js'), fixtureI18n('2.10.0'))
+      },
+      check: 1,
+      write: 0,
+      expectHtml: fixtureHtml(OK, OK),
+      expectI18n: fixtureI18n(OK),
+    },
   ]
 
   let failed = 0
@@ -397,10 +437,12 @@ function selfTest() {
     const check =
       c.check === null
         ? null
-        : spawnSync(process.execPath, [script, '--check', '--root', root, OK], { encoding: 'utf8' })
+        : spawnSync(process.execPath, [script, '--check', '--root', root, c.target ?? OK], {
+            encoding: 'utf8',
+          })
     const write = spawnSync(
       process.execPath,
-      [script, ...(c.cli?.args ?? []), ...(c.cli?.cwd ? [] : ['--root', root, OK])],
+      [script, ...(c.cli?.args ?? []), ...(c.cli?.cwd ? [] : ['--root', root, c.target ?? OK])],
       { encoding: 'utf8', ...(c.cli?.cwd ? { cwd: root } : {}) },
     )
     const problems = []
