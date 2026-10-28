@@ -149,6 +149,7 @@ function BuiltinMatrix() {
         className="admin-perm-table"
         row-key="id"
         group-by="category"
+        aria-label={t('adminPermMatrix')}
         data-testid="admin-permissions-matrix"
       />
       <p className="admin-hint" data-testid="perm-own-note">

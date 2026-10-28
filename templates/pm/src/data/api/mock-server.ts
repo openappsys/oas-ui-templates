@@ -100,8 +100,11 @@ const MEMBER_NAMES = ['张伟', '李娜', '王强', '赵敏', '刘洋', '陈静'
 const AVATAR_COLORS = [
   '#0b6cff',
   '#7c3aed',
-  // 与 src/lib/colors.ts 的 AVATAR_PALETTE 保持一致（700 档，白字 ≥4.5）
+  // 与 src/lib/colors.ts 的 AVATAR_PALETTE 保持一致（700 档 + 中间色样例，
+  // 中间色靠上游 on-color 对比度择黑/白保证可读）
+  '#ff6b00',
   '#047857',
+  '#16a34a',
   '#b45309',
   '#dc2626',
   '#0e7490',

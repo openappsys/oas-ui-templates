@@ -247,6 +247,7 @@ function TrashPanel() {
           ref={tableRef}
           className="admin-crud-table"
           row-key="id"
+          aria-label={t('adminTrashTitle')}
           data-testid="admin-table-trash"
         />
       )}

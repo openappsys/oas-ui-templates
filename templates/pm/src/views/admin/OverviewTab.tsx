@@ -120,6 +120,7 @@ export function OverviewTab({
           ref={tableRef}
           className="admin-health-table"
           row-key="projectId"
+          aria-label={t('adminHealthTitle')}
           data-testid="admin-table-health"
         />
       </div>

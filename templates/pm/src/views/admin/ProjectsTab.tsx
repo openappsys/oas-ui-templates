@@ -274,6 +274,7 @@ export function ProjectsTab({
           ref={tableRef}
           className="admin-crud-table"
           row-key="id"
+          aria-label={t('adminProjectsTitle')}
           data-testid="admin-table-projects"
         />
       </div>

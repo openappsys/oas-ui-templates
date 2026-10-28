@@ -779,6 +779,7 @@ export function IssueDetailDrawer({
             />
             <OSegmented
               testid="detail-due-bucket"
+              ariaLabel={t('dueBucketLabel')}
               value={dueBucket}
               options={[
                 { label: t('bucketAllday'), value: 'allday' },

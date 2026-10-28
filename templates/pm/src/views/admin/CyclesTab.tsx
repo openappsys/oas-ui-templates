@@ -341,6 +341,7 @@ export function CyclesTab({ lang }: { lang: Lang }) {
           ref={tableRef}
           className="admin-crud-table"
           row-key="id"
+          aria-label={t('adminCyclesTitle')}
           data-testid="admin-table-cycles"
         />
       </div>
@@ -416,6 +417,7 @@ export function CyclesTab({ lang }: { lang: Lang }) {
               </p>
               <OSegmented
                 testid="admin-cycle-close-mode"
+                ariaLabel={t('adminCycleCloseMode')}
                 value={closeMode}
                 options={[
                   { label: t('adminCycleCloseMoveNext'), value: 'next' },

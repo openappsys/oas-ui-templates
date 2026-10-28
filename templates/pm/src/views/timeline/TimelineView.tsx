@@ -139,6 +139,7 @@ export function TimelineView({
       <div className="tl-window-bar" data-testid="tl-window-bar">
         <OSegmented
           testid="tl-window-seg"
+          ariaLabel={t('timelineWindow')}
           value={String(windowDays ?? 'all')}
           options={[
             { label: t('last30'), value: '30' },

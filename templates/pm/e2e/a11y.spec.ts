@@ -333,24 +333,16 @@ test.afterAll(() => {
   if (out) writeFileSync(out, JSON.stringify(results, null, 1))
 })
 
-/**
- * 组件内部（shadow DOM）产生的已知遗留：宿主改不了，需要上游改，审计里放行但不隐藏——
- * 每一条都在 docs/a11y-audit.md 的遗留项里列明。
- *  - `tablist`：oas-tabs 的 tablist 在 shadow 内，宿主 aria-label 不转发
- *  - `table`：oas-table 的 <table> 没有 caption/aria-label 通道
- *  - `radiogroup`：oas-segmented 的 radiogroup 在 shadow 内，同样不转发宿主 aria-label
- */
-const KNOWN_UNNAMED = new Set(['tablist', 'table', 'radiogroup'])
-
 function assertAudit(view: ViewAudit) {
   const where = `${view.view}/${view.theme}`
   expect(
     view.contrastFail.map((f) => `${f.ratio} ${f.path} ${f.sample}`),
     `contrast ${where}`,
   ).toEqual([])
-  const unnamed = view.unnamed.filter((u) => !KNOWN_UNNAMED.has(u.role))
+  // 无放行名单：tablist/table/radiogroup 曾因上游不转发宿主 aria-label 而放行（见
+  // docs/a11y-audit.md 遗留项），上游 2.6.4 已修复并经本套件复验——现在要求零未命名。
   expect(
-    unnamed.map((u) => u.line),
+    view.unnamed.map((u) => u.line),
     `unnamed ${where}`,
   ).toEqual([])
   // 主 landmark：每个页面至少一个 main；工作台还要有 banner（顶栏）+ navigation（侧栏）

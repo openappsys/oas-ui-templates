@@ -345,7 +345,7 @@ export function OSegmented({
   testid: string
   value: string
   options: Array<{ label: string; value: string }>
-  /** 可访问名：radiogroup 在 shadow 内，不转发宿主 aria-label——显式写到内部 group 上 */
+  /** 可访问名：宿主 aria-label 由组件转发到 shadow 内 radiogroup（上游 2.6.4 修复） */
   ariaLabel?: string
   disabled?: boolean
   onChange: (v: string) => void
@@ -367,13 +367,6 @@ export function OSegmented({
   useEffect(() => {
     const el = ref.current
     if (!el) return
-    if (el.shadowRoot && ariaLabel) {
-      el.shadowRoot.querySelector('[part="group"]')?.setAttribute('aria-label', ariaLabel)
-    }
-  }, [ariaLabel])
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
     el.toggleAttribute('disabled', disabled ?? false)
   }, [disabled])
   useEffect(() => {
@@ -386,7 +379,7 @@ export function OSegmented({
     el.addEventListener('oas-change', h)
     return () => el.removeEventListener('oas-change', h)
   }, [])
-  return <oas-segmented ref={ref} size="small" data-testid={testid} />
+  return <oas-segmented ref={ref} size="small" aria-label={ariaLabel} data-testid={testid} />
 }
 
 /** oas-tabs 包装（侧栏视图切换）：items 走 attribute JSON，active 走 attribute，
@@ -401,7 +394,7 @@ export function OTabs({
   testid: string
   value: string
   options: Array<{ label: string; value: string }>
-  /** 可访问名：写到宿主 aria-label（oas-tabs 不转发到 shadow 内的 tablist，见审计遗留项） */
+  /** 可访问名：宿主 aria-label 由组件转发到 shadow 内 tablist（上游 2.6.4 修复） */
   ariaLabel?: string
   onChange: (v: string) => void
 }) {

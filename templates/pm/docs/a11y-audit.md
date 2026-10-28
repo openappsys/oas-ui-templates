@@ -1,6 +1,7 @@
 # Accessibility audit — pm template
 
 Audit date: 2026-10-23. Template: `templates/pm`. Status: **pass with documented leftovers**.
+Re-audit: 2026-10-28（上游 2.6.4 + 当前维护批，见第 7 节）— **pass，上游遗留三项关闭**.
 
 This document reports a structured accessibility (a11y) audit of the pm template.
 It lists the scope, the method, the result for each check and each view, the items that were
@@ -144,8 +145,13 @@ All three come from upstream components.
 
 ## 5. Leftover items
 
-These items need a change in `@oas-ui/ui`. The template cannot fix them, and the audit allows
-them by role name (see `KNOWN_UNNAMED` in `e2e/a11y.spec.ts`). They are not hidden:
+> 2026-10-28 更新：下表三条上游遗留（`tablist` / `table` / `radiogroup` 未命名）已由
+> @oas-ui 2.6.4 的宿主 aria-label 转发修复，宿主侧同步补齐真实可访问名并经
+> `e2e/a11y.spec.ts` 复验（放行名单 `KNOWN_UNNAMED` 已移除，现为零未命名断言）。
+> 下表保留为历史记录；文末「7. Re-audit」为本轮复验全文。
+
+Original audit（2026-10-23）当时认定的上游遗留，需改 `@oas-ui/ui` 才能修复，审计按角色名放行
+（当时的 `KNOWN_UNNAMED`，现已移除）：
 
 | Item | Cause | Suggested upstream change |
 | --- | --- | --- |
@@ -155,9 +161,10 @@ them by role name (see `KNOWN_UNNAMED` in `e2e/a11y.spec.ts`). They are not hidd
 
 Other known gaps, not measured by the current spec:
 
-- `oas-avatar` chooses the text color from the luminance of the background with a fixed 0.35
-  switch point. Mid-tone colors still fail with both text colors. The template avoids them in its
-  palette. The component should compare the two contrast ratios.
+- ~~`oas-avatar` chooses the text color from the luminance of the background with a fixed 0.35
+  switch point. Mid-tone colors still fail with both text colors.~~ 已修复（2.6.4 起 on-color 按
+  WCAG 对比度择黑/白，中间色可读）：模板色板现在刻意保留 `#ff6b00` / `#16a34a` 两个中间色样例
+  （`src/lib/colors.ts`），并经 Chromium/Firefox、light/dark 复验（对比度 ≥ 4.5）。
 - The row is `role="button"` and contains a checkbox. Nesting is not ideal for AT. A row with
   `role="row"` plus a real grid is a larger change and is out of scope here.
 - `oas-empty` and `oas-skeleton` take a `title` attribute. The rendered text is the accessible
@@ -171,3 +178,43 @@ Other known gaps, not measured by the current spec:
 - The audit samples one window of the list (about 21 rows) and the first open drawer. It does
   not walk all 5,000 rows.
 - The audit runs in Chromium unless `PW_BROWSER=firefox` is set. Both runs pass.
+
+## 7. Re-audit — 2026-10-28（上游 2.6.4 + 当前维护批复验）
+
+Upstream `@oas-ui/*` 2.6.4（本地 link dist，含当前维护批）落地了本审计遗留的三项上游修复：
+
+1. **可访问名转发**：`oas-tabs`（tablist）、`oas-segmented`（radiogroup）、`oas-table`（内部
+   角色容器）将宿主 `aria-label` 转发进 shadow——第 5 节表列的 18 个未命名节点（`tablist` × 14、
+   `table` × 2、`radiogroup` × 2）的上游缺口关闭。
+2. **`oas-avatar` on-color 对比度择黑/白**（`shared/on-color`，替代固定 0.35 亮度阈值）：
+   `#ff6b00` / `#16a34a` 等中间色改为配深字（≈5.98 / 6.37:1）——第 5 节「中间色双输」缺口关闭。
+3. **`oas-sidebar` 嵌套头像子项不再保留 18px 空图标槽**（当前维护批）：头像行不再出现双倍行首
+   空白。
+
+### 宿主（本模板）配套变更
+
+| 变更 | 文件 |
+| --- | --- |
+| 删除 segmented 的 shadow 直写（`shadowRoot.querySelector('[part="group"]')` 改 aria-label）——上游转发后不再需要 | `src/components/oas-wrappers.tsx` |
+| 三个缺名控件补真实可访问名：时间线时间窗（`时间窗`）、抽屉截止档位（`截止时刻`）、迭代结转方式（`结转方式`） | `src/views/timeline/TimelineView.tsx`、`src/views/issue/IssueDetailDrawer.tsx`、`src/views/admin/CyclesTab.tsx` |
+| 六张 `oas-table` 补 `aria-label`（健康度/成员/项目/迭代/回收站/权限矩阵） | `src/views/admin/{Overview,Members,Projects,Cycles,Config,Permissions}Tab.tsx` |
+| 删除 sidebar 头像行的 shadow 规避（`.item:has(.item-avatar) .icon { display: none }`）——上游占位修复后不再需要；业务高亮分级样式保留 | `src/components/SideList.tsx` |
+| 色板新增两个中间色样例并落入 seed 位次（`#ff6b00` / `#16a34a`） | `src/lib/colors.ts`、`src/data/api/mock-server.ts` |
+| `KNOWN_UNNAMED` 放行名单移除（断言零未命名） | `e2e/a11y.spec.ts` |
+
+### 复验结果
+
+- `e2e/a11y.spec.ts` Chromium：**13/13 通过**——24 个页面态 × 明暗双主题、3,545 个文本节点
+  对比度全过（0 fail；46 个背景图/渐变节点按口径跳过）、未命名交互角色 **0**、landmark/h1/
+  焦点/`prefers-reduced-motion` 全绿。
+- 同套件 Firefox（`PW_BROWSER=firefox`）：**13/13 通过**。
+- 中间色 avatar 定向复验：侧栏成员行与资料抽屉选色预览，明暗双主题计算对比度 ≥ 4.5，
+  组件实际择字色为深色 `#18181b`（DOM 计算样式 + 截图像素核验），全程 console 无 error/warning
+  （ResizeObserver loop 良性竞态除外）。
+
+### 仍保留的已知缺口（未验证，不顺带关闭）
+
+- 列表行 `role="button"` 内嵌 checkbox 的 AT 语义（见第 5 节，未复验）。
+- `oas-empty` / `oas-skeleton` 的 `title` 可访问名回归风险（无断言覆盖）。
+- `OMultiSelect` 对下拉搜索框的 `aria-label` 宿主覆盖仍保留：组件每次 update 会重置搜索框
+  命名（上游无对应修复），覆盖提供的是成员搜索语境名，属真实业务命名而非规避。
