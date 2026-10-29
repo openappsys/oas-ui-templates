@@ -1093,6 +1093,19 @@ oas-app-bar.topbar {
   gap: 6px;
   font-size: 14px;
   font-weight: 700;
+  /* 品牌是回整站首页的链接：抑制 a 默认下划线/蓝色，视觉与原 span 一致；hover 轻反馈 */
+  color: inherit;
+  text-decoration: none;
+  border-radius: 7px;
+  transition: opacity 0.15s ease;
+}
+.tb-brand:hover {
+  opacity: 0.82;
+}
+/* 键盘可达：a 链接必须保留可见焦点环（A10b 焦点扫描会逐站复核） */
+.tb-brand:focus-visible {
+  outline: 2px solid var(--oas-color-primary, #0b6cff);
+  outline-offset: 2px;
 }
 
 .tb-logo {

@@ -561,8 +561,9 @@ test('A10 焦点：登录页 Tab 顺序与 focus-visible', async ({ page }) => {
 test('A10b 焦点：列表 Tab 顺序 + 键盘开抽屉后焦点进入抽屉', async ({ page }) => {
   test.setTimeout(240_000)
   await openApp(page)
-  // 中性落点：不要点 app-bar 中心（顶栏中部现在是视图切换，会切走列表）
-  await page.locator('.tb-brand').click()
+  // 中性落点：点搜索框（聚焦输入框，不切视图）。品牌位现已是回整站首页的链接，
+  // 点它会真实导航离场；顶栏中部（视图切换）也会切走列表
+  await page.locator('.toolbar-search').click()
   const mainTrace: string[] = []
   for (let i = 0; i < 12; i++) {
     await page.keyboard.press('Tab')

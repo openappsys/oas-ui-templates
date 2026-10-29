@@ -1270,9 +1270,10 @@ function Workspace({
           actions 主操作 / trailing 设置与用户菜单（低频设置收进菜单） */}
       <oas-app-bar className="topbar" data-testid="pm-toolbar" elevated="">
         <div slot="leading" className="tb-left">
-          <span className="tb-brand">
+          {/* 品牌即整站首页入口：pm 以子路径挂在站点门户下，href 用站点根绝对路径 */}
+          <a className="tb-brand" href="/" title={t('brandHomeTitle')}>
             <span className="tb-logo">OAS</span> PM
-          </span>
+          </a>
           <DataSourceBadge />
         </div>
         <div slot="title" className="tb-mid">
