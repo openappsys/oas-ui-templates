@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Locator, type Page } from '@playwright/test'
 
 /** e2e 播种规模（与 smoke 同口径；M24-27 四个新功能用例） */
 const E2E_SEED_SIZE = 5_000
@@ -24,6 +24,15 @@ async function setOSelect(page: Page, testid: string, v: string) {
 
 const sideItem = (page: Page, value: string) =>
   page.getByTestId('side-list').locator(`[part="item"][data-value="${value}"]`)
+
+/** popconfirm 确认（契约事件 reason='ok'，同 admin.spec confirmPop） */
+async function confirmPop(btn: Locator) {
+  await btn.evaluate((el: HTMLElement) => {
+    el.closest('oas-popconfirm')?.dispatchEvent(
+      new CustomEvent('oas-open-change', { bubbles: true, detail: { reason: 'ok' } }),
+    )
+  })
+}
 
 async function waitForSeed(page: Page, size = E2E_SEED_SIZE) {
   test.setTimeout(240_000)
@@ -139,8 +148,9 @@ test('M24 里程碑：侧栏组过滤 + 甘特里程碑条 + 抽屉选择 + 管�
   await lastName.fill('M3 · 改名后')
   await lastName.press('Enter')
   await expect(lastName).toHaveValue('M3 · 改名后', { timeout: 10_000 })
-  // 删除 → 卡片数回落
+  // 删除 → popconfirm 确认 → 卡片数回落
   await newCard.getByTestId(/^admin-milestone-del-/).click()
+  await confirmPop(newCard.getByTestId(/^admin-milestone-del-/))
   await expect.poll(() => page.locator('.ms-card').count(), { timeout: 10_000 }).toBe(cardsBefore)
 })
 

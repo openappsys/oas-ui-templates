@@ -386,7 +386,7 @@ async function captureAdminTabs(page: Page, suffix: string) {
   await page.getByTestId('admin-nav-config').click()
   await expect(page.getByTestId('admin-config-labels')).toBeVisible({ timeout: 10_000 })
   await expect(page.getByTestId('admin-config-priorities')).toBeVisible()
-  await expect(page.getByTestId('admin-config-statuses')).toBeVisible()
+  await expect(page.getByTestId('admin-config-statuses-moved')).toBeVisible()
   await page.waitForTimeout(1200)
   await page.screenshot({ path: `shots/pm-admin-config${suffix}.png` })
 

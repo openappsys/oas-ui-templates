@@ -3427,3 +3427,12 @@ oas-drawer::part(close):focus-visible {
   flex: 1;
   height: 30px;
 }
+
+/* ── 管理总览·项目健康度语义色（CSS 变量可继承进 oas-table shadow，且随 data-theme 切换：
+      浅底深琥珀 5.0:1 / 暗底亮琥珀 ~8:1，均过对比扫描） ── */
+:root {
+  --admin-health-warn: #b45309;
+}
+[data-theme='dark'] {
+  --admin-health-warn: #fbbf24;
+}

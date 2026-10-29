@@ -204,6 +204,9 @@ export function MembersTab({
     [filtered, safePage, workloadMap, currentUser],
   )
 
+  // 最后一名管理员守卫（事前禁用删除）：管理员数按全量列表计算
+  const adminCount = (list ?? []).filter((m) => m.role === 'admin').length
+
   // biome-ignore lint/correctness/useExhaustiveDependencies: 语言切换需要重建表头/操作文案
   const columns = useMemo<Col[]>(
     () => [
@@ -235,12 +238,22 @@ export function MembersTab({
         render: (row) => {
           const id = String(row.id)
           const pop = document.createElement('oas-popconfirm')
-          pop.setAttribute('title', t('adminRemoveConfirm'))
           const del = document.createElement('oas-button')
           del.setAttribute('type', 'danger')
+          // 行内删除视觉降级：红字无边框（text 变体），destructive 操作不与主操作抢眼
+          del.setAttribute('variant', 'text')
           del.setAttribute('size', 'small')
           del.setAttribute('data-testid', `admin-member-del-${id}`)
           del.textContent = t('delete')
+          // 最后一名管理员事前禁用（错误预防：事前优于事后报错）
+          const isLastAdmin = String(row.role) === 'admin' && adminCount <= 1
+          if (isLastAdmin) {
+            del.setAttribute('disabled', '')
+            del.setAttribute('title', t('lastAdminGuard'))
+            pop.setAttribute('disabled', '')
+          } else {
+            pop.setAttribute('title', t('adminRemoveConfirm'))
+          }
           pop.appendChild(del)
           pop.addEventListener('oas-open-change', (e: Event) => {
             const reason = (e as CustomEvent<{ reason?: string }>).detail?.reason
@@ -250,7 +263,7 @@ export function MembersTab({
         },
       },
     ],
-    [roleOptions, getLang()],
+    [roleOptions, getLang(), adminCount],
   )
 
   useEffect(() => {

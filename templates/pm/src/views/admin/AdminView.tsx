@@ -115,7 +115,7 @@ export function AdminView({
         ) : effectiveTab === 'milestones' ? (
           <MilestonesTab />
         ) : effectiveTab === 'config' ? (
-          <ConfigTab />
+          <ConfigTab onNav={onTab} />
         ) : effectiveTab === 'permissions' ? (
           <PermissionsTab currentUser={currentUser} canWorkspace={canWorkspace} />
         ) : (

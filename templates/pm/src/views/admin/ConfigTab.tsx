@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRepositories } from '@/data/context'
 import { useObservable } from '@/data/use-observable'
-import { t, priorityLabel, statusLabel } from '@/i18n'
-import { ISSUE_PRIORITIES, ISSUE_STATUSES } from '@/types'
+import { t, priorityLabel } from '@/i18n'
+import { ISSUE_PRIORITIES } from '@/types'
 import { DEFAULT_LABELS } from '@/lib/labels'
+import type { AdminTab } from './AdminView'
 
 const PRIORITY_TAG_TYPE: Record<string, string> = {
   urgent: 'danger',
@@ -23,7 +24,7 @@ type TableHost = HTMLElement & {
   data?: Array<Record<string, unknown>>
 }
 
-export function ConfigTab() {
+export function ConfigTab({ onNav }: { onNav?: (tab: AdminTab) => void }) {
   return (
     <div className="admin-crud-page" data-testid="admin-tab-config">
       <h1 className="page-h1">{t('adminConfigTitle')}</h1>
@@ -37,11 +38,16 @@ export function ConfigTab() {
           type: PRIORITY_TAG_TYPE[p],
         }))}
       />
-      <ReadOnlyTags
-        testid="admin-config-statuses"
-        title={t('status')}
-        tags={ISSUE_STATUSES.map((s) => ({ key: s, label: statusLabel(s) }))}
-      />
+      <div className="admin-panel" data-testid="admin-config-statuses-moved">
+        <p className="admin-field-hint">{t('configStatusesMoved')}</p>
+        <oas-button
+          size="small"
+          data-testid="admin-config-goto-settings"
+          onClick={() => onNav?.('settings')}
+        >
+          {t('configGoSettings')}
+        </oas-button>
+      </div>
       <TrashPanel />
     </div>
   )

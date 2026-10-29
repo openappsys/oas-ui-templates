@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRepositories } from '@/data/context'
 import { useObservable } from '@/data/use-observable'
 import { t } from '@/i18n'
@@ -29,6 +29,25 @@ export function MilestonesTab() {
   const descRef = useRef<HTMLInputElement>(null)
   const [error, setError] = useState('')
   const now = Date.now()
+  const tableRef = useRef<HTMLDivElement>(null)
+
+  // 行内 popconfirm 确认删除（oas-open-change bubbles/composed，容器委托一次挂载）
+  useEffect(() => {
+    const el = tableRef.current
+    if (!el) return
+    const h = (e: Event) => {
+      const reason = (e as CustomEvent<{ reason?: string }>).detail?.reason
+      if (reason !== 'ok') return
+      const host = e.target as HTMLElement | null
+      const id = host?.getAttribute?.('data-milestone-id') ?? ''
+      if (id) {
+        setError('')
+        void milestonesRepo.delete(id)
+      }
+    }
+    el.addEventListener('oas-open-change', h)
+    return () => el.removeEventListener('oas-open-change', h)
+  }, [milestonesRepo])
 
   const create = async () => {
     const name = (nameRef.current?.value ?? '').trim()
@@ -70,7 +89,7 @@ export function MilestonesTab() {
           {error}
         </p>
       )}
-      <div className="ms-table">
+      <div className="ms-table" ref={tableRef}>
         {(rows ?? []).map((m) => {
           const prog = progressById.get(m.id)
           const total = prog?.total ?? 0
@@ -78,6 +97,11 @@ export function MilestonesTab() {
           const pct = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0
           const overdue = m.dueAt !== null && m.dueAt < now && done < total
           const allDone = total > 0 && done >= total
+          // 删除确认带影响面（title 是 HTMLElement 原生 property，React 落不进 attribute——ref 回调写）
+          const confirmText =
+            total > 0
+              ? t('msDeleteConfirmN').replace('{n}', String(total))
+              : t('adminDeleteConfirm')
           return (
             <div className="ms-card" key={m.id} data-testid={`admin-milestone-row-${m.id}`}>
               <div className="ms-card-head">
@@ -132,18 +156,21 @@ export function MilestonesTab() {
                     {t('msAllDone')}
                   </oas-tag>
                 )}
-                <button
-                  type="button"
-                  className="states-del"
-                  data-testid={`admin-milestone-del-${m.id}`}
-                  title={t('milestoneDelete')}
-                  onClick={() => {
-                    setError('')
-                    void milestonesRepo.delete(m.id)
+                <oas-popconfirm
+                  data-milestone-id={m.id}
+                  ref={(el) => {
+                    if (el) (el as HTMLElement).setAttribute('title', confirmText)
                   }}
                 >
-                  ×
-                </button>
+                  <button
+                    type="button"
+                    className="states-del"
+                    data-testid={`admin-milestone-del-${m.id}`}
+                    title={t('milestoneDelete')}
+                  >
+                    ×
+                  </button>
+                </oas-popconfirm>
               </div>
               <input
                 className="ms-edit-desc"

@@ -289,9 +289,17 @@ export function CyclesTab({ lang }: { lang: Lang }) {
           }
 
           const pop = document.createElement('oas-popconfirm')
-          pop.setAttribute('title', t('adminCycleDeleteConfirm'))
+          // 确认文案带影响面：该迭代下的工作项数量（row.total 来自表格数据）
+          const workItems = Number(row.total ?? 0)
+          pop.setAttribute(
+            'title',
+            workItems > 0
+              ? t('cycleDeleteConfirmN').replace('{n}', String(workItems))
+              : t('adminCycleDeleteConfirm'),
+          )
           const del = document.createElement('oas-button')
           del.setAttribute('type', 'danger')
+          del.setAttribute('variant', 'text')
           del.setAttribute('size', 'small')
           del.setAttribute('data-testid', `admin-cycle-del-${id}`)
           del.textContent = t('delete')

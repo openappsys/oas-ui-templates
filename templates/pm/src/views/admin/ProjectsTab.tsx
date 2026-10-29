@@ -230,6 +230,7 @@ export function ProjectsTab({
           pop.setAttribute('title', t('adminDeleteConfirm'))
           const del = document.createElement('oas-button')
           del.setAttribute('type', 'danger')
+          del.setAttribute('variant', 'text')
           del.setAttribute('size', 'small')
           del.setAttribute('data-testid', `admin-project-del-${id}`)
           del.textContent = t('delete')
