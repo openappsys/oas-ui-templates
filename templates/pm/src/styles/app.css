@@ -2136,7 +2136,12 @@ oas-drawer::part(close):focus-visible {
 }
 
 .admin-labels-tags {
-  display: block;
+  /* 恢复组件 :host 布局（display:block 会覆盖 shadow 的 inline-flex+gap，
+     标签 chips 与输入行贴死）；width:100% 保持撑满、max-width 收窄 */
+  display: inline-flex;
+  flex-direction: column;
+  gap: var(--oas-space-2, 8px);
+  width: 100%;
   max-width: 560px;
 }
 
