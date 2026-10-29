@@ -719,6 +719,79 @@ export function IssueDetailDrawer({
   // popconfirm 确认（reason='ok'）→ 软删除并关抽屉；宿主拿 key 弹「撤销」条
   const issueRef = useRef(issue)
   issueRef.current = issue
+  // 标题就地编辑：点击 h2 → 输入框（Enter/失焦保存，Esc 取消）；切换 issue 退出编辑态。
+  // 键盘/失焦走原生 addEventListener：React 合成 keydown 在 custom element 上与
+  // document 级全局守卫的先后次序不可靠（实测 Esc 会先触发关抽屉）；原生 listener
+  // 先行 preventDefault，全局 onKey 见 defaultPrevented 即跳过（见 lib/keyboard.ts）
+  const [titleEditing, setTitleEditing] = useState(false)
+  const titleRef = useRef<HTMLElement & { value: string }>(null)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 复位以 issueId 变化为触发（effect 体不引用它），同 descDirty 复位先例
+  useEffect(() => {
+    setTitleEditing(false)
+  }, [issueId])
+  useEffect(() => {
+    if (!titleEditing) return
+    const el = titleRef.current
+    if (!el) return
+    // 进入编辑态：填入现值并全选（shadow 内原生 input 聚焦）
+    el.value = issueRef.current?.title ?? ''
+    requestAnimationFrame(() => {
+      const inner = el.shadowRoot?.querySelector('input') as HTMLInputElement | null
+      inner?.focus()
+      inner?.select()
+    })
+    const commit = () => {
+      const next = (el.value ?? '').trim()
+      setTitleEditing(false)
+      if (issueRef.current && next && next !== issueRef.current.title) {
+        saveRef.current({ title: next })
+      }
+    }
+    const onKeydown = (e: Event) => {
+      const ke = e as KeyboardEvent
+      if (ke.key === 'Enter') {
+        ke.preventDefault()
+        commit()
+      } else if (ke.key === 'Escape') {
+        // 只取消编辑；preventDefault 让全局 Esc（关抽屉）跳过
+        ke.preventDefault()
+        setTitleEditing(false)
+      }
+    }
+    const onBlur = () => commit()
+    el.addEventListener('keydown', onKeydown)
+    el.addEventListener('blur', onBlur)
+    return () => {
+      el.removeEventListener('keydown', onKeydown)
+      el.removeEventListener('blur', onBlur)
+    }
+  }, [titleEditing])
+  // 描述 Ctrl/Cmd+Enter 保存：同标题，原生绑定（合成 keydown 在 oas-textarea 上不可靠）
+  // biome-ignore lint/correctness/useExhaustiveDependencies: issueId/描述值是重绑触发器（首帧 issue 未到时抽屉走空渲染、descRefValue 为空），同 popRef 绑定先例
+  useEffect(() => {
+    const el = descRefValue.current
+    if (!el) return
+    const onKeydown = (e: Event) => {
+      const ke = e as KeyboardEvent
+      if ((ke.ctrlKey || ke.metaKey) && ke.key === 'Enter') {
+        ke.preventDefault()
+        saveDescRef.current()
+      }
+    }
+    el.addEventListener('keydown', onKeydown)
+    return () => el.removeEventListener('keydown', onKeydown)
+  }, [issueId, issue?.description])
+  // 描述保存/放弃：放弃把 textarea 回滚到库值并熄灭脏态
+  const saveDesc = () => {
+    saveRef.current({ description: descRefValue.current?.value ?? '' })
+    setDescDirty(false)
+  }
+  const saveDescRef = useRef<() => void>(() => {})
+  saveDescRef.current = saveDesc
+  const cancelDesc = () => {
+    if (descRefValue.current) descRefValue.current.value = issue?.description ?? ''
+    setDescDirty(false)
+  }
   const onDeletedRef = useRef(onDeleted)
   onDeletedRef.current = onDeleted
   // biome-ignore lint/correctness/useExhaustiveDependencies: issue?.id 是重挂触发器（首帧 issue 未到时抽屉走空渲染、popRef 为空，effect 体不引用它）
@@ -880,9 +953,46 @@ export function IssueDetailDrawer({
   const showTimePicker = issue.dueAt !== null && dueBucket === 'custom'
 
   return (
-    <oas-drawer ref={drawerRef} no-footer data-testid="detail-drawer">
+    // no-esc-close：禁用组件库 overlay-stack 的 Esc 关闭（它 stopImmediatePropagation
+    // 斩断一切后续监听，编辑框内按 Esc 会直接关抽屉、无法取消编辑）。抽屉的 Esc 关闭
+    // 收敛到 lib/keyboard 单通道——onKey 尊重 defaultPrevented，编辑态先取消再挡关闭
+    <oas-drawer
+      ref={drawerRef}
+      no-footer
+      no-esc-close
+      width="420px"
+      data-testid="detail-drawer"
+    >
       <div className="detail-body">
-        <h2 className="detail-title">{issue.title}</h2>
+        {titleEditing && canEdit ? (
+          <oas-input
+            ref={titleRef}
+            className="detail-title-input"
+            data-testid="detail-title-input"
+            aria-label={t('title')}
+          />
+        ) : (
+          <h2
+            className={`detail-title${canEdit ? ' is-editable' : ''}`}
+            data-testid="detail-title"
+            title={canEdit ? t('titleEditHint') : undefined}
+            role={canEdit ? 'button' : undefined}
+            tabIndex={canEdit ? 0 : undefined}
+            onClick={canEdit ? () => setTitleEditing(true) : undefined}
+            onKeyDown={
+              canEdit
+                ? (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      setTitleEditing(true)
+                    }
+                  }
+                : undefined
+            }
+          >
+            {issue.title}
+          </h2>
+        )}
         <div className="detail-meta">
           <div className="detail-field">
             <span>{t('status')}</span>
@@ -926,6 +1036,7 @@ export function IssueDetailDrawer({
               className="comment-input estimate-input"
               data-testid="detail-estimate"
               aria-label={t('estimateLabel')}
+              placeholder={t('estimatePlaceholder')}
               defaultValue={issue.estimate ?? ''}
               disabled={!canEdit}
               onBlur={(e) => {
@@ -971,7 +1082,7 @@ export function IssueDetailDrawer({
               disabled={!canEdit}
             />
           </div>
-          <div className="detail-field">
+          <div className="detail-field detail-field--wide">
             <span>{t('dueDate')}</span>
             <ODatePicker
               testid="detail-due-date"
@@ -1168,19 +1279,29 @@ export function IssueDetailDrawer({
             data-testid="detail-desc"
             placeholder={t('descPlaceholder')}
             className="detail-textarea"
+            min-rows="3"
+            max-rows="14"
           />
           {descDirty && canEdit && (
-            <button
-              className="detail-save-desc"
-              type="button"
-              data-testid="detail-desc-save"
-              onClick={() => {
-                save({ description: descRefValue.current?.value ?? '' })
-                setDescDirty(false)
-              }}
-            >
-              {t('descSave')}
-            </button>
+            <div className="detail-desc-actions">
+              <button
+                className="detail-save-desc"
+                type="button"
+                data-testid="detail-desc-save"
+                title={t('descSaveHint')}
+                onClick={saveDesc}
+              >
+                {t('descSave')}
+              </button>
+              <button
+                className="detail-desc-cancel"
+                type="button"
+                data-testid="detail-desc-cancel"
+                onClick={cancelDesc}
+              >
+                {t('cancel')}
+              </button>
+            </div>
           )}
         </div>
         <div className="detail-relations-block">

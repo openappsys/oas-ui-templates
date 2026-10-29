@@ -24,6 +24,9 @@ function hasCommandModifier(e: KeyboardEvent): boolean {
 }
 
 function onKey(e: KeyboardEvent) {
+  // 编辑态已消费的键（如标题就地编辑的 Esc 取消）不再触发全局快捷键：
+  // React 委托在 #root 先于 document 冒泡，preventDefault 即「已处理」标记
+  if (e.defaultPrevented) return
   for (const entry of entries) {
     if (e.key !== entry.key) continue
     if (entry.mod ? !hasCommandModifier(e) : hasCommandModifier(e)) continue

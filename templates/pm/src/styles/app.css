@@ -268,68 +268,6 @@ body {
   color: var(--pm-priority-high);
 }
 
-.detail-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  background: rgba(0, 0, 0, 0.3);
-  display: flex;
-  justify-content: flex-end;
-}
-
-.detail-panel {
-  width: 420px;
-  background: var(--oas-color-bg-elevated, #fff);
-  border-left: 1px solid var(--oas-color-border, #e2e8f0);
-  padding: 20px;
-  overflow-y: auto;
-  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.1);
-}
-
-.detail-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-
-.detail-close {
-  appearance: none;
-  border: none;
-  background: none;
-  font-size: 14px;
-  cursor: pointer;
-  color: var(--oas-color-text-secondary, #6b7280);
-  padding: 4px;
-}
-
-.detail-title {
-  margin: 0 0 16px;
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.detail-meta > div {
-  display: flex;
-  justify-content: space-between;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--oas-color-border, #e2e8f0);
-  font-size: 13px;
-}
-
-.detail-meta span:first-child {
-  color: var(--oas-color-text-secondary, #6b7280);
-}
-
-.detail-desc {
-  margin-top: 14px;
-  padding: 12px;
-  background: var(--oas-color-bg, #f8fafc);
-  border-radius: 8px;
-  font-size: 13px;
-  line-height: 1.6;
-}
-
 /* ── 看板 ── */
 .board-card-key {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -348,59 +286,6 @@ body {
 
 .issue-priority {
   font-size: 11px;
-}
-
-.detail-panel {
-  width: 420px;
-  background: var(--oas-color-bg-elevated, #fff);
-  border-left: 1px solid var(--oas-color-border, #e2e8f0);
-  padding: 20px;
-  overflow-y: auto;
-  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.1);
-}
-
-.detail-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-
-.detail-close {
-  appearance: none;
-  border: none;
-  background: none;
-  font-size: 14px;
-  cursor: pointer;
-  color: var(--oas-color-text-secondary, #6b7280);
-  padding: 4px;
-}
-
-.detail-title {
-  margin: 0 0 16px;
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.detail-meta > div {
-  display: flex;
-  justify-content: space-between;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--oas-color-border, #e2e8f0);
-  font-size: 13px;
-}
-
-.detail-meta span:first-child {
-  color: var(--oas-color-text-secondary, #6b7280);
-}
-
-.detail-desc {
-  margin-top: 14px;
-  padding: 12px;
-  background: var(--oas-color-bg, #f8fafc);
-  border-radius: 8px;
-  font-size: 13px;
-  line-height: 1.6;
 }
 
 /* ── 时间线 ── */
@@ -1028,6 +913,39 @@ body {
   color: inherit;
 }
 
+/* 标题就地编辑：可编辑态 hover 提示；输入框与标题字号一致 */
+.detail-title {
+  margin: 0 0 16px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.detail-title.is-editable {
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 2px 4px;
+  margin-left: -4px;
+  transition: background 0.15s;
+}
+
+.detail-title.is-editable:hover {
+  background: var(--oas-color-bg, #f8fafc);
+}
+
+.detail-title-input {
+  display: block;
+  width: 100%;
+  margin: 0 0 12px;
+  --oas-input-font-size: 16px;
+}
+
+/* 描述脏态按钮行：保存（主）+ 取消（次） */
+.detail-desc-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .detail-save-desc {
   align-self: flex-start;
   appearance: none;
@@ -1039,6 +957,22 @@ body {
   font: inherit;
   font-size: 12px;
   cursor: pointer;
+}
+
+.detail-desc-cancel {
+  appearance: none;
+  border: 1px solid var(--oas-color-border, #e2e8f0);
+  background: transparent;
+  color: var(--oas-color-text-secondary, #64748b);
+  padding: 5px 12px;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.detail-desc-cancel:hover {
+  color: var(--oas-color-text-primary, #0f172a);
 }
 
 .detail-foot {
@@ -2361,6 +2295,14 @@ oas-drawer::part(close):focus-visible {
 }
 
 /* ── 抽屉字段行：label 不换行 ── */
+/* 字段 2 列网格：短值字段并排（状态+优先级、负责人+迭代、里程碑+估算），
+   描述/评论上移；截止日期内容两行独占整行 */
+.detail-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 14px;
+}
+
 .detail-meta > div {
   display: flex;
   align-items: center;
@@ -2368,6 +2310,11 @@ oas-drawer::part(close):focus-visible {
   gap: 10px;
   width: 100%;
 }
+
+.detail-meta > .detail-field--wide {
+  grid-column: 1 / -1;
+}
+
 .detail-meta > div > span {
   width: 56px;
   flex-shrink: 0;
@@ -3286,7 +3233,9 @@ oas-drawer::part(close):focus-visible {
 
 /* ── 估算输入（详情抽屉）与卡片徽章 ── */
 .estimate-input {
-  flex: 0 0 96px;
+  /* 2 列字段网格下允许随列伸缩（固定 96px 在右列临界 wrap，label 被挤成竖排） */
+  flex: 1 1 96px;
+  min-width: 0;
 }
 .estimate-badge {
   font-size: 11px;
