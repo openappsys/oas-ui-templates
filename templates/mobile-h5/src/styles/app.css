@@ -422,16 +422,20 @@ oas-float-button {
 
 /* ── 汉堡侧滑抽屉菜单 ── */
 /* 门户返回链接（app-bar actions 槽）：站点根 = 模板集合首页 */
-.portal-link {
+.title-link {
+  /* 对齐 oas-app-bar shadow 内 .title 的排版（slot 内容继承宿主文档字体，需显式声明） */
+  font-size: var(--oas-font-size-lg, 17px);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   color: inherit;
   text-decoration: none;
-  font-size: 12px;
-  opacity: 0.85;
-  padding: 4px 6px;
+  border-radius: 8px;
 }
-
-.portal-link:hover {
-  opacity: 1;
+.title-link:focus-visible {
+  outline: 2px solid var(--oas-color-primary, #0b6cff);
+  outline-offset: 2px;
 }
 
 .menu-btn {

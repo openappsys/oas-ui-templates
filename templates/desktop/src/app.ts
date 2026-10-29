@@ -670,7 +670,7 @@ export function mountApp(root: HTMLElement): void {
   root.innerHTML = `
     <div class="app-frame">
       <header class="titlebar" data-testid="titlebar">
-        <span class="tb-name">OAS Desktop</span>
+        <a class="tb-name" href="/" title="返回模板门户">OAS Desktop</a>
         <span class="tb-spacer"></span>
         <span class="tb-btns">
           <button class="tb-btn" type="button" data-testid="win-min" aria-label="最小化">─</button>
@@ -691,7 +691,6 @@ export function mountApp(root: HTMLElement): void {
           )
           .join('')}
         <span class="tb-spacer"></span>
-        <button class="menu-portal" type="button" data-testid="portal-link" title="返回模板门户">返回门户</button>
       </nav>
       <div class="main">
         <aside class="activity-bar" data-testid="activity-bar">
@@ -989,9 +988,6 @@ export function mountApp(root: HTMLElement): void {
   })
   el(root, '[data-testid="quit-cancel"]').addEventListener('click', () => {
     el(root, '#quit-modal').removeAttribute('visible')
-  })
-  el(root, '[data-testid="portal-link"]').addEventListener('click', () => {
-    // href=/ 由浏览器默认导航；此处仅占位保持语义
   })
 
   switchSection('dashboard')

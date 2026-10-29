@@ -115,12 +115,12 @@ const QUICK_ENTRIES: Array<{ tag: FeedKind | 'all'; label: string; icon: string 
 export function mountApp(root: HTMLElement): void {
   document.title = t('app.title')
   root.innerHTML = `
-    <oas-app-bar heading="${t('app.title')}" elevated hide-on-scroll>
+    <oas-app-bar elevated hide-on-scroll>
+      <a class="title-link" slot="title" href="/" title="${t('menu.portal')}">${t('app.title')}</a>
       <button slot="leading" class="menu-btn" type="button" data-testid="menu-btn" aria-label="menu">
         <oas-icon name="menu" />
       </button>
       <oas-tag slot="actions" size="small">H5</oas-tag>
-      <a class="portal-link" slot="actions" href="/" title="${t('menu.portal')}">${t('menu.portal')}</a>
     </oas-app-bar>
     <main class="view" id="view-home">
       <section class="hero">

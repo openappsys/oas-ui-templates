@@ -68,6 +68,14 @@ body {
 .tb-name {
   font-size: 13px;
   font-weight: 600;
+  /* 品牌即整站首页入口：抑制 a 默认样式，键盘保留焦点环 */
+  color: inherit;
+  text-decoration: none;
+  border-radius: 6px;
+}
+.tb-name:focus-visible {
+  outline: 2px solid var(--oas-color-primary, #0b6cff);
+  outline-offset: 2px;
 }
 
 .tb-spacer {
@@ -127,23 +135,6 @@ body {
 
 .menu-item:hover {
   background: var(--oas-color-bg-hover, #f1f5f9);
-}
-
-.menu-portal {
-  appearance: none;
-  border: none;
-  background: none;
-  padding: 5px 10px;
-  border-radius: 6px;
-  cursor: pointer;
-  font: inherit;
-  font-size: 12px;
-  color: var(--oas-color-text-secondary, #6b7280);
-}
-
-.menu-portal:hover {
-  background: var(--oas-color-bg-hover, #f1f5f9);
-  color: var(--oas-color-text-primary, #1f2329);
 }
 
 /* 菜单下拉 */
