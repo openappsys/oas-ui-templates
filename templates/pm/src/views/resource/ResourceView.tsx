@@ -116,6 +116,19 @@ export function ResourceView({
     if (!el) return
     el.resources = inject.data.resources
     el.tasks = inject.data.tasks
+    // 视口默认由最早任务决定，今日常落在视口外——注入后滚到今天（组件内部渲染异步，双帧后滚）
+    if (inject.data.tasks.length > 0) {
+      const today = new Date().toISOString().slice(0, 10)
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          try {
+            ;(el as unknown as { scrollToDate: (d: string) => void }).scrollToDate(today)
+          } catch {
+            /* 组件未就绪时静默跳过：视口停留在数据范围首屏 */
+          }
+        }),
+      )
+    }
   }, [inject])
 
   // 一键均载反馈（成功 N / 部分失败 / 已均衡 / 失败，4s 自动隐藏，同 SettingsTab alert 模式）；

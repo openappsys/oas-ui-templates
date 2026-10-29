@@ -153,6 +153,16 @@ export function DashboardView({
             testid="chart-status"
             label={t('chartStatusAria')}
           />
+          {/* 图例（组件 legend 容器默认 hidden 无开启通道）：色点 + 名称 + 计数，双主题取 CSS 变量 */}
+          <div className="dash-chart-legend" data-testid="chart-status-legend">
+            {states.map((s) => (
+              <span key={s.id} className="dash-legend-item">
+                <span className="dash-legend-dot" style={{ background: workflowStateColor(s) }} />
+                {workflowStateLabel(s)}
+                <b>{(counts?.byStatus[s.id] ?? 0).toLocaleString()}</b>
+              </span>
+            ))}
+          </div>
         </div>
         <div className="dash-chart-box">
           <p className="dash-chart-title">{t('chartAssignee')}</p>

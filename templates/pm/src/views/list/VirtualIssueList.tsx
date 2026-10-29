@@ -69,6 +69,30 @@ function ensureRowStyles(root: ShadowRoot | null): void {
       line-height: 16px;
       vertical-align: middle;
     }
+    .issue-row .due-badge {
+      display: inline-block;
+      margin-left: 6px;
+      padding: 0 6px;
+      border-radius: 999px;
+      font-size: 11px;
+      line-height: 16px;
+      vertical-align: middle;
+    }
+    .issue-row .due-badge.is-overdue {
+      border: 1px solid var(--pm-due-overdue, #b91c1c);
+      /* 颜色走 CSS 变量（app.css :root/[data-theme] 双档）：列表行在抽屉 light/dark 两轮都会被扫描 */
+      color: var(--pm-due-overdue, #b91c1c);
+      background: rgba(220, 38, 38, 0.06);
+    }
+    .issue-row .due-badge.is-today {
+      border: 1px solid var(--pm-due-today, #b45309);
+      color: var(--pm-due-today, #b45309);
+      background: rgba(217, 119, 6, 0.1);
+    }
+    .issue-row .due-badge.is-soon {
+      border: 1px solid var(--pm-due-soon, #64748b);
+      color: var(--pm-due-soon, #64748b);
+    }
     .issue-row .row-check {
       width: 14px;
       height: 14px;
@@ -226,6 +250,38 @@ function renderIssueRow(
     badge.textContent = `${issue.estimate}h`
     badge.title = t('estimateLabel')
     titleSpan.appendChild(badge)
+  }
+  // 截止徽章：未完成且有截止日才显示——逾期红 / 今天橙 / 7 天内灰（远期不显示避免噪音）
+  if (issue.dueAt !== null && issue.status !== 'done' && issue.status !== 'cancelled') {
+    const DAY = 86_400_000
+    const startOfDay = (ms: number) => {
+      const d = new Date(ms)
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+    }
+    const today0 = startOfDay(Date.now())
+    const due0 = startOfDay(issue.dueAt)
+    const diffDays = Math.round((due0 - today0) / DAY)
+    const md = `${new Date(issue.dueAt).getMonth() + 1}/${new Date(issue.dueAt).getDate()}`
+    let cls = ''
+    let text = ''
+    if (diffDays < 0) {
+      cls = 'is-overdue'
+      text = `${t('dueBadgeOverdue')} ${md}`
+    } else if (diffDays === 0) {
+      cls = 'is-today'
+      text = t('dueBadgeToday')
+    } else if (diffDays <= 7) {
+      cls = 'is-soon'
+      text = md
+    }
+    if (cls) {
+      const badge = document.createElement('span')
+      badge.className = `due-badge ${cls}`
+      badge.setAttribute('data-testid', 'due-badge')
+      badge.textContent = text
+      badge.title = new Date(issue.dueAt).toLocaleDateString()
+      titleSpan.appendChild(badge)
+    }
   }
   const m = memberMap.get(issue.assigneeId ?? '')
   const av = document.createElement('oas-avatar')

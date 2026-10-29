@@ -3127,6 +3127,32 @@ oas-drawer::part(close):focus-visible {
   font-size: 12px;
 }
 
+/* ── 仪表盘·状态分布图例（宿主自绘：组件 legend 容器默认 hidden 无开启通道） ── */
+.dash-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  padding: 0 4px;
+}
+.dash-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--oas-color-text-secondary, #6b7280);
+}
+.dash-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  flex: none;
+}
+.dash-legend-item b {
+  color: var(--oas-color-text-primary, #111827);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ── 工时记录（详情抽屉） ── */
 .detail-worklog-block {
   display: flex;
@@ -3433,11 +3459,24 @@ oas-drawer::part(close):focus-visible {
   height: 30px;
 }
 
+/* ── 列表行截止徽章（CSS 变量可继承进 shadow，且随 data-theme 切换：
+      light 深色字 / dark 亮色字，两主题对比均 ≥4.5） ── */
+:root {
+  --pm-due-overdue: #b91c1c;
+  --pm-due-today: #b45309;
+  --pm-due-soon: #52525b;
+}
+[data-theme="dark"] {
+  --pm-due-overdue: #f87171;
+  --pm-due-today: #fbbf24;
+  --pm-due-soon: #a1a1aa;
+}
+
 /* ── 管理总览·项目健康度语义色（CSS 变量可继承进 oas-table shadow，且随 data-theme 切换：
       浅底深琥珀 5.0:1 / 暗底亮琥珀 ~8:1，均过对比扫描） ── */
 :root {
   --admin-health-warn: #b45309;
 }
-[data-theme='dark'] {
+[data-theme="dark"] {
   --admin-health-warn: #fbbf24;
 }

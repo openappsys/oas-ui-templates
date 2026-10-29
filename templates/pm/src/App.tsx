@@ -1167,7 +1167,6 @@ function Workspace({
 
   const [createStatus, setCreateStatus] = useState<IssueStatus>('todo')
   const [createPriority, setCreatePriority] = useState<IssuePriority>('medium')
-  const [createNesting, setCreateNesting] = useState<'' | 'flat' | 'thread' | 'nested'>('')
   const [createAssignee, setCreateAssignee] = useState('__none__')
   const createIssue = useCallback(async () => {
     const modal = createRef.current
@@ -1194,7 +1193,7 @@ function Workspace({
       priority,
       assigneeId: assigneeId || null,
       reporterId: currentUser,
-      commentNesting: createNesting || null,
+      // 评论嵌套不在此设置：创建走全局/个人默认，偏好留在抽屉与设置页
     })
     await activitiesRepo.log({ issueId: created.id, actorId: currentUser, type: 'create' })
     // 记下真实项目：全部项目作用域下下次新建默认落到同一个项目
@@ -1208,7 +1207,6 @@ function Workspace({
     createStatus,
     createPriority,
     createAssignee,
-    createNesting,
     issuesRepo,
     activitiesRepo,
   ])
@@ -1566,20 +1564,6 @@ function Workspace({
                 value={createPriority}
                 options={ISSUE_PRIORITIES.map((p) => ({ label: priorityLabel(p), value: p }))}
                 onChange={(v) => setCreatePriority(v as IssuePriority)}
-              />
-            </div>
-            <div className="create-field">
-              <label htmlFor="create-nesting">{t('commentNesting')}</label>
-              <OSelect
-                testid="create-nesting"
-                value={createNesting}
-                options={[
-                  { label: t('followDefault'), value: '' },
-                  { label: t('modeFlat'), value: 'flat' },
-                  { label: t('modeThread'), value: 'thread' },
-                  { label: t('modeNested'), value: 'nested' },
-                ]}
-                onChange={(v) => setCreateNesting(v as '' | 'flat' | 'thread' | 'nested')}
               />
             </div>
             <div className="create-field">

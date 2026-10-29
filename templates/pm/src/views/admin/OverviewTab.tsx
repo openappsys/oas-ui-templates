@@ -35,9 +35,7 @@ export function OverviewTab({
     s.textContent = text
     s.style.fontWeight = '600'
     s.style.color =
-      tone === 'danger'
-        ? 'var(--oas-color-danger, #dc2626)'
-        : 'var(--admin-health-warn, #b45309)'
+      tone === 'danger' ? 'var(--oas-color-danger, #dc2626)' : 'var(--admin-health-warn, #b45309)'
     return s
   }
 
