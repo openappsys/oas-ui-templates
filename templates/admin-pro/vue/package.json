@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc --noEmit && vite build",
+    "build": "tsc --runExternalCode && vite build",
     "preview": "vite preview",
     "test": "vitest run",
     "test:e2e": "playwright test",
@@ -26,9 +26,9 @@
     "@vitejs/plugin-vue": "^6.0.10",
     "@vue/test-utils": "^2.5.1",
     "happy-dom": "^21.0.1",
-    "typescript": "npm:@typescript/typescript6@^6.0.2",
+    "typescript": "7.1.0-beta",
     "vite": "^8.3.4",
     "vitest": "^5.0.4",
-    "vue-tsc": "^3.3.13"
+    "@vue/content-mapper": "4.0.0-alpha.0"
   }
 }
