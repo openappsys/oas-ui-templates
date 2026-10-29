@@ -22,7 +22,7 @@
 | 个人资料 | 姓名 / 职位 / 时区 / 头像色 / 语言自助修改；资料内的邮箱与角色只读 |
 | 演示数据 | 默认 20,000 Issue，可用 `localStorage['oas-pm-seed-size']` 在 1,000–100,000 之间调整；2 万约 5s（冷启动）；100K 口径 44–134s；e2e 固定 5,000 |
 | API 模式 | 仅开发模式可用（Vite 中间件 + 内存库）；生产构建固定 Dexie |
-| 测试基线 | 313 单测（22 个测试文件）、189 个 Chromium e2e（27 个 spec 文件）；类型检查 `tsc6 --noEmit` |
+| 测试基线 | 313 单测（22 个测试文件）、189 个 Chromium e2e（27 个 spec 文件）；类型检查 `tsc --noEmit`（TS 7.1 beta native） |
 
 ---
 
@@ -330,8 +330,8 @@ v14 的 `issues` 索引：
 
 | 类型 | 命令 / 覆盖 | 基线 |
 |------|-------------|------|
-| 类型检查 | `pnpm --filter pm exec tsc6 --noEmit` | 0 错（注意 bin 是 `tsc6`，不是 `tsc`） |
-| 构建 | `pnpm --filter pm run build`（tsc6 + vite） | 通过 |
+| 类型检查 | `pnpm --filter pm exec tsc --noEmit` | 0 错（TS 7.1 beta native） |
+| 构建 | `pnpm --filter pm run build`（tsc + vite） | 通过 |
 | 单测 | `pnpm --filter pm run test`（vitest + fake-indexeddb） | 313 个用例 / 22 个测试文件 |
 | E2E | `pnpm --filter pm exec playwright test` | 189 个 Chromium 用例 / 27 个 spec 文件；`workers: 1` |
 | 截图 | `e2e/_shots.spec.ts` | 34 个截图用例；Firefox 下跳过 |
@@ -355,7 +355,7 @@ v14 的 `issues` 索引：
 | 数据层 | Dexie 4.4（IndexedDB）+ 自研 Observable（`useObservable`；未使用 dexie-react-hooks） |
 | 状态 | React state + localStorage 偏好（无外部状态库） |
 | 组件 | `@oas-ui/ui` 2.6.3（Web Components，React 侧 property/事件桥接）+ `@oas-ui/icons` + `@oas-ui/theme` + `@oas-ui/i18n`（组件内建文案 locale） |
-| 构建 | Vite 8 + TypeScript 6（`typescript` 别名 `@typescript/typescript6`） |
+| 构建 | Vite 8 + TypeScript 7.1 beta（native，`typescript@7.1.0-beta`） |
 | 测试 | Vitest 5 + fake-indexeddb；Playwright 1.64（Chromium 默认，可切 Firefox） |
 | 本地优先 | IndexedDB 为唯一持久数据源；API 实现仅开发期可切换 |
 | 依赖形态 | `@oas-ui/*` 通过 `link:` 指向本地 oas-ui 工作副本；`package.json` 与锁文件保留本地 link 状态、不提交 |

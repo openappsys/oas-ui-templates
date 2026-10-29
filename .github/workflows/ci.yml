@@ -25,7 +25,7 @@ jobs:
           - { name: admin-pro/vue, workdir: templates/admin-pro/vue, tsc: 'false', size: 'true', e2e: 'true' }
           - { name: admin-pro/svelte, workdir: templates/admin-pro/svelte, tsc: 'false', size: 'true', e2e: 'true' }
           - { name: mobile-h5, workdir: templates/mobile-h5, tsc: 'false', size: 'false', e2e: 'true' }
-          - { name: pm, workdir: templates/pm, tsc: 'true', tscCmd: 'tsc6', size: 'false', e2e: 'true' }
+          - { name: pm, workdir: templates/pm, tsc: 'true', tscCmd: 'tsc', size: 'false', e2e: 'true' }
     name: ${{ matrix.template.name }}
     runs-on: ubuntu-latest
     defaults:

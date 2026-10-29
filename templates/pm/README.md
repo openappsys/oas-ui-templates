@@ -33,10 +33,10 @@ pnpm test       # 单测（vitest + fake-indexeddb）
 pnpm exec playwright install chromium   # 首次运行 e2e 前安装浏览器
 pnpm test:e2e   # e2e（playwright，Chromium）
 PW_BROWSER=firefox pnpm test:e2e        # 同一套用例跑 Firefox（需 playwright install firefox；截图 spec 跳过）
-pnpm build      # tsc6 类型检查 + vite 产物
+pnpm build      # tsc 类型检查 + vite 产物
 ```
 
-类型检查单独跑用 `pnpm exec tsc6 --noEmit`（本模板的 TS6 编译器 bin 是 `tsc6`，不是 `tsc`）。
+类型检查单独跑用 `pnpm exec tsc --noEmit`（TypeScript 7.1 beta native 编译器）。
 
 ## 数据
 
@@ -64,8 +64,8 @@ IndexedDB（Dexie，schema **v14 / 13 张表**）本地持久化；首启自动 
 
 | 类型 | 命令 | 基线 |
 |------|------|------|
-| 类型检查 | `pnpm exec tsc6 --noEmit` | 0 错 |
-| 构建 | `pnpm build` | tsc6 + vite |
+| 类型检查 | `pnpm exec tsc --noEmit` | 0 错 |
+| 构建 | `pnpm build` | tsc + vite |
 | 单测 | `pnpm test` | 313 用例 / 22 文件 |
 | E2E | `pnpm test:e2e` | 189 用例 / 27 spec（Chromium，`workers: 1`；无独立移动端 project） |
 | 截图 | `e2e/_shots.spec.ts` | 34 个截图用例（Firefox 下跳过） |
@@ -123,10 +123,10 @@ pnpm test       # unit tests (vitest + fake-indexeddb)
 pnpm exec playwright install chromium   # install the browser before the first e2e run
 pnpm test:e2e   # e2e (playwright, Chromium)
 PW_BROWSER=firefox pnpm test:e2e        # same suite on Firefox (playwright install firefox; screenshot spec skipped)
-pnpm build      # tsc6 typecheck + vite build
+pnpm build      # tsc typecheck + vite build
 ```
 
-Typecheck alone: `pnpm exec tsc6 --noEmit` (the TS6 compiler bin in this template is `tsc6`, not `tsc`).
+Typecheck alone: `pnpm exec tsc --noEmit` (TypeScript 7.1 beta native compiler).
 
 ## Data
 
@@ -154,8 +154,8 @@ A second implementation of the same Repository interface talks HTTP (`src/data/a
 
 | Kind | Command | Baseline |
 |------|---------|----------|
-| Typecheck | `pnpm exec tsc6 --noEmit` | 0 errors |
-| Build | `pnpm build` | tsc6 + vite |
+| Typecheck | `pnpm exec tsc --noEmit` | 0 errors |
+| Build | `pnpm build` | tsc + vite |
 | Unit | `pnpm test` | 313 tests / 22 files |
 | E2E | `pnpm test:e2e` | 189 tests / 27 specs (Chromium, `workers: 1`; no mobile project) |
 | Screenshots | `e2e/_shots.spec.ts` | 34 screenshot tests (skipped on Firefox) |
