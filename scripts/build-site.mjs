@@ -58,16 +58,46 @@ for (const staticFile of ['og.png']) {
 // SEO：robots/sitemap 按部署域名生成（域名无关原则——HTML 内全部相对引用，
 // 唯一需要绝对域名的 sitemap loc 由 SITE_URL 环境变量在构建期注入）
 const SITE_URL = (process.env.SITE_URL ?? 'https://oas-ui-templates.com').replace(/\/+$/, '')
-const TPL_PATHS = [
-  'admin-pro/vanilla-html',
-  'admin-pro/cdn',
-  'admin-pro/cdn-mpa',
-  'admin-pro/react',
-  'admin-pro/vue',
-  'admin-pro/svelte',
-  'mobile-h5',
-  'desktop',
-]
+// 模板路径从 templates/ 实际包自动发现（含 package.json 的目录即一个可部署模板）
+// ——不再手工维护清单；并校验首页（f-card 卡片 + JSON-LD hasPart）已覆盖全部模板，
+// 防止「加模板漏改 4 处」的散点维护再次发生
+const discovered = []
+for (const family of families) {
+  const familyDir = join(templatesRoot, family)
+  if (existsSync(join(familyDir, 'package.json'))) {
+    discovered.push(family)
+    continue
+  }
+  for (const tpl of readdirSync(familyDir, { withFileTypes: true }).filter((d) =>
+    d.isDirectory(),
+  )) {
+    if (existsSync(join(familyDir, tpl.name, 'package.json'))) {
+      discovered.push(`${family}/${tpl.name}`)
+    }
+  }
+}
+discovered.sort()
+const indexHtml = readFileSync(join(siteDir, 'index.html'), 'utf8')
+const cardPaths = [...indexHtml.matchAll(/class="f-card" href="\.\/([^"]+)\/"/g)].map((m) => m[1])
+const jsonLdPaths = [
+  ...indexHtml.matchAll(
+    /"@type": "WebPage", "name": "[^"]*", "url": "https:\/\/[^/]+\/([^"]+)\/"/g,
+  ),
+].map((m) => m[1])
+const gaps = [
+  ['f-card', discovered, cardPaths],
+  ['JSON-LD', discovered, jsonLdPaths],
+].flatMap(([label, need, have]) => [
+  ...need.filter((p) => !have.includes(p)).map((p) => `${label} 缺少: ${p}`),
+  ...have.filter((p) => !need.includes(p)).map((p) => `${label} 多余: ${p}`),
+])
+if (gaps.length > 0) {
+  console.error(`seo: 首页与实际模板不一致，请同步 site/index.html：\n  ${gaps.join('\n  ')}`)
+  process.exitCode = 1
+  throw new Error('template registry mismatch')
+}
+const TPL_PATHS = discovered
+process.stdout.write(`seo: 模板清单校验通过（${TPL_PATHS.length} 个）\n`)
 if (SITE_URL) {
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
