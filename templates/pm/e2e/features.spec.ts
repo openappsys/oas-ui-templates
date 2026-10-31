@@ -111,7 +111,8 @@ test('M24 里程碑：侧栏组过滤 + 甘特里程碑条 + 抽屉选择 + 管�
   await setView(page, 'issues')
   await expect(page.locator('.issue-row').first()).toBeVisible({ timeout: 15_000 })
   await openFirstRowDrawer(page)
-  await expect(page.getByTestId('detail-milestone')).toBeVisible({ timeout: 10_000 })
+  // chip 化后 select 是隐藏数据通道：语义从可见改为挂载
+  await expect(page.getByTestId('detail-milestone')).toBeAttached({ timeout: 10_000 })
   await setOSelect(page, 'detail-milestone', 'milestone-1')
   await expect
     .poll(

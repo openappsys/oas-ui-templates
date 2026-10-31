@@ -199,6 +199,8 @@ declare module 'react' {
         searchable?: boolean | string
         clearable?: boolean | string
         disabled?: boolean | string
+        /** 候选清单（React 19 经 property setter 下发） */
+        options?: Array<{ label: string; value: string; disabled?: boolean }>
         /** 已选项折叠上限（超出显示 +N 徽标） */
         'max-tag-count'?: number | string
       }
