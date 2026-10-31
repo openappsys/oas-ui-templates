@@ -36,6 +36,7 @@ export function SettingsTab({
   const busyRef = useRef(false)
   const errorTimer = useRef<number | undefined>(undefined)
   const fileRef = useRef<HTMLInputElement>(null)
+  const [fileName, setFileName] = useState('')
   const resetPopRef = useRef<HTMLElement>(null)
   const wipePopRef = useRef<HTMLElement>(null)
   const [seedSize, setSeedSize] = useState<string>(
@@ -91,6 +92,7 @@ export function SettingsTab({
       const text = await file.text()
       await admin.importAll(text)
       if (fileRef.current) fileRef.current.value = ''
+      setFileName('')
       setOk(t('adminImportDone'))
     } catch (e) {
       showError(`${t('adminDataFailed')}${e instanceof Error ? e.message : String(e)}`)
@@ -220,68 +222,96 @@ export function SettingsTab({
             {t(dataSource === 'api' ? 'adminDataSourceApi' : 'adminDataSourceLocal')}
           </strong>
         </div>
-        <div className="admin-data-row">
-          <oas-button
-            data-testid="admin-export-json"
-            disabled={busy}
-            onClick={() => void exportJson()}
-          >
-            {t('adminExportJson')}
-          </oas-button>
-          <input
-            ref={fileRef}
-            className="admin-import-file"
-            type="file"
-            accept=".json,application/json"
-            data-testid="admin-import-json"
-            aria-label={t('adminImportJson')}
-          />
-          <oas-button
-            type="primary"
-            data-testid="admin-import-btn"
-            disabled={busy}
-            onClick={() => void importJson()}
-          >
-            {t('adminImportBtn')}
-          </oas-button>
-          <oas-popconfirm
-            ref={resetPopRef}
-            title={t('adminResetDemoConfirm')}
-            data-testid="admin-reset-demo-pop"
-          >
-            <oas-button data-testid="admin-reset-demo" disabled={busy}>
-              {t('adminResetDemo')}
+        {/* 备份与恢复：导出 → 选文件（input 视觉隐藏，按钮触发）→ 导入 */}
+        <div className="admin-field-row admin-data-row">
+          <div className="admin-field-label">
+            <span>{t('adminBackupRestore')}</span>
+          </div>
+          <div className="admin-data-actions">
+            <oas-button
+              data-testid="admin-export-json"
+              disabled={busy}
+              onClick={() => void exportJson()}
+            >
+              {t('adminExportJson')}
             </oas-button>
-          </oas-popconfirm>
-          <oas-popconfirm
-            ref={wipePopRef}
-            title={t('adminWipeAllConfirm')}
-            data-testid="admin-wipe-all-pop"
-          >
-            <oas-button type="danger" data-testid="admin-wipe-all" disabled={busy}>
-              {t('adminWipeAll')}
+            <oas-button
+              data-testid="admin-import-file-btn"
+              disabled={busy}
+              onClick={() => fileRef.current?.click()}
+            >
+              {t('adminChooseFile')}
             </oas-button>
-          </oas-popconfirm>
+            <span className="admin-import-name" data-testid="admin-import-name">
+              {fileName || t('adminNoFile')}
+            </span>
+            <input
+              ref={fileRef}
+              className="admin-import-file"
+              type="file"
+              accept=".json,application/json"
+              data-testid="admin-import-json"
+              aria-label={t('adminImportJson')}
+              onChange={(e) => setFileName(e.target.files?.[0]?.name ?? '')}
+            />
+            <oas-button
+              type="primary"
+              data-testid="admin-import-btn"
+              disabled={busy}
+              onClick={() => void importJson()}
+            >
+              {t('adminImportBtn')}
+            </oas-button>
+          </div>
         </div>
+        {/* 演示数据：规模与「重建」同组（重建即按该规模重播） */}
         <div className="admin-field-row admin-seed-row">
           <div className="admin-field-label">
             <span>{t('adminSeedSize')}</span>
             <span className="admin-field-hint">{t('adminSeedSizeHint')}</span>
           </div>
-          <OSelect
-            testid="admin-seed-size"
-            ariaLabel={t('adminSeedSize')}
-            value={seedSize}
-            options={[
-              { label: '20,000', value: '20000' },
-              { label: '50,000', value: '50000' },
-              { label: '100,000', value: '100000' },
-            ]}
-            onChange={(v) => {
-              setSeedSize(v)
-              localStorage.setItem('oas-pm-seed-size', v)
-            }}
-          />
+          <div className="admin-seed-controls">
+            <OSelect
+              testid="admin-seed-size"
+              ariaLabel={t('adminSeedSize')}
+              value={seedSize}
+              options={[
+                { label: '20,000', value: '20000' },
+                { label: '50,000', value: '50000' },
+                { label: '100,000', value: '100000' },
+              ]}
+              onChange={(v) => {
+                setSeedSize(v)
+                localStorage.setItem('oas-pm-seed-size', v)
+              }}
+            />
+            <oas-popconfirm
+              ref={resetPopRef}
+              title={t('adminResetDemoConfirm')}
+              data-testid="admin-reset-demo-pop"
+            >
+              <oas-button data-testid="admin-reset-demo" disabled={busy}>
+                {t('adminResetDemo')}
+              </oas-button>
+            </oas-popconfirm>
+          </div>
+        </div>
+        {/* 危险区：独立一行 + 分隔线 + 视觉降级（红边红字，与常规操作隔开） */}
+        <div className="admin-danger-row">
+          <oas-popconfirm
+            ref={wipePopRef}
+            title={t('adminWipeAllConfirm')}
+            data-testid="admin-wipe-all-pop"
+          >
+            <button
+              type="button"
+              className="admin-wipe-btn"
+              data-testid="admin-wipe-all"
+              disabled={busy}
+            >
+              {t('adminWipeAll')}
+            </button>
+          </oas-popconfirm>
         </div>
       </div>
     </div>

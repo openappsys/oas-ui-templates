@@ -410,6 +410,12 @@ async function captureAdminTabs(page: Page, suffix: string) {
     await page.waitForTimeout(600)
     await page.screenshot({ path: `shots/pm-admin-states${suffix}.png` })
   }
+  // 数据面板：分组布局（备份与恢复 / 演示数据 / 危险区）滚动入镜
+  const dataPanel = page.getByTestId('admin-data-actions')
+  await dataPanel.evaluate((el) => el.scrollIntoView({ block: 'start' }))
+  await expect(dataPanel.getByTestId('admin-export-json')).toBeVisible({ timeout: 10_000 })
+  await page.waitForTimeout(600)
+  await page.screenshot({ path: `shots/pm-admin-data${suffix}.png` })
 }
 
 async function captureReadonlyDrawer(page: Page, suffix: string) {
