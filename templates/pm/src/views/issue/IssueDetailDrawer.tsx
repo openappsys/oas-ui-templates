@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect, useSyncExternalStore } from 'react'
+import type { CSSProperties } from 'react'
 import type { Comment, Issue, IssuePriority, IssueStatus, Member } from '@/types'
 import { ISSUE_PRIORITIES } from '@/types'
 import { subscribeAgentRuns, getAgentRunsSnapshot } from '@/lib/agent-runner'
@@ -14,7 +15,8 @@ import { activityTypeLabel, dateLocale, priorityLabel, relationLabel, statusLabe
 import { useRepositories } from '@/data/context'
 import { useObservable } from '@/data/use-observable'
 import { useLabelSet } from '@/lib/labels'
-import { isDoneCategory, useWorkflowStates, workflowStateLabel } from '@/lib/statuses'
+import { isDoneCategory, useWorkflowStates, workflowStateColor, workflowStateLabel } from '@/lib/statuses'
+import { PRIORITY_TEXT } from '@/lib/colors'
 import type { CommentMode } from '@/lib/preferences'
 import {
   bucketOf,
@@ -996,14 +998,20 @@ export function IssueDetailDrawer({
         <div className="detail-meta">
           <div className="detail-field">
             <span>{t('status')}</span>
-            <OSelect
-              testid="detail-status"
-              ariaLabel={t('status')}
-              value={issue.status}
-              options={workflowStates.map((s) => ({ label: workflowStateLabel(s), value: s.id }))}
-              onChange={(v) => save({ status: v as IssueStatus })}
-              disabled={!canChangeStatus}
-            />
+            <div
+              className="field-ctl"
+              style={{ '--dot': workflowStateColor(stById.get(issue.status) ?? { id: issue.status, color: '', category: 'todo' }) } as CSSProperties}
+            >
+              <i className="dot" aria-hidden="true" />
+              <OSelect
+                testid="detail-status"
+                ariaLabel={t('status')}
+                value={issue.status}
+                options={workflowStates.map((s) => ({ label: workflowStateLabel(s), value: s.id }))}
+                onChange={(v) => save({ status: v as IssueStatus })}
+                disabled={!canChangeStatus}
+              />
+            </div>
           </div>
           <div className="detail-field">
             <span>{t('milestone')}</span>
@@ -1051,14 +1059,17 @@ export function IssueDetailDrawer({
           </div>
           <div className="detail-field">
             <span>{t('priority')}</span>
-            <OSelect
-              testid="detail-priority"
-              ariaLabel={t('priority')}
-              value={issue.priority}
-              options={ISSUE_PRIORITIES.map((p) => ({ label: priorityLabel(p), value: p }))}
-              onChange={(v) => save({ priority: v as IssuePriority })}
-              disabled={!canEdit}
-            />
+            <div className="field-ctl" style={{ '--dot': PRIORITY_TEXT[issue.priority] } as CSSProperties}>
+              <i className="dot" aria-hidden="true" />
+              <OSelect
+                testid="detail-priority"
+                ariaLabel={t('priority')}
+                value={issue.priority}
+                options={ISSUE_PRIORITIES.map((p) => ({ label: priorityLabel(p), value: p }))}
+                onChange={(v) => save({ priority: v as IssuePriority })}
+                disabled={!canEdit}
+              />
+            </div>
           </div>
           <div className="detail-field">
             <span>{t('assignee')}</span>

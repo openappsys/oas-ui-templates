@@ -2319,8 +2319,30 @@ oas-drawer::part(close):focus-visible {
   width: 56px;
   flex-shrink: 0;
   white-space: nowrap;
-  font-size: 12px;
+  /* label 消极化：字段名退为注脚，让值（语义色点/控件）成为扫读主角——业界通行层级法 */
+  font-size: 11px;
+  letter-spacing: .04em;
   color: var(--oas-color-text-secondary, #6b7280);
+}
+
+/* 语义色点容器：状态/优先级的 OSelect 前置同源色点（色值复用列表/看板映射，全站一致） */
+.field-ctl {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+.field-ctl .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--dot);
+  flex-shrink: 0;
+}
+.field-ctl oas-select {
+  flex: 1;
+  min-width: 0;
 }
 .detail-meta > div > oas-select,
 .detail-meta > div > select,
