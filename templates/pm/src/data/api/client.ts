@@ -709,7 +709,9 @@ export function createApiRepositories(options: ApiClientOptions = {}): Repositor
       poke()
     },
     migrateStatus: async (from: string, to: string) => {
-      await send('POST', `/api/workflow-states/${encodeURIComponent(from)}/migrate`, undefined, { to })
+      await send('POST', `/api/workflow-states/${encodeURIComponent(from)}/migrate`, undefined, {
+        to,
+      })
       poke()
     },
   }

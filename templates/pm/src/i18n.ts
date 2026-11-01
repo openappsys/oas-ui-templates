@@ -295,7 +295,8 @@ const dict = {
     adminCfgLabelsHint: '修改立即生效于 Issue 详情抽屉的快捷标签',
     adminCfgWorkflow: '工作流状态',
     adminCfgWfAdd: '新建状态',
-    adminCfgWfHint: '状态为工作区级一套，看板/筛选/抽屉实时跟随；删除状态下的事项会迁移到所选状态；每个类别需保留至少一个状态',
+    adminCfgWfHint:
+      '状态为工作区级一套，看板/筛选/抽屉实时跟随；删除状态下的事项会迁移到所选状态；每个类别需保留至少一个状态',
     adminCfgWfName: '状态名称',
     adminCfgWfCategory: '类别',
     adminCfgWfColor: '颜色',
@@ -886,7 +887,8 @@ const dict = {
     adminCfgLabelsHint: 'Applies immediately to quick labels in the issue drawer',
     adminCfgWorkflow: 'Workflow states',
     adminCfgWfAdd: 'Add state',
-    adminCfgWfHint: 'States are workspace-level and live across board, filters and the drawer; issues on a deleted state migrate to the chosen one; each category keeps at least one state',
+    adminCfgWfHint:
+      'States are workspace-level and live across board, filters and the drawer; issues on a deleted state migrate to the chosen one; each category keeps at least one state',
     adminCfgWfName: 'State name',
     adminCfgWfCategory: 'Category',
     adminCfgWfColor: 'Color',

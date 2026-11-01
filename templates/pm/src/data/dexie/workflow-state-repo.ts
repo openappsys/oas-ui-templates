@@ -49,9 +49,7 @@ export function createDexieWorkflowStateRepository(db: PMDatabase): WorkflowStat
       // 目标必须存在（防静默半迁移）；管理操作低频：filter 全表扫描可接受
       const toState = await db.workflowStates.get(to)
       if (!toState) throw new Error(`migrate target not found: ${to}`)
-      await db.issues
-        .filter((i) => i.status === from)
-        .modify({ status: to })
+      await db.issues.filter((i) => i.status === from).modify({ status: to })
     },
   }
 }

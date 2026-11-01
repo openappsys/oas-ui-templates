@@ -48,5 +48,15 @@ export function workflowStateColor(
 export { fallbackName }
 
 /** 状态是否属于「完成」类（替代散落的 === 'done' 判断，燃尽/completedAt 语义跟着类别走） */
+/** 时间线进度派生：按类别（done 100 / started 50 / 其余 0）——自定义状态同样适用 */
+export const PROGRESS_BY_CATEGORY = {
+  todo: 0,
+  started: 50,
+  done: 100,
+  cancelled: 0,
+} as const
+export const progressOfCategory = (cat: WorkflowState['category'] | undefined): number =>
+  (cat && PROGRESS_BY_CATEGORY[cat]) ?? 0
+
 export const isDoneCategory = (state: Pick<WorkflowState, 'category'> | undefined): boolean =>
   state?.category === 'done'

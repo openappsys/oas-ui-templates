@@ -63,6 +63,28 @@ function makeFakeRepos(seed: Issue[]) {
         activities.push(entry)
       },
     },
+    // 工作流状态集（agent 推进目标/终态判定按类别派生，runner 会读取）
+    workflowStates: {
+      all: async () => [
+        { id: 'backlog', projectId: 'workspace', name: '待规划', category: 'todo', order: 0 },
+        { id: 'todo', projectId: 'workspace', name: '待办', category: 'todo', order: 1 },
+        {
+          id: 'in_progress',
+          projectId: 'workspace',
+          name: '进行中',
+          category: 'started',
+          order: 2,
+        },
+        { id: 'done', projectId: 'workspace', name: '已完成', category: 'done', order: 3 },
+        {
+          id: 'cancelled',
+          projectId: 'workspace',
+          name: '已取消',
+          category: 'cancelled',
+          order: 4,
+        },
+      ],
+    },
   } as unknown as Repositories
 
   return {

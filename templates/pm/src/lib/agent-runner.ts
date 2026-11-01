@@ -62,25 +62,34 @@ async function executeRun(ctx: SchedulerCtx, issue: Issue, agentId: string): Pro
 
   // 重新读取最新行：调度触发到执行之间 Issue 可能已被改
   const fresh = await repos.issues.get(issue.id)
+  // 工作流状态集（工作区级）：agent 推进目标/终态判定按「类别」而非具体状态 id——自定义状态同样适用
+  const states = await repos.workflowStates.all('workspace')
+  const doneOrCancelled = new Set(
+    states.filter((s) => s.category === 'done' || s.category === 'cancelled').map((s) => s.id),
+  )
+  const startedFirst = states
+    .filter((s) => s.category === 'started')
+    .sort((a, b) => a.order - b.order)[0]
   if (!fresh || fresh.deletedAt || fresh.assigneeId !== agentId) return false
-  if (fresh.reviewRequired || fresh.status === 'done' || fresh.status === 'cancelled') return false
+  if (fresh.reviewRequired || doneOrCancelled.has(fresh.status)) return false
 
-  // 步骤 1：接单分析 → in_progress
+  // 步骤 1：接单分析 → 进入「进行中」类别的第一个状态（缺省回落 in_progress）
   next(1)
   await repos.comments.add({
     issueId: issue.id,
     authorId: agentId,
     body: '🔎 已接单：分析需求描述与验收标准，拆解执行计划。',
   })
-  if (fresh.status !== 'in_progress') {
-    await repos.issues.update(issue.id, { status: 'in_progress' })
+  const startedTarget = startedFirst?.id ?? 'in_progress'
+  if (fresh.status !== startedTarget) {
+    await repos.issues.update(issue.id, { status: startedTarget })
     await repos.activities.log({
       issueId: issue.id,
       actorId: agentId,
       type: 'status',
       field: 'status',
       from: fresh.status,
-      to: 'in_progress',
+      to: startedTarget,
     })
   }
   await sleep(delay)

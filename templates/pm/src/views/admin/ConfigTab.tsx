@@ -128,21 +128,13 @@ function WorkflowPanel() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
 
-  // 删除迁移候选：其他全部状态（业务正确性由「引用迁移」保证）
-  const migrateTargets = (id: string) => rows.filter((s) => s.id !== id)
-
   return (
     <div className="admin-panel" data-testid="admin-config-workflow">
       <p className="admin-panel-title">{t('adminCfgWorkflow')}</p>
       <div className="wf-rows" data-testid="admin-workflow-rows">
         {rows.map((s) =>
           editingId === s.id ? (
-            <WorkflowRowForm
-              key={s.id}
-              initial={s}
-              rows={rows}
-              onDone={() => setEditingId(null)}
-            />
+            <WorkflowRowForm key={s.id} initial={s} rows={rows} onDone={() => setEditingId(null)} />
           ) : (
             <WorkflowRow key={s.id} state={s} rows={rows} onEdit={() => setEditingId(s.id)} />
           ),
@@ -175,7 +167,9 @@ function WorkflowRowForm({
   const [category, setCategory] = useState<WorkflowState['category']>(
     initial?.category ?? guessCategory(rows),
   )
-  const [color, setColor] = useState(initial?.color ?? CATEGORY_COLOR[initial?.category ?? guessCategory(rows)])
+  const [color, setColor] = useState(
+    initial?.color ?? CATEGORY_COLOR[initial?.category ?? guessCategory(rows)],
+  )
   const busyRef = useRef(false)
 
   const save = async () => {
@@ -187,7 +181,13 @@ function WorkflowRowForm({
         await workflowStates.update(initial.id, { name: trimmed, category, color })
       } else {
         const maxOrder = rows.reduce((m, s) => Math.max(m, s.order), 0)
-        await workflowStates.create({ projectId: 'workspace', name: trimmed, category, color, order: maxOrder + 1 })
+        await workflowStates.create({
+          projectId: 'workspace',
+          name: trimmed,
+          category,
+          color,
+          order: maxOrder + 1,
+        })
       }
       onDone()
     } finally {
@@ -196,7 +196,10 @@ function WorkflowRowForm({
   }
 
   return (
-    <div className="wf-row-form" data-testid={initial ? 'admin-workflow-edit' : 'admin-workflow-new'}>
+    <div
+      className="wf-row-form"
+      data-testid={initial ? 'admin-workflow-edit' : 'admin-workflow-new'}
+    >
       <oas-input
         value={name}
         placeholder={t('adminCfgWfName')}
@@ -219,21 +222,27 @@ function WorkflowRowForm({
           </option>
         ))}
       </select>
-      <div className="wf-color-row" role="radiogroup" aria-label={t('adminCfgWfColor')}>
-        {[color, ...AVATAR_PALETTE].slice(0, 11).map((c, i) => (
+      {/* 色板：一排开关按钮（aria-pressed 标记选中）——不用 radiogroup/radio 角色，
+          规避 biome useSemanticElements/noArrayIndexKey；a11y 由 aria-label + aria-pressed 承载 */}
+      <div className="wf-color-row">
+        {[...new Set([color, ...AVATAR_PALETTE])].map((c) => (
           <button
-            key={c + i}
+            key={c}
             type="button"
-            role="radio"
-            aria-checked={c === color}
+            aria-pressed={c === color}
             className={`wf-color${c === color ? ' is-on' : ''}`}
             style={{ background: c }}
             onClick={() => setColor(c)}
-            aria-label={`${t('adminCfgWfColor')} ${i + 1}`}
+            aria-label={`${t('adminCfgWfColor')}: ${c}`}
           />
         ))}
       </div>
-      <oas-button size="small" type="primary" data-testid="admin-workflow-save" onClick={() => void save()}>
+      <oas-button
+        size="small"
+        type="primary"
+        data-testid="admin-workflow-save"
+        onClick={() => void save()}
+      >
         {t('save')}
       </oas-button>
       <oas-button size="small" onClick={onDone}>
@@ -288,7 +297,11 @@ function WorkflowRow({
 
   return (
     <div className="wf-row" data-testid={`admin-workflow-row-${state.id}`}>
-      <i className="dot" style={{ '--dot': workflowStateColorOf(state) } as CSSProperties} aria-hidden="true" />
+      <i
+        className="dot"
+        style={{ '--dot': workflowStateColorOf(state) } as CSSProperties}
+        aria-hidden="true"
+      />
       {confirming ? (
         <div className="wf-migrate" data-testid={`admin-workflow-migrate-${state.id}`}>
           <span>{t('adminCfgWfMigrate')}</span>
@@ -297,13 +310,20 @@ function WorkflowRow({
             value={migrateTo ?? ''}
             onChange={(e) => setMigrateTo(e.target.value || null)}
           >
-            {rows.filter((s) => s.id !== state.id).map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
+            {rows
+              .filter((s) => s.id !== state.id)
+              .map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
           </select>
-          <oas-button size="small" type="primary" data-testid={`admin-workflow-del-go`} onClick={() => void doRemove()}>
+          <oas-button
+            size="small"
+            type="primary"
+            data-testid={`admin-workflow-del-go`}
+            onClick={() => void doRemove()}
+          >
             {t('confirm')}
           </oas-button>
           <oas-button size="small" onClick={() => setConfirming(false)}>
@@ -315,7 +335,12 @@ function WorkflowRow({
           <span className="wf-name">{state.name}</span>
           <span className="wf-cat">{CATEGORY_LABEL[state.category]}</span>
           <span className="wf-ops">
-            <oas-button size="small" onClick={() => void move(-1)} disabled={idx <= 0} aria-label={t('moveUp')}>
+            <oas-button
+              size="small"
+              onClick={() => void move(-1)}
+              disabled={idx <= 0}
+              aria-label={t('moveUp')}
+            >
               <oas-icon name="chevron-up" size={13} />
             </oas-button>
             <oas-button
@@ -326,11 +351,20 @@ function WorkflowRow({
             >
               <oas-icon name="chevron-down" size={13} />
             </oas-button>
-            <oas-button size="small" data-testid={`admin-workflow-edit-${state.id}`} onClick={onEdit}>
+            <oas-button
+              size="small"
+              data-testid={`admin-workflow-edit-${state.id}`}
+              onClick={onEdit}
+            >
               {t('edit')}
             </oas-button>
             {lastOfCategory ? (
-              <oas-button size="small" disabled data-testid={`admin-workflow-del-${state.id}`} title={t('adminCfgWfLastOfCat')}>
+              <oas-button
+                size="small"
+                disabled
+                data-testid={`admin-workflow-del-${state.id}`}
+                title={t('adminCfgWfLastOfCat')}
+              >
                 {t('delete')}
               </oas-button>
             ) : (

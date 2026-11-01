@@ -5,19 +5,11 @@ import type { Issue } from '@/types'
 import { PRIORITY_TEXT } from '@/lib/colors'
 import { t } from '@/i18n'
 import { OSegmented } from '@/components/oas-wrappers'
+import { progressOfCategory, useWorkflowStates } from '@/lib/statuses'
 import type { Action, Ctx } from '@/permission/policy'
 /* ── 时间线（oas-gantt） ── */
 interface GanttElement extends HTMLElement {
   tasks?: unknown[]
-}
-
-/** 状态 → 进度（done 100 / 进行中 50 / 其余 0） */
-const PROGRESS: Record<Issue['status'], number> = {
-  backlog: 0,
-  todo: 0,
-  in_progress: 50,
-  done: 100,
-  cancelled: 0,
 }
 
 const toDate = (ms: number) => new Date(ms).toISOString().slice(0, 10)
@@ -39,8 +31,13 @@ export function TimelineView({
   } = useRepositories()
   const projects = useObservable(() => projectsRepo.liveAll(), [projectsRepo])
   const msRows = useObservable(() => milestonesRepo.live(projectId), [milestonesRepo, projectId])
-  const ganttRef = useRef<GanttElement>(null)
-  // 时间窗：时间轴是范围驱动语义，按天窗过滤而非滚动续载
+  // 状态类别 → 进度（done 100 / started 50 / 其余 0）：自定义状态同样适用
+  const workflowStates = useWorkflowStates(projectId)
+  const categoryByStateId = useMemo(
+    () => new Map(workflowStates.map((s) => [s.id, s.category])),
+    [workflowStates],
+  )
+  const ganttRef = useRef<GanttElement>(null)  // 时间窗：时间轴是范围驱动语义，按天窗过滤而非滚动续载
   // 时间窗：时间轴是范围驱动语义，按天窗过滤而非滚动续载
   const [windowDays, setWindowDays] = useState<30 | 90 | null>(30)
   const visibleIssues = useMemo(
@@ -63,7 +60,7 @@ export function TimelineView({
         end: toDate(i.dueAt as number),
         type: 'task' as const,
         parent: projects === undefined ? undefined : `proj-${i.projectId}`,
-        progress: PROGRESS[i.status],
+        progress: progressOfCategory(categoryByStateId.get(i.status)),
         color: PRIORITY_TEXT[i.priority],
         // 工时（人天）：估算小时 ÷ 8，无估算不传（oas-gantt effort 列，纯展示）
         effort: i.estimate && i.estimate > 0 ? Math.round((i.estimate / 8) * 100) / 100 : undefined,
@@ -122,7 +119,7 @@ export function TimelineView({
     // summary 附在数组末尾：组件按 parent 指针组树（组内嵌套与数组位置无关），
     // tasks property 读回保持 issue 在前——甘特写回用 tasks[0] 定位 issue
     return [...children, ...summaries]
-  }, [visibleIssues, can, projects, msRows])
+  }, [visibleIssues, can, projects, msRows, categoryByStateId])
 
   useEffect(() => {
     if (ganttRef.current) ganttRef.current.tasks = tasks
