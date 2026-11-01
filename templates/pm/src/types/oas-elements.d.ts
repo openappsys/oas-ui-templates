@@ -99,6 +99,14 @@ declare module 'react' {
       'oas-gantt': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
         'row-height'?: number | string
         stripe?: boolean | string
+        /** 二期 opt-in：工时列（GanttTask.effort，天） */
+        'show-effort'?: boolean | string
+        /** 二期 opt-in：状态竖线 + 条内计划进度刻度 */
+        'show-status-line'?: boolean | string
+        /** 状态基准日（ISO 日期，缺省当天） */
+        'status-date'?: string
+        /** 多基线：展示哪条基线 */
+        'baseline-id'?: string
       }
       'oas-modal': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
         title?: string

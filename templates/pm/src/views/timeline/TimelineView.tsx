@@ -65,6 +65,8 @@ export function TimelineView({
         parent: projects === undefined ? undefined : `proj-${i.projectId}`,
         progress: PROGRESS[i.status],
         color: PRIORITY_TEXT[i.priority],
+        // 工时（人天）：估算小时 ÷ 8，无估算不传（oas-gantt effort 列，纯展示）
+        effort: i.estimate && i.estimate > 0 ? Math.round((i.estimate / 8) * 100) / 100 : undefined,
         // 截止日即 fnlt 约束：排期超出自动 .conflict 高亮（PM deadline 语义）
         constraint: 'fnlt' as const,
         constraintDate: toDate(i.dueAt as number),
@@ -172,6 +174,9 @@ export function TimelineView({
         ref={ganttRef}
         data-testid="gantt"
         stripe=""
+        show-effort=""
+        show-status-line=""
+        status-date={new Date().toISOString().slice(0, 10)}
         style={{ width: '100%', flex: 1, minHeight: 420 }}
       />
     </div>
