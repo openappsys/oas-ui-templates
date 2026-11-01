@@ -175,6 +175,8 @@ export interface WorkflowStateRepository {
   update(id: string, changes: Partial<WorkflowState>): Promise<void>
   delete(id: string): Promise<void>
   reorder(orderedIds: string[]): Promise<void>
+  /** 删除状态前的引用迁移：from 状态的全部 Issue 改挂到 to 状态 */
+  migrateStatus(from: string, to: string): Promise<void>
 }
 
 export interface WorklogRepository {

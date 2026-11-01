@@ -1950,6 +1950,20 @@ function routeWorkflowStates(
     ensureWorkflowStates(store)
     return ok({ ok: true })
   }
+  if (third === 'migrate' && method === 'POST') {
+    const from = store.workflowStates.find((s) => s.id === second)
+    if (!from) fail(404, 'workflow state not found')
+    const to = String(asRecord(body).to ?? '')
+    const toState = store.workflowStates.find((s) => s.id === to)
+    if (!toState) fail(404, 'migrate target not found')
+    store.issues
+      .filter((i) => i.status === from.id)
+      .forEach((i) => {
+        i.status = toState.id
+      })
+    store.revision += 1
+    return ok({ ok: true })
+  }
   if (second === 'reorder' && method === 'POST') {
     const orderedIds = asRecord(body).orderedIds
     if (Array.isArray(orderedIds)) {

@@ -708,6 +708,10 @@ export function createApiRepositories(options: ApiClientOptions = {}): Repositor
       await send('POST', '/api/workflow-states/reorder', undefined, { orderedIds })
       poke()
     },
+    migrateStatus: async (from: string, to: string) => {
+      await send('POST', `/api/workflow-states/${encodeURIComponent(from)}/migrate`, undefined, { to })
+      poke()
+    },
   }
 
   const worklogsRepo: WorklogRepository = {

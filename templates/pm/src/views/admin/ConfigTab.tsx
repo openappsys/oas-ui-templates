@@ -1,10 +1,28 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { CSSProperties } from 'react'
 import { useRepositories } from '@/data/context'
 import { useObservable } from '@/data/use-observable'
 import { t, priorityLabel } from '@/i18n'
-import { ISSUE_PRIORITIES } from '@/types'
+import { ISSUE_PRIORITIES, type WorkflowState } from '@/types'
+import { AVATAR_PALETTE } from '@/lib/colors'
 import { DEFAULT_LABELS } from '@/lib/labels'
 import type { AdminTab } from './AdminView'
+
+/** 类别语义：行为判定（done 判定/进度派生/迁移保护）都锚定类别而非具体状态 */
+const CATEGORY_KEYS = ['todo', 'started', 'done', 'cancelled'] as const
+const CATEGORY_LABEL: Record<WorkflowState['category'], string> = {
+  todo: t('wf.cat.todo'),
+  started: t('wf.cat.started'),
+  done: t('wf.cat.done'),
+  cancelled: t('wf.cat.cancelled'),
+}
+/** 新建状态的建议色（按类别缺省，可改选） */
+const CATEGORY_COLOR: Record<WorkflowState['category'], string> = {
+  todo: '#94a3b8',
+  started: '#0b6cff',
+  done: '#16a34a',
+  cancelled: '#94a3b8',
+}
 
 const PRIORITY_TAG_TYPE: Record<string, string> = {
   urgent: 'danger',
@@ -28,6 +46,7 @@ export function ConfigTab({ onNav }: { onNav?: (tab: AdminTab) => void }) {
   return (
     <div className="admin-crud-page" data-testid="admin-tab-config">
       <h1 className="page-h1">{t('adminConfigTitle')}</h1>
+      <WorkflowPanel />
       <LabelPanel />
       <ReadOnlyTags
         testid="admin-config-priorities"
@@ -98,6 +117,250 @@ function LabelPanel() {
       <p className="admin-hint">{t('adminCfgLabelsHint')}</p>
     </div>
   )
+}
+
+/** 工作流状态管理：列表（色点/名称/类别/排序）+ 新建/编辑/删除（含引用迁移与类别末位保护）。
+ *  状态为工作区级一套（repo 语义），编辑即时落库，全站看板/筛选/抽屉实时跟随 */
+function WorkflowPanel() {
+  const { workflowStates } = useRepositories()
+  const states = useObservable(() => workflowStates.live('workspace'), [workflowStates])
+  const rows = useMemo(() => [...(states ?? [])].sort((a, b) => a.order - b.order), [states])
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [adding, setAdding] = useState(false)
+
+  // 删除迁移候选：其他全部状态（业务正确性由「引用迁移」保证）
+  const migrateTargets = (id: string) => rows.filter((s) => s.id !== id)
+
+  return (
+    <div className="admin-panel" data-testid="admin-config-workflow">
+      <p className="admin-panel-title">{t('adminCfgWorkflow')}</p>
+      <div className="wf-rows" data-testid="admin-workflow-rows">
+        {rows.map((s) =>
+          editingId === s.id ? (
+            <WorkflowRowForm
+              key={s.id}
+              initial={s}
+              rows={rows}
+              onDone={() => setEditingId(null)}
+            />
+          ) : (
+            <WorkflowRow key={s.id} state={s} rows={rows} onEdit={() => setEditingId(s.id)} />
+          ),
+        )}
+      </div>
+      {adding ? (
+        <WorkflowRowForm rows={rows} onDone={() => setAdding(false)} />
+      ) : (
+        <oas-button size="small" data-testid="admin-workflow-add" onClick={() => setAdding(true)}>
+          {t('adminCfgWfAdd')}
+        </oas-button>
+      )}
+      <p className="admin-hint">{t('adminCfgWfHint')}</p>
+    </div>
+  )
+}
+
+/** 行内新建/编辑表单：名称 + 类别 + 颜色（预设色板点选） */
+function WorkflowRowForm({
+  initial,
+  rows,
+  onDone,
+}: {
+  initial?: WorkflowState
+  rows: WorkflowState[]
+  onDone: () => void
+}) {
+  const { workflowStates } = useRepositories()
+  const [name, setName] = useState(initial?.name ?? '')
+  const [category, setCategory] = useState<WorkflowState['category']>(
+    initial?.category ?? guessCategory(rows),
+  )
+  const [color, setColor] = useState(initial?.color ?? CATEGORY_COLOR[initial?.category ?? guessCategory(rows)])
+  const busyRef = useRef(false)
+
+  const save = async () => {
+    const trimmed = name.trim()
+    if (!trimmed || busyRef.current) return
+    busyRef.current = true
+    try {
+      if (initial) {
+        await workflowStates.update(initial.id, { name: trimmed, category, color })
+      } else {
+        const maxOrder = rows.reduce((m, s) => Math.max(m, s.order), 0)
+        await workflowStates.create({ projectId: 'workspace', name: trimmed, category, color, order: maxOrder + 1 })
+      }
+      onDone()
+    } finally {
+      busyRef.current = false
+    }
+  }
+
+  return (
+    <div className="wf-row-form" data-testid={initial ? 'admin-workflow-edit' : 'admin-workflow-new'}>
+      <oas-input
+        value={name}
+        placeholder={t('adminCfgWfName')}
+        aria-label={t('adminCfgWfName')}
+        onInput={(e) => setName((e.target as HTMLInputElement).value)}
+      />
+      <select
+        className="wf-cat-select"
+        aria-label={t('adminCfgWfCategory')}
+        value={category}
+        onChange={(e) => {
+          const cat = e.target.value as WorkflowState['category']
+          setCategory(cat)
+          if (!initial) setColor(CATEGORY_COLOR[cat])
+        }}
+      >
+        {CATEGORY_KEYS.map((k) => (
+          <option key={k} value={k}>
+            {CATEGORY_LABEL[k]}
+          </option>
+        ))}
+      </select>
+      <div className="wf-color-row" role="radiogroup" aria-label={t('adminCfgWfColor')}>
+        {[color, ...AVATAR_PALETTE].slice(0, 11).map((c, i) => (
+          <button
+            key={c + i}
+            type="button"
+            role="radio"
+            aria-checked={c === color}
+            className={`wf-color${c === color ? ' is-on' : ''}`}
+            style={{ background: c }}
+            onClick={() => setColor(c)}
+            aria-label={`${t('adminCfgWfColor')} ${i + 1}`}
+          />
+        ))}
+      </div>
+      <oas-button size="small" type="primary" data-testid="admin-workflow-save" onClick={() => void save()}>
+        {t('save')}
+      </oas-button>
+      <oas-button size="small" onClick={onDone}>
+        {t('cancel')}
+      </oas-button>
+    </div>
+  )
+}
+
+/** 新建时按现有构成猜缺省类别（每类已有一态时轮转 todo→started→done→cancelled） */
+function guessCategory(rows: WorkflowState[]): WorkflowState['category'] {
+  const next: WorkflowState['category'][] = ['todo', 'started', 'done', 'cancelled']
+  for (const cat of next) {
+    if (!rows.some((s) => s.category === cat)) return cat
+  }
+  return 'todo'
+}
+
+function WorkflowRow({
+  state,
+  rows,
+  onEdit,
+}: {
+  state: WorkflowState
+  rows: WorkflowState[]
+  onEdit: () => void
+}) {
+  const { workflowStates } = useRepositories()
+  const sameCat = rows.filter((s) => s.category === state.category)
+  /** 类别末位保护：todo/started/done/cancelled 的语义判定依赖每类至少一态 */
+  const lastOfCategory = sameCat.length <= 1
+  const [migrateTo, setMigrateTo] = useState<string | null>(null)
+  const [confirming, setConfirming] = useState(false)
+  const idx = rows.findIndex((s) => s.id === state.id)
+
+  const doRemove = async () => {
+    const target = migrateTo ?? rows.filter((s) => s.id !== state.id)[0]?.id
+    if (!target) return
+    // 引用迁移先行（该状态下的 Issue 批量转到目标态），再删状态
+    await workflowStates.migrateStatus(state.id, target)
+    await workflowStates.delete(state.id)
+    setConfirming(false)
+  }
+  const move = async (dir: -1 | 1) => {
+    const other = rows[idx + dir]
+    if (!other) return
+    const ids = rows.map((s) => s.id)
+    ;[ids[idx], ids[idx + dir]] = [ids[idx + dir], ids[idx]]
+    await workflowStates.reorder(ids)
+    void other
+  }
+
+  return (
+    <div className="wf-row" data-testid={`admin-workflow-row-${state.id}`}>
+      <i className="dot" style={{ '--dot': workflowStateColorOf(state) } as CSSProperties} aria-hidden="true" />
+      {confirming ? (
+        <div className="wf-migrate" data-testid={`admin-workflow-migrate-${state.id}`}>
+          <span>{t('adminCfgWfMigrate')}</span>
+          <select
+            aria-label={t('adminCfgWfMigrate')}
+            value={migrateTo ?? ''}
+            onChange={(e) => setMigrateTo(e.target.value || null)}
+          >
+            {rows.filter((s) => s.id !== state.id).map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+          <oas-button size="small" type="primary" data-testid={`admin-workflow-del-go`} onClick={() => void doRemove()}>
+            {t('confirm')}
+          </oas-button>
+          <oas-button size="small" onClick={() => setConfirming(false)}>
+            {t('cancel')}
+          </oas-button>
+        </div>
+      ) : (
+        <>
+          <span className="wf-name">{state.name}</span>
+          <span className="wf-cat">{CATEGORY_LABEL[state.category]}</span>
+          <span className="wf-ops">
+            <oas-button size="small" onClick={() => void move(-1)} disabled={idx <= 0} aria-label={t('moveUp')}>
+              <oas-icon name="chevron-up" size={13} />
+            </oas-button>
+            <oas-button
+              size="small"
+              onClick={() => void move(1)}
+              disabled={idx >= rows.length - 1}
+              aria-label={t('moveDown')}
+            >
+              <oas-icon name="chevron-down" size={13} />
+            </oas-button>
+            <oas-button size="small" data-testid={`admin-workflow-edit-${state.id}`} onClick={onEdit}>
+              {t('edit')}
+            </oas-button>
+            {lastOfCategory ? (
+              <oas-button size="small" disabled data-testid={`admin-workflow-del-${state.id}`} title={t('adminCfgWfLastOfCat')}>
+                {t('delete')}
+              </oas-button>
+            ) : (
+              <oas-button
+                size="small"
+                data-testid={`admin-workflow-del-${state.id}`}
+                onClick={() => {
+                  setMigrateTo(rows.filter((s) => s.id !== state.id)[0]?.id ?? null)
+                  setConfirming(true)
+                }}
+              >
+                {t('delete')}
+              </oas-button>
+            )}
+          </span>
+        </>
+      )}
+    </div>
+  )
+}
+
+function workflowStateColorOf(s: WorkflowState): string {
+  if (s.color) return s.color
+  const tone: Record<WorkflowState['category'], string> = {
+    todo: '#94a3b8',
+    started: '#0b6cff',
+    done: '#16a34a',
+    cancelled: '#94a3b8',
+  }
+  return tone[s.category]
 }
 
 function ReadOnlyTags({
