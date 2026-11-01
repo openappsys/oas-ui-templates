@@ -2402,6 +2402,105 @@ oas-drawer::part(close):focus-visible {
   min-width: 0;
 }
 
+/* ===== 管理卡：工作流状态（Admin 配置页签） ===== */
+.wf-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.wf-row,
+.wf-row-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: var(--oas-color-bg, #f8fafc);
+}
+.wf-row .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--dot);
+  flex-shrink: 0;
+}
+.wf-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--oas-color-text-primary, #18181b);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wf-cat {
+  font-size: 11px;
+  color: var(--oas-color-text-secondary, #71717a);
+  border: 1px solid var(--oas-color-border, #d4d4d8);
+  border-radius: 999px;
+  padding: 1px 8px;
+  flex-shrink: 0;
+}
+.wf-ops {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.wf-row-form {
+  flex-wrap: wrap;
+}
+.wf-row-form oas-input {
+  flex: 1;
+  min-width: 120px;
+}
+.wf-cat-select {
+  height: 30px;
+  border: 1px solid var(--oas-color-border, #d4d4d8);
+  border-radius: 8px;
+  background: var(--oas-color-bg-elevated, #fff);
+  color: var(--oas-color-text-primary, #18181b);
+  font: inherit;
+  font-size: 13px;
+  padding: 0 6px;
+}
+.wf-color-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.wf-color {
+  appearance: none;
+  border: 2px solid transparent;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  cursor: pointer;
+  padding: 0;
+}
+.wf-color.is-on {
+  border-color: var(--oas-color-text-primary, #18181b);
+}
+.wf-migrate {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--oas-color-text-secondary, #71717a);
+}
+.wf-migrate select {
+  height: 28px;
+  border: 1px solid var(--oas-color-border, #d4d4d8);
+  border-radius: 6px;
+  background: var(--oas-color-bg-elevated, #fff);
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+}
+
 /* ===== Linear 式字段 chip（P2）：视觉 chip + 自绘菜单；数据通道走隐藏 oas-select ===== */
 .chip-wrap {
   position: relative;
