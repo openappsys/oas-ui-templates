@@ -171,6 +171,7 @@ export function TimelineView({
         ref={ganttRef}
         data-testid="gantt"
         stripe=""
+        show-critical-path=""
         show-effort=""
         show-status-line=""
         status-date={new Date().toISOString().slice(0, 10)}

@@ -99,6 +99,8 @@ declare module 'react' {
       'oas-gantt': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
         'row-height'?: number | string
         stripe?: boolean | string
+        /** 关键路径高亮（依赖链 CPM，一期属性） */
+        'show-critical-path'?: boolean | string
         /** 二期 opt-in：工时列（GanttTask.effort，天） */
         'show-effort'?: boolean | string
         /** 二期 opt-in：状态竖线 + 条内计划进度刻度 */
@@ -207,8 +209,8 @@ declare module 'react' {
         searchable?: boolean | string
         clearable?: boolean | string
         disabled?: boolean | string
-        /** 候选清单（React 19 经 property setter 下发） */
-        options?: Array<{ label: string; value: string; disabled?: boolean }>
+        /** 候选清单（React 19 经 property setter 下发）；icon 为 @oas-ui/icons 图标名（2.6.6+） */
+        options?: Array<{ label: string; value: string; disabled?: boolean; icon?: string }>
         /** 已选项折叠上限（超出显示 +N 徽标） */
         'max-tag-count'?: number | string
       }
