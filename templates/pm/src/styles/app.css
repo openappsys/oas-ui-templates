@@ -320,6 +320,10 @@ body {
 
 .timeline-page oas-gantt {
   --oas-gantt-height: calc(100vh - 300px);
+  /* a11y（A3 零放行）：冲突行红字落在条纹行 --oas-color-bg-hover 底色上对比度
+     4.42 < 4.5——组件暴露 --oas-gantt-conflict-color 令牌，宿主改用更深的
+     danger-text（条纹底色上 ≥4.5） */
+  --oas-gantt-conflict-color: var(--oas-color-danger-text);
 }
 
 .resource-page oas-resource {
