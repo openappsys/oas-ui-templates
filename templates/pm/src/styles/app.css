@@ -2545,6 +2545,24 @@ oas-drawer::part(close):focus-visible {
   background: var(--dot);
   flex-shrink: 0;
 }
+/* 迷你头像（负责人 chip）：首字 + avatarColor 底，与列表头像视觉同源 */
+.chip-avatar {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, .55);
+  flex-shrink: 0;
+}
+.chip-item .chip-avatar {
+  width: 14px;
+  height: 14px;
+  font-size: 9px;
+}
 .chip-value {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3526,7 +3544,8 @@ oas-drawer::part(close):focus-visible {
 }
 .worklog-add-row > oas-button {
   flex-shrink: 0;
-  min-width: auto;
+  /* 文字完整显示（组件 shadow 对超宽文字省略，57px 恰好触发） */
+  min-width: 64px;
   /* 容器 13px 继承会压过 size=small 的 14px——显式对齐其他抽屉按钮 */
   font-size: 14px;
 }

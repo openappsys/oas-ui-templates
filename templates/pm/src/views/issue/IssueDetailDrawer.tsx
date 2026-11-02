@@ -1085,6 +1085,7 @@ export function IssueDetailDrawer({
               testid="detail-assignee"
               ariaLabel={t('assignee')}
               dot={assigneeMember?.avatarColor}
+              avatarText={assigneeMember?.name}
               value={issue.assigneeId ?? '__none__'}
               valueLabel={assigneeMember?.name ?? t('resourceUnassigned')}
               empty={!issue.assigneeId}
@@ -1093,6 +1094,7 @@ export function IssueDetailDrawer({
                 value: o.value,
                 label: o.label,
                 dot: o.value === '__none__' ? undefined : memberMap.get(o.value)?.avatarColor,
+                avatarText: memberMap.get(o.value)?.name,
               }))}
               onPick={(v) => save({ assigneeId: v === '__none__' ? null : v })}
             />
@@ -1553,14 +1555,16 @@ export function IssueDetailDrawer({
 function FieldChip(props: {
   testid: string
   ariaLabel: string
-  /** 语义色点；省略时 chip 与菜单项均不显示点（无语义色的字段，如里程碑/迭代/负责人） */
+  /** 语义色点；省略时 chip 与菜单项均不显示点（无语义色的字段，如里程碑/迭代） */
   dot?: string
+  /** 迷你头像（首字 + avatarColor 底）：提供时替代色点（负责人字段用） */
+  avatarText?: string
   value: string
   valueLabel: string
   /** 空值态（未设置）：值文字转 muted（Linear「None」风格） */
   empty?: boolean
   disabled?: boolean
-  options: Array<{ value: string; label: string; dot?: string }>
+  options: Array<{ value: string; label: string; dot?: string; avatarText?: string }>
   onPick: (v: string) => void
 }) {
   const [open, setOpen] = useState(false)
@@ -1652,11 +1656,21 @@ function FieldChip(props: {
         disabled={props.disabled}
         onClick={() => (open ? setOpen(false) : openMenu())}
       >
-        <i
-          className="dot"
-          style={props.dot ? ({ '--dot': props.dot } as CSSProperties) : undefined}
-          aria-hidden="true"
-        />
+        {props.avatarText ? (
+          <span
+            className="chip-avatar"
+            style={{ background: props.dot } as CSSProperties}
+            aria-hidden="true"
+          >
+            {props.avatarText.slice(0, 1)}
+          </span>
+        ) : props.dot ? (
+          <i
+            className="dot"
+            style={{ '--dot': props.dot } as CSSProperties}
+            aria-hidden="true"
+          />
+        ) : null}
         <span className="chip-value">{props.valueLabel}</span>
         <oas-icon name="chevron-down" size={12} />
       </button>
