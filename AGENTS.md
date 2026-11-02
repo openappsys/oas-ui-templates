@@ -23,6 +23,7 @@
 - **git push 只能由用户手动执行**，agent 一律不推（含验证性 push）——需要同步远端时明确告知用户由其操作
 - **不留任何 bug 才算完成**——e2e 全绿 ≠ 没问题，需截图/人工验收界面
 - **用组件库前先查 API**（`node_modules/.pnpm/@oas-ui+ui@*/.../dist/types/**.d.ts` 与 docs），以应用尽用，没有的自己造
+- **组件库升级后必须复查自写适配**（2026-11-02 教训：P2 因 Option 无 icon 通道自绘了下拉，2.6.6 即发布 Option.icon）：盘点「因组件库缺能力而自写」的清单，新版覆盖的**立即替换为官方通道**并删除自写；确属业务语义（组件库不该有）的保留并记录理由。查法：对照新版 d.ts 的 observedAttributes / 新增接口与自写代码的假设
 - **Web Components 与 React 19 集成的已知坑**（遇到先对照）：
   - `title` 等全局属性命中 HTMLElement 原生 property → React 走 property 不落 attribute，组件收不到（用 ref + setAttribute）
   - `options` 类数据通道：组件渲染签名可能只看 attribute（如 oas-segmented），property setter 仅内存持有；oas-select 的 setter 会转 attribute——逐组件确认
