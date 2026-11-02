@@ -997,44 +997,35 @@ export function IssueDetailDrawer({
         <div className="detail-meta">
           <div className="detail-field">
             <span>{t('status')}</span>
-            <FieldChip
-              testid="detail-status"
-              ariaLabel={t('status')}
-              dot={workflowStateColor(
-                stById.get(issue.status) ?? { id: issue.status, color: '', category: 'todo' },
-              )}
-              value={issue.status}
-              valueLabel={workflowStateLabel(
-                stById.get(issue.status) ?? { id: issue.status, name: issue.status },
-              )}
-              disabled={!canChangeStatus}
-              options={workflowStates.map((s) => ({
-                value: s.id,
-                label: workflowStateLabel(s),
-                dot: workflowStateColor(s),
-              }))}
-              onPick={(v) => save({ status: v as IssueStatus })}
-            />
+            <div className="field-ctl">
+              <OSelect
+                testid="detail-status"
+                ariaLabel={t('status')}
+                variant="chip"
+                value={issue.status}
+                options={workflowStates.map((s) => ({
+                  label: workflowStateLabel(s),
+                  value: s.id,
+                  dot: workflowStateColor(s),
+                }))}
+                onChange={(v) => save({ status: v as IssueStatus })}
+                disabled={!canChangeStatus}
+              />
+            </div>
           </div>
           <div className="detail-field">
             <span>{t('milestone')}</span>
-            <FieldChip
+            <OSelect
               testid="detail-milestone"
               ariaLabel={t('milestone')}
+              variant="chip"
               value={issue.milestoneId ?? '__none__'}
-              valueLabel={
-                issue.milestoneId
-                  ? ((milestones ?? []).find((m) => m.id === issue.milestoneId)?.name ??
-                    issue.milestoneId)
-                  : t('milestoneNone')
-              }
-              empty={!issue.milestoneId}
-              disabled={!canEdit}
               options={[
-                { value: '__none__', label: t('milestoneNone') },
-                ...(milestones ?? []).map((m) => ({ value: m.id, label: m.name })),
+                { label: t('milestoneNone'), value: '__none__' },
+                ...(milestones ?? []).map((m) => ({ label: m.name, value: m.id })),
               ]}
-              onPick={(v) => save({ milestoneId: v === '__none__' ? null : v })}
+              onChange={(v) => save({ milestoneId: v === '__none__' ? null : v })}
+              disabled={!canEdit}
             />
           </div>
           <div className="detail-field">
@@ -1064,57 +1055,49 @@ export function IssueDetailDrawer({
           </div>
           <div className="detail-field">
             <span>{t('priority')}</span>
-            <FieldChip
-              testid="detail-priority"
-              ariaLabel={t('priority')}
-              dot={PRIORITY_TEXT[issue.priority]}
-              value={issue.priority}
-              valueLabel={priorityLabel(issue.priority)}
-              disabled={!canEdit}
-              options={ISSUE_PRIORITIES.map((p) => ({
-                value: p,
-                label: priorityLabel(p),
-                dot: PRIORITY_TEXT[p],
-              }))}
-              onPick={(v) => save({ priority: v as IssuePriority })}
-            />
+            <div className="field-ctl">
+              <OSelect
+                testid="detail-priority"
+                ariaLabel={t('priority')}
+                variant="chip"
+                value={issue.priority}
+                options={ISSUE_PRIORITIES.map((p) => ({
+                  label: priorityLabel(p),
+                  value: p,
+                  dot: PRIORITY_TEXT[p],
+                }))}
+                onChange={(v) => save({ priority: v as IssuePriority })}
+                disabled={!canEdit}
+              />
+            </div>
           </div>
           <div className="detail-field">
             <span>{t('assignee')}</span>
-            <FieldChip
+            <OSelect
               testid="detail-assignee"
               ariaLabel={t('assignee')}
-              dot={assigneeMember?.avatarColor}
-              avatarText={assigneeMember?.name}
+              variant="chip"
               value={issue.assigneeId ?? '__none__'}
-              valueLabel={assigneeMember?.name ?? t('resourceUnassigned')}
-              empty={!issue.assigneeId}
-              disabled={!canChangeAssignee}
               options={memberOptions.map((o) => ({
-                value: o.value,
                 label: o.label,
+                value: o.value,
                 dot: o.value === '__none__' ? undefined : memberMap.get(o.value)?.avatarColor,
-                avatarText: memberMap.get(o.value)?.name,
+                avatarText: o.value === '__none__' ? undefined : memberMap.get(o.value)?.name,
               }))}
-              onPick={(v) => save({ assigneeId: v === '__none__' ? null : v })}
+              onChange={(v) => save({ assigneeId: v === '__none__' ? null : v })}
+              disabled={!canChangeAssignee}
             />
           </div>
           <div className="detail-field">
             <span>{t('cycle')}</span>
-            <FieldChip
+            <OSelect
               testid="detail-cycle"
               ariaLabel={t('cycle')}
+              variant="chip"
               value={issue.cycleId ?? '__none__'}
-              valueLabel={
-                issue.cycleId
-                  ? ((projectCycles ?? []).find((cy) => cy.id === issue.cycleId)?.name ??
-                    issue.cycleId)
-                  : t('noCycle')
-              }
-              empty={!issue.cycleId}
+              options={cycleOptions}
+              onChange={(v) => save({ cycleId: v === '__none__' ? null : v })}
               disabled={!canEdit}
-              options={cycleOptions.map((o) => ({ value: o.value, label: o.label }))}
-              onPick={(v) => save({ cycleId: v === '__none__' ? null : v })}
             />
           </div>
           <div className="detail-field detail-field--wide">
@@ -1547,169 +1530,5 @@ export function IssueDetailDrawer({
         </div>
       </div>
     </oas-drawer>
-  )
-}
-
-/** Linear 式字段编辑：chip（色点+值）→ 自绘菜单（色点选项+勾选+键盘）。
- *  为什么不用 oas-popover（2.6.6 复查结论）：字段位于抽屉顶部、菜单向下展开
- *  空间充足（无裁切/翻转需求）；popover 的 manual+open 受控与组件内部
- *  escape/outside 关闭存在三方状态同步成本；键盘选择/外点关闭自绘已完备。
- *  若未来字段移到抽屉底部或需要 portal，再评估迁移。
- *  视觉换 chip，数据通道仍是隐藏 oas-select（tabIndex=-1）——e2e/表单语义零改动 */
-function FieldChip(props: {
-  testid: string
-  ariaLabel: string
-  /** 语义色点；省略时 chip 与菜单项均不显示点（无语义色的字段，如里程碑/迭代） */
-  dot?: string
-  /** 迷你头像（首字 + avatarColor 底）：提供时替代色点（负责人字段用） */
-  avatarText?: string
-  value: string
-  valueLabel: string
-  /** 空值态（未设置）：值文字转 muted（Linear「None」风格） */
-  empty?: boolean
-  disabled?: boolean
-  options: Array<{ value: string; label: string; dot?: string; avatarText?: string }>
-  onPick: (v: string) => void
-}) {
-  const [open, setOpen] = useState(false)
-  const [active, setActive] = useState(-1)
-  const wrapRef = useRef<HTMLDivElement>(null)
-  const selectRef = useRef<HTMLElement & { value: string }>(null)
-  // onPick 每渲染重建：经 ref 解耦，keydown/oas-change 监听器免重绑
-  const pickRef = useRef(props.onPick)
-  pickRef.current = props.onPick
-
-  useEffect(() => {
-    const el = selectRef.current
-    if (el) el.value = props.value
-  }, [props.value])
-
-  // 隐藏 oas-select 的 oas-change：e2e setOSelect 通道（host 设值 + 派发事件）→ 走真保存
-  const propsRef = useRef(props)
-  propsRef.current = props
-  useEffect(() => {
-    const el = selectRef.current
-    if (!el) return
-    const h = (e: Event) => {
-      const v =
-        (e as CustomEvent<{ value?: string }>).detail?.value ??
-        (el as unknown as { value?: string }).value ??
-        ''
-      if (v && v !== propsRef.current.value) pickRef.current(v)
-    }
-    el.addEventListener('oas-change', h)
-    return () => el.removeEventListener('oas-change', h)
-  }, [])
-
-  // 外点关闭
-  useEffect(() => {
-    if (!open) return
-    const onDoc = (e: MouseEvent) => {
-      if (!wrapRef.current?.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener('mousedown', onDoc)
-    return () => document.removeEventListener('mousedown', onDoc)
-  }, [open])
-
-  const openMenu = () => {
-    setActive(
-      Math.max(
-        0,
-        props.options.findIndex((o) => o.value === props.value),
-      ),
-    )
-    setOpen(true)
-  }
-  const commit = (v: string) => {
-    setOpen(false)
-    if (v !== props.value) props.onPick(v)
-  }
-  const onKey = (e: React.KeyboardEvent) => {
-    if (!open) {
-      if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
-        e.preventDefault()
-        openMenu()
-      }
-      return
-    }
-    if (e.key === 'Escape') {
-      e.preventDefault()
-      setOpen(false)
-    } else if (e.key === 'ArrowDown') {
-      e.preventDefault()
-      setActive((a) => Math.min(a + 1, props.options.length - 1))
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault()
-      setActive((a) => Math.max(a - 1, 0))
-    } else if (e.key === 'Enter') {
-      e.preventDefault()
-      const o = props.options[active]
-      if (o) commit(o.value)
-    }
-  }
-
-  return (
-    <div className="chip-wrap" ref={wrapRef} onKeyDown={onKey}>
-      <button
-        type="button"
-        className="field-chip"
-        data-testid={`${props.testid}-chip`}
-        aria-label={props.ariaLabel}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        disabled={props.disabled}
-        onClick={() => (open ? setOpen(false) : openMenu())}
-      >
-        {props.avatarText ? (
-          <span
-            className="chip-avatar"
-            style={{ background: props.dot } as CSSProperties}
-            aria-hidden="true"
-          >
-            {props.avatarText.slice(0, 1)}
-          </span>
-        ) : props.dot ? (
-          <i
-            className="dot"
-            style={{ '--dot': props.dot } as CSSProperties}
-            aria-hidden="true"
-          />
-        ) : null}
-        <span className="chip-value">{props.valueLabel}</span>
-        <oas-icon name="chevron-down" size={12} />
-      </button>
-      {open && (
-        <div className="chip-menu" role="listbox" aria-label={props.ariaLabel}>
-          {props.options.map((o, idx) => (
-            <button
-              key={o.value}
-              type="button"
-              role="option"
-              aria-selected={o.value === props.value}
-              data-value={o.value}
-              className={`chip-item${idx === active ? ' is-active' : ''}`}
-              onMouseEnter={() => setActive(idx)}
-              onClick={() => commit(o.value)}
-            >
-              {o.dot && (
-                <i className="dot" style={{ '--dot': o.dot } as CSSProperties} aria-hidden="true" />
-              )}
-              <span>{o.label}</span>
-              {o.value === props.value && <oas-icon name="check" size={13} />}
-            </button>
-          ))}
-        </div>
-      )}
-      {/* 数据通道：隐藏 oas-select 保留表单/e2e 语义（el.value、el.options、disabled、oas-change） */}
-      <oas-select
-        ref={selectRef}
-        data-testid={props.testid}
-        aria-label={props.ariaLabel}
-        className="visually-hidden"
-        tabIndex={-1}
-        disabled={props.disabled ? true : undefined}
-        options={props.options.map(({ value, label }) => ({ value, label }))}
-      />
-    </div>
   )
 }

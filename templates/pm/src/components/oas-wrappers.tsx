@@ -11,6 +11,7 @@ export function OSelect({
   title,
   disabled,
   searchable,
+  variant,
   elRef,
 }: {
   testid: string
@@ -25,6 +26,8 @@ export function OSelect({
   disabled?: boolean
   /** 面板内搜索（成员等长列表用；>= 1000 条应改为服务端搜索） */
   searchable?: boolean
+  /** 形态：缺省 outlined / 2.6.6+ "chip"（属性面板编辑形态） */
+  variant?: string
   /** 需要程序性复位显示（如「选完即清回占位」）时由调用方持有宿主引用 */
   elRef?: React.RefObject<HTMLElement | null>
 }) {
@@ -47,6 +50,12 @@ export function OSelect({
     if (!el) return
     el.toggleAttribute('searchable', searchable ?? false)
   }, [searchable, ref])
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    el.toggleAttribute('variant', false)
+    if (variant) el.setAttribute('variant', variant)
+  }, [variant, ref])
   useEffect(() => {
     const el = ref.current
     if (!el) return
