@@ -3,7 +3,7 @@ import type { CSSProperties } from 'react'
 import { useRepositories } from '@/data/context'
 import { useObservable } from '@/data/use-observable'
 import { t, priorityLabel } from '@/i18n'
-import { ISSUE_PRIORITIES, type WorkflowState } from '@/types'
+import { ISSUE_PRIORITIES, type WorkflowState, type Project } from '@/types'
 import { AVATAR_PALETTE } from '@/lib/colors'
 import { DEFAULT_LABELS } from '@/lib/labels'
 import type { AdminTab } from './AdminView'
@@ -122,32 +122,150 @@ function LabelPanel() {
 /** 工作流状态管理：列表（色点/名称/类别/排序）+ 新建/编辑/删除（含引用迁移与类别末位保护）。
  *  状态为工作区级一套（repo 语义），编辑即时落库，全站看板/筛选/抽屉实时跟随 */
 function WorkflowPanel() {
-  const { workflowStates } = useRepositories()
-  const states = useObservable(() => workflowStates.live('workspace'), [workflowStates])
+  const { workflowStates, workflows, projects } = useRepositories()
+  const wfList = useObservable(() => workflows.live(), [workflows])
+  const projList = useObservable(() => projects.liveAll(), [projects])
+  const [selectedWfId, setSelectedWfId] = useState<string | null>(null)
+  const wf = (wfList ?? []).find((w) => w.id === (selectedWfId ?? 'wf-default')) ?? (wfList ?? [])[0]
+  const states = useObservable(
+    () => workflowStates.liveByWorkflow(wf?.id ?? 'wf-default'),
+    [workflowStates, wf?.id],
+  )
   const rows = useMemo(() => [...(states ?? [])].sort((a, b) => a.order - b.order), [states])
   const [editingId, setEditingId] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
+  const [addingWf, setAddingWf] = useState(false)
+  const projName = (pid: string | null) => projList?.find((p) => p.id === pid)?.name ?? ''
+  // 选中工作流被删除后回落默认
+  useEffect(() => {
+    if (wfList && wfList.length > 0 && !wfList.some((w) => w.id === selectedWfId)) {
+      setSelectedWfId('wf-default')
+    }
+  }, [wfList, selectedWfId])
 
   return (
     <div className="admin-panel" data-testid="admin-config-workflow">
       <p className="admin-panel-title">{t('adminCfgWorkflow')}</p>
-      <div className="wf-rows" data-testid="admin-workflow-rows">
-        {rows.map((s) =>
-          editingId === s.id ? (
-            <WorkflowRowForm key={s.id} initial={s} rows={rows} onDone={() => setEditingId(null)} />
-          ) : (
-            <WorkflowRow key={s.id} state={s} rows={rows} onEdit={() => setEditingId(s.id)} />
-          ),
-        )}
+      {/* 工作流选择条：默认 / 已绑定项目 / 闲置 */}
+      <div className="wf-tabs" data-testid="admin-workflow-tabs">
+        {(wfList ?? []).map((w) => (
+          <button
+            key={w.id}
+            type="button"
+            className={`wf-tab${wf?.id === w.id ? ' is-on' : ''}`}
+            onClick={() => setSelectedWfId(w.id)}
+          >
+            <span>{w.name}</span>
+            <span className="wf-tag">
+              {w.projectId == null ? t('adminCfgWfDefault') : projName(w.projectId) || '…'}
+            </span>
+          </button>
+        ))}
+        <button
+          type="button"
+          className="wf-tab wf-tab-add"
+          onClick={() => setAddingWf(true)}
+        >
+          ＋ {t('adminCfgWfNew')}
+        </button>
       </div>
-      {adding ? (
-        <WorkflowRowForm rows={rows} onDone={() => setAdding(false)} />
-      ) : (
-        <oas-button size="small" data-testid="admin-workflow-add" onClick={() => setAdding(true)}>
-          {t('adminCfgWfAdd')}
-        </oas-button>
+      {addingWf && <WorkflowCreateForm projList={projList ?? []} onDone={() => setAddingWf(false)} />}
+      {/* 选中工作流（非默认）操作：绑定信息 + 解绑 */}
+      {wf && wf.projectId != null && (
+        <div className="wf-ops-bar">
+          <span className="wf-bind-info">
+            {t('adminCfgWfBindProject')}：{projName(wf.projectId)}
+          </span>
+          <oas-button
+            size="small"
+            data-testid="admin-workflow-unbind"
+            onClick={() => void workflows.update(wf.id, { projectId: null })}
+          >
+            {t('adminCfgWfUnbind')}
+          </oas-button>
+        </div>
+      )}
+      {wf && (
+        <>
+          <div className="wf-rows" data-testid="admin-workflow-rows">
+            {rows.map((s) =>
+              editingId === s.id ? (
+                <WorkflowRowForm
+                  key={s.id}
+                  initial={s}
+                  rows={rows}
+                  workflowId={wf.id}
+                  onDone={() => setEditingId(null)}
+                />
+              ) : (
+                <WorkflowRow key={s.id} state={s} rows={rows} onEdit={() => setEditingId(s.id)} />
+              ),
+            )}
+          </div>
+          {adding ? (
+            <WorkflowRowForm rows={rows} workflowId={wf.id} onDone={() => setAdding(false)} />
+          ) : (
+            <oas-button size="small" data-testid="admin-workflow-add" onClick={() => setAdding(true)}>
+              {t('adminCfgWfAdd')}
+            </oas-button>
+          )}
+        </>
       )}
       <p className="admin-hint">{t('adminCfgWfHint')}</p>
+    </div>
+  )
+}
+
+/** 新建工作流：名称 + 绑定项目（空 = 闲置/不被任何项目使用） */
+function WorkflowCreateForm({
+  projList,
+  onDone,
+}: {
+  projList: Project[]
+  onDone: () => void
+}) {
+  const { workflows } = useRepositories()
+  const [name, setName] = useState('')
+  const [projectId, setProjectId] = useState<string | null>(null)
+  const busyRef = useRef(false)
+  const save = async () => {
+    const trimmed = name.trim()
+    if (!trimmed || busyRef.current) return
+    busyRef.current = true
+    try {
+      await workflows.create({ name: trimmed, projectId })
+      onDone()
+    } finally {
+      busyRef.current = false
+    }
+  }
+  return (
+    <div className="wf-row-form" data-testid="admin-workflow-create">
+      <oas-input
+        value={name}
+        placeholder={t('adminCfgWfNameWf')}
+        aria-label={t('adminCfgWfNameWf')}
+        onInput={(e) => setName((e.target as HTMLInputElement).value)}
+      />
+      <select
+        className="wf-cat-select"
+        aria-label={t('adminCfgWfBindProject')}
+        value={projectId ?? ''}
+        onChange={(e) => setProjectId(e.target.value || null)}
+      >
+        <option value="">{t('adminCfgWfNoProject')}</option>
+        {projList.map((p) => (
+          <option key={p.id} value={p.id}>
+            {p.name}
+          </option>
+        ))}
+      </select>
+      <oas-button size="small" type="primary" data-testid="admin-workflow-create-save" onClick={() => void save()}>
+        {t('save')}
+      </oas-button>
+      <oas-button size="small" onClick={onDone}>
+        {t('cancel')}
+      </oas-button>
     </div>
   )
 }
@@ -156,10 +274,12 @@ function WorkflowPanel() {
 function WorkflowRowForm({
   initial,
   rows,
+  workflowId,
   onDone,
 }: {
   initial?: WorkflowState
   rows: WorkflowState[]
+  workflowId?: string
   onDone: () => void
 }) {
   const { workflowStates } = useRepositories()
@@ -186,6 +306,7 @@ function WorkflowRowForm({
           name: trimmed,
           category,
           color,
+          workflowId,
           order: maxOrder + 1,
         })
       }

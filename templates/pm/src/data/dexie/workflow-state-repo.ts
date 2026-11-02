@@ -16,10 +16,10 @@ async function resolveWorkflow(db: PMDatabase, projectId: string) {
 }
 
 export function createDexieWorkflowStateRepository(db: PMDatabase): WorkflowStateRepository {
-  // 播种：空库建默认工作流 + 内置 5 态（挂默认工作流）
+  // 播种：空库建默认工作流 + 内置 5 态（挂默认工作流）。bulkPut 幂等——与 seed-db 并发不冲突
   const ensureDefaults = async () => {
-    if ((await db.workflows.count()) > 0) return
-    await db.workflows.add({ id: DEFAULT_WORKFLOW_ID, name: '默认工作流', projectId: null, order: 0 })
+    await db.workflows.bulkPut([{ id: DEFAULT_WORKFLOW_ID, name: '默认工作流', projectId: null, order: 0 }])
+    if ((await db.workflowStates.count()) > 0) return
     await db.workflowStates.bulkPut(
       DEFAULT_WORKFLOW_STATES.map((d) => ({
         ...d,
@@ -34,13 +34,25 @@ export function createDexieWorkflowStateRepository(db: PMDatabase): WorkflowStat
     if (!wf) return []
     return db.workflowStates.where('workflowId').equals(wf.id).toArray()
   }
+  // liveQuery 只读上下文：查询本身不写；播种由 void 异步触发（首次空→播种→下次 live 有数据）
+  const statesRead = async (projectId: string) => {
+    const wf = await resolveWorkflow(db, projectId)
+    if (!wf) return []
+    return db.workflowStates.where('workflowId').equals(wf.id).toArray()
+  }
   return {
     live(projectId: string) {
       void ensureDefaults()
-      return fromLiveQuery(() => statesOf(projectId))
+      return fromLiveQuery(() => statesRead(projectId))
     },
     async all(projectId: string) {
       return statesOf(projectId)
+    },
+    liveByWorkflow(workflowId: string) {
+      void ensureDefaults()
+      return fromLiveQuery(() =>
+        db.workflowStates.where('workflowId').equals(workflowId).toArray(),
+      )
     },
     ensureDefaults: async () => ensureDefaults(),
     async create(input) {

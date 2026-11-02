@@ -2010,7 +2010,8 @@ function routeWorkflowStates(
     if (method === 'GET') {
       // 多工作流：按 projectId 解析绑定工作流（未绑定/'全部' → 默认工作流）
       ensureWorkflowStates(store)
-      const wfId = resolveWorkflowId(store, q?.get('projectId') ?? undefined)
+      const byWf = q?.get('workflowId')
+      const wfId = byWf ?? resolveWorkflowId(store, q?.get('projectId') ?? undefined)
       const rows = [...store.workflowStates]
         .filter((s) => s.workflowId === wfId)
         .sort((a, b) => a.order - b.order)

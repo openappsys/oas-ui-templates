@@ -176,6 +176,8 @@ export interface WorkflowStateRepository {
   /** projectId 语义（多工作流）：按项目解析其绑定工作流的状态；'全部'/未绑定项目 → 默认工作流 */
   live(projectId: string): Observable<WorkflowState[]>
   all(projectId: string): Promise<WorkflowState[]>
+  /** 按工作流容器列状态（Admin 多工作流管理） */
+  liveByWorkflow(workflowId: string): Observable<WorkflowState[]>
   ensureDefaults(projectId: string): Promise<void>
   create(input: {
     projectId: string

@@ -110,15 +110,17 @@ export async function seedDatabase(): Promise<void> {
     await db.projectMembers.bulkPut(agentProjectMemberRows(projects.map((p) => p.id)))
     await db.settings.put({ key: marker, value: true, updatedAt: Date.now() })
   }
-  // v17：工作流状态默认态（工作区级一套，全项目共用；管理员改坏删光后也由此兜底）
+  // v17：工作流状态默认态（工作区级一套，全项目共用；管理员改坏删光后也由此兜底）。
+  // workflows 表同步幂等播种——与 repo 层 ensureDefaults 并发执行时 bulkPut 不冲突
   const ensureWorkflowStates = async () => {
+    await db.workflows.bulkPut([{ id: 'wf-default', name: '默认工作流', projectId: null, order: 0 }])
     if ((await db.workflowStates.count()) > 0) return
     await db.workflowStates.bulkPut(
       DEFAULT_WORKFLOW_STATES.map((s) => ({
-    ...s,
-    projectId: 'workspace',
-    workflowId: 'wf-default',
-  })),
+        ...s,
+        projectId: 'workspace',
+        workflowId: 'wf-default',
+      })),
     )
   }
   // v17b：里程碑示例（旧库升级补播——空表才播，不覆盖用户数据）。
@@ -395,10 +397,10 @@ export async function seedDatabase(): Promise<void> {
   // v17：工作流状态默认态（每项目一套内置五态）+ 示例里程碑（project-1 两条）
   await db.workflowStates.bulkPut(
     DEFAULT_WORKFLOW_STATES.map((s) => ({
-    ...s,
-    projectId: 'workspace',
-    workflowId: 'wf-default',
-  })),
+      ...s,
+      projectId: 'workspace',
+      workflowId: 'wf-default',
+    })),
   )
   await db.milestones.bulkPut([
     {

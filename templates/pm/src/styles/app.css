@@ -2403,6 +2403,49 @@ oas-drawer::part(close):focus-visible {
 }
 
 /* ===== 管理卡：工作流状态（Admin 配置页签） ===== */
+.wf-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.wf-tab {
+  appearance: none;
+  border: 1px solid var(--oas-color-border, #d4d4d8);
+  background: var(--oas-color-bg, #f8fafc);
+  color: var(--oas-color-text-primary, #18181b);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.wf-tab.is-on {
+  border-color: var(--oas-color-primary, #0b6cff);
+  color: var(--oas-color-primary, #0b6cff);
+  font-weight: 600;
+}
+.wf-tab-add {
+  border-style: dashed;
+  color: var(--oas-color-text-secondary, #71717a);
+}
+.wf-tag {
+  font-size: 11px;
+  color: var(--oas-color-text-secondary, #71717a);
+  border-left: 1px solid var(--oas-color-border, #d4d4d8);
+  padding-left: 6px;
+}
+.wf-ops-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 12px;
+  color: var(--oas-color-text-secondary, #71717a);
+}
 .wf-rows {
   display: flex;
   flex-direction: column;

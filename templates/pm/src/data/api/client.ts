@@ -696,6 +696,12 @@ export function createApiRepositories(options: ApiClientOptions = {}): Repositor
 const workflowStatesRepo: WorkflowStateRepository = {
     all: async (projectId: string) =>
       asItems<WorkflowState>(await send('GET', '/api/workflow-states', buildQuery({ projectId }))),
+    liveByWorkflow: (workflowId: string) =>
+      live(async () =>
+        asItems<WorkflowState>(
+          await send('GET', '/api/workflow-states', buildQuery({ workflowId })),
+        ),
+      ),
     live: (projectId: string) =>
       live(async () =>
         asItems<WorkflowState>(
