@@ -12,10 +12,10 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@oas-ui/icons": "^2.6.5",
-    "@oas-ui/i18n": "^2.6.5",
-    "@oas-ui/theme": "^2.6.5",
-    "@oas-ui/ui": "^2.6.5",
+    "@oas-ui/icons": "^2.6.6",
+    "@oas-ui/i18n": "^2.6.6",
+    "@oas-ui/theme": "^2.6.6",
+    "@oas-ui/ui": "^2.6.6",
     "dexie": "^4.4.6",
     "nanoid": "^6.0.2",
     "react": "^19.3.1",
