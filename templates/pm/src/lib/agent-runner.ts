@@ -62,8 +62,9 @@ async function executeRun(ctx: SchedulerCtx, issue: Issue, agentId: string): Pro
 
   // 重新读取最新行：调度触发到执行之间 Issue 可能已被改
   const fresh = await repos.issues.get(issue.id)
-  // 工作流状态集（工作区级）：agent 推进目标/终态判定按「类别」而非具体状态 id——自定义状态同样适用
-  const states = await repos.workflowStates.all('workspace')
+  // 工作流状态集（按 issue 所在项目的工作流解析）：agent 推进目标/终态判定
+  // 按「类别」而非具体状态 id——自定义状态同样适用
+  const states = await repos.workflowStates.all(issue.projectId)
   const doneOrCancelled = new Set(
     states.filter((s) => s.category === 'done' || s.category === 'cancelled').map((s) => s.id),
   )

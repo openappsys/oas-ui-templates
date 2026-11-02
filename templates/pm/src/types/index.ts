@@ -236,7 +236,20 @@ export interface Milestone {
   createdAt: number
 }
 
+/** 工作流（状态容器）：多工作流支持——不同项目可绑不同工作流
+ *  projectId: null = 默认工作流（未绑定项目与跨项目「全部」视图使用）；一个项目至多绑一个工作流 */
+export interface Workflow {
+  id: string
+  name: string
+  /** 绑定项目 id；null = 默认工作流 */
+  projectId: string | null
+  order: number
+}
+
 export interface WorkflowState {
+  /** 归属工作流（多工作流：状态挂在工作流容器下） */
+  workflowId: string
+
   id: string
   projectId: string
   /** 展示名 */

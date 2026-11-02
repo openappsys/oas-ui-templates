@@ -36,6 +36,7 @@ import {
   type SavedView,
   type Milestone,
   type WorkflowState,
+  type Workflow,
   type Worklog,
 } from '../../types/index.ts'
 import { demoSavedViewRows } from '../../lib/saved-views.ts'
@@ -64,6 +65,7 @@ export interface SeedTables {
   projectMembers: ProjectMember[]
   milestones: Milestone[]
   workflowStates: WorkflowState[]
+  workflows: Workflow[]
   worklogs: Worklog[]
 }
 
@@ -393,7 +395,12 @@ function buildSeed(seed: number, now: number): SeedTables {
         createdAt: now,
       },
     ],
-    workflowStates: DEFAULT_WORKFLOW_STATES.map((s) => ({ ...s, projectId: 'workspace' })),
+    workflowStates: DEFAULT_WORKFLOW_STATES.map((s) => ({
+      ...s,
+      projectId: 'workspace',
+      workflowId: 'wf-default',
+    })),
+    workflows: [{ id: 'wf-default', name: '默认工作流', projectId: null, order: 0 }],
     worklogs: [],
     projectRoles: [],
     projectMembers: [
@@ -1044,11 +1051,19 @@ function importEnvelope(store: MockStore, raw: unknown): void {
     projectMembers: rows('projectMembers') as ProjectMember[],
     milestones: rows('milestones') as Milestone[],
     workflowStates: rows('workflowStates') as WorkflowState[],
+    workflows: ((rows('workflows') as Workflow[]).length > 0 ? rows('workflows') : []) as Workflow[],
     worklogs: rows('worklogs') as Worklog[],
   })
-  // 旧备份不含工作流状态：补一套内置态，避免看板/抽屉空列
+  // 旧备份不含工作流状态：补一套内置态（挂默认工作流），避免看板/抽屉空列
   if (next.workflowStates.length === 0) {
-    next.workflowStates = DEFAULT_WORKFLOW_STATES.map((s) => ({ ...s, projectId: 'workspace' }))
+    ensureWorkflowStates(store as unknown as MockStore)
+    next.workflowStates = store.workflowStates
+    next.workflows = store.workflows
+  }
+  // 旧备份不含 workflows：补默认工作流并把旧状态挂入
+  if (!next.workflows || next.workflows.length === 0) {
+    next.workflows = [{ id: 'wf-default', name: '默认工作流', projectId: null, order: 0 }]
+    for (const s of next.workflowStates) if (!s.workflowId) s.workflowId = 'wf-default'
   }
   // v9 备份不含角色：补内置角色，避免成员角色指向不存在的行
   if (next.roles.length === 0) {
@@ -1086,7 +1101,12 @@ function wipeStore(store: MockStore, keepMemberId?: string): void {
   store.projectMembers = []
   store.milestones = []
   store.worklogs = []
-  store.workflowStates = DEFAULT_WORKFLOW_STATES.map((s) => ({ ...s, projectId: 'workspace' }))
+  store.workflowStates = DEFAULT_WORKFLOW_STATES.map((s) => ({
+    ...s,
+    projectId: 'workspace',
+    workflowId: 'wf-default',
+  }))
+  store.workflows = [{ id: 'wf-default', name: '默认工作流', projectId: null, order: 0 }]
 }
 
 function globalStats(store: MockStore) {
@@ -1826,9 +1846,72 @@ function routeSavedViews(
 /** 迭代：GET 列表（projectId 省略或 __all__ = 跨项目）/ POST / PATCH / DELETE。
  *  删除时不删 Issue，只把归属清空（与 Dexie 实现一致） */
 function ensureWorkflowStates(store: MockStore): void {
-  if (store.workflowStates.length > 0) return
-  for (const s of DEFAULT_WORKFLOW_STATES)
-    store.workflowStates.push({ ...s, projectId: 'workspace' })
+  // 多工作流：导入旧备份（无 workflows）时补默认工作流并把旧状态挂入
+  if (!store.workflows) store.workflows = []
+  if (store.workflows.length === 0) {
+    store.workflows.push({ id: 'wf-default', name: '默认工作流', projectId: null, order: 0 })
+    for (const s of store.workflowStates) if (!s.workflowId) s.workflowId = 'wf-default'
+  }
+  if (store.workflowStates.length === 0) {
+    for (const s of DEFAULT_WORKFLOW_STATES)
+      store.workflowStates.push({ ...s, projectId: 'workspace', workflowId: 'wf-default' })
+  }
+}
+
+/** 按 projectId 解析工作流：'全部'/未绑定 → 默认（projectId: null）；否则绑定记录，未命中回落默认 */
+function resolveWorkflowId(store: MockStore, projectId: string | undefined): string {
+  const all = store.workflows ?? []
+  const bound = projectId && projectId !== '__all__' ? all.find((w) => w.projectId === projectId) : undefined
+  return (bound ?? all.find((w) => w.projectId === null) ?? bound)?.id ?? 'wf-default'
+}
+
+function routeWorkflows(
+  store: MockStore,
+  method: string,
+  second: string | undefined,
+  body: unknown,
+): ApiResponse {
+  ensureWorkflowStates(store)
+  if (!second) {
+    if (method === 'GET') {
+      return ok({ items: [...store.workflows].sort((a, b) => a.order - b.order) })
+    }
+    if (method === 'POST') {
+      const input = asRecord(body)
+      const projectId = (input.projectId as string | null) ?? null
+      if (projectId != null && store.workflows.some((w) => w.projectId === projectId))
+        fail(409, '项目已绑定工作流')
+      const wf: Workflow = {
+        id: nextId(store, 'wf'),
+        name: String(input.name ?? ''),
+        projectId,
+        order: Number(input.order ?? store.workflows.length),
+      }
+      store.workflows.push(wf)
+      store.revision += 1
+      return ok({ workflow: wf }, 201)
+    }
+    fail(405, 'method not allowed')
+  }
+  const wf = store.workflows.find((w) => w.id === second)
+  if (!wf) fail(404, 'workflow not found')
+  if (method === 'PATCH') {
+    const changes = asRecord(body)
+    if (changes.projectId != null && store.workflows.some((w) => w.projectId === changes.projectId && w.id !== wf.id))
+      fail(409, '项目已绑定工作流')
+    Object.assign(wf, changes)
+    store.revision += 1
+    return ok({ ok: true })
+  }
+  if (method === 'DELETE') {
+    if (wf.id === 'wf-default') fail(400, '默认工作流不可删除')
+    if (wf.projectId != null) fail(400, '工作流仍绑定项目，先解绑')
+    store.workflows = store.workflows.filter((w) => w.id !== wf.id)
+    store.workflowStates = store.workflowStates.filter((s) => s.workflowId !== wf.id)
+    store.revision += 1
+    return ok({ ok: true })
+  }
+  fail(405, 'method not allowed')
 }
 
 function worklogMinutes(store: MockStore, projectId: string) {
@@ -1921,12 +2004,16 @@ function routeWorkflowStates(
   second: string | undefined,
   third: string | undefined,
   body: unknown,
+  q?: URLSearchParams,
 ): ApiResponse {
   if (!second) {
     if (method === 'GET') {
-      // 工作区级一套：全量返回（order 升序）；空表先播种内置态
+      // 多工作流：按 projectId 解析绑定工作流（未绑定/'全部' → 默认工作流）
       ensureWorkflowStates(store)
-      const rows = [...store.workflowStates].sort((a, b) => a.order - b.order)
+      const wfId = resolveWorkflowId(store, q?.get('projectId') ?? undefined)
+      const rows = [...store.workflowStates]
+        .filter((s) => s.workflowId === wfId)
+        .sort((a, b) => a.order - b.order)
       return ok({ items: rows })
     }
     if (method === 'POST') {
@@ -1935,6 +2022,8 @@ function routeWorkflowStates(
       const state: WorkflowState = {
         id: nextId(store, 'state'),
         projectId: 'workspace',
+        workflowId:
+          (input.workflowId as string | undefined) ?? resolveWorkflowId(store, input.projectId as string | undefined),
         name: String(input.name ?? ''),
         category: (input.category ?? 'todo') as WorkflowState['category'],
         ...(typeof input.color === 'string' ? { color: input.color } : {}),
@@ -2410,7 +2499,9 @@ function route(store: MockStore, req: ApiRequest, member: Member | null): ApiRes
     case 'milestones':
       return routeMilestones(store, method, second, q, req.body)
     case 'workflow-states':
-      return routeWorkflowStates(store, method, second, third, req.body)
+      return routeWorkflowStates(store, method, second, third, req.body, q)
+    case 'workflows':
+      return routeWorkflows(store, method, second, req.body)
     case 'worklogs':
       return routeWorklogs(store, method, second)
     case 'worklog-minutes':

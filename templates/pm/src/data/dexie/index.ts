@@ -14,6 +14,7 @@ import { createDexieAdminRepository } from './admin-repo'
 import { createDexieRoleRepository } from './role-repo'
 import { createDexieMilestoneRepository } from './milestone-repo'
 import { createDexieWorkflowStateRepository } from './workflow-state-repo'
+import { createDexieWorkflowRepository } from './workflow-repo'
 import { createDexieWorklogRepository } from './worklog-repo'
 import {
   createDexieAuditRepository,
@@ -39,6 +40,7 @@ export function createDexieRepositories(database: PMDatabase): Repositories {
     admin: createDexieAdminRepository(database),
     milestones: createDexieMilestoneRepository(database),
     workflowStates: createDexieWorkflowStateRepository(database),
+    workflows: createDexieWorkflowRepository(database),
     worklogs: createDexieWorklogRepository(database),
   }
 }

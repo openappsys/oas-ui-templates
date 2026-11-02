@@ -15,6 +15,7 @@ import type {
   SavedView,
   Milestone,
   WorkflowState,
+  Workflow,
   Worklog,
 } from '@/types'
 import { ApiError, errorMessage } from './errors'
@@ -42,6 +43,7 @@ import type {
   ProjectRepository,
   Repositories,
   RoleRepository,
+  WorkflowRepository,
   WorkflowStateRepository,
   WorklogRepository,
   AuditRepository,
@@ -673,7 +675,25 @@ export function createApiRepositories(options: ApiClientOptions = {}): Repositor
     },
   }
 
-  const workflowStatesRepo: WorkflowStateRepository = {
+  const workflowsRepo: WorkflowRepository = {
+  all: async () => asItems<Workflow>(await send('GET', '/api/workflows')),
+  live: () => live(async () => asItems<Workflow>(await send('GET', '/api/workflows'))),
+  create: async (input) => {
+    const body = await send<{ workflow: Workflow }>('POST', '/api/workflows', undefined, input)
+    poke()
+    return body.workflow
+  },
+  update: async (id, changes) => {
+    await send('PATCH', `/api/workflows/${encodeURIComponent(id)}`, undefined, changes)
+    poke()
+  },
+  remove: async (id) => {
+    await send('DELETE', `/api/workflows/${encodeURIComponent(id)}`)
+    poke()
+  },
+}
+
+const workflowStatesRepo: WorkflowStateRepository = {
     all: async (projectId: string) =>
       asItems<WorkflowState>(await send('GET', '/api/workflow-states', buildQuery({ projectId }))),
     live: (projectId: string) =>
@@ -768,6 +788,7 @@ export function createApiRepositories(options: ApiClientOptions = {}): Repositor
     admin,
     milestones: milestonesRepo,
     workflowStates: workflowStatesRepo,
+    workflows: workflowsRepo,
     worklogs: worklogsRepo,
   }
 }

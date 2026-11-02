@@ -16,7 +16,11 @@ export function useWorkflowStates(projectId: string): WorkflowStates {
     [repos.workflowStates, projectId],
   )
   if (!value || value.length === 0) {
-    return DEFAULT_WORKFLOW_STATES.map((s) => ({ ...s, projectId }))
+    return DEFAULT_WORKFLOW_STATES.map((s) => ({
+      ...s,
+      projectId,
+      workflowId: 'wf-default',
+    }))
   }
   return [...value].sort((a, b) => a.order - b.order)
 }

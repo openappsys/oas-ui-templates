@@ -24,6 +24,7 @@ export function createDexieAdminRepository(db: PMDatabase): AdminRepository {
     db.projectMembers,
     db.milestones,
     db.workflowStates,
+    db.workflows,
     db.worklogs,
   ]
   /** 清空业务数据，但保留内置角色与当前管理员——否则清空后无法再进入设置恢复备份 */
@@ -229,14 +230,18 @@ export function createDexieAdminRepository(db: PMDatabase): AdminRepository {
         if ((await db.roles.count()) === 0) {
           for (const role of BUILTIN_ROLES) await db.roles.put(role)
         }
-        // 旧备份不含工作流状态：按项目补默认态，避免看板/抽屉空列
+        // v17 起状态挂工作流容器：旧备份无 workflows → 建默认工作流并把状态挂入
+        if ((await db.workflows.count()) === 0) {
+          await db.workflows.add({ id: 'wf-default', name: '默认工作流', projectId: null, order: 0 })
+        }
         if ((await db.workflowStates.count()) === 0) {
-          const projectIds = new Set((await db.issues.toArray()).map((i) => i.projectId))
-          for (const pid of projectIds) {
-            await db.workflowStates.bulkPut(
-              DEFAULT_WORKFLOW_STATES.map((s) => ({ ...s, projectId: pid })),
-            )
-          }
+          await db.workflowStates.bulkPut(
+            DEFAULT_WORKFLOW_STATES.map((s) => ({
+              ...s,
+              projectId: 'workspace',
+              workflowId: 'wf-default',
+            })),
+          )
         }
       })
     },

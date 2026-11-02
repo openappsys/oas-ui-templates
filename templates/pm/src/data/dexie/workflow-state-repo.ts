@@ -5,32 +5,58 @@ import type { PMDatabase } from '@/db/schema'
 import { fromLiveQuery } from '@/data/observable'
 import { DEFAULT_WORKFLOW_STATES } from '@/lib/workflow'
 
+/** 默认工作流 id：v17 迁移与空库播种共用（跨版本稳定） */
+export const DEFAULT_WORKFLOW_ID = 'wf-default'
+
+/** 按 projectId 解析工作流：ALL_PROJECTS/未绑定 → 默认工作流；否则找绑定记录，未命中回落默认 */
+async function resolveWorkflow(db: PMDatabase, projectId: string) {
+  const all = await db.workflows.toArray()
+  const bound = projectId === '' || projectId === '__all__' ? undefined : all.find((w) => w.projectId === projectId)
+  return bound ?? all.find((w) => w.projectId === null) ?? bound
+}
+
 export function createDexieWorkflowStateRepository(db: PMDatabase): WorkflowStateRepository {
-  // 工作区级一套（id 全局唯一，无 per-project 冲突）；projectId 入参保留接口兼容
-  const ensureDefaults = async (_projectId: string) => {
-    if ((await db.workflowStates.count()) > 0) return
+  // 播种：空库建默认工作流 + 内置 5 态（挂默认工作流）
+  const ensureDefaults = async () => {
+    if ((await db.workflows.count()) > 0) return
+    await db.workflows.add({ id: DEFAULT_WORKFLOW_ID, name: '默认工作流', projectId: null, order: 0 })
     await db.workflowStates.bulkPut(
-      DEFAULT_WORKFLOW_STATES.map((d) => ({ ...d, projectId: 'workspace' })),
+      DEFAULT_WORKFLOW_STATES.map((d) => ({
+        ...d,
+        projectId: 'workspace',
+        workflowId: DEFAULT_WORKFLOW_ID,
+      })),
     )
   }
+  const statesOf = async (projectId: string) => {
+    await ensureDefaults()
+    const wf = await resolveWorkflow(db, projectId)
+    if (!wf) return []
+    return db.workflowStates.where('workflowId').equals(wf.id).toArray()
+  }
   return {
-    live(_projectId: string) {
-      // 首次进入无数据时同步播种一次（live 本身保持纯 Observable，不 await）
-      void ensureDefaults('')
-      return fromLiveQuery(() => db.workflowStates.toArray())
+    live(projectId: string) {
+      void ensureDefaults()
+      return fromLiveQuery(() => statesOf(projectId))
     },
-    async all(_projectId: string) {
-      await ensureDefaults('')
-      return db.workflowStates.toArray()
+    async all(projectId: string) {
+      return statesOf(projectId)
     },
-    ensureDefaults,
+    ensureDefaults: async () => ensureDefaults(),
     async create(input) {
+      await ensureDefaults()
+      const wf =
+        input.workflowId != null
+          ? await db.workflows.get(input.workflowId)
+          : await resolveWorkflow(db, input.projectId)
+      if (!wf) throw new Error('workflow not found')
       const state: WorkflowState = {
         id: nanoid(),
         order: Date.now(),
         color: undefined,
         ...input,
-        // 状态是工作区级：create 传入的 projectId 一律不落库
+        workflowId: wf.id,
+        // 状态归属工作流：projectId 入参仅为接口兼容，不落语义
         projectId: 'workspace',
       }
       await db.workflowStates.add(state)

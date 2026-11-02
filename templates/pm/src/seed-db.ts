@@ -114,7 +114,11 @@ export async function seedDatabase(): Promise<void> {
   const ensureWorkflowStates = async () => {
     if ((await db.workflowStates.count()) > 0) return
     await db.workflowStates.bulkPut(
-      DEFAULT_WORKFLOW_STATES.map((s) => ({ ...s, projectId: 'workspace' })),
+      DEFAULT_WORKFLOW_STATES.map((s) => ({
+    ...s,
+    projectId: 'workspace',
+    workflowId: 'wf-default',
+  })),
     )
   }
   // v17b：里程碑示例（旧库升级补播——空表才播，不覆盖用户数据）。
@@ -390,7 +394,11 @@ export async function seedDatabase(): Promise<void> {
   await db.savedViews.bulkPut(demoSavedViewRows(now))
   // v17：工作流状态默认态（每项目一套内置五态）+ 示例里程碑（project-1 两条）
   await db.workflowStates.bulkPut(
-    DEFAULT_WORKFLOW_STATES.map((s) => ({ ...s, projectId: 'workspace' })),
+    DEFAULT_WORKFLOW_STATES.map((s) => ({
+    ...s,
+    projectId: 'workspace',
+    workflowId: 'wf-default',
+  })),
   )
   await db.milestones.bulkPut([
     {

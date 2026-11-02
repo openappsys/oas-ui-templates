@@ -7,6 +7,7 @@ import type {
   IssueStatus,
   Member,
   Milestone,
+  Workflow,
   Notification,
   Project,
   WorkflowState,
@@ -160,7 +161,19 @@ export interface MilestoneRepository {
   delete(id: string): Promise<void>
 }
 
+export interface WorkflowRepository {
+  /** 全部工作流（含默认与未绑定/闲置的） */
+  live(): Observable<Workflow[]>
+  all(): Promise<Workflow[]>
+  /** 建工作流：input.projectId 绑定项目（null = 未绑定闲置）；绑定重复时实现方拒绝 */
+  create(input: { name: string; projectId: string | null; order?: number }): Promise<Workflow>
+  update(id: string, changes: { name?: string; projectId?: string | null }): Promise<void>
+  /** 删除工作流：有绑定项目时拒绝；其状态可一并迁移到默认工作流 */
+  remove(id: string): Promise<void>
+}
+
 export interface WorkflowStateRepository {
+  /** projectId 语义（多工作流）：按项目解析其绑定工作流的状态；'全部'/未绑定项目 → 默认工作流 */
   live(projectId: string): Observable<WorkflowState[]>
   all(projectId: string): Promise<WorkflowState[]>
   ensureDefaults(projectId: string): Promise<void>
@@ -169,6 +182,8 @@ export interface WorkflowStateRepository {
     name: string
     category: WorkflowState['category']
     color?: string
+    /** 归属工作流（多工作流）；缺省 = 默认工作流 */
+    workflowId?: string
     /** 排序值；缺省 = 追加到末尾（实现方取当前时间） */
     order?: number
   }): Promise<WorkflowState>
@@ -315,7 +330,9 @@ export interface ProjectMemberRepository {
 }
 
 export interface Repositories {
+  /** 多工作流容器（v17）：一个项目至多绑一个工作流；null = 默认工作流 */
   milestones: MilestoneRepository
+  workflows: WorkflowRepository
   workflowStates: WorkflowStateRepository
   worklogs: WorklogRepository
   issues: IssueRepository
