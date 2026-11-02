@@ -1551,6 +1551,10 @@ export function IssueDetailDrawer({
 }
 
 /** Linear 式字段编辑：chip（色点+值）→ 自绘菜单（色点选项+勾选+键盘）。
+ *  为什么不用 oas-popover（2.6.6 复查结论）：字段位于抽屉顶部、菜单向下展开
+ *  空间充足（无裁切/翻转需求）；popover 的 manual+open 受控与组件内部
+ *  escape/outside 关闭存在三方状态同步成本；键盘选择/外点关闭自绘已完备。
+ *  若未来字段移到抽屉底部或需要 portal，再评估迁移。
  *  视觉换 chip，数据通道仍是隐藏 oas-select（tabIndex=-1）——e2e/表单语义零改动 */
 function FieldChip(props: {
   testid: string

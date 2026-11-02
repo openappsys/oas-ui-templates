@@ -281,7 +281,8 @@ function WorkflowRow({
   const doRemove = async () => {
     const target = migrateTo ?? rows.filter((s) => s.id !== state.id)[0]?.id
     if (!target) return
-    // 引用迁移先行（该状态下的 Issue 批量转到目标态），再删状态
+    // 引用迁移先行（该状态下的 Issue 批量转到目标态），再删状态。
+    // 属业务层数据一致性（跨 workflowStates/issues 两实体），非组件库职责——保留自实现
     await workflowStates.migrateStatus(state.id, target)
     await workflowStates.delete(state.id)
     setConfirming(false)
