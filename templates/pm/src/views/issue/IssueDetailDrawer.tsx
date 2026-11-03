@@ -963,7 +963,7 @@ export function IssueDetailDrawer({
     // no-esc-close：禁用组件库 overlay-stack 的 Esc 关闭（它 stopImmediatePropagation
     // 斩断一切后续监听，编辑框内按 Esc 会直接关抽屉、无法取消编辑）。抽屉的 Esc 关闭
     // 收敛到 lib/keyboard 单通道——onKey 尊重 defaultPrevented，编辑态先取消再挡关闭
-    <oas-drawer ref={drawerRef} no-footer no-esc-close width="420px" data-testid="detail-drawer">
+    <oas-drawer ref={drawerRef} no-footer no-esc-close width="560px" data-testid="detail-drawer">
       <div className="detail-body">
         {titleEditing && canEdit ? (
           <oas-input
