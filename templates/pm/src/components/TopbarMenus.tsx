@@ -88,7 +88,8 @@ export function SettingsMenu({
         {`${t('adminTheme')}: ${themeLabel}`}
       </oas-dropdown-item>
       <oas-dropdown-item value="lang" kind="action" icon="language" data-testid="lang-toggle">
-        {`${t('adminLanguage')}: ${lang === 'zh' ? '中文' : 'English'}`}
+        {/* 显示切换目标而非当前语言（当前 en → 点这里切回中文）：纯「当前值」展示对二态开关有歧义 */}
+        {`${t('adminLanguage')}: ${lang === 'zh' ? 'English' : '中文'}`}
       </oas-dropdown-item>
       <oas-dropdown-divider />
       <oas-dropdown-group label={t('filterPlacement')} data-testid="filters-placement">

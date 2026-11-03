@@ -75,7 +75,8 @@ test('L2 切换英文：文案变英文 + localStorage 持久化 + reload 保持
   await expect(page.getByTestId('pm-toolbar')).toBeVisible({ timeout: 10_000 })
   await toggleLang(page)
   await openSettings(page)
-  await expect(settingsAction(page, /语言|Language/)).toContainText('English')
+  // 语言开关显示切换目标：切到英文后菜单项应提示「中文」（点这里切回）
+  await expect(settingsAction(page, /语言|Language/)).toContainText('中文')
   await closeSettings(page)
   await expect(page.getByTestId('view-seg')).toHaveAttribute('items', /List/)
   await expect.poll(() => viewSegTabLabels(page)).toContain('List')
