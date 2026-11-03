@@ -48,6 +48,11 @@ export function ScheduleView({
   const { issues: issuesRepo } = useRepositories()
   const calRef = useRef<SchedulerElement>(null)
   const [reinject, setReinject] = useState(0)
+  // 月视图点日期/+N 条（oas-day-click）→ 切 day 视图并锚到该日（page-show-date 受控）；
+  // 组件内置视图切换器（oas-view-change，含用户自写的 attribute 同步）全量镜像，
+  // 防 React 重渲染（事件注入/拒绝回弹）用陈旧 state 覆写 attribute 把组件弹回旧视图
+  const [view, setView] = useState('month')
+  const [dayDate, setDayDate] = useState('')
   // 上次注入的 events 原样（回声判等）与签名（跳过冗余注入）；deny 回弹时清签名强制重写
   const injectedRef = useRef<ScheduleEvent[]>([])
   const sigGuard = useRef('')
@@ -120,9 +125,27 @@ export function ScheduleView({
     }
     el.addEventListener('oas-event-click', onClick)
     el.addEventListener('oas-events-change', onEventsChange)
+    // 月视图点日期数字/空白格/+N 条 → oas-day-click：切 day 视图锚到该日；
+    // 内置视图切换器点「月」回月视图（受控宿主同步属性并清锚点，页锚停留在用户浏览到的日期）
+    const onDayClick = (e: Event) => {
+      const d = (e as CustomEvent<{ date?: string }>).detail
+      if (!d?.date) return
+      setDayDate(d.date)
+      setView('day')
+    }
+    const onViewChange = (e: Event) => {
+      const v = (e as CustomEvent<{ view?: string }>).detail?.view
+      if (!v) return
+      setView(v)
+      if (v !== 'day') setDayDate('')
+    }
+    el.addEventListener('oas-day-click', onDayClick)
+    el.addEventListener('oas-view-change', onViewChange)
     return () => {
       el.removeEventListener('oas-event-click', onClick)
       el.removeEventListener('oas-events-change', onEventsChange)
+      el.removeEventListener('oas-day-click', onDayClick)
+      el.removeEventListener('oas-view-change', onViewChange)
     }
   }, [issuesRepo, events])
 
@@ -159,7 +182,8 @@ export function ScheduleView({
       <oas-scheduler
         ref={calRef}
         data-testid="schedule-gantt"
-        view="month"
+        view={view}
+        page-show-date={dayDate || undefined}
         locale={locale}
         start-hour="8"
         end-hour="19"

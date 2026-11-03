@@ -626,3 +626,29 @@ test('S9 day 视图：内部按钮切换 + 精确时刻事件在轴', async ({ p
   })
   expect(hasPrecise).toBe(true)
 })
+
+test('S10 月视图点日期/+N 条 → day 视图锚定该日；内置「月」返回并清锚点', async ({ page }) => {
+  await waitForSeed(page)
+  await setView(page, 'schedule')
+  const gantt = page.getByTestId('schedule-gantt')
+  await expect(gantt).toBeAttached({ timeout: 10_000 })
+  await expect.poll(async () => (await sched(page)).length, { timeout: 15_000 }).toBeGreaterThan(0)
+  await expect(gantt).toHaveAttribute('view', 'month')
+
+  // 点有事件的日格「+N 条」（组件月视图 >2 事件才渲染；无则回落点日期数字）→
+  // 宿主接 oas-day-click 切 day 视图并以 page-show-date 锚到该日
+  const moreBtn = gantt.locator('button.more').first()
+  const numBtn = gantt.locator('button.num').first()
+  if (await moreBtn.count()) await moreBtn.click()
+  else await numBtn.click()
+  await expect(gantt).toHaveAttribute('view', 'day', { timeout: 5_000 })
+  const anchored = await gantt.getAttribute('page-show-date')
+  expect(anchored, 'day 视图应带 page-show-date 锚点').toMatch(/^\d{4}-\d{2}-\d{2}$/)
+  // day 视图时间轴渲染（时刻表头存在）
+  await expect(gantt.locator('[part="timeview"]')).toBeAttached({ timeout: 5_000 })
+
+  // 组件内置「月」按钮 → 宿主经 oas-view-change 同步回 month，锚点清除（页面锚停在浏览日）
+  await gantt.locator("button[data-view='month']").click()
+  await expect(gantt).toHaveAttribute('view', 'month', { timeout: 5_000 })
+  await expect(gantt).not.toHaveAttribute('page-show-date')
+})
