@@ -175,3 +175,20 @@ test('设置中心：皮肤切换写 data-skin、清 inline 主色并持久化�
   await expect(page.locator('html')).not.toHaveAttribute('data-skin')
   expect(errors).toEqual([])
 })
+
+// 回归：玻璃开关 label/hint 的 i18n key 缺失时 t() 返回原始 key 字符串（registry.translateIn 的
+// `template === undefined → return key`），UI 会直接显示 "settings.appearance.glassLabel" 这类裸 key。
+// 补 key 后必须渲染译文，且页面上不得出现裸 key 文本。
+test('设置中心：玻璃开关标签与提示渲染译文（回归：缺 key 显示裸 key）', async ({ page }) => {
+  const errors = await noConsoleErrors(page)
+  await login(page, '张伟', 'admin')
+  await page.goto('/#/settings')
+  await page.getByTestId('settings-tabs').getByText('外观', { exact: true }).click()
+  // label 精确匹配「玻璃质感」（hint 含该子串，exact 排除）
+  await expect(page.getByText('玻璃质感', { exact: true })).toBeVisible()
+  await expect(page.getByText('浮层磨砂玻璃质感（半透明 + 背景模糊）；关闭恢复实底')).toBeVisible()
+  // 裸 key 不得出现在页面
+  await expect(page.getByText('settings.appearance.glassLabel')).toHaveCount(0)
+  await expect(page.getByText('settings.appearance.glassHint')).toHaveCount(0)
+  expect(errors).toEqual([])
+})
