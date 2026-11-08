@@ -161,6 +161,8 @@ const MENU_STYLE_KEY = 'oas-admin-cdn-mpa.menu-style'
 const MENU_POSITION_KEY = 'oas-admin-cdn-mpa.menu-position'
 const MENU_STYLES = ['sidebar', 'menubar', 'navigation']
 const MENU_POSITIONS = ['left', 'right', 'top', 'top-head']
+// 侧栏手风琴（键名与 settings.js 一致；MPA 自包含，shell/settings 各自定义同键）
+const SIDEBAR_ACCORDION_KEY = 'oas-admin-cdn-mpa.sidebar-accordion'
 
 function readMenuCfg() {
   const readSafe = (key, values, fallback) => {
@@ -171,6 +173,15 @@ function readMenuCfg() {
   let position = readSafe(MENU_POSITION_KEY, MENU_POSITIONS, 'left')
   if (style === 'sidebar' && (position === 'top' || position === 'top-head')) position = 'left'
   return { style, position }
+}
+
+/** 侧栏手风琴：同组菜单互斥展开。默认开（保持现状），仅存储值 'false' 时关 */
+function readSidebarAccordion() {
+  try {
+    return localStorage.getItem(SIDEBAR_ACCORDION_KEY) !== 'false'
+  } catch {
+    return true
+  }
 }
 
 /** menubar/navigation 形态：静态侧栏替换为对应组件（位置 → sider 竖排 / 顶部条 / 头部内嵌） */
@@ -190,6 +201,8 @@ function applyNavMenu({ menuCfg, active, buildItems }) {
     nav = document.createElement('oas-navigation-menu')
     nav.setAttribute('items', buildItems('navigation', active))
   }
+  // 对齐 cdn：所有形态 #nav 恒存在（原 HTML 的 oas-sidebar#nav 被 replaceWith 移除后由本元素接管）
+  nav.setAttribute('id', 'nav')
   nav.setAttribute('orientation', horizontal ? 'horizontal' : 'vertical')
   nav.addEventListener('oas-select', (e) => {
     const value = e.detail?.value
@@ -329,7 +342,9 @@ export function initShell({ active }) {
   const menuCfg = readMenuCfg()
   if (menuCfg.style === 'sidebar') {
     nav.setAttribute('items', buildItems('sidebar'))
-    nav.setAttribute('accordion', '')
+    // HTML 里 accordion 为硬编码默认（MPA 自包含），设置关闭时须显式移除
+    if (readSidebarAccordion()) nav.setAttribute('accordion', '')
+    else nav.removeAttribute('accordion')
     nav.setAttribute('active', active)
     nav.addEventListener('oas-select', (e) => {
       const value = e.detail?.value

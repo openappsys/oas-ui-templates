@@ -464,6 +464,9 @@ export default {
   'settings.general.menuRight': '右侧',
   'settings.general.menuTop': '顶部',
   'settings.general.menuTopHead': '顶部（logo和搜索框之间）',
+  'settings.general.sidebarAccordionLabel': '侧栏手风琴',
+  'settings.general.sidebarAccordionHint':
+    '开启后侧边栏同组菜单互斥展开（点开一个收起其他）；关闭可多组同时展开',
   'settings.pageSizeItem': '{count} 条',
   'settings.fontSize.xs': '较小',
   'settings.fontSize.sm': '默认',

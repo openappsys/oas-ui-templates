@@ -467,6 +467,9 @@ export default {
   'settings.general.menuRight': 'Right',
   'settings.general.menuTop': 'Top',
   'settings.general.menuTopHead': 'Top (between logo & search)',
+  'settings.general.sidebarAccordionLabel': 'Sidebar Accordion',
+  'settings.general.sidebarAccordionHint':
+    'When on, sidebar groups expand exclusively (opening one collapses the others); off lets several stay open',
   'settings.pageSizeItem': '{count} per page',
   'settings.fontSize.xs': 'Small',
   'settings.fontSize.sm': 'Default',

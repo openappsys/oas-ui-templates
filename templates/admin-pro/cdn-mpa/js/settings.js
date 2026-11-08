@@ -26,6 +26,7 @@ const TABS_LAYOUT_KEY = 'oas-admin-cdn-mpa.settings.tabs-layout'
 const SKIN_KEY = 'oas-admin-cdn-mpa.settings.skin'
 const MENU_STYLE_KEY = 'oas-admin-cdn-mpa.menu-style'
 const MENU_POSITION_KEY = 'oas-admin-cdn-mpa.menu-position'
+const SIDEBAR_ACCORDION_KEY = 'oas-admin-cdn-mpa.sidebar-accordion'
 
 const DEFAULT_COLOR = '#0b6cff'
 const DEFAULT_RADIUS = 6
@@ -46,6 +47,15 @@ function readBool(key, fallback) {
   if (v === 'true') return true
   if (v === 'false') return false
   return fallback
+}
+
+/** 侧栏手风琴：同组菜单互斥展开。默认开（保持现状），仅存储值 'false' 时关 */
+function readSidebarAccordion() {
+  try {
+    return localStorage.getItem(SIDEBAR_ACCORDION_KEY) !== 'false'
+  } catch {
+    return true
+  }
 }
 
 function currentTheme() {
@@ -289,6 +299,15 @@ function renderSettings() {
     <div class="setting-group">
       <div class="setting-row">
         <div>
+          <div class="setting-label">${t('settings.general.sidebarAccordionLabel')}</div>
+          <div class="setting-hint">${t('settings.general.sidebarAccordionHint')}</div>
+        </div>
+        <oas-switch data-testid="sidebar-accordion-toggle"${readSidebarAccordion() ? ' checked' : ''}></oas-switch>
+      </div>
+    </div>
+    <div class="setting-group">
+      <div class="setting-row">
+        <div>
           <div class="setting-label">${t('settings.general.tabsBarLabel')}</div>
           <div class="setting-hint">${t('settings.general.tabsBarHint')}</div>
         </div>
@@ -356,6 +375,7 @@ function renderSettings() {
   const themeEditor = panels.appearance.querySelector('#settings-theme-editor')
   const matrix = panels.layout.querySelector('[data-testid="menu-matrix"]')
   const tabsBarToggle = panels.layout.querySelector('[data-testid="tabs-bar-toggle"]')
+  const accordionToggle = panels.layout.querySelector('[data-testid="sidebar-accordion-toggle"]')
   const notifMatrix = panels.notification.querySelector('#notif-matrix')
 
   // 单选组灌选项（读取已存偏好）
@@ -456,6 +476,20 @@ function renderSettings() {
     const on = Boolean(e.detail?.checked)
     localStorage.setItem(TABS_BAR_KEY, String(on))
     document.documentElement.dataset.tabsBar = on ? 'on' : 'off'
+    OASUI.message.success(t('common.saved'))
+  })
+
+  // 侧栏手风琴：写配置 + 直接增删 #nav 的 accordion 属性（oas-sidebar 运行时观察该属性，
+  // 直接改即生效）。不 reload——accordion 仅是 sidebar 属性、无需重排布局；reload 会把设置 tab
+  // 重置回「外观」（MPA 矩阵点击走 reload 是因形态/位置需重排，手风琴无此需求）。
+  accordionToggle.addEventListener('oas-change', (e) => {
+    const on = Boolean(e.detail?.checked)
+    localStorage.setItem(SIDEBAR_ACCORDION_KEY, String(on))
+    const nav = document.querySelector('#nav')
+    if (nav && nav.tagName === 'OAS-SIDEBAR') {
+      if (on) nav.setAttribute('accordion', '')
+      else nav.removeAttribute('accordion')
+    }
     OASUI.message.success(t('common.saved'))
   })
 
