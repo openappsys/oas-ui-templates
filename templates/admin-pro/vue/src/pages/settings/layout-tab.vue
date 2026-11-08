@@ -13,8 +13,10 @@ import { useSettingsStore } from '../../stores/settings'
 import {
   canPosition,
   navConfig,
+  readSidebarAccordion,
   setMenuPosition,
   setMenuStyle,
+  setSidebarAccordion,
   type MenuPosition,
   type MenuStyle,
 } from '../../layout-config'
@@ -43,11 +45,20 @@ const nav = ref(navConfig())
 // 多页签栏：Pinia settings store（动作内即时生效，$subscribe 持久化键名不变）
 const { tabsBar } = storeToRefs(useSettingsStore())
 const mode = ref<RouterMode>(routerMode())
+// 侧栏手风琴：layout-config 持久化（默认开），开关后派发 navconfig-change 让 AppShell 重读
+const accordion = ref(readSidebarAccordion())
 
 function onTabsBarChange(e: Event): void {
   const { checked } = (e as CustomEvent<{ checked: boolean }>).detail
   useSettingsStore().setTabsBar(checked)
   appMessage.success(tt('common.saved'))
+}
+
+function onAccordionChange(e: Event): void {
+  const { checked } = (e as CustomEvent<{ checked: boolean }>).detail
+  setSidebarAccordion(checked)
+  accordion.value = checked
+  window.dispatchEvent(new CustomEvent('oas:navconfig-change'))
 }
 
 function onRouterModeChange(e: Event): void {
@@ -120,6 +131,20 @@ const routerModeOptions = computed(() => {
           :aria-label="`${t(`settings.general.${s.labelKey}`)} · ${t(`settings.general.${p.labelKey}`)}`"
         />
       </template>
+    </div>
+  </div>
+  <div class="setting-group">
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">{{ t('settings.general.sidebarAccordionLabel') }}</div>
+        <div class="setting-hint">{{ t('settings.general.sidebarAccordionHint') }}</div>
+      </div>
+      <!-- checked 存在性语义（同 appearance-tab 注释） -->
+      <oas-switch
+        data-testid="sidebar-accordion-toggle"
+        :checked="accordion ? '' : null"
+        @oas-change="onAccordionChange"
+      />
     </div>
   </div>
   <div class="setting-group">

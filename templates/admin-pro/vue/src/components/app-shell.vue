@@ -5,7 +5,7 @@ import { computed, onMounted, onUnmounted, ref, watch, onWatcherCleanup } from '
 import { useRoute } from 'vue-router'
 import { useT } from '../composables/use-t'
 import { useNotifications } from '../composables/use-notifications'
-import { navConfig, type NavConfig } from '../layout-config'
+import { navConfig, readSidebarAccordion, type NavConfig } from '../layout-config'
 import { appRoutes, matchRoute } from '../router/routes'
 import CommandPalette from './command-palette.vue'
 import HeaderBar from './header-bar.vue'
@@ -54,6 +54,8 @@ function t(key: string, params?: Record<string, string | number>): string {
 }
 
 const nav = ref<NavConfig>(navConfig())
+// 手风琴互斥展开：随 navconfig-change 重读（设置中心开关写入后派发）
+const accordion = ref(readSidebarAccordion())
 const popoverOpen = ref(false)
 const commandOpen = ref(false)
 // 通知数据：badge（header-bar）与抽屉共享一份（解构出顶层 ref，模板自动解包）
@@ -62,6 +64,7 @@ const notifOpen = ref(false)
 
 function onNavConfigChange(): void {
   nav.value = navConfig()
+  accordion.value = readSidebarAccordion()
   popoverOpen.value = false
 }
 onMounted(() => window.addEventListener('oas:navconfig-change', onNavConfigChange))
@@ -144,6 +147,7 @@ watch(
             :menu-style="nav.style"
             :vertical="false"
             :active-path="activePath"
+            :accordion="accordion"
           />
         </div>
       </template>
@@ -154,6 +158,7 @@ watch(
         :menu-style="nav.style"
         :vertical="false"
         :active-path="activePath"
+        :accordion="accordion"
       />
     </div>
     <div v-if="nav.position !== 'top' && nav.position !== 'top-head'" slot="sider" class="nav-sider">
@@ -162,6 +167,7 @@ watch(
         :menu-style="nav.style"
         vertical
         :active-path="activePath"
+        :accordion="accordion"
       />
     </div>
     <div slot="content" class="content-col">
@@ -188,6 +194,7 @@ watch(
       :menu-style="nav.style"
       vertical
       :active-path="activePath"
+      :accordion="accordion"
       popover
       @navigate="popoverOpen = false"
     />

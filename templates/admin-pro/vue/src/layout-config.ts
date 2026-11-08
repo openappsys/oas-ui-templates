@@ -8,6 +8,7 @@ export const MENU_POSITIONS: MenuPosition[] = ['left', 'right', 'top', 'top-head
 const STYLE_KEY = 'oas-admin.menu-style'
 const POSITION_KEY = 'oas-admin.menu-position'
 export const SIDEBAR_COLLAPSED_KEY = 'oas-admin.sidebar-collapsed'
+export const SIDEBAR_ACCORDION_KEY = 'oas-admin.sidebar-accordion'
 
 export interface NavConfig {
   style: MenuStyle
@@ -75,6 +76,23 @@ export function readSidebarCollapsed(): boolean {
 export function writeSidebarCollapsed(collapsed: boolean): void {
   try {
     localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(collapsed))
+  } catch {
+    /* ignore */
+  }
+}
+
+/** 侧栏手风琴：同组菜单互斥展开。默认开（保持现状），仅存储值 'false' 时关 */
+export function readSidebarAccordion(): boolean {
+  try {
+    return localStorage.getItem(SIDEBAR_ACCORDION_KEY) !== 'false'
+  } catch {
+    return true
+  }
+}
+
+export function setSidebarAccordion(on: boolean): void {
+  try {
+    localStorage.setItem(SIDEBAR_ACCORDION_KEY, String(on))
   } catch {
     /* ignore */
   }

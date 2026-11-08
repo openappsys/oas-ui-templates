@@ -14,14 +14,19 @@ import {
 } from '../layout-config'
 import { groupMenuItems, sidebarItems } from './nav-items'
 
-const props = defineProps<{
-  menuStyle: MenuStyle
-  /** 竖排（left/right 槽位）或横排（top / top-head） */
-  vertical: boolean
-  activePath: string
-  /** 浮层形态（☰ 弹出面板）：id 用 nav-popover，menubar 加 trigger="click" */
-  popover?: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    menuStyle: MenuStyle
+    /** 竖排（left/right 槽位）或横排（top / top-head） */
+    vertical: boolean
+    activePath: string
+    /** 手风琴互斥展开（由 app-shell 读 layout-config 传入，随 navconfig-change 更新） */
+    accordion?: boolean
+    /** 浮层形态（☰ 弹出面板）：id 用 nav-popover，menubar 加 trigger="click" */
+    popover?: boolean
+  }>(),
+  { accordion: true },
+)
 const emit = defineEmits<{ navigate: [] }>()
 
 const router = useRouter()
@@ -96,7 +101,7 @@ onUnmounted(() => cancelAnimationFrame(rafId))
     <oas-sidebar
       :id="id"
       ref="navEl"
-      accordion
+      :accordion="accordion ? '' : null"
       :items="sidebarJson"
       :active="activePath"
       :collapsed="collapsed ? '' : null"
