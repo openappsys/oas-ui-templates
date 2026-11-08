@@ -6,7 +6,12 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import './nav-menu.css'
 import { useOasEvent } from '../hooks/use-oas-event'
-import { readSidebarCollapsed, writeSidebarCollapsed, type MenuStyle } from '../layout-config'
+import {
+  readSidebarAccordion,
+  readSidebarCollapsed,
+  writeSidebarCollapsed,
+  type MenuStyle,
+} from '../layout-config'
 import { groupMenuItems, sidebarItems } from './nav-items'
 
 export interface NavMenuProps {
@@ -76,7 +81,7 @@ export function NavMenu({
       <oas-sidebar
         id={id}
         ref={navRef as React.Ref<HTMLElement>}
-        accordion
+        accordion={readSidebarAccordion()}
         items={JSON.stringify(sidebarItems())}
         active={activePath}
         collapsed={collapsed}

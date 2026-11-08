@@ -12,8 +12,10 @@ import { appMessage } from '../../lib/app-message'
 import {
   canPosition,
   navConfig,
+  readSidebarAccordion,
   setMenuPosition,
   setMenuStyle,
+  setSidebarAccordion,
   type MenuPosition,
   type MenuStyle,
 } from '../../layout-config'
@@ -37,14 +39,22 @@ export function LayoutTab() {
   const [nav, setNav] = useState(navConfig)
   const [tabsBar, setTabsBar] = useState(readTabsBar)
   const [mode, setMode] = useState<RouterMode>(routerMode)
+  const [accordion, setAccordion] = useState(readSidebarAccordion)
   const tabsBarRef = useRef<HTMLElement | null>(null)
   const routerModeRef = useRef<HTMLElement | null>(null)
+  const accordionRef = useRef<HTMLElement | null>(null)
 
   useOasEvent<{ checked: boolean }>(tabsBarRef, 'oas-change', (detail) => {
     localStorage.setItem(TABS_BAR_KEY, String(detail.checked))
     applySettings()
     setTabsBar(detail.checked)
     appMessage.success(t('common.saved'))
+  })
+
+  useOasEvent<{ checked: boolean }>(accordionRef, 'oas-change', (detail) => {
+    setSidebarAccordion(detail.checked)
+    setAccordion(detail.checked)
+    window.dispatchEvent(new CustomEvent('oas:navconfig-change'))
   })
 
   useOasEvent<{ value: string }>(routerModeRef, 'oas-change', (detail) => {
@@ -104,6 +114,19 @@ export function LayoutTab() {
               })}
             </Fragment>
           ))}
+        </div>
+      </div>
+      <div className="setting-group">
+        <div className="setting-row">
+          <div>
+            <div className="setting-label">{t('settings.general.sidebarAccordionLabel')}</div>
+            <div className="setting-hint">{t('settings.general.sidebarAccordionHint')}</div>
+          </div>
+          <oas-switch
+            ref={accordionRef}
+            data-testid="sidebar-accordion-toggle"
+            checked={accordion}
+          />
         </div>
       </div>
       <div className="setting-group">
