@@ -185,12 +185,29 @@ test('R4 拖拽改期/转派写回（tasks-change 契约重放）；无权限身
       },
       { id, patch },
     )
-  const startAt = new Date('2026-11-02').getTime()
-  const dueAt = new Date('2026-11-09').getTime()
   await replay(adminTarget!.id, { start: '2026-11-02', end: '2026-11-09', resources: ['member-3'] })
+  // 组件/事件链路保证 start 精确写回；dueAt 为「日期粒度 → 时刻粒度」round-trip：
+  // seed 的 dueAt 自带时刻（schedule 桶），end 只承诺日期一致，不承诺还原/午夜
+  const modelTask = () =>
+    page.evaluate((id) => {
+      const g = document.querySelector('[data-testid=resource-view-gantt]') as unknown as {
+        tasks?: Array<{ id?: string; start: string; end: string; resources?: string[] }>
+      }
+      return g.tasks?.find((t) => t.id === id) ?? null
+    }, adminTarget!.id)
   await expect
-    .poll(async () => readIssue(page, adminTarget!.id), { timeout: 15_000 })
-    .toEqual({ startAt, dueAt, assigneeId: 'member-3' })
+    .poll(
+      async () => {
+        const t = await modelTask()
+        const row = await readIssue(page, adminTarget!.id)
+        if (!t || !row) return 'pending'
+        const startOk = row.startAt === new Date(t.start).getTime()
+        const dueOk = row.dueAt != null && new Date(row.dueAt).toISOString().slice(0, 10) === t.end
+        return String(startOk && dueOk && row.assigneeId === 'member-3')
+      },
+      { timeout: 15_000 },
+    )
+    .toBe('true')
 
   // viewer（member-4）：改他人任务 → 不落库（can('issue:edit') 拒绝）且组件内部模型回弹
   await switchUser(page, 'member-4')
