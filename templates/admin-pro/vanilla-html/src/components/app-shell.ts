@@ -10,6 +10,7 @@ import { session } from '../store/session'
 import { currentLocale, onLocaleChange, setLocale, t } from '../i18n'
 import {
   navConfig,
+  readSidebarAccordion,
   readSidebarCollapsed,
   writeSidebarCollapsed,
   type MenuStyle,
@@ -108,7 +109,8 @@ function menuHTML(vertical: boolean, activePath: string): string {
     return `<oas-navigation-menu id="nav" orientation="${vertical ? 'vertical' : 'horizontal'}" items='${groupMenuItems(activePath, true)}'></oas-navigation-menu>`
   }
   const collapsed = readSidebarCollapsed()
-  return `<oas-sider id="nav-sider"><oas-sidebar id="nav" accordion items='${sidebarItems()}'${collapsed ? ' collapsed' : ''}></oas-sidebar></oas-sider>`
+  const accordion = readSidebarAccordion() ? ' accordion' : ''
+  return `<oas-sider id="nav-sider"><oas-sidebar id="nav"${accordion} items='${sidebarItems()}'${collapsed ? ' collapsed' : ''}></oas-sidebar></oas-sider>`
 }
 
 function userMenuItems(): string {

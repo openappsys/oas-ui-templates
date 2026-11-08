@@ -89,3 +89,16 @@ test('admin 菜单矩阵：菜单条顶部展开下拉并导航', async ({ page 
   await expect(page).toHaveURL(/#\/orders/)
   await expect(page.getByTestId('orders-export')).toBeVisible()
 })
+
+test('admin 侧栏手风琴：默认开（#nav 带 accordion 属性）', async ({ page }) => {
+  await login(page)
+  await expect(page.locator('#nav')).toHaveAttribute('accordion', '')
+})
+
+test('admin 侧栏手风琴：预置关闭后 #nav 不带 accordion 属性', async ({ page }) => {
+  void page.addInitScript(() => {
+    localStorage.setItem('oas-admin.sidebar-accordion', 'false')
+  })
+  await login(page)
+  await expect(page.locator('#nav')).not.toHaveAttribute('accordion')
+})
