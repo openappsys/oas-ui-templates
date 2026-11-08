@@ -207,6 +207,8 @@ function renderIssueRow(
   showCheckbox: boolean,
   isCursor: boolean,
   states?: WorkflowState[],
+  /** 行索引锚点：光标态的宿主侧同步（2.6.7 renderSig 去重后同窗口不重派 oas-item） */
+  index?: number,
 ) {
   element.textContent = ''
   element.style.display = 'block'
@@ -216,6 +218,8 @@ function renderIssueRow(
   row.className = isCursor ? 'issue-row is-cursor' : 'issue-row'
   // 行身份锚点：焦点恢复只能按 key 找回（窗口下标随数据漂移，DOM 每次重建都是新节点）
   row.dataset.key = issue.key
+  // 行索引锚点：光标态宿主侧同步用（2.6.7 renderSig 去重后同窗口不重派 oas-item）
+  if (index !== undefined) row.dataset.index = String(index)
   if (!showCheckbox) row.classList.add('no-check')
   row.setAttribute('role', 'button')
   row.setAttribute('tabindex', '0')
@@ -412,6 +416,7 @@ export function VirtualIssueList({
         renderRef.current.showCheckbox,
         d.index === renderRef.current.cursorIndex,
         renderRef.current.states,
+        d.index,
       )
     }
     el.addEventListener('oas-item', onItem)
@@ -496,7 +501,15 @@ export function VirtualIssueList({
   useEffect(() => {
     if (cursorIndex < 0) return
     const el = listRef.current as IssueListElement | null
-    el?.scrollToIndex?.(cursorIndex, { align: 'auto' })
+    if (!el) return
+    el.scrollToIndex?.(cursorIndex, { align: 'auto' })
+    // 2.6.7 起 oas-virtual-list 用 renderSig（start:end 窗口签名）去重：同位置不再重派
+    // oas-item，宿主自绘的光标态（is-cursor）因此不刷新——窗口未变时直接同步可见行 class；
+    // 窗口变化（滚动/数据更新）重发行时仍由 renderIssueRow 的 isCursor 参数绘制
+    const rows = el.shadowRoot?.querySelectorAll<HTMLElement>('.issue-row')
+    rows?.forEach((row) => {
+      row.classList.toggle('is-cursor', Number(row.dataset.index) === cursorIndex)
+    })
   }, [cursorIndex])
 
   return (

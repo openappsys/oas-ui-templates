@@ -2243,24 +2243,6 @@ oas-drawer::part(close):focus-visible {
   gap: 10px;
 }
 /* 清空全部数据：destructive 视觉降级——红边红字透明底（原实心大红块与常规操作抢眼） */
-.admin-wipe-btn {
-  appearance: none;
-  font: inherit;
-  font-size: 13px;
-  padding: 6px 14px;
-  border-radius: 8px;
-  border: 1px solid var(--oas-color-danger, #dc2626);
-  color: var(--oas-color-danger, #dc2626);
-  background: transparent;
-  cursor: pointer;
-}
-.admin-wipe-btn:hover {
-  background: color-mix(in srgb, var(--oas-color-danger, #dc2626) 8%, transparent);
-}
-.admin-wipe-btn:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
 
 /* ── 抽屉内子任务/表单布局统一 ── */
 .sub-add-row {

@@ -176,14 +176,14 @@ importers:
   templates/admin-pro/cdn:
     devDependencies:
       '@oas-ui/i18n':
-        specifier: ^2.6.6
-        version: 2.6.6
+        specifier: ^2.6.7
+        version: 2.6.7
       '@oas-ui/theme':
-        specifier: ^2.6.6
-        version: 2.6.6
+        specifier: ^2.6.7
+        version: 2.6.7
       '@oas-ui/ui':
-        specifier: ^2.6.6
-        version: 2.6.6
+        specifier: ^2.6.7
+        version: 2.6.7
       '@playwright/test':
         specifier: ^1.64.1
         version: 1.64.1
@@ -191,14 +191,14 @@ importers:
   templates/admin-pro/cdn-mpa:
     devDependencies:
       '@oas-ui/i18n':
-        specifier: ^2.6.6
-        version: 2.6.6
+        specifier: ^2.6.7
+        version: 2.6.7
       '@oas-ui/theme':
-        specifier: ^2.6.6
-        version: 2.6.6
+        specifier: ^2.6.7
+        version: 2.6.7
       '@oas-ui/ui':
-        specifier: ^2.6.6
-        version: 2.6.6
+        specifier: ^2.6.7
+        version: 2.6.7
       '@playwright/test':
         specifier: ^1.64.1
         version: 1.64.1
@@ -206,17 +206,17 @@ importers:
   templates/admin-pro/react:
     dependencies:
       '@oas-ui/i18n':
-        specifier: ^2.6.6
-        version: 2.6.6
+        specifier: ^2.6.7
+        version: 2.6.7
       '@oas-ui/icons':
-        specifier: ^2.6.6
-        version: 2.6.6
+        specifier: ^2.6.7
+        version: 2.6.7
       '@oas-ui/theme':
-        specifier: ^2.6.6
-        version: 2.6.6
+        specifier: ^2.6.7
+        version: 2.6.7
       '@oas-ui/ui':
-        specifier: ^2.6.6
-        version: 2.6.6
+        specifier: ^2.6.7
+        version: 2.6.7
       '@tanstack/react-query':
         specifier: ^5.104.2
         version: 5.104.2(react@19.3.1)
@@ -264,17 +264,17 @@ importers:
   templates/admin-pro/svelte:
     dependencies:
       '@oas-ui/i18n':
-        specifier: ^2.6.6
-        version: 2.6.6
+        specifier: ^2.6.7
+        version: 2.6.7
       '@oas-ui/icons':
-        specifier: ^2.6.6
-        version: 2.6.6
+        specifier: ^2.6.7
+        version: 2.6.7
       '@oas-ui/theme':
-        specifier: ^2.6.6
-        version: 2.6.6
+        specifier: ^2.6.7
+        version: 2.6.7
       '@oas-ui/ui':
-        specifier: ^2.6.6
-        version: 2.6.6
+        specifier: ^2.6.7
+        version: 2.6.7
       svelte:
         specifier: ^5.57.2
         version: 5.57.2
@@ -307,17 +307,17 @@ importers:
   templates/admin-pro/vanilla-html:
     dependencies:
       '@oas-ui/i18n':
-        specifier: ^2.6.6
-        version: 2.6.6
+        specifier: ^2.6.7
+        version: 2.6.7
       '@oas-ui/icons':
-        specifier: ^2.6.6
-        version: 2.6.6
+        specifier: ^2.6.7
+        version: 2.6.7
       '@oas-ui/theme':
-        specifier: ^2.6.6
-        version: 2.6.6
+        specifier: ^2.6.7
+        version: 2.6.7
       '@oas-ui/ui':
-        specifier: ^2.6.6
-        version: 2.6.6
+        specifier: ^2.6.7
+        version: 2.6.7
     devDependencies:
       '@playwright/test':
         specifier: ^1.64.1
@@ -338,17 +338,17 @@ importers:
   templates/admin-pro/vue:
     dependencies:
       '@oas-ui/i18n':
-        specifier: ^2.6.6
-        version: 2.6.6
+        specifier: ^2.6.7
+        version: 2.6.7
       '@oas-ui/icons':
-        specifier: ^2.6.6
-        version: 2.6.6
+        specifier: ^2.6.7
+        version: 2.6.7
       '@oas-ui/theme':
-        specifier: ^2.6.6
-        version: 2.6.6
+        specifier: ^2.6.7
+        version: 2.6.7
       '@oas-ui/ui':
-        specifier: ^2.6.6
-        version: 2.6.6
+        specifier: ^2.6.7
+        version: 2.6.7
       pinia:
         specifier: ^4.1.0
         version: 4.1.0(@vue/devtools-api@8.2.1)(typescript@7.1.0-beta)(vue@3.5.44(typescript@7.1.0-beta))
@@ -387,14 +387,14 @@ importers:
   templates/desktop:
     dependencies:
       '@oas-ui/icons':
-        specifier: ^2.6.6
-        version: 2.6.6
+        specifier: ^2.6.7
+        version: 2.6.7
       '@oas-ui/theme':
-        specifier: ^2.6.6
-        version: 2.6.6
+        specifier: ^2.6.7
+        version: 2.6.7
       '@oas-ui/ui':
-        specifier: ^2.6.6
-        version: 2.6.6
+        specifier: ^2.6.7
+        version: 2.6.7
     devDependencies:
       '@playwright/test':
         specifier: ^1.64.1
@@ -412,17 +412,17 @@ importers:
   templates/mobile-h5:
     dependencies:
       '@oas-ui/i18n':
-        specifier: ^2.6.6
-        version: 2.6.6
+        specifier: ^2.6.7
+        version: 2.6.7
       '@oas-ui/icons':
-        specifier: ^2.6.6
-        version: 2.6.6
+        specifier: ^2.6.7
+        version: 2.6.7
       '@oas-ui/theme':
-        specifier: ^2.6.6
-        version: 2.6.6
+        specifier: ^2.6.7
+        version: 2.6.7
       '@oas-ui/ui':
-        specifier: ^2.6.6
-        version: 2.6.6
+        specifier: ^2.6.7
+        version: 2.6.7
     devDependencies:
       '@playwright/test':
         specifier: ^1.64.1
@@ -440,17 +440,17 @@ importers:
   templates/pm:
     dependencies:
       '@oas-ui/i18n':
-        specifier: ^2.6.6
-        version: 2.6.6
+        specifier: ^2.6.7
+        version: 2.6.7
       '@oas-ui/icons':
-        specifier: ^2.6.6
-        version: 2.6.6
+        specifier: ^2.6.7
+        version: 2.6.7
       '@oas-ui/theme':
-        specifier: ^2.6.6
-        version: 2.6.6
+        specifier: ^2.6.7
+        version: 2.6.7
       '@oas-ui/ui':
-        specifier: ^2.6.6
-        version: 2.6.6
+        specifier: ^2.6.7
+        version: 2.6.7
       dexie:
         specifier: ^4.4.6
         version: 4.4.6
@@ -612,20 +612,25 @@ packages:
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
 
-  '@oas-ui/core@2.6.6':
-    resolution: {integrity: sha512-1dq/T8MUHpxlu+VRADGmezWjbE23ykOlrI9Dsi7BCrGDR5ROiUXltAk5yhAhUY5V+fVap2RPoWZ8JUVQT4Vhxw==}
+  '@oas-ui/core@2.6.7':
+    resolution: {integrity: sha512-z724sUG9nWoiTVYhABaB+giEV5E+D/tCXR7UelpqO7RaBht79ZHEhvxvqamp6md8I91LwiPtBaNOLH6wmu1cSw==}
+    engines: {node: ^22.18.0 || ^24.0.0 || >=26.0.0}
 
-  '@oas-ui/i18n@2.6.6':
-    resolution: {integrity: sha512-MmqivywAVCaxWpwLS/H4hm01cH8JODAfeP2Q6eH3iGGh5gyuO2hAXMSskJY/y3D5WDPIFLgyokulQ6mgGtO2Kw==}
+  '@oas-ui/i18n@2.6.7':
+    resolution: {integrity: sha512-x+mbPWuoL1oC+KO+kOq0w0XKBu5H3B7Gu2DwJ0LQuZupmywlj0yYXW4vJvzhgyN59LTgqb8Lm6rnt0HGosZSIQ==}
+    engines: {node: ^22.18.0 || ^24.0.0 || >=26.0.0}
 
-  '@oas-ui/icons@2.6.6':
-    resolution: {integrity: sha512-b4J/Vt5rsB52hM0W/29yx9pENFGwwmgMzFsANp5Kxu1WvvRjdiFUi1IGAQgnR+trkIuV2Ilo8ZAO/hiS2BSjnA==}
+  '@oas-ui/icons@2.6.7':
+    resolution: {integrity: sha512-mx4H7Q37RKn/VbXIdYtGKl6VoZBjw4WCTcrtdmMFIHRWHg0wsrhKqlGqz1in50+CzM/M3mMpbpiomZMjpTlQow==}
+    engines: {node: ^22.18.0 || ^24.0.0 || >=26.0.0}
 
-  '@oas-ui/theme@2.6.6':
-    resolution: {integrity: sha512-l8M+eJs4voFRyADNdRX2tu7psSWKj79p1N386bnRT4WvszoDfS/BoFRTSGWd+Hcx3HZVox3L9ggFARHP/RFy0Q==}
+  '@oas-ui/theme@2.6.7':
+    resolution: {integrity: sha512-JHPtUyTSNxbQ5bC8Am9A+rDqPHRM9RPCQaQAHn/ThrsrQWcPICFw2T1lkldbagjdHnDF8+SC70qrocdgXPTd3A==}
+    engines: {node: ^22.18.0 || ^24.0.0 || >=26.0.0}
 
-  '@oas-ui/ui@2.6.6':
-    resolution: {integrity: sha512-Y1XcGjxkRympbQIp1bMxk7ts9p1879dACYNfCvXp7drdkHQDD0mMVJ7wzy/EQb+msXlDwEfOvVILISaHN6Oyqg==}
+  '@oas-ui/ui@2.6.7':
+    resolution: {integrity: sha512-jo+B0MIxGVLPC/oFj61/XI8fU55nQ6iZkJ4Ttz6yXb/tBNQ2ytzvpLjCB9kob/7pMJ8OJrbk5TM3eWMm5iXalQ==}
+    engines: {node: ^22.18.0 || ^24.0.0 || >=26.0.0}
 
   '@one-ini/wasm@0.2.1':
     resolution: {integrity: sha512-TUqERXGNTifZ9y2g3wPxQrw3HpHv/02DsW3D90T9x0hhonrL1ZqpSmNrU2XkoIq0fP1N6gZfVQzy2Fw1ZvGBNg==}
@@ -1906,21 +1911,21 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.6.0
 
-  '@oas-ui/core@2.6.6': {}
+  '@oas-ui/core@2.6.7': {}
 
-  '@oas-ui/i18n@2.6.6':
+  '@oas-ui/i18n@2.6.7':
     dependencies:
-      '@oas-ui/core': 2.6.6
+      '@oas-ui/core': 2.6.7
 
-  '@oas-ui/icons@2.6.6': {}
+  '@oas-ui/icons@2.6.7': {}
 
-  '@oas-ui/theme@2.6.6': {}
+  '@oas-ui/theme@2.6.7': {}
 
-  '@oas-ui/ui@2.6.6':
+  '@oas-ui/ui@2.6.7':
     dependencies:
-      '@oas-ui/core': 2.6.6
-      '@oas-ui/i18n': 2.6.6
-      '@oas-ui/icons': 2.6.6
+      '@oas-ui/core': 2.6.7
+      '@oas-ui/i18n': 2.6.7
+      '@oas-ui/icons': 2.6.7
 
   '@one-ini/wasm@0.2.1': {}
 

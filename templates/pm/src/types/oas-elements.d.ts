@@ -67,6 +67,8 @@ declare module 'react' {
         type?: string
         size?: string
         disabled?: boolean | string
+        /** 形态维度（2.6.7 d.ts ButtonVariant）：solid/outlined/dashed/filled/text/link */
+        variant?: string
         /** 撑满父容器宽度（dist 契约的 block 属性） */
         block?: boolean | string
         /** 列表内渲染时 React 需要 key；WC 声明缺 Attributes 交集，这里补上 */

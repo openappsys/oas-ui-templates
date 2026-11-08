@@ -296,21 +296,21 @@ export function SettingsTab({
             </oas-popconfirm>
           </div>
         </div>
-        {/* 危险区：独立一行 + 分隔线 + 视觉降级（红边红字，与常规操作隔开） */}
+        {/* 危险区：独立一行 + 分隔线 + 官方 outlined 降级（红边红字，与常规操作隔开） */}
         <div className="admin-danger-row">
           <oas-popconfirm
             ref={wipePopRef}
             title={t('adminWipeAllConfirm')}
             data-testid="admin-wipe-all-pop"
           >
-            <button
-              type="button"
-              className="admin-wipe-btn"
+            <oas-button
+              type="danger"
+              variant="outlined"
               data-testid="admin-wipe-all"
               disabled={busy}
             >
               {t('adminWipeAll')}
-            </button>
+            </oas-button>
           </oas-popconfirm>
         </div>
       </div>

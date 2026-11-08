@@ -153,7 +153,8 @@ export function DashboardView({
             testid="chart-status"
             label={t('chartStatusAria')}
           />
-          {/* 图例（组件 legend 容器默认 hidden 无开启通道）：色点 + 名称 + 计数，双主题取 CSS 变量 */}
+          {/* 图例（宿主自绘）：2.6.7 的 renderLegend 仅对 series>1 渲染，donut 单 series
+              不出图例（组件对 donut 图例的缺口）——若上游按数据点支持后再换官方通道 */}
           <div className="dash-chart-legend" data-testid="chart-status-legend">
             {states.map((s) => (
               <span key={s.id} className="dash-legend-item">

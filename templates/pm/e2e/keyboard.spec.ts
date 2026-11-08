@@ -262,8 +262,20 @@ test('K5 输入守卫：搜索框聚焦时 j 不移动光标', async ({ page }) 
       }),
     )
     .toBe(true)
+  // 2.6.7 起 oas-input 不再吞键（修复）：j 正常进搜索框——守卫只拦「光标移动」不拦输入。
+  // 清空搜索恢复列表后，再验证「焦点离开输入框后 j 移动光标」
   await page.keyboard.press('j')
   await expect(page.locator('.issue-row.is-cursor')).toHaveCount(0)
+  await page.evaluate(() => {
+    const host = document.querySelector('[data-testid=toolbar-search]') as HTMLElement & {
+      shadowRoot: ShadowRoot
+      dispatchEvent: (e: Event) => boolean
+    }
+    const inp = host.shadowRoot.querySelector('input') as HTMLInputElement
+    inp.value = ''
+    host.dispatchEvent(new CustomEvent('oas-input', { bubbles: true, detail: { value: '' } }))
+  })
+  await expect(page.locator('.issue-row').first()).toBeVisible({ timeout: 10_000 })
   await page.locator('.issue-thead').click()
   await page.keyboard.press('j')
   await expect(page.locator('.issue-row').first()).toHaveClass(/is-cursor/)
