@@ -5,12 +5,23 @@ import type { MilestoneRepository } from '@/data/types'
 import type { PMDatabase } from '@/db/schema'
 
 export function createDexieMilestoneRepository(db: PMDatabase): MilestoneRepository {
+  // 排序契约 = mock-server 同口径：dueAt 升序，无日期（null 不进索引）排最后——
+  // Dexie sortBy 对 null 的相对顺序随数据到达序漂移（M24 flaky 根因），显式比较
+  const byDueAsc = (a: Milestone, b: Milestone) =>
+    (a.dueAt ?? Number.MAX_SAFE_INTEGER) - (b.dueAt ?? Number.MAX_SAFE_INTEGER)
   return {
     async all(projectId) {
-      return db.milestones.where('projectId').equals(projectId).sortBy('dueAt')
+      const rows = await db.milestones.where('projectId').equals(projectId).toArray()
+      return rows.sort(byDueAsc)
     },
     live(projectId) {
-      return fromLiveQuery(() => db.milestones.where('projectId').equals(projectId).sortBy('dueAt'))
+      return fromLiveQuery(() =>
+        db.milestones
+          .where('projectId')
+          .equals(projectId)
+          .toArray()
+          .then((rows) => rows.sort(byDueAsc)),
+      )
     },
     async get(id) {
       return db.milestones.get(id)

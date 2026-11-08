@@ -139,8 +139,19 @@ test('M24 里程碑：侧栏组过滤 + 甘特里程碑条 + 抽屉选择 + 管�
   await expect
     .poll(() => page.locator('.ms-card').count(), { timeout: 10_000 })
     .toBe(cardsBefore + 1)
-  // 新建无 dueAt → dueAt 升序排在最前，取 first
-  const newCard = page.locator('.ms-card').first()
+  // 新建卡按值定位（不依赖排序位置：无 dueAt 的新卡在 mock/dexie 均排最后，
+  // 历史取 first 依赖 sortBy 对 null 的不稳定序——M24 flaky 根因。input value 无
+  // CSS/文本通道，轮询值匹配取索引）
+  const findNewCard = async () => {
+    const cards = page.locator('.ms-card')
+    for (let i = 0; i < (await cards.count()); i++) {
+      const v = await cards.nth(i).locator('input[data-testid^=admin-milestone-name-]').inputValue()
+      if (v === 'M3 · e2e 里程碑') return i
+    }
+    return -1
+  }
+  await expect.poll(findNewCard, { timeout: 10_000 }).toBeGreaterThanOrEqual(0)
+  const newCard = page.locator('.ms-card').nth(await findNewCard())
   const lastName = newCard.locator('input[data-testid^=admin-milestone-name-]')
   await expect(lastName).toHaveValue('M3 · e2e 里程碑', { timeout: 10_000 })
   // 进度聚合行存在（新建为 0/0）
