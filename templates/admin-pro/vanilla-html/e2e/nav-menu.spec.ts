@@ -102,3 +102,36 @@ test('admin 侧栏手风琴：预置关闭后 #nav 不带 accordion 属性', asy
   await login(page)
   await expect(page.locator('#nav')).not.toHaveAttribute('accordion')
 })
+
+test('admin 侧栏手风琴：设置中心开关实时翻转 #nav accordion 属性', async ({ page }) => {
+  await login(page)
+  // 默认开
+  await expect(page.locator('#nav')).toHaveAttribute('accordion', '')
+
+  await page.goto('/#/settings')
+  await page.getByTestId('settings-tabs').getByText('布局与导航', { exact: true }).click()
+  const toggle = page.getByTestId('sidebar-accordion-toggle')
+  await expect(toggle).toBeVisible()
+
+  // 关 → 属性消失
+  await toggle.click()
+  await expect(page.locator('#nav')).not.toHaveAttribute('accordion')
+
+  // 开 → 属性回来
+  await toggle.click()
+  await expect(page.locator('#nav')).toHaveAttribute('accordion', '')
+})
+
+test('admin 侧栏手风琴：切到菜单条形态后开关不影响菜单渲染', async ({ page }) => {
+  await login(page)
+  await page.goto('/#/settings')
+  await page.getByTestId('settings-tabs').getByText('布局与导航', { exact: true }).click()
+  // 切到菜单条+顶部
+  await page.locator('.menu-matrix-cell[data-style="menubar"][data-position="top"]').click()
+  await expect(page.locator('#nav')).toHaveAttribute('orientation', 'horizontal')
+  // 开关仍可点、不报错，菜单仍正常
+  const toggle = page.getByTestId('sidebar-accordion-toggle')
+  await expect(toggle).toBeVisible()
+  await toggle.click()
+  await expect(page.locator('#nav')).toHaveAttribute('orientation', 'horizontal')
+})

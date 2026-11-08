@@ -6,7 +6,14 @@ import { message } from '@oas-ui/ui/feedback/message'
 import { modal } from '@oas-ui/ui/feedback/modal'
 import { t, onLocaleChange } from '../i18n'
 import { applyRouterMode, routerMode } from '../router/mode'
-import { canPosition, navConfig, setMenuPosition, setMenuStyle } from '../layout-config'
+import {
+  canPosition,
+  navConfig,
+  readSidebarAccordion,
+  setMenuPosition,
+  setMenuStyle,
+  setSidebarAccordion,
+} from '../layout-config'
 import type { MenuPosition, MenuStyle } from '../layout-config'
 import {
   DEFAULT_COLOR,
@@ -327,6 +334,15 @@ function draw(el: HTMLElement): () => void {
     <div class="setting-group">
       <div class="setting-row">
         <div>
+          <div class="setting-label">${t('settings.general.sidebarAccordionLabel')}</div>
+          <div class="setting-hint">${t('settings.general.sidebarAccordionHint')}</div>
+        </div>
+        <oas-switch data-testid="sidebar-accordion-toggle"${readSidebarAccordion() ? ' checked' : ''}></oas-switch>
+      </div>
+    </div>
+    <div class="setting-group">
+      <div class="setting-row">
+        <div>
           <div class="setting-label">${t('settings.general.tabsBarLabel')}</div>
           <div class="setting-hint">${t('settings.general.tabsBarHint')}</div>
         </div>
@@ -514,6 +530,14 @@ function draw(el: HTMLElement): () => void {
     refreshMatrixMark()
     emitNavConfigChange()
   })
+
+  layout.node
+    .querySelector<HTMLElement>('[data-testid="sidebar-accordion-toggle"]')!
+    .addEventListener('oas-change', (e) => {
+      const checked = (e as CustomEvent<{ checked: boolean }>).detail.checked
+      setSidebarAccordion(checked)
+      emitNavConfigChange()
+    })
 
   refreshMatrixMark()
 
