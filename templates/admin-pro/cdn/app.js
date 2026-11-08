@@ -1,5 +1,10 @@
 import { currentLocale, onLocaleChange, setLocale, t } from './i18n.js'
-import { applySettings, readMenuPosition, readMenuStyle } from './js/settings.js'
+import {
+  applySettings,
+  readMenuPosition,
+  readMenuStyle,
+  readSidebarAccordion,
+} from './js/settings.js'
 import { progress } from './js/progress.js'
 import { listNotifications, markAllRead, markRead, unreadCount } from './js/notifications.js'
 import { HOME_PATH, closeKeys, closeTab, visit } from './js/tabs.js'
@@ -216,7 +221,7 @@ function menuHTML(vertical) {
     return `<oas-menubar id="nav" orientation="${vertical ? 'vertical' : 'horizontal'}" items='${items}'></oas-menubar>`
   if (menuCfg.style === 'navigation')
     return `<oas-navigation-menu id="nav" orientation="${vertical ? 'vertical' : 'horizontal'}" items='${items}'></oas-navigation-menu>`
-  return `<oas-sidebar id="nav" accordion></oas-sidebar>`
+  return `<oas-sidebar id="nav"${readSidebarAccordion() ? ' accordion' : ''}></oas-sidebar>`
 }
 
 /** ☰ 悬浮菜单面板：menubar/navigation 形态窄屏兜底（vanilla toggleMenuPopover 同语义） */

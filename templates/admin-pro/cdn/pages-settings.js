@@ -25,6 +25,7 @@ import {
   RADIUS_KEY,
   setMenuPosition,
   setMenuStyle,
+  setSidebarAccordion,
   SKIN_KEY,
   TABS_BAR_KEY,
   THEME_PREFIX,
@@ -113,6 +114,7 @@ function draw(el) {
   const fontSizeGroup = appearance.querySelector('#font-size-group')
   const pageSize = data.querySelector('[data-testid="page-size"]')
   const tabsBarToggle = layout.querySelector('[data-testid="tabs-bar-toggle"]')
+  const accordionToggle = layout.querySelector('[data-testid="sidebar-accordion-toggle"]')
   const notifMatrix = notification.querySelector('#notif-matrix')
   const colorPicker = appearance.querySelector('#appearance-color')
   const radiusSlider = appearance.querySelector('#appearance-radius')
@@ -176,6 +178,19 @@ function draw(el) {
     localStorage.setItem(TABS_BAR_KEY, String(checked))
     applySettings()
     OASUI.message.success(t('common.saved'))
+  })
+
+  // 侧栏手风琴：写配置 + 仅更新 #nav 的 accordion 属性（oas-sidebar 运行时观察该属性，
+  // 直接增删即生效）。不派发 nav-config-change——cdn 该事件走 renderShell()+resolve() 全壳重渲，
+  // 会把设置 tab 重置回「外观」；vanilla 的 reapplyNavConfig 只重渲 nav，此处对齐其「不动设置页」语义。
+  accordionToggle.addEventListener('oas-change', (e) => {
+    const checked = e.detail.checked
+    setSidebarAccordion(checked)
+    const nav = document.getElementById('nav')
+    if (nav && nav.tagName === 'OAS-SIDEBAR') {
+      if (checked) nav.setAttribute('accordion', '')
+      else nav.removeAttribute('accordion')
+    }
   })
 
   // cdn 偏差：路由模式控件不渲染（哈希单模式），对应监听一并省略

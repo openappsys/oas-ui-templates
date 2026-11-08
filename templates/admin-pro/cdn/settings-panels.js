@@ -13,6 +13,7 @@ import {
   readGlass,
   readPageSize,
   readRadius,
+  readSidebarAccordion,
   readSkin,
   readTabsBar,
   SKINS,
@@ -217,6 +218,15 @@ export function layoutHtml() {
       <div class="menu-matrix" data-testid="menu-matrix" role="radiogroup" aria-label="${t('settings.general.menuStyleLabel')}">
         ${MENU_MATRIX_HEADER}
         ${MENU_MATRIX_ROWS()}
+      </div>
+    </div>
+    <div class="setting-group">
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">${t('settings.general.sidebarAccordionLabel')}</div>
+          <div class="setting-hint">${t('settings.general.sidebarAccordionHint')}</div>
+        </div>
+        <oas-switch data-testid="sidebar-accordion-toggle"${readSidebarAccordion() ? ' checked' : ''}></oas-switch>
       </div>
     </div>
     <div class="setting-group">

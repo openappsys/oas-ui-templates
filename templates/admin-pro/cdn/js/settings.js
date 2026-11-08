@@ -23,6 +23,7 @@ export const MENU_STYLES = ['sidebar', 'menubar', 'navigation']
 export const MENU_POSITIONS = ['left', 'right', 'top', 'top-head']
 const MENU_STYLE_KEY = 'oas-admin-cdn.menu-style'
 const MENU_POSITION_KEY = 'oas-admin-cdn.menu-position'
+export const SIDEBAR_ACCORDION_KEY = 'oas-admin-cdn.sidebar-accordion'
 
 export function readFormMode() {
   const v = localStorage.getItem(FORM_MODE_KEY)
@@ -194,4 +195,21 @@ export function navConfig() {
   let position = readMenuPosition()
   if (!canPosition(style, position)) position = 'left'
   return { style, position }
+}
+
+/** 侧栏手风琴：同组菜单互斥展开。默认开（保持现状），仅存储值 'false' 时关 */
+export function readSidebarAccordion() {
+  try {
+    return localStorage.getItem(SIDEBAR_ACCORDION_KEY) !== 'false'
+  } catch {
+    return true
+  }
+}
+
+export function setSidebarAccordion(on) {
+  try {
+    localStorage.setItem(SIDEBAR_ACCORDION_KEY, String(on))
+  } catch {
+    /* ignore */
+  }
 }
