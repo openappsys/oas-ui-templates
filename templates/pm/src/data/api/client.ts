@@ -676,24 +676,24 @@ export function createApiRepositories(options: ApiClientOptions = {}): Repositor
   }
 
   const workflowsRepo: WorkflowRepository = {
-  all: async () => asItems<Workflow>(await send('GET', '/api/workflows')),
-  live: () => live(async () => asItems<Workflow>(await send('GET', '/api/workflows'))),
-  create: async (input) => {
-    const body = await send<{ workflow: Workflow }>('POST', '/api/workflows', undefined, input)
-    poke()
-    return body.workflow
-  },
-  update: async (id, changes) => {
-    await send('PATCH', `/api/workflows/${encodeURIComponent(id)}`, undefined, changes)
-    poke()
-  },
-  remove: async (id) => {
-    await send('DELETE', `/api/workflows/${encodeURIComponent(id)}`)
-    poke()
-  },
-}
+    all: async () => asItems<Workflow>(await send('GET', '/api/workflows')),
+    live: () => live(async () => asItems<Workflow>(await send('GET', '/api/workflows'))),
+    create: async (input) => {
+      const body = await send<{ workflow: Workflow }>('POST', '/api/workflows', undefined, input)
+      poke()
+      return body.workflow
+    },
+    update: async (id, changes) => {
+      await send('PATCH', `/api/workflows/${encodeURIComponent(id)}`, undefined, changes)
+      poke()
+    },
+    remove: async (id) => {
+      await send('DELETE', `/api/workflows/${encodeURIComponent(id)}`)
+      poke()
+    },
+  }
 
-const workflowStatesRepo: WorkflowStateRepository = {
+  const workflowStatesRepo: WorkflowStateRepository = {
     all: async (projectId: string) =>
       asItems<WorkflowState>(await send('GET', '/api/workflow-states', buildQuery({ projectId }))),
     liveByWorkflow: (workflowId: string) =>

@@ -232,7 +232,12 @@ export function createDexieAdminRepository(db: PMDatabase): AdminRepository {
         }
         // v17 起状态挂工作流容器：旧备份无 workflows → 建默认工作流并把状态挂入
         if ((await db.workflows.count()) === 0) {
-          await db.workflows.add({ id: 'wf-default', name: '默认工作流', projectId: null, order: 0 })
+          await db.workflows.add({
+            id: 'wf-default',
+            name: '默认工作流',
+            projectId: null,
+            order: 0,
+          })
         }
         if ((await db.workflowStates.count()) === 0) {
           await db.workflowStates.bulkPut(

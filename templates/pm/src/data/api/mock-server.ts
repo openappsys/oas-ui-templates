@@ -1051,7 +1051,9 @@ function importEnvelope(store: MockStore, raw: unknown): void {
     projectMembers: rows('projectMembers') as ProjectMember[],
     milestones: rows('milestones') as Milestone[],
     workflowStates: rows('workflowStates') as WorkflowState[],
-    workflows: ((rows('workflows') as Workflow[]).length > 0 ? rows('workflows') : []) as Workflow[],
+    workflows: ((rows('workflows') as Workflow[]).length > 0
+      ? rows('workflows')
+      : []) as Workflow[],
     worklogs: rows('worklogs') as Worklog[],
   })
   // 旧备份不含工作流状态：补一套内置态（挂默认工作流），避免看板/抽屉空列
@@ -1861,7 +1863,8 @@ function ensureWorkflowStates(store: MockStore): void {
 /** 按 projectId 解析工作流：'全部'/未绑定 → 默认（projectId: null）；否则绑定记录，未命中回落默认 */
 function resolveWorkflowId(store: MockStore, projectId: string | undefined): string {
   const all = store.workflows ?? []
-  const bound = projectId && projectId !== '__all__' ? all.find((w) => w.projectId === projectId) : undefined
+  const bound =
+    projectId && projectId !== '__all__' ? all.find((w) => w.projectId === projectId) : undefined
   return (bound ?? all.find((w) => w.projectId === null) ?? bound)?.id ?? 'wf-default'
 }
 
@@ -1897,7 +1900,10 @@ function routeWorkflows(
   if (!wf) fail(404, 'workflow not found')
   if (method === 'PATCH') {
     const changes = asRecord(body)
-    if (changes.projectId != null && store.workflows.some((w) => w.projectId === changes.projectId && w.id !== wf.id))
+    if (
+      changes.projectId != null &&
+      store.workflows.some((w) => w.projectId === changes.projectId && w.id !== wf.id)
+    )
       fail(409, '项目已绑定工作流')
     Object.assign(wf, changes)
     store.revision += 1
@@ -2024,7 +2030,8 @@ function routeWorkflowStates(
         id: nextId(store, 'state'),
         projectId: 'workspace',
         workflowId:
-          (input.workflowId as string | undefined) ?? resolveWorkflowId(store, input.projectId as string | undefined),
+          (input.workflowId as string | undefined) ??
+          resolveWorkflowId(store, input.projectId as string | undefined),
         name: String(input.name ?? ''),
         category: (input.category ?? 'todo') as WorkflowState['category'],
         ...(typeof input.color === 'string' ? { color: input.color } : {}),

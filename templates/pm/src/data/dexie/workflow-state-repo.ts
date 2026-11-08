@@ -11,14 +11,19 @@ export const DEFAULT_WORKFLOW_ID = 'wf-default'
 /** 按 projectId 解析工作流：ALL_PROJECTS/未绑定 → 默认工作流；否则找绑定记录，未命中回落默认 */
 async function resolveWorkflow(db: PMDatabase, projectId: string) {
   const all = await db.workflows.toArray()
-  const bound = projectId === '' || projectId === '__all__' ? undefined : all.find((w) => w.projectId === projectId)
+  const bound =
+    projectId === '' || projectId === '__all__'
+      ? undefined
+      : all.find((w) => w.projectId === projectId)
   return bound ?? all.find((w) => w.projectId === null) ?? bound
 }
 
 export function createDexieWorkflowStateRepository(db: PMDatabase): WorkflowStateRepository {
   // 播种：空库建默认工作流 + 内置 5 态（挂默认工作流）。bulkPut 幂等——与 seed-db 并发不冲突
   const ensureDefaults = async () => {
-    await db.workflows.bulkPut([{ id: DEFAULT_WORKFLOW_ID, name: '默认工作流', projectId: null, order: 0 }])
+    await db.workflows.bulkPut([
+      { id: DEFAULT_WORKFLOW_ID, name: '默认工作流', projectId: null, order: 0 },
+    ])
     if ((await db.workflowStates.count()) > 0) return
     await db.workflowStates.bulkPut(
       DEFAULT_WORKFLOW_STATES.map((d) => ({
@@ -50,9 +55,7 @@ export function createDexieWorkflowStateRepository(db: PMDatabase): WorkflowStat
     },
     liveByWorkflow(workflowId: string) {
       void ensureDefaults()
-      return fromLiveQuery(() =>
-        db.workflowStates.where('workflowId').equals(workflowId).toArray(),
-      )
+      return fromLiveQuery(() => db.workflowStates.where('workflowId').equals(workflowId).toArray())
     },
     ensureDefaults: async () => ensureDefaults(),
     async create(input) {

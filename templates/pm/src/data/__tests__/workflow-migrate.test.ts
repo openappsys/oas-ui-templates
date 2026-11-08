@@ -48,11 +48,46 @@ describe('workflow repos（多工作流）', () => {
       { id: 'wf-dev', name: '开发流程', projectId: 'p2', order: 1 },
     ])
     await db.workflowStates.bulkPut([
-      { id: 'st-todo', projectId: 'workspace', name: '待办', category: 'todo', order: 0, workflowId: 'wf-default' },
-      { id: 'st-review', projectId: 'workspace', name: '复核中', category: 'started', order: 1, workflowId: 'wf-default' },
-      { id: 'st-progress', projectId: 'workspace', name: '进行中', category: 'started', order: 2, workflowId: 'wf-default' },
-      { id: 'st-done', projectId: 'workspace', name: '已完成', category: 'done', order: 3, workflowId: 'wf-default' },
-      { id: 'st-code', projectId: 'workspace', name: '编码中', category: 'started', order: 0, workflowId: 'wf-dev' },
+      {
+        id: 'st-todo',
+        projectId: 'workspace',
+        name: '待办',
+        category: 'todo',
+        order: 0,
+        workflowId: 'wf-default',
+      },
+      {
+        id: 'st-review',
+        projectId: 'workspace',
+        name: '复核中',
+        category: 'started',
+        order: 1,
+        workflowId: 'wf-default',
+      },
+      {
+        id: 'st-progress',
+        projectId: 'workspace',
+        name: '进行中',
+        category: 'started',
+        order: 2,
+        workflowId: 'wf-default',
+      },
+      {
+        id: 'st-done',
+        projectId: 'workspace',
+        name: '已完成',
+        category: 'done',
+        order: 3,
+        workflowId: 'wf-default',
+      },
+      {
+        id: 'st-code',
+        projectId: 'workspace',
+        name: '编码中',
+        category: 'started',
+        order: 0,
+        workflowId: 'wf-dev',
+      },
     ])
   })
 

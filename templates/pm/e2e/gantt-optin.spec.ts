@@ -9,12 +9,16 @@ test('甘特二期：工时列 + 状态线 + 计划刻度', async ({ page }) => 
     localStorage.setItem('oas-pm-theme', 'dark')
   })
   await page.goto('/')
-  await page.waitForFunction(() => localStorage.getItem('oas-pm-seed-v11') === '1', { timeout: 180_000 })
+  await page.waitForFunction(() => localStorage.getItem('oas-pm-seed-v11') === '1', {
+    timeout: 180_000,
+  })
   await page.waitForSelector('.issue-row', { timeout: 20_000 })
   await page.evaluate(() => {
     const el = document.querySelector('[data-testid=view-seg]') as HTMLElement & { value: string }
     el.value = 'timeline'
-    el.dispatchEvent(new CustomEvent('oas-change', { bubbles: true, detail: { value: 'timeline' } }))
+    el.dispatchEvent(
+      new CustomEvent('oas-change', { bubbles: true, detail: { value: 'timeline' } }),
+    )
   })
   await page.waitForTimeout(1200)
 

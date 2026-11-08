@@ -126,7 +126,8 @@ function WorkflowPanel() {
   const wfList = useObservable(() => workflows.live(), [workflows])
   const projList = useObservable(() => projects.liveAll(), [projects])
   const [selectedWfId, setSelectedWfId] = useState<string | null>(null)
-  const wf = (wfList ?? []).find((w) => w.id === (selectedWfId ?? 'wf-default')) ?? (wfList ?? [])[0]
+  const wf =
+    (wfList ?? []).find((w) => w.id === (selectedWfId ?? 'wf-default')) ?? (wfList ?? [])[0]
   const states = useObservable(
     () => workflowStates.liveByWorkflow(wf?.id ?? 'wf-default'),
     [workflowStates, wf?.id],
@@ -161,15 +162,13 @@ function WorkflowPanel() {
             </span>
           </button>
         ))}
-        <button
-          type="button"
-          className="wf-tab wf-tab-add"
-          onClick={() => setAddingWf(true)}
-        >
+        <button type="button" className="wf-tab wf-tab-add" onClick={() => setAddingWf(true)}>
           ＋ {t('adminCfgWfNew')}
         </button>
       </div>
-      {addingWf && <WorkflowCreateForm projList={projList ?? []} onDone={() => setAddingWf(false)} />}
+      {addingWf && (
+        <WorkflowCreateForm projList={projList ?? []} onDone={() => setAddingWf(false)} />
+      )}
       {/* 选中工作流（非默认）操作：绑定信息 + 解绑 */}
       {wf && wf.projectId != null && (
         <div className="wf-ops-bar">
@@ -205,7 +204,11 @@ function WorkflowPanel() {
           {adding ? (
             <WorkflowRowForm rows={rows} workflowId={wf.id} onDone={() => setAdding(false)} />
           ) : (
-            <oas-button size="small" data-testid="admin-workflow-add" onClick={() => setAdding(true)}>
+            <oas-button
+              size="small"
+              data-testid="admin-workflow-add"
+              onClick={() => setAdding(true)}
+            >
               {t('adminCfgWfAdd')}
             </oas-button>
           )}
@@ -217,13 +220,7 @@ function WorkflowPanel() {
 }
 
 /** 新建工作流：名称 + 绑定项目（空 = 闲置/不被任何项目使用） */
-function WorkflowCreateForm({
-  projList,
-  onDone,
-}: {
-  projList: Project[]
-  onDone: () => void
-}) {
+function WorkflowCreateForm({ projList, onDone }: { projList: Project[]; onDone: () => void }) {
   const { workflows } = useRepositories()
   const [name, setName] = useState('')
   const [projectId, setProjectId] = useState<string | null>(null)
@@ -260,7 +257,12 @@ function WorkflowCreateForm({
           </option>
         ))}
       </select>
-      <oas-button size="small" type="primary" data-testid="admin-workflow-create-save" onClick={() => void save()}>
+      <oas-button
+        size="small"
+        type="primary"
+        data-testid="admin-workflow-create-save"
+        onClick={() => void save()}
+      >
         {t('save')}
       </oas-button>
       <oas-button size="small" onClick={onDone}>

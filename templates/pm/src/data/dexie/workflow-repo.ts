@@ -15,7 +15,10 @@ export function createDexieWorkflowRepository(db: PMDatabase): WorkflowRepositor
       return db.workflows.orderBy('order').toArray()
     },
     async create(input) {
-      if (input.projectId != null && (await db.workflows.where('projectId').equals(input.projectId).count()) > 0) {
+      if (
+        input.projectId != null &&
+        (await db.workflows.where('projectId').equals(input.projectId).count()) > 0
+      ) {
         throw new Error('项目已绑定工作流')
       }
       const wf: Workflow = {
@@ -40,7 +43,10 @@ export function createDexieWorkflowRepository(db: PMDatabase): WorkflowRepositor
     },
     async remove(id) {
       if (id === DEFAULT_WORKFLOW_ID) throw new Error('默认工作流不可删除')
-      const bound = await db.projects.where('id').equals((await db.workflows.get(id))?.projectId ?? '').count()
+      const bound = await db.projects
+        .where('id')
+        .equals((await db.workflows.get(id))?.projectId ?? '')
+        .count()
       if (bound > 0) throw new Error('工作流仍绑定项目，先解绑')
       await db.workflows.delete(id)
       // 其状态一并清理（调用方已在迁移引用后执行）

@@ -37,7 +37,7 @@ export function TimelineView({
     () => new Map(workflowStates.map((s) => [s.id, s.category])),
     [workflowStates],
   )
-  const ganttRef = useRef<GanttElement>(null)  // 时间窗：时间轴是范围驱动语义，按天窗过滤而非滚动续载
+  const ganttRef = useRef<GanttElement>(null) // 时间窗：时间轴是范围驱动语义，按天窗过滤而非滚动续载
   // 时间窗：时间轴是范围驱动语义，按天窗过滤而非滚动续载
   const [windowDays, setWindowDays] = useState<30 | 90 | null>(30)
   const visibleIssues = useMemo(

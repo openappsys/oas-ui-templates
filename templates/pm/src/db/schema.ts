@@ -251,35 +251,42 @@ export class PMDatabase extends Dexie {
     // v17：多工作流（不同项目可用不同工作流）。新增 workflows 表（状态容器：
     // projectId: null = 默认工作流）；旧状态全部挂入自动创建的默认工作流——零行为回归。
     // 「全部 Issues」跨项目视图与未绑定项目的项目 = 默认工作流派（A 方案）
-    this.version(17).stores({
-      issues:
-        'id, projectId, key, status, priority, assigneeId, parentId, cycleId, milestoneId, createdAt, updatedAt, deletedAt, [projectId+status], [projectId+priority], [projectId+assigneeId], [projectId+updatedAt], [projectId+status+updatedAt], [assigneeId+status], [status+updatedAt], [projectId+cycleId], [projectId+milestoneId]',
-      projects: 'id, key',
-      members: 'id, role',
-      comments: 'id, issueId, parentId, [issueId+createdAt]',
-      savedViews: 'id, name',
-      activities: 'id, issueId, [issueId+createdAt], createdAt',
-      settings: 'key',
-      cycles: 'id, projectId, [projectId+startAt]',
-      notifications: 'id, memberId, createdAt, [memberId+createdAt], [memberId+readAt]',
-      roles: 'id, name',
-      audit: 'id, at, actorId, action',
-      projectRoles: 'id, projectId, memberId, [projectId+memberId]',
-      projectMembers: 'id, projectId, memberId, [projectId+memberId]',
-      milestones: 'id, projectId, [projectId+dueAt]',
-      workflowStates: 'id, projectId, [projectId+order], workflowId',
-      workflows: 'id, projectId, order',
-      worklogs: 'id, issueId, memberId, [issueId+createdAt], [memberId+createdAt]',
-    }).upgrade(async (tx) => {
-      const wfDefault = 'wf-default'
-      const states = await tx.table('workflowStates').toArray()
-      if (states.length > 0 && !(await tx.table('workflows').get(wfDefault))) {
-        await tx.table('workflows').add({ id: wfDefault, name: '默认工作流', projectId: null, order: 0 })
-        await tx.table('workflowStates').toCollection().modify((row) => {
-          if (!row.workflowId) row.workflowId = wfDefault
-        })
-      }
-    })
+    this.version(17)
+      .stores({
+        issues:
+          'id, projectId, key, status, priority, assigneeId, parentId, cycleId, milestoneId, createdAt, updatedAt, deletedAt, [projectId+status], [projectId+priority], [projectId+assigneeId], [projectId+updatedAt], [projectId+status+updatedAt], [assigneeId+status], [status+updatedAt], [projectId+cycleId], [projectId+milestoneId]',
+        projects: 'id, key',
+        members: 'id, role',
+        comments: 'id, issueId, parentId, [issueId+createdAt]',
+        savedViews: 'id, name',
+        activities: 'id, issueId, [issueId+createdAt], createdAt',
+        settings: 'key',
+        cycles: 'id, projectId, [projectId+startAt]',
+        notifications: 'id, memberId, createdAt, [memberId+createdAt], [memberId+readAt]',
+        roles: 'id, name',
+        audit: 'id, at, actorId, action',
+        projectRoles: 'id, projectId, memberId, [projectId+memberId]',
+        projectMembers: 'id, projectId, memberId, [projectId+memberId]',
+        milestones: 'id, projectId, [projectId+dueAt]',
+        workflowStates: 'id, projectId, [projectId+order], workflowId',
+        workflows: 'id, projectId, order',
+        worklogs: 'id, issueId, memberId, [issueId+createdAt], [memberId+createdAt]',
+      })
+      .upgrade(async (tx) => {
+        const wfDefault = 'wf-default'
+        const states = await tx.table('workflowStates').toArray()
+        if (states.length > 0 && !(await tx.table('workflows').get(wfDefault))) {
+          await tx
+            .table('workflows')
+            .add({ id: wfDefault, name: '默认工作流', projectId: null, order: 0 })
+          await tx
+            .table('workflowStates')
+            .toCollection()
+            .modify((row) => {
+              if (!row.workflowId) row.workflowId = wfDefault
+            })
+        }
+      })
   }
 }
 

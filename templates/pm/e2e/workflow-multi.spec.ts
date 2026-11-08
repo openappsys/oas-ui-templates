@@ -8,7 +8,9 @@ test('MW1 多工作流：绑定项目后该项目用专属状态', async ({ page
     localStorage.setItem('oas-pm-theme', 'dark')
   })
   await page.goto('/')
-  await page.waitForFunction(() => localStorage.getItem('oas-pm-seed-v11') === '1', { timeout: 180_000 })
+  await page.waitForFunction(() => localStorage.getItem('oas-pm-seed-v11') === '1', {
+    timeout: 180_000,
+  })
   await page.waitForSelector('.issue-row', { timeout: 20_000 })
 
   const gotoAdmin = async () => {
@@ -26,7 +28,10 @@ test('MW1 多工作流：绑定项目后该项目用专属状态', async ({ page
   await gotoAdmin()
   await page.locator('.wf-tab-add').click()
   await page.getByTestId('admin-workflow-create').locator('oas-input input').fill('开发流程')
-  await page.getByTestId('admin-workflow-create').locator('select').selectOption({ label: 'OAS 平台' })
+  await page
+    .getByTestId('admin-workflow-create')
+    .locator('select')
+    .selectOption({ label: 'OAS 平台' })
   await page.getByTestId('admin-workflow-create-save').click()
   await expect(page.getByTestId('admin-workflow-tabs')).toContainText('开发流程', { timeout: 5000 })
 

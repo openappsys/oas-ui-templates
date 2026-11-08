@@ -113,7 +113,9 @@ export async function seedDatabase(): Promise<void> {
   // v17：工作流状态默认态（工作区级一套，全项目共用；管理员改坏删光后也由此兜底）。
   // workflows 表同步幂等播种——与 repo 层 ensureDefaults 并发执行时 bulkPut 不冲突
   const ensureWorkflowStates = async () => {
-    await db.workflows.bulkPut([{ id: 'wf-default', name: '默认工作流', projectId: null, order: 0 }])
+    await db.workflows.bulkPut([
+      { id: 'wf-default', name: '默认工作流', projectId: null, order: 0 },
+    ])
     if ((await db.workflowStates.count()) > 0) return
     await db.workflowStates.bulkPut(
       DEFAULT_WORKFLOW_STATES.map((s) => ({
