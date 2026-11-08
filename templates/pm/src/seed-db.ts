@@ -153,12 +153,12 @@ export async function seedDatabase(): Promise<void> {
       .filter((i) => /^issue-project-1-\d+$/.test(i.id))
       .sort((a, b) => Number(a.id.slice(18)) - Number(b.id.slice(18)))
     const updates: Array<{ id: string; changes: Partial<Issue> }> = []
-    rows
-      .slice(0, 8)
-      .forEach((r) => updates.push({ id: r.id, changes: { milestoneId: 'milestone-1' } }))
-    rows
-      .slice(8, 16)
-      .forEach((r) => updates.push({ id: r.id, changes: { milestoneId: 'milestone-2' } }))
+    rows.slice(0, 8).forEach((r) => {
+      updates.push({ id: r.id, changes: { milestoneId: 'milestone-1' } })
+    })
+    rows.slice(8, 16).forEach((r) => {
+      updates.push({ id: r.id, changes: { milestoneId: 'milestone-2' } })
+    })
     for (const u of updates) await db.issues.update(u.id, u.changes)
   }
   if (marked) {
