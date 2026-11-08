@@ -10,8 +10,10 @@
   import {
     canPosition,
     navConfig,
+    readSidebarAccordion,
     setMenuPosition,
     setMenuStyle,
+    setSidebarAccordion,
     type MenuPosition,
     type MenuStyle,
   } from '../../layout-config'
@@ -40,6 +42,8 @@
   let nav = $state(navConfig())
   let tabsBar = $state(readTabsBar())
   let mode = $state<RouterMode>(routerMode())
+  // 侧栏手风琴：layout-config 持久化（默认开），开关后派发 navconfig-change 让 AppShell 重读
+  let accordion = $state(readSidebarAccordion())
 
   const routerModeOptions = $derived.by(() => {
     void $locale
@@ -55,6 +59,13 @@
     applySettings()
     tabsBar = checked
     appMessage.success(t('common.saved'))
+  }
+
+  function onAccordionChange(e: Event): void {
+    const { checked } = (e as CustomEvent<{ checked: boolean }>).detail
+    setSidebarAccordion(checked)
+    accordion = checked
+    window.dispatchEvent(new CustomEvent('oas:navconfig-change'))
   }
 
   function onRouterModeChange(e: Event): void {
@@ -119,6 +130,19 @@
         ></button>
       {/each}
     {/each}
+  </div>
+</div>
+<div class="setting-group">
+  <div class="setting-row">
+    <div>
+      <div class="setting-label">{tt('settings.general.sidebarAccordionLabel')}</div>
+      <div class="setting-hint">{tt('settings.general.sidebarAccordionHint')}</div>
+    </div>
+    <oas-switch
+      data-testid="sidebar-accordion-toggle"
+      checked={accordion ? '' : null}
+      onoas-change={onAccordionChange}
+    ></oas-switch>
   </div>
 </div>
 <div class="setting-group">

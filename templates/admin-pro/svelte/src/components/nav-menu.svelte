@@ -13,12 +13,14 @@
     /** 竖排（left/right 槽位）或横排（top / top-head） */
     vertical: boolean
     activePath: string
+    /** 手风琴互斥展开（由 app-shell 读 layout-config 传入，随 navconfig-change 更新） */
+    accordion?: boolean
     /** 浮层形态（☰ 弹出面板）：id 用 nav-popover，menubar 加 trigger="click" */
     popover?: boolean
     onNavigate?: () => void
   }
 
-  let { menuStyle, vertical, activePath, popover = false, onNavigate }: Props = $props()
+  let { menuStyle, vertical, activePath, accordion = true, popover = false, onNavigate }: Props = $props()
 
   const { locale } = useT()
   let collapsed = $state(readSidebarCollapsed())
@@ -80,7 +82,7 @@
     <oas-sidebar
       {id}
       bind:this={navEl}
-      accordion
+      accordion={accordion ? '' : null}
       items={sidebarJson}
       active={activePath}
       collapsed={collapsed ? '' : null}

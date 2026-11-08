@@ -5,7 +5,7 @@
   import { fromStore } from 'svelte/store'
   import { useNotifications } from '../lib/use-notifications.svelte'
   import { useT } from '../lib/use-t.svelte'
-  import { navConfig, type NavConfig } from '../layout-config'
+  import { navConfig, readSidebarAccordion, type NavConfig } from '../layout-config'
   import { currentPath } from '../router'
   import { routeHref } from '../router/mode'
   import { appRoutes, matchRoute } from '../router/routes'
@@ -57,6 +57,8 @@
   const activePath = $derived(path.current)
 
   let nav = $state<NavConfig>(navConfig())
+  // 手风琴互斥展开：随 navconfig-change 重读（设置中心开关写入后派发）
+  let accordion = $state(readSidebarAccordion())
   let popoverOpen = $state(false)
   let commandOpen = $state(false)
   // 通知数据：badge（header-bar）与抽屉共享一份
@@ -67,6 +69,7 @@
   $effect(() => {
     const onChange = (): void => {
       nav = navConfig()
+      accordion = readSidebarAccordion()
       popoverOpen = false
     }
     window.addEventListener('oas:navconfig-change', onChange)
@@ -128,7 +131,7 @@
 
 {#snippet navMenu(vertical: boolean)}
   {#key `${nav.style}:${nav.position}:${vertical ? 'v' : 'h'}`}
-    <NavMenu menuStyle={nav.style} {vertical} {activePath} />
+    <NavMenu menuStyle={nav.style} {vertical} {activePath} {accordion} />
   {/key}
 {/snippet}
 
@@ -184,6 +187,7 @@
       menuStyle={nav.style}
       vertical
       {activePath}
+      {accordion}
       popover={true}
       onNavigate={() => (popoverOpen = false)}
     />
