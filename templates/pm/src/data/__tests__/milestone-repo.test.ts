@@ -2,14 +2,12 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import 'fake-indexeddb/auto'
 import { PMDatabase } from '@/db/schema'
 import { createDexieMilestoneRepository } from '@/data/dexie/milestone-repo'
-import { createDexieIssueRepository } from '@/data/dexie/issue-repo'
 import type { Issue } from '@/types'
 
 /** 里程碑仓库：删除解绑语义（与 cycle-repo/mock 端同口径） */
 describe('milestone repo', () => {
   let db: PMDatabase
   let milestones: ReturnType<typeof createDexieMilestoneRepository>
-  let issues: ReturnType<typeof createDexieIssueRepository>
 
   const seedIssue = (over: Partial<Issue>): Issue => ({
     id: crypto.randomUUID(),
@@ -46,7 +44,6 @@ describe('milestone repo', () => {
       { id: 'ms-2', projectId: 'p1', name: 'M2', dueAt: null, createdAt: 1000 },
     ])
     milestones = createDexieMilestoneRepository(db)
-    issues = createDexieIssueRepository(db)
   })
 
   it('delete 解除归属而不是连带消失：Issue 退回「无里程碑」', async () => {
