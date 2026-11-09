@@ -3,7 +3,7 @@
 import { ISSUE_PRIORITIES, type IssuePriority, type IssueStatus } from '../types/index.ts'
 
 export type SortBy = 'updatedAt' | 'priority' | 'createdAt'
-export type Grouping = 'none' | 'priority' | 'assignee'
+export type Grouping = 'none' | 'priority' | 'assignee' | 'module'
 
 /** 负责人筛选中「未分配」的哨兵值：成员 id 不会取此值 */
 export const UNASSIGNED = '__none__'
@@ -37,6 +37,8 @@ export interface Filters {
   cycleFilter: string | null
   /** 里程碑单选：null = 全部里程碑，NO_MILESTONE = 无里程碑，其余为 milestoneId */
   milestoneFilter: string | null
+  /** 模块单选：null = 全部模块，NO_MODULE = 未分组，其余为 moduleId */
+  moduleFilter: string | null
 }
 
 export const DEFAULT_FILTERS: Filters = {
@@ -51,6 +53,7 @@ export const DEFAULT_FILTERS: Filters = {
   sortBy: 'updatedAt',
   cycleFilter: null,
   milestoneFilter: null,
+  moduleFilter: null,
 }
 
 export const LIST_WINDOW = 200
@@ -125,6 +128,9 @@ export function normalizeFilters(raw: unknown): Filters {
       typeof rec.milestoneFilter === 'string' && rec.milestoneFilter !== ''
         ? rec.milestoneFilter
         : null,
+    // 模块 id 无法穷举校验：任意非空字符串保留（含 __none_module__ 哨兵）
+    moduleFilter:
+      typeof rec.moduleFilter === 'string' && rec.moduleFilter !== '' ? rec.moduleFilter : null,
   }
 }
 
@@ -146,6 +152,7 @@ export function hasActiveFilters(f: Filters): boolean {
     f.labelFilter.length > 0 ||
     f.cycleFilter !== null ||
     f.milestoneFilter !== null ||
+    f.moduleFilter !== null ||
     f.search !== '' ||
     f.myOnly ||
     f.reviewOnly

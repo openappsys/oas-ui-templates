@@ -21,6 +21,8 @@ export function FilterBar({
   assigneeOptions,
   labelOptions,
   cycleOptions,
+  milestoneOptions,
+  moduleOptions,
 }: {
   filters: Filters
   setFilters: Dispatch<SetStateAction<Filters>>
@@ -29,13 +31,17 @@ export function FilterBar({
   assigneeOptions: FilterOption[]
   labelOptions: FilterOption[]
   cycleOptions: FilterOption[]
+  milestoneOptions: FilterOption[]
+  moduleOptions: FilterOption[]
 }) {
   const active =
     filters.statusFilter.length > 0 ||
     filters.priorityFilter.length > 0 ||
     filters.assigneeFilter.length > 0 ||
     filters.labelFilter.length > 0 ||
-    filters.cycleFilter !== null
+    filters.cycleFilter !== null ||
+    filters.milestoneFilter !== null ||
+    filters.moduleFilter !== null
   const setF = <K extends keyof Filters>(k: K, v: Filters[K]) =>
     setFilters((prev) => ({ ...prev, [k]: v }))
   return (
@@ -86,6 +92,23 @@ export function FilterBar({
         options={cycleOptions}
         onChange={(v) => setF('cycleFilter', v === 'all' ? null : v)}
       />
+      {/* 里程碑/模块单选：同迭代契约（侧栏组与顶部栏读写同一份 Filters） */}
+      <span className="filter-bar-label">{t('milestone')}</span>
+      <OSelect
+        testid="filters-milestone"
+        ariaLabel={t('milestone')}
+        value={filters.milestoneFilter ?? 'all'}
+        options={milestoneOptions}
+        onChange={(v) => setF('milestoneFilter', v === 'all' ? null : v)}
+      />
+      <span className="filter-bar-label">{t('modules')}</span>
+      <OSelect
+        testid="filters-module"
+        ariaLabel={t('modules')}
+        value={filters.moduleFilter ?? 'all'}
+        options={moduleOptions}
+        onChange={(v) => setF('moduleFilter', v === 'all' ? null : v)}
+      />
       <button
         className="filter-bar-clear"
         type="button"
@@ -100,6 +123,8 @@ export function FilterBar({
             assigneeFilter: [],
             labelFilter: [],
             cycleFilter: null,
+            milestoneFilter: null,
+            moduleFilter: null,
           }))
         }
       >

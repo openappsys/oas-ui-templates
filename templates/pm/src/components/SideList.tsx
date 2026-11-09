@@ -16,6 +16,7 @@ export type SideKind =
   | 'savedview'
   | 'cycle'
   | 'milestone'
+  | 'module'
   | 'assignee'
   | 'label'
   | 'member-more'
@@ -115,6 +116,9 @@ function rowIcon(row: SideRow): string {
     case 'milestone':
       // diamond = 里程碑
       return 'pm-milestone'
+    case 'module':
+      // organization = 模块/分组容器（图标集内最接近「归类」的语义）
+      return 'organization'
     case 'assignee':
       return 'user'
     case 'member-more':

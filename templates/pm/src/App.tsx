@@ -18,6 +18,8 @@ import {
   LIST_WINDOW_STEP,
   TIMELINE_WINDOW,
   hasActiveFilters,
+  NO_MILESTONE,
+  NO_MODULE,
   parseFilters,
   toggleIn,
   UNASSIGNED,
@@ -114,6 +116,7 @@ function useIssueWindow(f: Filters, currentUser: string, listLimit: number, retr
           sortBy: f.sortBy,
           cycleFilter: f.cycleFilter,
           milestoneFilter: f.milestoneFilter,
+          moduleFilter: f.moduleFilter,
         },
         currentUser,
         listLimit,
@@ -129,6 +132,7 @@ function useIssueWindow(f: Filters, currentUser: string, listLimit: number, retr
       f.sortBy,
       f.cycleFilter,
       f.milestoneFilter,
+      f.moduleFilter,
       currentUser,
       listLimit,
       retryNonce,
@@ -171,6 +175,23 @@ function useCycles(projectId: string): Cycle[] | undefined {
 function useMilestones(projectId: string) {
   const { milestones } = useRepositories()
   return useObservable(() => milestones.live(projectId), [milestones, projectId])
+}
+
+/** 当前项目作用域下的模块（名称升序）；「全部项目」跨项目并集 */
+function useModules(projectId: string) {
+  const { modules } = useRepositories()
+  return useObservable(() => modules.live(projectId), [modules, projectId])
+}
+
+/** 模块组计数：moduleId → 该模块在库工作项数（侧栏角标用，软删行不计） */
+function useModuleCountTotals(projectId: string) {
+  const { modules } = useRepositories()
+  const rows = useObservable(() => modules.liveModuleCounts(projectId), [modules, projectId])
+  return useMemo(() => {
+    const byModule = new Map<string, number>()
+    for (const r of rows ?? []) byModule.set(r.moduleId, r.total)
+    return byModule
+  }, [rows])
 }
 
 /** 迭代组计数：cycleId → 该周期工作项总数（侧栏角标用）。
@@ -454,6 +475,8 @@ function Workspace({
   const cycles = useCycles(filters.projectId)
   const cycleCounts = useCycleCountTotals(filters.projectId)
   const milestones = useMilestones(filters.projectId)
+  const modules = useModules(filters.projectId)
+  const moduleCounts = useModuleCountTotals(filters.projectId)
   const memberCounts = useFullAssigneeCounts(filters.projectId, counts?.total)
   const subProgressRows = useObservable(
     () => issuesRepo.liveSubProgress(filters.projectId),
@@ -573,6 +596,7 @@ function Workspace({
       statusFilter: [],
       cycleFilter: null,
       milestoneFilter: null,
+      moduleFilter: null,
     }))
     setView('issues')
   }, [])
@@ -712,6 +736,25 @@ function Workspace({
     ],
     [cycles, lang],
   )
+  // 里程碑/模块筛选下拉（FilterBar 用；与侧栏组同一数据源）
+  // biome-ignore lint/correctness/useExhaustiveDependencies: t() 读模块级语言态，lang 是重算触发器
+  const milestoneFilterOptions = useMemo(
+    () => [
+      { label: t('allMilestones'), value: 'all' },
+      ...(milestones ?? []).map((m) => ({ label: m.name, value: m.id })),
+      { label: t('milestoneNone'), value: NO_MILESTONE },
+    ],
+    [milestones, lang],
+  )
+  // biome-ignore lint/correctness/useExhaustiveDependencies: t() 读模块级语言态，lang 是重算触发器
+  const moduleFilterOptions = useMemo(
+    () => [
+      { label: t('allModules'), value: 'all' },
+      ...(modules ?? []).map((m) => ({ label: m.name, value: m.id })),
+      { label: t('moduleNone'), value: NO_MODULE },
+    ],
+    [modules, lang],
+  )
   // 新建 Issue 的项目下拉：只列真实项目（「全部项目」不是可写入作用域）
   const projectOptions = useMemo(
     () => (projects ?? []).map((p) => ({ label: p.name, value: p.id })),
@@ -763,6 +806,7 @@ function Workspace({
       labelFilter: [],
       cycleFilter: null,
       milestoneFilter: null,
+      moduleFilter: null,
       search: '',
       myOnly: false,
       reviewOnly: false,
@@ -914,6 +958,45 @@ function Workspace({
     ),
   ]
 
+  // 「未分组」计数 = 项目总量 - 已归模块之和（两者都排除软删行，同口径相减）
+  const noModuleCount = useMemo(() => {
+    if (counts?.total == null) return undefined
+    let assigned = 0
+    for (const n of moduleCounts.values()) assigned += n
+    return Math.max(counts.total - assigned, 0).toLocaleString()
+  }, [counts?.total, moduleCounts])
+
+  // 模块组（v18）：单选语义同里程碑；「未分组」哨兵行兜底无 moduleId 的 Issue（有计数）
+  const moduleRows: SideRow[] = [
+    {
+      value: 'module:all',
+      kind: 'module',
+      id: 'all',
+      label: t('allModules'),
+      selected: filters.moduleFilter === null,
+    },
+    ...(modules ?? []).map(
+      (m): SideRow => ({
+        value: `module:${m.id}`,
+        kind: 'module',
+        id: m.id,
+        label: m.name,
+        count: (moduleCounts.get(m.id) ?? 0).toLocaleString(),
+        selected: filters.moduleFilter === m.id,
+        highlight: 'weak',
+      }),
+    ),
+    {
+      value: `module:${NO_MODULE}`,
+      kind: 'module',
+      id: NO_MODULE,
+      label: t('moduleNone'),
+      count: noModuleCount,
+      selected: filters.moduleFilter === NO_MODULE,
+      highlight: 'weak',
+    },
+  ]
+
   const sideSections: SideSection[] = [
     {
       key: 'projects',
@@ -1027,6 +1110,13 @@ function Workspace({
           children: milestoneRows,
         },
         {
+          value: 'group:modules',
+          kind: 'group',
+          label: t('modules'),
+          collapseKey: 'modules',
+          children: moduleRows,
+        },
+        {
           value: 'group:members',
           kind: 'group',
           label: t('members'),
@@ -1114,6 +1204,16 @@ function Workspace({
           setFilters((prev) => ({
             ...prev,
             milestoneFilter: prev.milestoneFilter === next ? null : next,
+          }))
+          break
+        }
+        case 'module': {
+          // 单选切换（同里程碑）：再点取消；「全部模块」行清空；
+          // NO_MODULE 哨兵行 = 未分组（Issue.moduleId 为空桶）
+          const next = row.id === 'all' ? null : (row.id ?? null)
+          setFilters((prev) => ({
+            ...prev,
+            moduleFilter: prev.moduleFilter === next ? null : next,
           }))
           break
         }
@@ -1447,6 +1547,8 @@ function Workspace({
                   assigneeOptions={assigneeFilterOptions}
                   labelOptions={labelFilterOptions}
                   cycleOptions={cycleFilterOptions}
+                  milestoneOptions={milestoneFilterOptions}
+                  moduleOptions={moduleFilterOptions}
                 />
               )}
               {view === 'dashboard' && (

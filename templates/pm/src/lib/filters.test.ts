@@ -4,6 +4,7 @@ import {
   ALL_PROJECTS,
   DEFAULT_FILTERS,
   hasActiveFilters,
+  NO_MODULE,
   normalizeFilters,
   parseFilters,
   toggleIn,
@@ -33,7 +34,15 @@ describe('normalizeFilters', () => {
       sortBy: 'priority',
       cycleFilter: null,
       milestoneFilter: null,
+      moduleFilter: null,
     })
+  })
+
+  it('moduleFilter：任意非空字符串保留（含未分组哨兵），空串归 null', () => {
+    expect(normalizeFilters({ moduleFilter: 'mod-1' }).moduleFilter).toBe('mod-1')
+    expect(normalizeFilters({ moduleFilter: NO_MODULE }).moduleFilter).toBe(NO_MODULE)
+    expect(normalizeFilters({ moduleFilter: '' }).moduleFilter).toBeNull()
+    expect(normalizeFilters({}).moduleFilter).toBeNull()
   })
 
   it('旧 null / 缺失字段归一为空数组（＝该维度不限）', () => {
@@ -142,6 +151,8 @@ describe('hasActiveFilters', () => {
     expect(hasActiveFilters({ ...DEFAULT_FILTERS, priorityFilter: ['urgent'] })).toBe(true)
     expect(hasActiveFilters({ ...DEFAULT_FILTERS, assigneeFilter: ['member-1'] })).toBe(true)
     expect(hasActiveFilters({ ...DEFAULT_FILTERS, cycleFilter: 'cycle-1' })).toBe(true)
+    expect(hasActiveFilters({ ...DEFAULT_FILTERS, moduleFilter: NO_MODULE })).toBe(true)
+    expect(hasActiveFilters({ ...DEFAULT_FILTERS, moduleFilter: 'mod-1' })).toBe(true)
     expect(hasActiveFilters({ ...DEFAULT_FILTERS, search: 'x' })).toBe(true)
     expect(hasActiveFilters({ ...DEFAULT_FILTERS, myOnly: true })).toBe(true)
   })
