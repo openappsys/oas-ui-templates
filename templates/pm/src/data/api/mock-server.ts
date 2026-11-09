@@ -626,7 +626,9 @@ function windowIssues(store: MockStore, q: URLSearchParams): Issue[] {
       )
       .sort(byUpdatedDesc)
   } else if (directMilestone) {
-    // 里程碑直取（与 Dexie [projectId+milestoneId] 索引同口径）
+    // 里程碑直取（与 Dexie [projectId+milestoneId] 索引同口径）。
+    // 分页必须放在全部维度过滤 + 排序之后（同 Dexie L300-301）：先 slice 再过滤
+    // 会把窗口截断后才套 assignee/priority 等条件，组合筛选结果与 Dexie 分叉
     out = store.issues
       .filter(
         (i) =>
@@ -636,7 +638,6 @@ function windowIssues(store: MockStore, q: URLSearchParams): Issue[] {
           (statusSet.size === 0 || statusSet.has(i.status)),
       )
       .sort(byUpdatedDesc)
-      .slice(0, limit)
   } else {
     const rows = store.issues.filter(
       (i) =>
@@ -689,8 +690,9 @@ function windowIssues(store: MockStore, q: URLSearchParams): Issue[] {
   } else if (sortBy === 'createdAt') {
     out = [...out].sort((a, b) => b.createdAt - a.createdAt)
   }
-  // 迭代直取在筛选 + 排序后分页；搜索分支沿用 2000 上限，窗口分支取数时已截断
-  if (directCycle && !search) out = out.slice(0, limit)
+  // 直取路径在「筛选 + 排序」后分页（列表滚动续载即放大 limit）；
+  // 搜索分支沿用 2000 上限不分页，窗口分支已在取数时截断
+  if ((directCycle || directMilestone) && !search) out = out.slice(0, limit)
   return out
 }
 
@@ -1015,6 +1017,7 @@ function exportEnvelope(store: MockStore) {
       projectMembers: [...store.projectMembers].sort(byIdAsc),
       milestones: [...store.milestones].sort(byIdAsc),
       workflowStates: [...store.workflowStates].sort(byIdAsc),
+      workflows: [...store.workflows].sort(byIdAsc),
       worklogs: [...store.worklogs].sort(byIdAsc),
     },
   })

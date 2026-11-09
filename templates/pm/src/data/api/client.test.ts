@@ -106,6 +106,7 @@ describe('契约：同一份 seed 下 Dexie 与 API 输出相同', () => {
     await db.projectMembers.bulkPut(store.projectMembers)
     await db.milestones.bulkPut(store.milestones)
     await db.workflowStates.bulkPut(store.workflowStates)
+    await db.workflows.bulkPut(store.workflows)
     await db.worklogs.bulkPut(store.worklogs)
     dexie = createDexieRepositories(db)
     api = createApiRepositories({ transport: directTransport(store), pollMs: 10 })
@@ -507,6 +508,34 @@ describe('契约：同一份 seed 下 Dexie 与 API 输出相同', () => {
     expect(
       (await first(dexie.issues.liveCycleIssues(projectId, 'cycle-2'))).length,
     ).toBeGreaterThan(0)
+  })
+
+  it('liveWindow milestoneFilter 一致：直取 = 全维度过滤 + 排序后分页（先过滤再 slice）', async () => {
+    // milestone-1 挂 8 条（seed 口径）：组合 priority 过滤 + 小 limit。
+    // 回归点：旧 mock 直取先 slice 再套 assignee/priority 过滤，截断窗口后丢行，与 Dexie 分叉
+    const msIssues = store.issues.filter((i) => i.milestoneId === 'milestone-1' && !i.deletedAt)
+    expect(msIssues.length).toBeGreaterThan(3)
+    const pri = msIssues[0]!.priority
+    const expectCount = msIssues.filter((i) => i.priority === pri).length
+    const base = filters({ milestoneFilter: 'milestone-1', priorityFilter: [pri] })
+    for (const limit of [undefined, 3]) {
+      const a = await first(api.issues.liveWindow(base, 'member-1', limit))
+      const d = await first(dexie.issues.liveWindow(base, 'member-1', limit))
+      expect(a).toEqual(d)
+      expect(a.length).toBe(Math.min(expectCount, limit ?? expectCount))
+    }
+    // sortBy 重排后仍一致（排序在分页前）
+    const f2 = filters({ milestoneFilter: 'milestone-1', sortBy: 'priority' })
+    expect(await first(api.issues.liveWindow(f2, 'member-1', 5))).toEqual(
+      await first(dexie.issues.liveWindow(f2, 'member-1', 5)),
+    )
+    // 全部项目作用域：Dexie 端不能用 [projectId+milestoneId] 复合索引（'__all__' 恒空），
+    // 必须走单列 milestoneId——回归点：旧 Dexie 在此静默返回零行
+    const fall = filters({ projectId: '__all__', milestoneFilter: 'milestone-1' })
+    const allA = await first(api.issues.liveWindow(fall, 'member-1'))
+    const allD = await first(dexie.issues.liveWindow(fall, 'member-1'))
+    expect(allA).toEqual(allD)
+    expect(allD.length).toBe(msIssues.length)
   })
 
   it('comments 增改删与按时间排序一致（同毫秒并列按主键序，不比顺序）', async () => {

@@ -184,6 +184,13 @@ export function IssueListView({
     return [...map.entries()]
   }, [list, grouping, unassignedLabel])
 
+  // 分组标题：负责人桶显示成员姓名（memberMap），优先级桶走 i18n 词汇——
+  // 原始 key 是 member-1/urgent 这类 id/枚举值，直接渲染是现存显示 bug
+  const groupTitle = useCallback(
+    (k: string) => (grouping === 'priority' ? priorityLabel(k) : (memberMap.get(k)?.name ?? k)),
+    [grouping, memberMap],
+  )
+
   const cursorId = cursorIndex >= 0 && cursorIndex < list.length ? list[cursorIndex].id : null
 
   const rowEl = (i: Issue) => (
@@ -398,7 +405,7 @@ export function IssueListView({
           {groups.map(([k, arr]) => (
             <div key={k} className="issue-group">
               <p className="issue-group-title">
-                {k} <oas-badge>{String(arr.length)}</oas-badge>
+                {groupTitle(k)} <oas-badge>{String(arr.length)}</oas-badge>
               </p>
               {arr.slice(0, GROUP_PREVIEW).map(rowEl)}
               {arr.length > GROUP_PREVIEW && (

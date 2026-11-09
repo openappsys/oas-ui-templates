@@ -63,7 +63,16 @@ export function createDexieMilestoneRepository(db: PMDatabase): MilestoneReposit
       await db.milestones.update(id, changes)
     },
     async delete(id) {
-      await db.milestones.delete(id)
+      // 同事务解除归属：里程碑没了 Issue 不能连带消失，退回「无里程碑」。
+      // 与 cycle-repo 同口径；mock 端 DELETE 本就这样做——两端对齐，
+      // 否则留下悬空引用：侧栏组消失但 group-by/抽屉回显孤儿 id
+      await db.transaction('rw', db.milestones, db.issues, async () => {
+        const owned = await db.issues.where('milestoneId').equals(id).toArray()
+        const now = Date.now()
+        for (const issue of owned)
+          await db.issues.update(issue.id, { milestoneId: null, updatedAt: now })
+        await db.milestones.delete(id)
+      })
     },
   }
 }

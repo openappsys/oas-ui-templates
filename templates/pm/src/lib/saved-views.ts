@@ -62,9 +62,12 @@ export function sameFilters(a: Filters, b: Filters): boolean {
     a.myOnly === b.myOnly &&
     a.sortBy === b.sortBy &&
     (a.cycleFilter ?? null) === (b.cycleFilter ?? null) &&
+    (a.milestoneFilter ?? null) === (b.milestoneFilter ?? null) &&
+    a.reviewOnly === b.reviewOnly &&
     sameSet(a.statusFilter, b.statusFilter) &&
     sameSet(a.priorityFilter, b.priorityFilter) &&
-    sameSet(a.assigneeFilter, b.assigneeFilter)
+    sameSet(a.assigneeFilter, b.assigneeFilter) &&
+    sameSet(a.labelFilter ?? [], b.labelFilter ?? [])
   )
 }
 

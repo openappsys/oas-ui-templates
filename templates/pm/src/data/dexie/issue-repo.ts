@@ -217,15 +217,16 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
           out = alive(await cycleOwnedRows(db, pid, directCycle), deleted).sort(byUpdatedDesc)
           if (want.size) out = out.filter((i) => want.has(i.status))
         } else if (directMilestone) {
-          // 里程碑直取：[projectId+milestoneId] 索引（v16），同周期直取不分片
+          // 里程碑直取（同周期直取不分片）。全部项目作用域必须走单列 milestoneId 索引——
+          // 复合 [projectId+milestoneId] 用 '__all__' 当 projectId 会恒空（跨项目筛选静默零结果）
           const want = new Set(statuses)
-          out = alive(
-            await db.issues
-              .where('[projectId+milestoneId]')
-              .equals([pid, directMilestone])
-              .toArray(),
-            deleted,
-          ).sort(byUpdatedDesc)
+          const rows = allProjects
+            ? await db.issues.where('milestoneId').equals(directMilestone).toArray()
+            : await db.issues
+                .where('[projectId+milestoneId]')
+                .equals([pid, directMilestone])
+                .toArray()
+          out = alive(rows, deleted).sort(byUpdatedDesc)
           if (want.size) out = out.filter((i) => want.has(i.status))
         } else if (statuses.length === 0) {
           const source = allProjects

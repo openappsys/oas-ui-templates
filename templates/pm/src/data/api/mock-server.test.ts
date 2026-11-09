@@ -660,7 +660,7 @@ describe('项目/成员守卫', () => {
 })
 
 describe('备份信封与 reset', () => {
-  it('export 信封含 10 版元信息与 16 张表', () => {
+  it('export 信封含 10 版元信息与 17 张表（v17 起含 workflows）', () => {
     const store = createMockStore({ now: FIXED })
     const body = call(store, 'GET', '/api/admin/export').body as {
       app: string
@@ -687,6 +687,7 @@ describe('备份信封与 reset', () => {
       'savedViews',
       'settings',
       'workflowStates',
+      'workflows',
       'worklogs',
     ])
     expect(body.tables.issues).toHaveLength(MOCK_ISSUE_COUNT)

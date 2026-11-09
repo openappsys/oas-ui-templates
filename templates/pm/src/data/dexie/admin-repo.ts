@@ -148,6 +148,7 @@ export function createDexieAdminRepository(db: PMDatabase): AdminRepository {
         projectMembers,
         milestones,
         workflowStates,
+        workflows,
         worklogs,
       ] = await Promise.all([
         db.issues.toArray(),
@@ -165,6 +166,7 @@ export function createDexieAdminRepository(db: PMDatabase): AdminRepository {
         db.projectMembers.toArray(),
         db.milestones.toArray(),
         db.workflowStates.toArray(),
+        db.workflows.toArray(),
         db.worklogs.toArray(),
       ])
       return JSON.stringify({
@@ -187,6 +189,7 @@ export function createDexieAdminRepository(db: PMDatabase): AdminRepository {
           projectMembers,
           milestones,
           workflowStates,
+          workflows,
           worklogs,
         },
       })
@@ -221,6 +224,8 @@ export function createDexieAdminRepository(db: PMDatabase): AdminRepository {
         // v16 新表：旧备份缺 key 时 rows() 回空数组 → 清空后由工作流状态兜底重播
         [db.milestones, rows('milestones')],
         [db.workflowStates, rows('workflowStates')],
+        // v17 新表：旧备份无 key → rows() 回空数组，清后由下方兜底重建默认工作流
+        [db.workflows, rows('workflows')],
         [db.worklogs, rows('worklogs')],
       ]
       await db.transaction('rw', allTables, async () => {

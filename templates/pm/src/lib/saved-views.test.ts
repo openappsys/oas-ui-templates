@@ -71,12 +71,22 @@ describe('「当前保存视图」判定（侧栏强高亮依据）', () => {
         { ...base, statusFilter: ['done', 'todo'], search: 'abc' },
       ),
     ).toBe(true)
+    // 标签多选：顺序不影响等价
+    expect(
+      sameFilters(
+        { ...base, labelFilter: ['bug', 'frontend'] },
+        { ...base, labelFilter: ['frontend', 'bug'] },
+      ),
+    ).toBe(true)
   })
 
-  it('任一维度不同即不相等（含迭代与排序）', () => {
+  it('任一维度不同即不相等（含迭代/里程碑/评审/标签）', () => {
     expect(sameFilters(base, { ...base, myOnly: true })).toBe(false)
     expect(sameFilters(base, { ...base, sortBy: 'priority' })).toBe(false)
     expect(sameFilters(base, { ...base, cycleFilter: 'cycle-1' })).toBe(false)
+    expect(sameFilters(base, { ...base, milestoneFilter: 'milestone-1' })).toBe(false)
+    expect(sameFilters(base, { ...base, reviewOnly: true })).toBe(false)
+    expect(sameFilters(base, { ...base, labelFilter: ['bug'] })).toBe(false)
     expect(sameFilters(base, { ...base, assigneeFilter: ['member-2'] })).toBe(false)
     expect(sameFilters(base, { ...base, projectId: 'project-2' })).toBe(false)
   })
