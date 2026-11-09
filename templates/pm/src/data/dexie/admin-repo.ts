@@ -23,6 +23,7 @@ export function createDexieAdminRepository(db: PMDatabase): AdminRepository {
     db.projectRoles,
     db.projectMembers,
     db.milestones,
+    db.modules,
     db.workflowStates,
     db.workflows,
     db.worklogs,
@@ -147,6 +148,7 @@ export function createDexieAdminRepository(db: PMDatabase): AdminRepository {
         projectRoles,
         projectMembers,
         milestones,
+        modules,
         workflowStates,
         workflows,
         worklogs,
@@ -165,6 +167,7 @@ export function createDexieAdminRepository(db: PMDatabase): AdminRepository {
         db.projectRoles.toArray(),
         db.projectMembers.toArray(),
         db.milestones.toArray(),
+        db.modules.toArray(),
         db.workflowStates.toArray(),
         db.workflows.toArray(),
         db.worklogs.toArray(),
@@ -188,6 +191,7 @@ export function createDexieAdminRepository(db: PMDatabase): AdminRepository {
           projectRoles,
           projectMembers,
           milestones,
+          modules,
           workflowStates,
           workflows,
           worklogs,
@@ -223,6 +227,8 @@ export function createDexieAdminRepository(db: PMDatabase): AdminRepository {
         [db.projectMembers, rows('projectMembers')],
         // v16 新表：旧备份缺 key 时 rows() 回空数组 → 清空后由工作流状态兜底重播
         [db.milestones, rows('milestones')],
+        // v18 新表：旧备份无 key → rows() 回空数组（全部未分组，无兜底需求）
+        [db.modules, rows('modules')],
         [db.workflowStates, rows('workflowStates')],
         // v17 新表：旧备份无 key → rows() 回空数组，清后由下方兜底重建默认工作流
         [db.workflows, rows('workflows')],

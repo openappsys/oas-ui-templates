@@ -13,6 +13,7 @@ import { createDexieNotificationRepository } from './notification-repo'
 import { createDexieAdminRepository } from './admin-repo'
 import { createDexieRoleRepository } from './role-repo'
 import { createDexieMilestoneRepository } from './milestone-repo'
+import { createDexieModuleRepository } from './module-repo'
 import { createDexieWorkflowStateRepository } from './workflow-state-repo'
 import { createDexieWorkflowRepository } from './workflow-repo'
 import { createDexieWorklogRepository } from './worklog-repo'
@@ -39,6 +40,7 @@ export function createDexieRepositories(database: PMDatabase): Repositories {
     projectMembers: createDexieProjectMemberRepository(database),
     admin: createDexieAdminRepository(database),
     milestones: createDexieMilestoneRepository(database),
+    modules: createDexieModuleRepository(database),
     workflowStates: createDexieWorkflowStateRepository(database),
     workflows: createDexieWorkflowRepository(database),
     worklogs: createDexieWorklogRepository(database),

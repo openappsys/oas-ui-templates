@@ -7,6 +7,7 @@ import type {
   IssueStatus,
   Member,
   Milestone,
+  Module,
   Workflow,
   Notification,
   Project,
@@ -38,6 +39,8 @@ export interface IssueWindowFilters {
   cycleFilter: string | null
   /** 里程碑单选；缺省 = 不限（旧调用方无需感知该维度） */
   milestoneFilter?: string | null
+  /** 模块单选：具体 moduleId / '__none__'（未分组哨兵）；缺省 = 不限 */
+  moduleFilter?: string | null
 }
 
 export interface ProjectCounts {
@@ -158,6 +161,23 @@ export interface MilestoneRepository {
     description?: string
   }): Promise<Milestone>
   update(id: string, changes: Partial<Milestone>): Promise<void>
+  delete(id: string): Promise<void>
+}
+
+/** 模块（项目内 Issue 归类容器）：单选归属；删除须先解绑（cycle-repo 口径，同事务） */
+export interface ModuleRepository {
+  all(projectId: string): Promise<Module[]>
+  live(projectId: string): Observable<Module[]>
+  get(id: string): Promise<Module | undefined>
+  /** 每模块在库 Issue 数（侧栏计数；软删行不计） */
+  liveModuleCounts(projectId: string): Observable<Array<{ moduleId: string; total: number }>>
+  create(input: {
+    projectId: string
+    name: string
+    description?: string
+    leadId?: string | null
+  }): Promise<Module>
+  update(id: string, changes: Partial<Module>): Promise<void>
   delete(id: string): Promise<void>
 }
 
@@ -334,6 +354,7 @@ export interface ProjectMemberRepository {
 export interface Repositories {
   /** 多工作流容器（v17）：一个项目至多绑一个工作流；null = 默认工作流 */
   milestones: MilestoneRepository
+  modules: ModuleRepository
   workflows: WorkflowRepository
   workflowStates: WorkflowStateRepository
   worklogs: WorklogRepository

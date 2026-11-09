@@ -4,7 +4,7 @@ import { PMDatabase } from '@/db/schema'
 import { createDexieRepositories } from '@/data/dexie'
 import type { IssueWindowFilters, Repositories } from '@/data/types'
 import { CURRENT_CYCLE, NO_CYCLE } from '@/lib/cycles'
-import { ALL_PROJECTS, LIST_WINDOW } from '@/lib/filters'
+import { ALL_PROJECTS, LIST_WINDOW, NO_MODULE } from '@/lib/filters'
 import type { Activity, Comment, Issue, Notification } from '@/types'
 import { createApiRepositories, type ApiTransport } from './client'
 import { createMockStore, handleApi, type MockStore } from './mock-server'
@@ -105,6 +105,7 @@ describe('契约：同一份 seed 下 Dexie 与 API 输出相同', () => {
     await db.projectRoles.bulkPut(store.projectRoles)
     await db.projectMembers.bulkPut(store.projectMembers)
     await db.milestones.bulkPut(store.milestones)
+    await db.modules.bulkPut(store.modules)
     await db.workflowStates.bulkPut(store.workflowStates)
     await db.workflows.bulkPut(store.workflows)
     await db.worklogs.bulkPut(store.worklogs)
@@ -536,6 +537,63 @@ describe('契约：同一份 seed 下 Dexie 与 API 输出相同', () => {
     const allD = await first(dexie.issues.liveWindow(fall, 'member-1'))
     expect(allA).toEqual(allD)
     expect(allD.length).toBe(msIssues.length)
+  })
+
+  it('modules 一致：CRUD/重名校验/删除解绑/计数/窗口筛选', async () => {
+    // 模块（v18）：单选归属容器。删除解绑与 Dexie 同口径（cycle 式），重名拒绝。
+    // 两端做同一组操作后逐项对齐——窗口比较须在变更前（种子态一致）
+    const list0 = await first(dexie.modules.live('project-1'))
+    expect(await first(api.modules.live('project-1'))).toEqual(list0)
+    expect(list0.length).toBeGreaterThan(0)
+
+    // 计数 + 窗口筛选（种子态，两端一致）
+    const counts0 = await first(dexie.modules.liveModuleCounts('project-1'))
+    expect(await first(api.modules.liveModuleCounts('project-1'))).toEqual(counts0)
+    const seedMod = list0[0]!
+    expect(counts0.find((x) => x.moduleId === seedMod.id)!.total).toBeGreaterThan(0)
+    for (const f of [
+      filters({ moduleFilter: seedMod.id }),
+      filters({ moduleFilter: NO_MODULE }),
+      filters({ projectId: '__all__', moduleFilter: seedMod.id }),
+    ]) {
+      expect(await first(api.issues.liveWindow(f, 'member-1'))).toEqual(
+        await first(dexie.issues.liveWindow(f, 'member-1')),
+      )
+    }
+
+    // 创建：各自生成 id，名称/项目对齐；trim + 重名校验两端同行为
+    const createdD = await dexie.modules.create({ projectId: 'project-1', name: '  支付通道  ' })
+    const createdA = await api.modules.create({ projectId: 'project-1', name: '  支付通道  ' })
+    expect(createdD.name).toBe('支付通道')
+    expect(createdA.name).toBe('支付通道')
+    await expect(
+      dexie.modules.create({ projectId: 'project-1', name: '支付通道' }),
+    ).rejects.toThrow()
+    await expect(api.modules.create({ projectId: 'project-1', name: '支付通道' })).rejects.toThrow()
+    await expect(dexie.modules.update(createdD.id, { name: '核心服务' })).rejects.toThrow()
+    await expect(api.modules.update(createdA.id, { name: '核心服务' })).rejects.toThrow()
+    // 跨项目同名允许
+    await expect(
+      dexie.modules.create({ projectId: 'project-2', name: '支付通道' }),
+    ).resolves.toBeTruthy()
+
+    // 删除解绑：两端各删自己的同一模块，issue 都退回未分组
+    const delId = list0.find((m) => m.id === 'module-1')!
+    const msIssues = store.issues.filter((i) => i.moduleId === 'module-1' && !i.deletedAt)
+    expect(msIssues.length).toBeGreaterThan(0)
+    await dexie.modules.delete(delId.id)
+    await api.modules.delete(delId.id)
+    expect((await db.issues.get(msIssues[0]!.id))?.moduleId ?? null).toBeNull()
+    // 计数按名称对齐（两端 id 生成器不同：nanoid vs nextId，不比对 id）
+    const byName = async (side: Repositories) => {
+      const mods = await first(side.modules.live('project-1'))
+      const nameOf = new Map(mods.map((m) => [m.id, m.name]))
+      const counts = await first(side.modules.liveModuleCounts('project-1'))
+      return Object.fromEntries(counts.map((c) => [nameOf.get(c.moduleId)!, c.total]))
+    }
+    const countsD = await byName(dexie)
+    expect(await byName(api)).toEqual(countsD)
+    expect('核心服务' in countsD).toBe(false)
   })
 
   it('comments 增改删与按时间排序一致（同毫秒并列按主键序，不比顺序）', async () => {

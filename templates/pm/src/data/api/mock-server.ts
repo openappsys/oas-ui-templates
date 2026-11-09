@@ -5,7 +5,13 @@ import {
   CURRENT_CYCLE,
   NO_CYCLE,
 } from '../../lib/cycles.ts'
-import { ALL_PROJECTS, LIST_WINDOW, NO_MILESTONE, UNASSIGNED } from '../../lib/filters.ts'
+import {
+  ALL_PROJECTS,
+  LIST_WINDOW,
+  NO_MILESTONE,
+  NO_MODULE,
+  UNASSIGNED,
+} from '../../lib/filters.ts'
 import { DEFAULT_WORKFLOW_STATES } from '../../lib/workflow.ts'
 import {
   commentNotificationDrafts,
@@ -35,6 +41,7 @@ import {
   type ProjectRoleAssignment,
   type SavedView,
   type Milestone,
+  type Module,
   type WorkflowState,
   type Workflow,
   type Worklog,
@@ -64,6 +71,7 @@ export interface SeedTables {
   projectRoles: ProjectRoleAssignment[]
   projectMembers: ProjectMember[]
   milestones: Milestone[]
+  modules: Module[]
   workflowStates: WorkflowState[]
   workflows: Workflow[]
   worklogs: Worklog[]
@@ -261,6 +269,7 @@ function buildSeed(seed: number, now: number): SeedTables {
   const cycleById = new Map(cycles.map((c) => [c.id, c]))
   // 里程碑挂载计数器（与 seed-db 同口径）
   let msTagged = 0
+  let modTagged = 0
   for (let i = 0; i < MOCK_ISSUE_COUNT; i++) {
     const roll = rand()
     const project = roll < 0.5 ? projects[0] : roll < 0.8 ? projects[1] : projects[2]
@@ -295,6 +304,12 @@ function buildSeed(seed: number, now: number): SeedTables {
       milestoneId = msTagged < 8 ? 'milestone-1' : 'milestone-2'
       msTagged += 1
     }
+    // 模块归属与 Dexie seed 同口径（project-1 计数器前 10+10 条）：两源数量一致
+    let moduleId: string | null = null
+    if (project.id === 'project-1' && modTagged < 20) {
+      moduleId = modTagged < 10 ? 'module-1' : 'module-2'
+      modTagged += 1
+    }
     const cycle = cycleId === null ? undefined : cycleById.get(cycleId)
     issues.push({
       id: `issue-${project.id}-${i + 1}`,
@@ -323,6 +338,7 @@ function buildSeed(seed: number, now: number): SeedTables {
       parentId: i > 0 && i % 100 === 0 ? issues[0].id : null,
       cycleId,
       milestoneId,
+      moduleId,
     })
   }
 
@@ -378,6 +394,24 @@ function buildSeed(seed: number, now: number): SeedTables {
     notifications: [],
     roles: BUILTIN_ROLES.map((r) => ({ ...r, permissions: [...r.permissions] })),
     audit: [],
+    modules: [
+      {
+        id: 'module-1',
+        projectId: 'project-1',
+        name: '核心服务',
+        description: '后端核心与接口层',
+        leadId: 'member-1',
+        createdAt: now,
+      },
+      {
+        id: 'module-2',
+        projectId: 'project-1',
+        name: '管理后台',
+        description: '运营与配置界面',
+        leadId: 'member-2',
+        createdAt: now,
+      },
+    ],
     milestones: [
       {
         id: 'milestone-1',
@@ -565,7 +599,7 @@ function requiredAction(
     return null
   }
   if (head === 'admin') return 'workspace:manage'
-  if (head === 'projects' || head === 'cycles') return 'project:manage'
+  if (head === 'projects' || head === 'cycles' || head === 'modules') return 'project:manage'
   if (head === 'members') return 'member:manage'
   if (head === 'roles') return 'workspace:manage'
   if (head === 'audit') return 'anyAdmin'
@@ -604,6 +638,8 @@ function windowIssues(store: MockStore, q: URLSearchParams): Issue[] {
     cycleFilter && cycleFilter !== CURRENT_CYCLE && cycleFilter !== NO_CYCLE ? cycleFilter : null
   const directMilestone =
     milestoneFilter && milestoneFilter !== NO_MILESTONE ? milestoneFilter : null
+  const moduleFilter = q.get('module') ?? ''
+  const directModule = moduleFilter && moduleFilter !== NO_MODULE ? moduleFilter : null
 
   let out: Issue[]
   if (search) {
@@ -635,6 +671,17 @@ function windowIssues(store: MockStore, q: URLSearchParams): Issue[] {
           notDeleted(i) &&
           (allProjects || i.projectId === projectId) &&
           i.milestoneId === directMilestone &&
+          (statusSet.size === 0 || statusSet.has(i.status)),
+      )
+      .sort(byUpdatedDesc)
+  } else if (directModule) {
+    // 模块直取：与 Dexie 同口径——全量取该模块行，全部维度过滤 + 排序后末位分页
+    out = store.issues
+      .filter(
+        (i) =>
+          notDeleted(i) &&
+          (allProjects || i.projectId === projectId) &&
+          i.moduleId === directModule &&
           (statusSet.size === 0 || statusSet.has(i.status)),
       )
       .sort(byUpdatedDesc)
@@ -675,6 +722,12 @@ function windowIssues(store: MockStore, q: URLSearchParams): Issue[] {
       milestoneFilter === NO_MILESTONE ? i.milestoneId == null : i.milestoneId === milestoneFilter,
     )
   }
+  if (moduleFilter) {
+    // 具体模块已在直取分支全量取（此处空操作）；哨兵 = 未分组
+    out = out.filter((i) =>
+      moduleFilter === NO_MODULE ? i.moduleId == null : i.moduleId === moduleFilter,
+    )
+  }
   if (cycleFilter) {
     // 与 Dexie 同口径：具体周期已在上面直取（此处是空操作）；当前迭代需要周期区间
     const cycles =
@@ -692,7 +745,7 @@ function windowIssues(store: MockStore, q: URLSearchParams): Issue[] {
   }
   // 直取路径在「筛选 + 排序」后分页（列表滚动续载即放大 limit）；
   // 搜索分支沿用 2000 上限不分页，窗口分支已在取数时截断
-  if ((directCycle || directMilestone) && !search) out = out.slice(0, limit)
+  if ((directCycle || directMilestone || directModule) && !search) out = out.slice(0, limit)
   return out
 }
 
@@ -1016,6 +1069,7 @@ function exportEnvelope(store: MockStore) {
       projectRoles: [...store.projectRoles].sort(byIdAsc),
       projectMembers: [...store.projectMembers].sort(byIdAsc),
       milestones: [...store.milestones].sort(byIdAsc),
+      modules: [...store.modules].sort(byIdAsc),
       workflowStates: [...store.workflowStates].sort(byIdAsc),
       workflows: [...store.workflows].sort(byIdAsc),
       worklogs: [...store.worklogs].sort(byIdAsc),
@@ -1053,6 +1107,7 @@ function importEnvelope(store: MockStore, raw: unknown): void {
     projectRoles: rows('projectRoles') as ProjectRoleAssignment[],
     projectMembers: rows('projectMembers') as ProjectMember[],
     milestones: rows('milestones') as Milestone[],
+    modules: (rows('modules') as Module[]).length > 0 ? (rows('modules') as Module[]) : [],
     workflowStates: rows('workflowStates') as WorkflowState[],
     workflows: ((rows('workflows') as Workflow[]).length > 0
       ? rows('workflows')
@@ -1105,6 +1160,7 @@ function wipeStore(store: MockStore, keepMemberId?: string): void {
   store.projectRoles = []
   store.projectMembers = []
   store.milestones = []
+  store.modules = []
   store.worklogs = []
   store.workflowStates = DEFAULT_WORKFLOW_STATES.map((s) => ({
     ...s,
@@ -2007,6 +2063,93 @@ function routeMilestones(
   fail(405, 'method not allowed')
 }
 
+/** 模块：与 milestones 同构。POST/PATCH 做 trim + 同项目重名校验（409，与 Dexie repo 同口径）；
+ *  DELETE 解除归属（Issue 退回未分组）再删行——与 cycle/milestone 的 Dexie 口径一致 */
+function routeModules(
+  store: MockStore,
+  method: string,
+  second: string | undefined,
+  q: URLSearchParams,
+  body: unknown,
+): ApiResponse {
+  if (!second) {
+    if (method === 'GET') {
+      const projectId = q.get('projectId') ?? ''
+      const rows = store.modules
+        .filter((m) => projectId === '' || projectId === '__all__' || m.projectId === projectId)
+        .sort((a, b) => a.name.localeCompare(b.name, 'zh-Hans-CN'))
+      return ok({ items: rows })
+    }
+    if (method === 'POST') {
+      const input = asRecord(body)
+      const projectId = String(input.projectId ?? '')
+      const name = String(input.name ?? '').trim()
+      if (!name) fail(400, '模块名称不能为空')
+      if (store.modules.some((m) => m.projectId === projectId && m.name === name))
+        fail(409, '同名模块已存在')
+      const mod: Module = {
+        id: nextId(store, 'module'),
+        projectId,
+        name,
+        ...(typeof input.description === 'string' ? { description: input.description } : {}),
+        ...(typeof input.leadId === 'string' ? { leadId: input.leadId } : {}),
+        createdAt: Date.now(),
+      }
+      store.modules.push(mod)
+      store.revision += 1
+      return ok({ module: mod }, 201)
+    }
+    fail(405, 'method not allowed')
+  }
+  const mod = store.modules.find((m) => m.id === second)
+  if (!mod) fail(404, 'module not found')
+  if (method === 'GET') return ok({ module: mod })
+  if (method === 'PATCH') {
+    const raw = asRecord(body)
+    const changes = raw.changes !== undefined ? asRecord(raw.changes) : raw
+    if (typeof changes.name === 'string') {
+      changes.name = changes.name.trim()
+      if (!changes.name) fail(400, '模块名称不能为空')
+      if (
+        store.modules.some(
+          (m) => m.projectId === mod.projectId && m.name === changes.name && m.id !== mod.id,
+        )
+      )
+        fail(409, '同名模块已存在')
+    }
+    Object.assign(mod, changes)
+    store.revision += 1
+    return ok({ ok: true })
+  }
+  if (method === 'DELETE') {
+    const now = Date.now()
+    for (const issue of store.issues) {
+      if (issue.moduleId !== second) continue
+      issue.moduleId = null
+      issue.updatedAt = now
+    }
+    store.modules = store.modules.filter((m) => m.id !== second)
+    store.revision += 1
+    return ok({ ok: true })
+  }
+  fail(405, 'method not allowed')
+}
+
+/** 每模块在库 Issue 数（软删行不计）：与 Dexie liveModuleCounts 同口径 */
+function moduleCounts(
+  store: MockStore,
+  projectId: string,
+): Array<{ moduleId: string; total: number }> {
+  const allProjects = projectId === ALL_PROJECTS
+  const out: Array<{ moduleId: string; total: number }> = []
+  for (const m of store.modules) {
+    if (!allProjects && m.projectId !== projectId) continue
+    const total = store.issues.filter((i) => i.moduleId === m.id && notDeleted(i)).length
+    out.push({ moduleId: m.id, total })
+  }
+  return out
+}
+
 function routeWorkflowStates(
   store: MockStore,
   method: string,
@@ -2509,6 +2652,11 @@ function route(store: MockStore, req: ApiRequest, member: Member | null): ApiRes
       return ok({ items: milestoneProgress(store, q.get('projectId') ?? 'project-1') })
     case 'milestones':
       return routeMilestones(store, method, second, q, req.body)
+    case 'module-counts':
+      if (method !== 'GET') fail(405, 'method not allowed')
+      return ok({ items: moduleCounts(store, q.get('projectId') ?? 'project-1') })
+    case 'modules':
+      return routeModules(store, method, second, q, req.body)
     case 'workflow-states':
       return routeWorkflowStates(store, method, second, third, req.body, q)
     case 'workflows':

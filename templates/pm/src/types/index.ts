@@ -39,6 +39,8 @@ export interface Issue {
   }>
   /** 所属迭代（空 = 未入迭代）。历史数据无此字段，读取处一律按 null 处理 */
   cycleId?: string | null
+  /** 所属模块（空 = 未分组）。项目内归类容器（Jira Components 口径，单选） */
+  moduleId?: string | null
   /** 软删除时间（null/缺失 = 在库可见）。物理删除只在回收站「永久删除」发生 */
   deletedAt?: number | null
   /** 关注者（memberId 列表）：关注者收到该 Issue 的所有变更通知 */
@@ -233,6 +235,18 @@ export interface Milestone {
   /** 目标日期（毫秒时间戳） */
   dueAt: number | null
   description?: string
+  createdAt: number
+}
+
+/** 模块（项目内 Issue 归类容器）：与 Issue 父子层级正交的另一根轴——
+ *  有名字、有负责人、长期存在的「组件/分组」实体（Jira Components 口径，单选归属） */
+export interface Module {
+  id: string
+  projectId: string
+  name: string
+  description?: string
+  /** 模块负责人（可空） */
+  leadId?: string | null
   createdAt: number
 }
 

@@ -161,12 +161,48 @@ export async function seedDatabase(): Promise<void> {
     })
     for (const u of updates) await db.issues.update(u.id, u.changes)
   }
+  // v18b：模块示例（旧库升级补播——空表才播，不覆盖用户数据）。
+  // 归属打标与 mock buildSeed 同口径：project-1 的 seed 形态行（issue-project-1-<n>）前 10/10
+  const ensureModules = async () => {
+    if ((await db.modules.count()) > 0) return
+    const now3 = Date.now()
+    await db.modules.bulkPut([
+      {
+        id: 'module-1',
+        projectId: 'project-1',
+        name: '核心服务',
+        description: '后端核心与接口层',
+        leadId: 'member-1',
+        createdAt: now3,
+      },
+      {
+        id: 'module-2',
+        projectId: 'project-1',
+        name: '管理后台',
+        description: '运营与配置界面',
+        leadId: 'member-2',
+        createdAt: now3,
+      },
+    ])
+    const rows = (await db.issues.where('projectId').equals('project-1').toArray())
+      .filter((i) => /^issue-project-1-\d+$/.test(i.id))
+      .sort((a, b) => Number(a.id.slice(18)) - Number(b.id.slice(18)))
+    const updates: Array<{ id: string; changes: Partial<Issue> }> = []
+    rows.slice(0, 10).forEach((r) => {
+      updates.push({ id: r.id, changes: { moduleId: 'module-1' } })
+    })
+    rows.slice(10, 20).forEach((r) => {
+      updates.push({ id: r.id, changes: { moduleId: 'module-2' } })
+    })
+    for (const u of updates) await db.issues.update(u.id, u.changes)
+  }
   if (marked) {
     await ensureRoles()
     await ensureProjectMembers()
     await ensureAgentMembers()
     await ensureWorkflowStates()
     await ensureMilestones()
+    await ensureModules()
     return
   }
   // 旧 seed 数据（v1 的 updatedAt 走了未来时间戳）/ 中断残留 清表重播；
@@ -284,6 +320,7 @@ export async function seedDatabase(): Promise<void> {
   console.time(`seed:${ISSUE_COUNT}`)
   // 里程碑挂载计数器（project-1 前 8+8 条挂 M1/M2，确定性数量供 e2e 断言）
   let msTagged = 0
+  let modTagged = 0
   // 按 start 步进而非 chunk 计数：规模可能不是 CHUNK 的整数倍（夹取区间是 [1000, 100000]）
   for (let start = 0; start < ISSUE_COUNT; start += CHUNK) {
     const batch: Issue[] = []
@@ -357,6 +394,11 @@ export async function seedDatabase(): Promise<void> {
         milestoneId = msTagged < 8 ? 'milestone-1' : 'milestone-2'
         msTagged += 1
       }
+      let moduleId: string | null = null
+      if (proj.id === 'project-1' && modTagged < 20) {
+        moduleId = modTagged < 10 ? 'module-1' : 'module-2'
+        modTagged += 1
+      }
       const cycle = cycleId === null ? undefined : cycleById.get(cycleId)
       // 完成时刻改为「周期区间内按 idx 均匀铺开」（lib/cycles.demoDoneAt）：
       // 旧的 createdAt + 1~5 天 会落到周期起点之前，燃尽首日一次扣完 → 实际线永远平直
@@ -386,6 +428,7 @@ export async function seedDatabase(): Promise<void> {
         completedAt,
         order: idx,
         milestoneId,
+        moduleId,
         cycleId,
       })
     }
@@ -418,6 +461,24 @@ export async function seedDatabase(): Promise<void> {
       projectId: 'project-1',
       name: 'M2 · 移动端适配',
       dueAt: now + 30 * day,
+      createdAt: now,
+    },
+  ])
+  await db.modules.bulkPut([
+    {
+      id: 'module-1',
+      projectId: 'project-1',
+      name: '核心服务',
+      description: '后端核心与接口层',
+      leadId: 'member-1',
+      createdAt: now,
+    },
+    {
+      id: 'module-2',
+      projectId: 'project-1',
+      name: '管理后台',
+      description: '运营与配置界面',
+      leadId: 'member-2',
       createdAt: now,
     },
   ])

@@ -660,7 +660,7 @@ describe('项目/成员守卫', () => {
 })
 
 describe('备份信封与 reset', () => {
-  it('export 信封含 10 版元信息与 17 张表（v17 起含 workflows）', () => {
+  it('export 信封含 10 版元信息与 18 张表（v17 起含 workflows，v18 起含 modules）', () => {
     const store = createMockStore({ now: FIXED })
     const body = call(store, 'GET', '/api/admin/export').body as {
       app: string
@@ -679,6 +679,7 @@ describe('备份信封与 reset', () => {
       'issues',
       'members',
       'milestones',
+      'modules',
       'notifications',
       'projectMembers',
       'projectRoles',

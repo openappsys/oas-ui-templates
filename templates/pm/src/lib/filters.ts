@@ -11,6 +11,9 @@ export const UNASSIGNED = '__none__'
 /** 「无里程碑」哨兵：里程碑 id 不会取此值 */
 export const NO_MILESTONE = '__none_milestone__'
 
+/** 「未分组（无模块）」哨兵：模块 id 不会取此值 */
+export const NO_MODULE = '__none_module__'
+
 /** 项目作用域的「全部项目」哨兵：项目 id 不会取此值。
  *  projectId 仍是单值单选（不是多选维度）——交叉项目工作台只需要一个 workspace 级作用域 */
 export const ALL_PROJECTS = '__all__'

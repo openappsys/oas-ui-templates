@@ -14,6 +14,7 @@ import type {
   ProjectRoleAssignment,
   SavedView,
   Milestone,
+  Module,
   WorkflowState,
   Workflow,
   Worklog,
@@ -37,6 +38,7 @@ import type {
   MemberRepository,
   MemberWorkload,
   MilestoneRepository,
+  ModuleRepository,
   NotificationRepository,
   ProjectCounts,
   ProjectHealth,
@@ -269,6 +271,7 @@ export function createApiRepositories(options: ApiClientOptions = {}): Repositor
               sortBy: filters.sortBy,
               cycle: filters.cycleFilter,
               milestone: filters.milestoneFilter,
+              module: filters.moduleFilter,
               limit,
             }),
           ),
@@ -675,6 +678,35 @@ export function createApiRepositories(options: ApiClientOptions = {}): Repositor
     },
   }
 
+  const modulesRepo: ModuleRepository = {
+    all: async (projectId: string) =>
+      asItems<Module>(await send('GET', '/api/modules', buildQuery({ projectId }))),
+    live: (projectId: string) =>
+      live(async () =>
+        asItems<Module>(await send('GET', '/api/modules', buildQuery({ projectId }))),
+      ),
+    get: async (id) => send('GET', `/api/modules/${encodeURIComponent(id)}`),
+    liveModuleCounts: (projectId: string) =>
+      live(async () =>
+        asItems<{ moduleId: string; total: number }>(
+          await send('GET', '/api/module-counts', buildQuery({ projectId })),
+        ),
+      ),
+    create: async (input) => {
+      const body = await send<{ module: Module }>('POST', '/api/modules', undefined, input)
+      poke()
+      return body.module
+    },
+    update: async (id, changes: Partial<Module>) => {
+      await send('PATCH', `/api/modules/${encodeURIComponent(id)}`, undefined, changes)
+      poke()
+    },
+    delete: async (id) => {
+      await send('DELETE', `/api/modules/${encodeURIComponent(id)}`)
+      poke()
+    },
+  }
+
   const workflowsRepo: WorkflowRepository = {
     all: async () => asItems<Workflow>(await send('GET', '/api/workflows')),
     live: () => live(async () => asItems<Workflow>(await send('GET', '/api/workflows'))),
@@ -793,6 +825,7 @@ export function createApiRepositories(options: ApiClientOptions = {}): Repositor
     notifications,
     admin,
     milestones: milestonesRepo,
+    modules: modulesRepo,
     workflowStates: workflowStatesRepo,
     workflows: workflowsRepo,
     worklogs: worklogsRepo,

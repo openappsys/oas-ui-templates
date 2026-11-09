@@ -13,6 +13,7 @@ import type {
   ProjectRoleAssignment,
   ProjectMember,
   Milestone,
+  Module,
   WorkflowState,
   Workflow,
   Worklog,
@@ -39,6 +40,7 @@ export class PMDatabase extends Dexie {
   projectRoles!: EntityTable<ProjectRoleAssignment, 'id'>
   projectMembers!: EntityTable<ProjectMember, 'id'>
   milestones!: EntityTable<Milestone, 'id'>
+  modules!: EntityTable<Module, 'id'>
   workflowStates!: EntityTable<WorkflowState, 'id'>
   workflows!: EntityTable<Workflow, 'id'>
   worklogs!: EntityTable<Worklog, 'id'>
@@ -287,6 +289,31 @@ export class PMDatabase extends Dexie {
             })
         }
       })
+    // v18：模块（项目内 Issue 归类容器，Jira Components 口径）。新增 modules 表；
+    // issues 加 moduleId 单列（跨项目 '__all__' 直取走它——复合 [projectId+moduleId]
+    // 用 '__all__' 当 projectId 恒空）+ [projectId+moduleId] 复合（首字段已有独立索引）。
+    // v17→v18 索引重建是预期一次性成本（存量 10W 行）。旧行 moduleId 缺失即未分组
+    this.version(18).stores({
+      issues:
+        'id, projectId, key, status, priority, assigneeId, parentId, cycleId, milestoneId, moduleId, createdAt, updatedAt, deletedAt, [projectId+status], [projectId+priority], [projectId+assigneeId], [projectId+updatedAt], [projectId+status+updatedAt], [assigneeId+status], [status+updatedAt], [projectId+cycleId], [projectId+milestoneId], [projectId+moduleId]',
+      projects: 'id, key',
+      members: 'id, role',
+      comments: 'id, issueId, parentId, [issueId+createdAt]',
+      savedViews: 'id, name',
+      activities: 'id, issueId, [issueId+createdAt], createdAt',
+      settings: 'key',
+      cycles: 'id, projectId, [projectId+startAt]',
+      notifications: 'id, memberId, createdAt, [memberId+createdAt], [memberId+readAt]',
+      roles: 'id, name',
+      audit: 'id, at, actorId, action',
+      projectRoles: 'id, projectId, memberId, [projectId+memberId]',
+      projectMembers: 'id, projectId, memberId, [projectId+memberId]',
+      milestones: 'id, projectId, [projectId+dueAt]',
+      modules: 'id, projectId',
+      workflowStates: 'id, projectId, [projectId+order], workflowId',
+      workflows: 'id, projectId, order',
+      worklogs: 'id, issueId, memberId, [issueId+createdAt], [memberId+createdAt]',
+    })
   }
 }
 

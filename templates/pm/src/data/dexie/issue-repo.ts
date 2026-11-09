@@ -5,7 +5,7 @@ import type { Issue, IssuePriority, IssueStatus } from '@/types'
 import { ISSUE_PRIORITIES, ISSUE_STATUSES } from '@/types'
 import { fromLiveQuery, type Observable } from '@/data/observable'
 import { cycleFilterPredicate, CURRENT_CYCLE, NO_CYCLE } from '@/lib/cycles'
-import { NO_MILESTONE } from '@/lib/filters'
+import { NO_MILESTONE, NO_MODULE } from '@/lib/filters'
 import { ALL_PROJECTS, LIST_WINDOW, UNASSIGNED } from '@/lib/filters'
 import { issueChangeNotificationDrafts, reviewNotificationDrafts } from '@/lib/notify'
 import { PRIORITY_WEIGHT } from '@/lib/order'
@@ -197,6 +197,10 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
           filters.milestoneFilter && filters.milestoneFilter !== NO_MILESTONE
             ? filters.milestoneFilter
             : null
+        // 模块直取：同里程碑——归属是少数派群体，窗口后过滤会被截断；
+        // NO_MODULE（未分组）是多数派，保留窗口后过滤语义
+        const directModule =
+          filters.moduleFilter && filters.moduleFilter !== NO_MODULE ? filters.moduleFilter : null
         const deleted = await deletedIds(db)
         // 已删除行不占窗口名额：多取 deleted.size 条再剔回 limit
         const pad = limit + deleted.size
@@ -226,6 +230,15 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
                 .where('[projectId+milestoneId]')
                 .equals([pid, directMilestone])
                 .toArray()
+          out = alive(rows, deleted).sort(byUpdatedDesc)
+          if (want.size) out = out.filter((i) => want.has(i.status))
+        } else if (directModule) {
+          // 模块直取：全部项目作用域必须走单列 moduleId 索引（复合用 '__all__' 当
+          // projectId 恒空）——同 milestone 的坑，v18 一并规避
+          const want = new Set(statuses)
+          const rows = allProjects
+            ? await db.issues.where('moduleId').equals(directModule).toArray()
+            : await db.issues.where('[projectId+moduleId]').equals([pid, directModule]).toArray()
           out = alive(rows, deleted).sort(byUpdatedDesc)
           if (want.size) out = out.filter((i) => want.has(i.status))
         } else if (statuses.length === 0) {
@@ -280,6 +293,13 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
               ? out.filter((i) => i.milestoneId == null)
               : out.filter((i) => i.milestoneId === filters.milestoneFilter)
         }
+        if (filters.moduleFilter) {
+          // 模块单选：哨兵 = 未分组，其余按 moduleId 精确匹配（具体 id 在直取分支已全量取）
+          out =
+            filters.moduleFilter === NO_MODULE
+              ? out.filter((i) => i.moduleId == null)
+              : out.filter((i) => i.moduleId === filters.moduleFilter)
+        }
         if (filters.cycleFilter) {
           // 当前迭代需要周期区间——同一次查询里读 cycles 表，liveQuery 会跟踪该读取，
           // 周期起止被改后窗口自动重算。具体周期 id 已在上面直取，这里再过滤等于空操作
@@ -298,8 +318,7 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
         }
         // 直取路径在「筛选 + 排序」后分页（列表滚动续载即放大 limit）；
         // 搜索分支沿用 2000 上限不分页，窗口分支已在取数时截断
-        if (directCycle && !search) out = out.slice(0, limit)
-        if (directMilestone && !search) out = out.slice(0, limit)
+        if ((directCycle || directMilestone || directModule) && !search) out = out.slice(0, limit)
         return out
       })
     },
