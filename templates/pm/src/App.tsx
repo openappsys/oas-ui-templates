@@ -1573,6 +1573,7 @@ function Workspace({
                     grouping={grouping}
                     setGrouping={setGrouping}
                     memberMap={memberMap}
+                    modules={modules}
                     onSelect={setSelectedId}
                     onSaveView={() => saveViewRef.current?.setAttribute('visible', '')}
                     savedViews={savedViewOptions}

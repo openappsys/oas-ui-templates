@@ -142,6 +142,7 @@ const TIER_STYLES = `
   .item[data-value^='status:'].active,
   .item[data-value^='priority:'].active,
   .item[data-value^='milestone:'].active,
+  .item[data-value^='module:'].active,
   .item[data-value^='assignee:'].active {
     background: color-mix(in srgb, var(--oas-color-primary) 7%, transparent);
     color: var(--oas-color-text-primary);
@@ -151,6 +152,7 @@ const TIER_STYLES = `
   .item[data-value^='status:'].active .icon,
   .item[data-value^='priority:'].active .icon,
   .item[data-value^='milestone:'].active .icon,
+  .item[data-value^='module:'].active .icon,
   .item[data-value^='assignee:'].active .icon {
     color: var(--oas-color-primary-text);
   }
@@ -158,6 +160,7 @@ const TIER_STYLES = `
   .item[data-value='priority:all'].active,
   .item[data-value='cycle:all'].active,
   .item[data-value='milestone:all'].active,
+  .item[data-value='module:all'].active,
   .item[data-value='assignee:all'].active {
     background: none;
     color: var(--oas-color-text-primary);

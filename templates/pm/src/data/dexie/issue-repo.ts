@@ -566,7 +566,12 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
 
     async bulkApply(
       ids: string[],
-      patch: { status?: IssueStatus; priority?: IssuePriority; assigneeId?: string | null },
+      patch: {
+        status?: IssueStatus
+        priority?: IssuePriority
+        assigneeId?: string | null
+        moduleId?: string | null
+      },
       actorId: string,
     ): Promise<void> {
       // workflowStates 也在事务内：completedAt 语义要读项目状态类别（未列表的表在事务作用域内不可访问）
@@ -623,6 +628,19 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
                 }),
               )
             }
+            if (patch.moduleId !== undefined) {
+              acts.push(
+                db.activities.add({
+                  id: nanoid(),
+                  issueId: id,
+                  actorId,
+                  type: 'moduleId',
+                  field: 'moduleId',
+                  to: patch.moduleId ?? '',
+                  createdAt: now,
+                }),
+              )
+            }
             await Promise.all(acts)
             if (prior) {
               // 批量指派/关闭也走同一套规则：自己触发的不通知自己，解除指派不通知
@@ -655,6 +673,7 @@ export function createDexieIssueRepository(db: PMDatabase): IssueRepository {
                 ? now
                 : null
             }
+            if (patch.moduleId !== undefined) changes.moduleId = patch.moduleId
             if (patch.priority) changes.priority = patch.priority
             if (patch.assigneeId !== undefined) changes.assigneeId = patch.assigneeId
             await db.issues.update(id, changes)

@@ -620,6 +620,7 @@ export function IssueDetailDrawer({
     cycles: cyclesRepo,
     members: membersRepo,
     milestones: milestonesRepo,
+    modules: modulesRepo,
   } = useRepositories()
   const issue = useObservable(() => issuesRepo.live(issueId), [issueId, issuesRepo])
   const subs = useObservable(() => issuesRepo.liveSubIssues(issueId), [issueId, issuesRepo])
@@ -628,6 +629,11 @@ export function IssueDetailDrawer({
   const milestones = useObservable(
     () => milestonesRepo.live(issue?.projectId ?? ''),
     [milestonesRepo, issue?.projectId],
+  )
+  // 模块同口径：本项目作用域
+  const modules = useObservable(
+    () => modulesRepo.live(issue?.projectId ?? ''),
+    [modulesRepo, issue?.projectId],
   )
   // 迭代下拉只列本项目的周期（跨项目周期不可写）；issue 未加载时订阅空项目 id
   const projectCycles = useObservable(
@@ -897,6 +903,7 @@ export function IssueDetailDrawer({
       startAt: 'startAt',
       cycleId: 'cycleId',
       milestoneId: 'milestone',
+      moduleId: 'actModule',
       estimate: 'estimate',
     }
     // 迭代的活动记录写周期名而非 id：历史里出现 nanoid 对读者无意义
@@ -905,6 +912,9 @@ export function IssueDetailDrawer({
     // 里程碑同口径：活动写里程碑名
     const milestoneName = (id: string | null | undefined) =>
       id == null ? '' : ((milestones ?? []).find((m) => m.id === id)?.name ?? id)
+    // 模块同口径：活动写模块名
+    const moduleName = (id: string | null | undefined) =>
+      id == null ? '' : ((modules ?? []).find((m) => m.id === id)?.name ?? id)
     const acts: Promise<unknown>[] = []
     for (const k of Object.keys(changes) as Array<keyof Issue>) {
       if (k === 'updatedAt' || !(k in FIELD_LABEL)) continue
@@ -913,13 +923,17 @@ export function IssueDetailDrawer({
           ? cycleName(changes.cycleId)
           : k === 'milestoneId'
             ? milestoneName(changes.milestoneId)
-            : String(changes[k] ?? '')
+            : k === 'moduleId'
+              ? moduleName(changes.moduleId)
+              : String(changes[k] ?? '')
       const from =
         k === 'cycleId'
           ? cycleName(issue.cycleId)
           : k === 'milestoneId'
             ? milestoneName(issue.milestoneId)
-            : String(issue[k] ?? '')
+            : k === 'moduleId'
+              ? moduleName(issue.moduleId)
+              : String(issue[k] ?? '')
       if (from === to) continue
       acts.push(
         activitiesRepo.log({
@@ -1025,6 +1039,21 @@ export function IssueDetailDrawer({
                 ...(milestones ?? []).map((m) => ({ label: m.name, value: m.id })),
               ]}
               onChange={(v) => save({ milestoneId: v === '__none__' ? null : v })}
+              disabled={!canEdit}
+            />
+          </div>
+          <div className="detail-field">
+            <span>{t('modules')}</span>
+            <OSelect
+              testid="detail-module"
+              ariaLabel={t('modules')}
+              variant="chip"
+              value={issue.moduleId ?? '__none__'}
+              options={[
+                { label: t('moduleNone'), value: '__none__' },
+                ...(modules ?? []).map((m) => ({ label: m.name, value: m.id })),
+              ]}
+              onChange={(v) => save({ moduleId: v === '__none__' ? null : v })}
               disabled={!canEdit}
             />
           </div>

@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
-import type { Issue, Member, SavedView } from '@/types'
+import type { Issue, Member, Module, SavedView } from '@/types'
 import { OSelect, OCheckbox } from '@/components/oas-wrappers'
 import { t, getLang, priorityLabel, statusLabel } from '@/i18n'
 import { BulkBar } from '@/components/BulkBar'
@@ -30,6 +30,7 @@ export function IssueListView({
   grouping,
   setGrouping,
   memberMap,
+  modules,
   onSelect,
   onSaveView,
   savedViews,
@@ -51,6 +52,8 @@ export function IssueListView({
   grouping: Grouping
   setGrouping: (g: Grouping) => void
   memberMap: Map<string, Member>
+  /** 模块分组维度的名称解析（group-by=module 用） */
+  modules?: Module[]
   onSelect: (id: string) => void
   onSaveView: () => void
   /** 保存视图（已按创建时间倒序，由宿主排序） */
@@ -174,6 +177,24 @@ export function IssueListView({
   const unassignedLabel = t('resourceUnassigned')
   const groups = useMemo(() => {
     if (grouping === 'none') return null
+    if (grouping === 'module') {
+      // 模块分组：按模块列表序（名称升序）排，「未分组」桶固定末尾——不能按首现序（滚动加载后漂移）
+      const map = new Map<string, Issue[]>()
+      for (const i of list) {
+        const k = i.moduleId ?? ''
+        const arr = map.get(k) ?? []
+        arr.push(i)
+        map.set(k, arr)
+      }
+      const order = new Map((modules ?? []).map((m, idx) => [m.id, idx]))
+      return [...map.entries()].sort((a, b) => {
+        const ai =
+          a[0] === '' ? Number.MAX_SAFE_INTEGER : (order.get(a[0]) ?? Number.MAX_SAFE_INTEGER)
+        const bi =
+          b[0] === '' ? Number.MAX_SAFE_INTEGER : (order.get(b[0]) ?? Number.MAX_SAFE_INTEGER)
+        return ai - bi
+      })
+    }
     const map = new Map<string, Issue[]>()
     for (const i of list) {
       const k = grouping === 'priority' ? i.priority : (i.assigneeId ?? unassignedLabel)
@@ -182,13 +203,21 @@ export function IssueListView({
       map.set(k, arr)
     }
     return [...map.entries()]
-  }, [list, grouping, unassignedLabel])
+  }, [list, grouping, unassignedLabel, modules])
 
   // 分组标题：负责人桶显示成员姓名（memberMap），优先级桶走 i18n 词汇——
   // 原始 key 是 member-1/urgent 这类 id/枚举值，直接渲染是现存显示 bug
+  const moduleNameById = useMemo(
+    () => new Map((modules ?? []).map((m) => [m.id, m.name])),
+    [modules],
+  )
   const groupTitle = useCallback(
-    (k: string) => (grouping === 'priority' ? priorityLabel(k) : (memberMap.get(k)?.name ?? k)),
-    [grouping, memberMap],
+    (k: string) => {
+      if (grouping === 'module') return k === '' ? t('moduleNone') : (moduleNameById.get(k) ?? k)
+      if (grouping === 'priority') return priorityLabel(k)
+      return memberMap.get(k)?.name ?? k
+    },
+    [grouping, moduleNameById, memberMap],
   )
 
   const cursorId = cursorIndex >= 0 && cursorIndex < list.length ? list[cursorIndex].id : null
@@ -309,6 +338,7 @@ export function IssueListView({
             { label: t('none'), value: 'none' },
             { label: t('byPriority'), value: 'priority' },
             { label: t('byAssignee'), value: 'assignee' },
+            { label: t('byModule'), value: 'module' },
           ]}
           onChange={(v) => setGrouping(v as Grouping)}
         />
@@ -442,6 +472,7 @@ export function IssueListView({
         can={can}
         onDeleted={onDeleted}
         states={workflowStates}
+        modules={modules}
       />
     </div>
   )

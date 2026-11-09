@@ -137,7 +137,12 @@ export interface IssueRepository {
   updateMany(updates: Array<{ id: string; changes: Partial<Issue> }>): Promise<void>
   bulkApply(
     ids: string[],
-    patch: { status?: IssueStatus; priority?: IssuePriority; assigneeId?: string | null },
+    patch: {
+      status?: IssueStatus
+      priority?: IssuePriority
+      assigneeId?: string | null
+      moduleId?: string | null
+    },
     actorId: string,
   ): Promise<void>
   bulkDelete(ids: string[]): Promise<void>

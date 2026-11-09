@@ -5,6 +5,7 @@ import { ConfigTab } from './ConfigTab'
 import { CyclesTab } from './CyclesTab'
 import { MembersTab } from './MembersTab'
 import { MilestonesTab } from './MilestonesTab'
+import { ModulesTab } from './ModulesTab'
 import { OverviewTab } from './OverviewTab'
 import { PermissionsTab } from './PermissionsTab'
 import { ProjectsTab } from './ProjectsTab'
@@ -16,6 +17,7 @@ export type AdminTab =
   | 'members'
   | 'cycles'
   | 'milestones'
+  | 'modules'
   | 'config'
   | 'permissions'
   | 'settings'
@@ -29,6 +31,7 @@ const TABS: Array<{ id: AdminTab; labelKey: DictKey; perm?: TabPerm; anyOf?: Tab
   { id: 'members', labelKey: 'adminNavMembers', perm: 'member' },
   { id: 'cycles', labelKey: 'adminNavCycles', perm: 'project' },
   { id: 'milestones', labelKey: 'adminNavMilestones', perm: 'project' },
+  { id: 'modules', labelKey: 'adminNavModules', perm: 'project' },
   { id: 'config', labelKey: 'adminNavConfig', perm: 'workspace' },
   { id: 'permissions', labelKey: 'adminNavPermissions', anyOf: ['project', 'workspace'] },
   { id: 'settings', labelKey: 'adminNavSettings', perm: 'workspace' },
@@ -114,6 +117,8 @@ export function AdminView({
           <CyclesTab lang={lang} />
         ) : effectiveTab === 'milestones' ? (
           <MilestonesTab />
+        ) : effectiveTab === 'modules' ? (
+          <ModulesTab />
         ) : effectiveTab === 'config' ? (
           <ConfigTab onNav={onTab} />
         ) : effectiveTab === 'permissions' ? (

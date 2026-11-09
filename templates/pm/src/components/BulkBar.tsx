@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { useRepositories } from '@/data/context'
 import type { Observer } from '@/data/observable'
 import { useObservable } from '@/data/use-observable'
-import { parseFilters } from '@/lib/filters'
+import { NO_MODULE, parseFilters } from '@/lib/filters'
 import type { Action, Ctx } from '@/permission/policy'
-import type { IssuePriority, IssueStatus, SavedView, WorkflowState } from '../types'
+import type { IssuePriority, IssueStatus, Module, SavedView, WorkflowState } from '../types'
 import { ISSUE_PRIORITIES } from '../types'
 import { priorityLabel, t } from '@/i18n'
 import { workflowStateLabel } from '@/lib/statuses'
@@ -18,6 +18,7 @@ export function BulkBar({
   can,
   onDeleted,
   states,
+  modules,
 }: {
   selectedIds: Set<string>
   currentUser: string
@@ -27,10 +28,13 @@ export function BulkBar({
   onDeleted?: (ids: string[]) => void
   /** 项目工作流状态（宿主传入，与筛选/看板同源） */
   states: WorkflowState[]
+  /** 当前作用域模块（批量归模块选项） */
+  modules?: Module[]
 }) {
   const [status, setStatus] = useState('')
   const [priority, setPriority] = useState('')
   const [assignee, setAssignee] = useState('__none__')
+  const [moduleId, setModuleId] = useState('')
   const { issues: issuesRepo, members: membersRepo } = useRepositories()
   const members = useObservable(() => membersRepo.liveAll(), [membersRepo])
 
@@ -40,11 +44,23 @@ export function BulkBar({
   const canDelete = can('bulk:delete')
 
   const apply = async () => {
-    const patch: { status?: IssueStatus; priority?: IssuePriority; assigneeId?: string | null } = {}
+    const patch: {
+      status?: IssueStatus
+      priority?: IssuePriority
+      assigneeId?: string | null
+      moduleId?: string | null
+    } = {}
     if (status) patch.status = status as IssueStatus
     if (priority) patch.priority = priority as IssuePriority
     if (assignee !== '') patch.assigneeId = assignee === '__none__' ? null : assignee
-    if (patch.status || patch.priority || patch.assigneeId !== undefined) {
+    // 批量归模块：'' = 不改动；__none_module__ 哨兵 = 移出模块（退回未分组）
+    if (moduleId !== '') patch.moduleId = moduleId === NO_MODULE ? null : moduleId
+    if (
+      patch.status ||
+      patch.priority ||
+      patch.assigneeId !== undefined ||
+      patch.moduleId !== undefined
+    ) {
       await issuesRepo.bulkApply([...selectedIds], patch, currentUser)
     }
     onDone()
@@ -93,6 +109,17 @@ export function BulkBar({
           ...(members ?? []).map((m) => ({ label: m.name, value: m.id })),
         ]}
         onChange={setAssignee}
+      />
+      <OSelect
+        testid="bulk-module"
+        value={moduleId}
+        disabled={!canApply}
+        options={[
+          { label: t('bulkSetModule'), value: '' },
+          { label: t('moduleNone'), value: NO_MODULE },
+          ...(modules ?? []).map((m) => ({ label: m.name, value: m.id })),
+        ]}
+        onChange={setModuleId}
       />
       {canApply && (
         <button

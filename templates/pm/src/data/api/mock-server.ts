@@ -958,6 +958,8 @@ function bulkApply(store: MockStore, raw: unknown, actor: Member): void {
   const priority = patch.priority as IssuePriority | undefined
   const hasAssignee = 'assigneeId' in patch
   const assigneeId = (patch.assigneeId as string | null) ?? null
+  const hasModule = 'moduleId' in patch
+  const moduleId = (patch.moduleId as string | null) ?? null
   const now = Date.now()
   for (const id of ids) {
     const issue = store.issues.find((i) => i.id === id)
@@ -1014,12 +1016,24 @@ function bulkApply(store: MockStore, raw: unknown, actor: Member): void {
         createdAt: now,
       })
     }
+    if (hasModule) {
+      store.activities.push({
+        id: nextId(store, 'act'),
+        issueId: id,
+        actorId,
+        type: 'moduleId',
+        field: 'moduleId',
+        to: moduleId ?? '',
+        createdAt: now,
+      })
+    }
     if (status) {
       issue.status = status
       issue.completedAt = status === 'done' ? now : null
     }
     if (priority) issue.priority = priority
     if (hasAssignee) issue.assigneeId = assigneeId
+    if (hasModule) issue.moduleId = moduleId
     issue.updatedAt = now
     pushNotificationDrafts(store, drafts, now)
   }
