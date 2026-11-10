@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OAS Admin Pro — 数据大屏</title>
+    <script>
+      // FOUC 防闪：与 index.html 同逻辑
+      (function () {
+        try {
+          var saved = localStorage.getItem('oas-admin.locale')
+          if (saved === 'zh-CN' || saved === 'en') {
+            document.documentElement.lang = saved
+            return
+          }
+          var nav = (navigator.language || '').toLowerCase()
+          document.documentElement.lang = nav === 'zh' || nav.indexOf('zh-') === 0 ? 'zh-CN' : 'en'
+        } catch (e) {}
+      })()
+      // 大屏恒暗色：paint 前强制 dark，避免浅色闪帧
+      document.documentElement.dataset.theme = 'dark'
+    </script>
+  </head>
+  <body>
+    <div id="screen"></div>
+    <script type="module" src="/src/screen/main.ts"></script>
+  </body>
+</html>
