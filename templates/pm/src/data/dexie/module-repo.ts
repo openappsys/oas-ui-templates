@@ -8,7 +8,9 @@ import type { PMDatabase } from '@/db/schema'
  *  删除口径照 cycle-repo（同事务解绑）——不解绑会留悬空引用（里程碑曾经的 bug）；
  *  重名校验放 repo 层：同项目下同名模块会让侧栏/group-by 无法区分 */
 export function createDexieModuleRepository(db: PMDatabase): ModuleRepository {
-  const byNameAsc = (a: Module, b: Module) => a.name.localeCompare(b.name, 'zh-Hans-CN')
+  const byOrderAsc = (a: Module, b: Module) =>
+    (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER) ||
+    a.name.localeCompare(b.name, 'zh-Hans-CN')
   const assertNameFree = async (projectId: string, name: string, excludeId?: string) => {
     const dup = await db.modules
       .where('projectId')
@@ -20,7 +22,7 @@ export function createDexieModuleRepository(db: PMDatabase): ModuleRepository {
   return {
     async all(projectId) {
       const rows = await db.modules.where('projectId').equals(projectId).toArray()
-      return rows.sort(byNameAsc)
+      return rows.sort(byOrderAsc)
     },
     live(projectId) {
       return fromLiveQuery(() =>
@@ -28,7 +30,7 @@ export function createDexieModuleRepository(db: PMDatabase): ModuleRepository {
           .where('projectId')
           .equals(projectId)
           .toArray()
-          .then((rows) => rows.sort(byNameAsc)),
+          .then((rows) => rows.sort(byOrderAsc)),
       )
     },
     async get(id) {
@@ -62,6 +64,14 @@ export function createDexieModuleRepository(db: PMDatabase): ModuleRepository {
         description: input.description,
         leadId: input.leadId ?? null,
         createdAt: Date.now(),
+        // 缺省追加到末尾：max(order)+1；与 mock nextId 口径无关，只保证相对序
+        order:
+          input.order ??
+          (await db.modules
+            .where('projectId')
+            .equals(input.projectId)
+            .toArray()
+            .then((rs) => rs.reduce((mx, r) => Math.max(mx, r.order ?? -1), -1))) + 1,
       }
       await db.modules.add(m)
       return m
@@ -75,6 +85,9 @@ export function createDexieModuleRepository(db: PMDatabase): ModuleRepository {
         if (row) await assertNameFree(row.projectId, next.name, id)
       }
       await db.modules.update(id, next)
+    },
+    async reorder(orderedIds) {
+      await Promise.all(orderedIds.map((id, i) => db.modules.update(id, { order: i })))
     },
     async delete(id) {
       // 同事务解除归属：模块没了 Issue 不能连带消失，退回「未分组」

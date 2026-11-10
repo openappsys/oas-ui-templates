@@ -157,7 +157,9 @@ test('MD4 批量归模块', async ({ page }) => {
   await expect(page.getByTestId('bulk-bar')).toBeVisible({ timeout: 5_000 })
   // property + 契约事件通道（下拉浮层鼠标路径不可靠，keyboard/smoke 同口径）
   await page.evaluate(() => {
-    const el = document.querySelector('[data-testid=bulk-module]') as HTMLElement & { value: string }
+    const el = document.querySelector('[data-testid=bulk-module]') as HTMLElement & {
+      value: string
+    }
     el.value = 'module-2'
     el.dispatchEvent(
       new CustomEvent('oas-change', { bubbles: true, detail: { value: 'module-2' } }),
@@ -169,4 +171,38 @@ test('MD4 批量归模块', async ({ page }) => {
   const after = await page.locator('[data-value="module:__none_module__"]').innerText()
   const num = (s: string) => Number(s.replace(/[^0-9]/g, '').slice(-8)) || 0
   expect(num(after)).toBe(num(before) - 3)
+})
+
+test('MD5 模块排序：改数字换序（拖排与数字共用 reorder 通道）', async ({ page }) => {
+  test.setTimeout(120_000)
+  await openApp(page)
+  await setView(page, 'admin')
+  await page.waitForTimeout(500)
+  await page.getByTestId('admin-nav-modules').click()
+  await expect(page.getByTestId('admin-tab-modules')).toBeVisible({ timeout: 10_000 })
+  const nameInputs = page.locator('.ms-card input[data-testid^="admin-module-name-"]')
+  const readNames = () =>
+    nameInputs.evaluateAll((els) => els.map((e) => (e as HTMLInputElement).value))
+  const before = await readNames()
+  console.log('order before:', JSON.stringify(before))
+  expect(before.length).toBeGreaterThanOrEqual(2)
+  // 把最后一行位置改为 1 → 它应跳到首位
+  const cards = page.locator('.ms-card')
+  const last = cards.nth(before.length - 1)
+  const lastName = before[before.length - 1]!
+  await last.locator('input[data-testid^="admin-module-order-"]').fill('1')
+  await last.locator('input[data-testid^="admin-module-order-"]').blur()
+  await page.waitForTimeout(800)
+  const after = await readNames()
+  console.log('order after:', JSON.stringify(after))
+  expect(after[0]).toBe(lastName)
+  // 侧栏跟随同一 repo 顺序：第 2 行（首行是「全部模块」）应是 lastName
+  await setView(page, 'issues')
+  await page.waitForTimeout(600)
+  const group = page.locator('[data-value="group:modules"]')
+  if ((await group.getAttribute('aria-expanded')) !== 'true') await group.click()
+  await page.waitForTimeout(300)
+  const sideFirst = await page.locator('[data-value^="module:"]').nth(1).innerText()
+  console.log('sidebar first module:', sideFirst)
+  expect(sideFirst).toContain(lastName)
 })

@@ -577,6 +577,15 @@ describe('契约：同一份 seed 下 Dexie 与 API 输出相同', () => {
       dexie.modules.create({ projectId: 'project-2', name: '支付通道' }),
     ).resolves.toBeTruthy()
 
+    // 排序契约：reorder 按给定序列重排（两端各自反转本端列表，名称序应同镜像）
+    const dIds = (await first(dexie.modules.live('project-1'))).map((m) => m.id)
+    await dexie.modules.reorder([...dIds].reverse())
+    const aIds = (await first(api.modules.live('project-1'))).map((m) => m.id)
+    await api.modules.reorder([...aIds].reverse())
+    const namesAfter = (await first(dexie.modules.live('project-1'))).map((m) => m.name)
+    expect((await first(api.modules.live('project-1'))).map((m) => m.name)).toEqual(namesAfter)
+    expect(namesAfter[0]).toBe('支付通道')
+
     // 删除解绑：两端各删自己的同一模块，issue 都退回未分组
     const delId = list0.find((m) => m.id === 'module-1')!
     const msIssues = store.issues.filter((i) => i.moduleId === 'module-1' && !i.deletedAt)

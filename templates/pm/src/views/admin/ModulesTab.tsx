@@ -24,6 +24,26 @@ export function ModulesTab() {
   const descRef = useRef<HTMLInputElement>(null)
   const [error, setError] = useState('')
   const tableRef = useRef<HTMLDivElement>(null)
+  const dragIdRef = useRef<string | null>(null)
+
+  // 排序统一入口：拖排与改数字都归约为「按给定 id 序列重排」（两端同一条 reorder 契约）
+  const applyOrder = async (ids: string[]) => {
+    setError('')
+    try {
+      await modulesRepo.reorder(ids)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    }
+  }
+  /** 把 id 移动到目标下标（0 基；越界钳制） */
+  const moveTo = async (id: string, targetIndex: number) => {
+    const ids = (rows ?? []).map((r) => r.id)
+    const from = ids.indexOf(id)
+    if (from < 0) return
+    ids.splice(from, 1)
+    ids.splice(Math.max(0, Math.min(targetIndex, ids.length)), 0, id)
+    await applyOrder(ids)
+  }
 
   // 行内 popconfirm 确认删除（oas-open-change bubbles/composed，容器委托一次挂载）
   useEffect(() => {
@@ -88,7 +108,7 @@ export function ModulesTab() {
         </p>
       )}
       <div className="ms-table" ref={tableRef}>
-        {(rows ?? []).map((m) => {
+        {(rows ?? []).map((m, index) => {
           const total = countById.get(m.id) ?? 0
           // 删除确认带影响面（title 是 HTMLElement 原生 property，React 落不进 attribute——ref 回调写）
           const confirmText =
@@ -96,8 +116,58 @@ export function ModulesTab() {
               ? t('moduleDeleteConfirmN').replace('{n}', String(total))
               : t('adminDeleteConfirm')
           return (
-            <div className="ms-card" key={m.id} data-testid={`admin-module-row-${m.id}`}>
+            <div
+              className="ms-card"
+              key={m.id}
+              data-testid={`admin-module-row-${m.id}`}
+              // HTML5 拖排：整卡可拖（卡片本身就是操作主体，无需独立把手），落点按目标卡插入其位
+              draggable
+              onDragStart={(e) => {
+                dragIdRef.current = m.id
+                e.dataTransfer.effectAllowed = 'move'
+                e.dataTransfer.setData('text/plain', m.id)
+              }}
+              onDragOver={(e) => {
+                e.preventDefault()
+                e.dataTransfer.dropEffect = 'move'
+              }}
+              onDrop={(e) => {
+                e.preventDefault()
+                const from = dragIdRef.current
+                dragIdRef.current = null
+                if (!from || from === m.id) return
+                void moveTo(from, index)
+              }}
+              onDragEnd={() => {
+                dragIdRef.current = null
+              }}
+            >
               <div className="ms-card-head">
+                {/* 排序：数字直改（1 基位置，失焦落库）+ 整卡拖拽，共用 moveTo/reorder 通道 */}
+                <input
+                  type="number"
+                  className="ms-order-input"
+                  data-testid={`admin-module-order-${m.id}`}
+                  key={`${m.id}:${m.order ?? index}`}
+                  defaultValue={(m.order ?? index) + 1}
+                  min={1}
+                  max={(rows ?? []).length}
+                  aria-label={t('moduleOrder')}
+                  onBlur={(e) => {
+                    const pos = Math.round(Number(e.target.value))
+                    if (!Number.isFinite(pos)) {
+                      e.target.value = String((m.order ?? index) + 1)
+                      return
+                    }
+                    void moveTo(m.id, pos - 1)
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+                  }}
+                />
+                <span className="ms-drag-hint" aria-hidden>
+                  ⠿
+                </span>
                 {/* 名称/负责人行内编辑（key 重挂回显，失焦保存）；重名错误就地提示 */}
                 <input
                   className="comment-input ms-edit-name"

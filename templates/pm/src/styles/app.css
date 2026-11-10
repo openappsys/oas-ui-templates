@@ -3590,6 +3590,36 @@ oas-drawer::part(close):focus-visible {
   margin-left: auto;
   flex: none;
 }
+/* 模块排序：数字输入 + 拖拽把手 */
+.ms-order-input {
+  width: 48px;
+  text-align: center;
+  border: 1px solid var(--oas-color-border, #d4d4d8);
+  border-radius: var(--oas-radius-sm, 6px);
+  background: transparent;
+  color: var(--oas-color-text-primary, #18181b);
+  font: inherit;
+  font-size: 12.5px;
+  padding: 3px 4px;
+}
+.ms-order-input::-webkit-outer-spin-button,
+.ms-order-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+}
+.ms-drag-hint {
+  color: var(--oas-color-text-secondary, #71717a);
+  cursor: grab;
+  user-select: none;
+  font-size: 13px;
+  letter-spacing: 1px;
+}
+.ms-card[draggable="true"] {
+  cursor: grab;
+}
+.ms-card[draggable="true"]:active {
+  cursor: grabbing;
+}
+
 .ms-edit-name {
   flex: 0 1 260px;
   height: 30px;

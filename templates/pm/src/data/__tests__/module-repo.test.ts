@@ -71,6 +71,26 @@ describe('module repo', () => {
     expect(await db.issues.get('i2')).toBeTruthy()
   })
 
+  it('排序：order 缺省回落名称序；reorder 按给定序列重排；create 缺省追加末尾', async () => {
+    // 旧行无 order（模拟 v18 备份导入）→ 名称序
+    await db.modules.bulkPut([
+      { id: 'm-z', projectId: 'p1', name: '斑马', createdAt: 1000 },
+      { id: 'm-a', projectId: 'p1', name: '阿尔法', createdAt: 1000 },
+    ])
+    const fallback = await modules.all('p1')
+    expect(fallback.map((m) => m.name)).toEqual(['阿尔法', '斑马'])
+    // reorder：斑马提前 → order 按下标重写
+    await modules.reorder(['m-z', 'm-a'])
+    const reordered = await modules.all('p1')
+    expect(reordered.map((m) => m.id)).toEqual(['m-z', 'm-a'])
+    expect((await modules.get('m-z'))?.order).toBe(0)
+    // create 缺省追加到末尾（max(order)+1）
+    const created = await modules.create({ projectId: 'p1', name: '尾模块' })
+    expect(created.order).toBe(2)
+    const after = await modules.all('p1')
+    expect(after.map((m) => m.id)).toEqual(['m-z', 'm-a', created.id])
+  })
+
   it('liveModuleCounts：按模块聚合计数，软删行不计', async () => {
     const a = await modules.create({ projectId: 'p1', name: 'A' })
     const b = await modules.create({ projectId: 'p1', name: 'B' })

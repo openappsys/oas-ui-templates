@@ -555,6 +555,7 @@ const dict = {
     moduleDelete: '删除模块',
     moduleDeleteConfirmN: '该模块下还有 {n} 个 Issue，删除后它们退回「未分组」',
     moduleIssueCount: '{n} 个 Issue',
+    moduleOrder: '排序',
     moduleEmpty: '该项目还没有模块',
     actModule: '模块',
     milestoneDue: '目标 {date}',
@@ -1173,6 +1174,7 @@ const dict = {
     moduleDeleteConfirmN:
       '{n} issues belong to this module; they become "Ungrouped" after deletion',
     moduleIssueCount: '{n} issues',
+    moduleOrder: 'Order',
     moduleEmpty: 'No modules in this project yet',
     actModule: 'module',
     milestoneDue: 'Due {date}',

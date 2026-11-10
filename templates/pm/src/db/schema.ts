@@ -314,6 +314,42 @@ export class PMDatabase extends Dexie {
       workflows: 'id, projectId, order',
       worklogs: 'id, issueId, memberId, [issueId+createdAt], [memberId+createdAt]',
     })
+    // v19：模块手动排序。modules 加 [projectId+order]；旧行 order 缺省——upgrade 按名称序
+    // 补 order，保持升级前后视觉顺序一致（零行为回归）
+    this.version(19)
+      .stores({
+        issues:
+          'id, projectId, key, status, priority, assigneeId, parentId, cycleId, milestoneId, moduleId, createdAt, updatedAt, deletedAt, [projectId+status], [projectId+priority], [projectId+assigneeId], [projectId+updatedAt], [projectId+status+updatedAt], [assigneeId+status], [status+updatedAt], [projectId+cycleId], [projectId+milestoneId], [projectId+moduleId]',
+        projects: 'id, key',
+        members: 'id, role',
+        comments: 'id, issueId, parentId, [issueId+createdAt]',
+        savedViews: 'id, name',
+        activities: 'id, issueId, [issueId+createdAt], createdAt',
+        settings: 'key',
+        cycles: 'id, projectId, [projectId+startAt]',
+        notifications: 'id, memberId, createdAt, [memberId+createdAt], [memberId+readAt]',
+        roles: 'id, name',
+        audit: 'id, at, actorId, action',
+        projectRoles: 'id, projectId, memberId, [projectId+memberId]',
+        projectMembers: 'id, projectId, memberId, [projectId+memberId]',
+        milestones: 'id, projectId, [projectId+dueAt]',
+        modules: 'id, projectId, [projectId+order]',
+        workflowStates: 'id, projectId, [projectId+order], workflowId',
+        workflows: 'id, projectId, order',
+        worklogs: 'id, issueId, memberId, [issueId+createdAt], [memberId+createdAt]',
+      })
+      .upgrade(async (tx) => {
+        const rows = (await tx.table('modules').toArray()) as Array<{
+          id: string
+          name: string
+          order?: number
+        }>
+        const byName = [...rows].sort((a, b) => a.name.localeCompare(b.name, 'zh-Hans-CN'))
+        for (let i = 0; i < byName.length; i++) {
+          if (byName[i].order === undefined)
+            await tx.table('modules').update(byName[i].id, { order: i })
+        }
+      })
   }
 }
 

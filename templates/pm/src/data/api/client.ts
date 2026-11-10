@@ -701,6 +701,10 @@ export function createApiRepositories(options: ApiClientOptions = {}): Repositor
       await send('PATCH', `/api/modules/${encodeURIComponent(id)}`, undefined, changes)
       poke()
     },
+    reorder: async (orderedIds: string[]) => {
+      await send('POST', '/api/modules/reorder', undefined, { ids: orderedIds })
+      poke()
+    },
     delete: async (id) => {
       await send('DELETE', `/api/modules/${encodeURIComponent(id)}`)
       poke()

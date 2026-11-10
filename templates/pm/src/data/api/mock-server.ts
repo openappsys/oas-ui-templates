@@ -399,6 +399,7 @@ function buildSeed(seed: number, now: number): SeedTables {
         id: 'module-1',
         projectId: 'project-1',
         name: '核心服务',
+        order: 0,
         description: '后端核心与接口层',
         leadId: 'member-1',
         createdAt: now,
@@ -407,6 +408,7 @@ function buildSeed(seed: number, now: number): SeedTables {
         id: 'module-2',
         projectId: 'project-1',
         name: '管理后台',
+        order: 1,
         description: '运营与配置界面',
         leadId: 'member-2',
         createdAt: now,
@@ -2091,7 +2093,11 @@ function routeModules(
       const projectId = q.get('projectId') ?? ''
       const rows = store.modules
         .filter((m) => projectId === '' || projectId === '__all__' || m.projectId === projectId)
-        .sort((a, b) => a.name.localeCompare(b.name, 'zh-Hans-CN'))
+        .sort(
+          (a, b) =>
+            (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER) ||
+            a.name.localeCompare(b.name, 'zh-Hans-CN'),
+        )
       return ok({ items: rows })
     }
     if (method === 'POST') {
@@ -2107,6 +2113,10 @@ function routeModules(
         name,
         ...(typeof input.description === 'string' ? { description: input.description } : {}),
         ...(typeof input.leadId === 'string' ? { leadId: input.leadId } : {}),
+        order:
+          input.order === undefined
+            ? store.modules.filter((m) => m.projectId === projectId).length
+            : Number(input.order),
         createdAt: Date.now(),
       }
       store.modules.push(mod)
@@ -2114,6 +2124,17 @@ function routeModules(
       return ok({ module: mod }, 201)
     }
     fail(405, 'method not allowed')
+  }
+  if (second === 'reorder') {
+    if (method !== 'POST') fail(405, 'method not allowed')
+    const rawIds = asRecord(body).ids
+    if (!Array.isArray(rawIds)) fail(400, 'ids must be an array')
+    rawIds.forEach((id, i) => {
+      const m = store.modules.find((x) => x.id === String(id))
+      if (m) m.order = i
+    })
+    store.revision += 1
+    return ok({ ok: true })
   }
   const mod = store.modules.find((m) => m.id === second)
   if (!mod) fail(404, 'module not found')

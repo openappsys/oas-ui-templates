@@ -247,6 +247,8 @@ export interface Module {
   description?: string
   /** 模块负责人（可空） */
   leadId?: string | null
+  /** 排序值（v19 起；旧行缺省回落名称排序） */
+  order?: number
   createdAt: number
 }
 

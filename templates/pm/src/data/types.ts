@@ -176,13 +176,18 @@ export interface ModuleRepository {
   get(id: string): Promise<Module | undefined>
   /** 每模块在库 Issue 数（侧栏计数；软删行不计） */
   liveModuleCounts(projectId: string): Observable<Array<{ moduleId: string; total: number }>>
+  /** 模块（项目内 Issue 归类容器）：单选归属；删除须先解绑（cycle-repo 口径，同事务） */
   create(input: {
     projectId: string
     name: string
     description?: string
     leadId?: string | null
+    /** 排序值；缺省 = 追加到末尾 */
+    order?: number
   }): Promise<Module>
   update(id: string, changes: Partial<Module>): Promise<void>
+  /** 按给定 id 顺序重排（order = 下标；拖排与改数字共用一条通道） */
+  reorder(orderedIds: string[]): Promise<void>
   delete(id: string): Promise<void>
 }
 
