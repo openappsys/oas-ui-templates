@@ -4,7 +4,7 @@
 
 基于 [oas-ui](https://oas-ui.dev) Web Components 的后台管理模版：TypeScript + Vite，零框架运行时。
 
-功能：双登录形态（分屏品牌墙 / 玻璃拟态，默认 `?style=split`，可用 `?style=glass` 切换）· 登录（角色：管理员 / 只读访客）· hash 路由权限守卫 · 路由切换顶部全局进度条 · 仪表盘（统计卡 + oas-chart 图表 + 最近订单 + 热销商品 Top5）· 多页签导航（顶栏多开页面 + 右键批量关闭菜单）· Command 面板（Ctrl+K 新页直达）· 通知中心 · 全屏 · 设置中心（外观 / 布局与导航 / 数据与列表 / 通知 四区：主题色、圆角、字体大小、表格密度、主题编辑器、**菜单形态×位置矩阵**、多页签栏开关、路由模式、表单呈现方式、每页条数、通知渠道矩阵）· 导航菜单可配置（sidebar 树形 / menubar 下拉条 / navigation 巨型面板，位置 左 / 右 / 顶 / 顶（logo 与搜索之间），设置中心实时切换持久化）· 用户管理（搜索 / 筛选 / 分页 / 弹窗 CRUD / 空态 / popconfirm 删除确认）· 订单管理（tabs 筛选 / 状态流转抽屉 / CSV 导出）· 商品管理（卡片网格 / 上下架开关 / 新建抽屉表单，分类选项来自分类数据源）· 商品分类管理（/system/category CRUD）· 角色 / 菜单 / 部门 / 字典 / 日志 系统页 · 分步表单向导 · 订单详情 · 结果页 · 403/404/500 结果页 · 基础表单页 · 高级表单页（供应商信息登记：级联 / 联想 / 评分 / 标签 / 穿梭 / 树选等复杂控件 + 校验）· 个人中心（外观三主题卡）· i18n 中英切换（壳层即时生效）· fetch 请求层（拦截器 / 超时 / 本地 `/api/*` mock）· 侧栏分组（总览 / 业务 / 系统 / 示例）· 侧栏图标智能着色（官方 iconColor，随主题换肤）· light/dark/system 主题 · 菜单触控基线（触屏 pointer:coarse 提至 44px）· 移动端抽屉侧栏 · demo 数据 localStorage 持久化（刷新不丢，清 storage 即重置）。
+功能：双登录形态（分屏品牌墙 / 玻璃拟态，默认 `?style=split`，可用 `?style=glass` 切换）· 登录（角色：管理员 / 只读访客）· hash 路由权限守卫 · 路由切换顶部全局进度条 · 仪表盘（统计卡 + oas-chart 图表 + 最近订单 + 热销商品 Top5）· 多页签导航（顶栏多开页面 + 右键批量关闭菜单）· Command 面板（Ctrl+K 新页直达）· 通知中心 · 全屏 · 设置中心（外观 / 布局与导航 / 数据与列表 / 通知 四区：主题色、圆角、字体大小、表格密度、主题编辑器、**菜单形态×位置矩阵**、多页签栏开关、路由模式、表单呈现方式、每页条数、通知渠道矩阵）· 导航菜单可配置（sidebar 树形 / menubar 下拉条 / navigation 巨型面板，位置 左 / 右 / 顶 / 顶（logo 与搜索之间），设置中心实时切换持久化）· 数据大屏（`screen.html` 独立入口：MapLibre 离线世界地图 + KPI 实时刷新 + 3 图表 + 国家 TOP5 榜单，恒暗色，侧栏哨兵新标签页打开，Esc 退出）· 用户管理（搜索 / 筛选 / 分页 / 弹窗 CRUD / 空态 / popconfirm 删除确认）· 订单管理（tabs 筛选 / 状态流转抽屉 / CSV 导出）· 商品管理（卡片网格 / 上下架开关 / 新建抽屉表单，分类选项来自分类数据源）· 商品分类管理（/system/category CRUD）· 角色 / 菜单 / 部门 / 字典 / 日志 系统页 · 分步表单向导 · 订单详情 · 结果页 · 403/404/500 结果页 · 基础表单页 · 高级表单页（供应商信息登记：级联 / 联想 / 评分 / 标签 / 穿梭 / 树选等复杂控件 + 校验）· 个人中心（外观三主题卡）· i18n 中英切换（壳层即时生效）· fetch 请求层（拦截器 / 超时 / 本地 `/api/*` mock）· 侧栏分组（总览 / 业务 / 系统 / 示例）· 侧栏图标智能着色（官方 iconColor，随主题换肤）· light/dark/system 主题 · 菜单触控基线（触屏 pointer:coarse 提至 44px）· 移动端抽屉侧栏 · demo 数据 localStorage 持久化（刷新不丢，清 storage 即重置）。
 
 ## 使用
 
@@ -76,6 +76,15 @@ npx degit <本仓库地址>/templates/admin-pro/vanilla-html my-admin
 - `/advanced-form`：高级表单（供应商信息登记）——级联 / 联想 / 组合 / 评分 / 滑块 / 验证码 / 标签 / 穿梭 / 树选等复杂控件组合 + oas-form 校验 / 提交 / 重置
 - `/forbidden`、`/not-found`、`/500`：权限守卫 / 未知路由 / 加载失败落地页（`oas-result` 结果态 + 返回首页 + 返回上一页）
 
+## 数据大屏
+
+- `screen.html` 独立入口（非 SPA 路由，不进 routes.ts / 页签）：侧栏「总览」组哨兵项（external-link 图标）点击新标签页打开，三种菜单形态（sidebar/menubar/navigation）均生效
+- 恒暗色（head 内 paint 前强制 `data-theme=dark`，无浅色闪帧）；16:9 固定画布等比缩放适配任意屏幕
+- 内容：时钟 + 4 KPI（GMV / 订单量 / 新增用户 / 转化率，部分带数字滚动动画）· 月度营收柱状图 · 渠道趋势堆叠图 · 品类占比环形图 · 国家销售 TOP5 榜单 · 世界地图（MapLibre GL + Natural Earth GeoJSON，按销售额青→蓝着色 + 15 国标签叠层）
+- 地图离线零网络依赖：`public/world.geojson` 本地加载，WebGL / fetch 失败优雅降级为纯标签叠层；固定视图全禁交互
+- 实时刷新：5s tick 抖动 KPI / 图表 / 地图标签；1s 时钟
+- 退出：右上角「返回管理端」按钮或 Esc 键（`window.close()` 被拦截时 500ms fallback 导航回 `index.html`）；全屏按钮（`document.fullscreenEnabled` 时显示）
+
 ## 多页签
 
 - 顶栏下方页签栏（`<oas-tabs type="card" hide-content context-menu>`，`src/components/app-shell.ts`）：已访问页面各一页签，可通过设置中心「多页签栏」开关关闭；仪表盘固定底位不可关
@@ -130,7 +139,7 @@ npx degit <本仓库地址>/templates/admin-pro/vanilla-html my-admin
 
 An admin dashboard template built on [oas-ui](https://oas-ui.dev) Web Components: TypeScript + Vite, zero-framework runtime.
 
-Features: two login layouts (split brand wall / glassmorphism, default `?style=split`, switch to `?style=glass`) · login (roles: admin / viewer) · hash router with permission guards · top progress bar on route change · dashboard (stat cards + oas-chart graphs + recent orders + top-5 best sellers) · multi-tab navigation (open multiple pages in the top-bar tab strip + right-click batch close menu) · command palette (Ctrl+K) · notification center · fullscreen · settings center (Appearance / Layout & Navigation / Data & Lists / Notifications: theme color, radius, font size, table density, theme editor, **menu-style×position matrix**, tabs-bar toggle, router mode, form mode, page size, notification-channel matrix) · **configurable navigation** (sidebar tree / menubar dropdown / navigation mega-panel; positions left / right / top / top-between-logo-and-search — switched live in settings, persisted) · user management (search / filter / paginate / modal CRUD / empty state / popconfirm delete) · order management (tabs filter / status-flow drawer / CSV export) · product management (card grid / on-off switch / create-drawer form with categories pulled live from the data source) · product category management (`/system/category` CRUD) · role / menu / dept / dict / log system pages · multi-step form wizard · order details · result page · 403/404/500 result pages · basic form page · advanced form page (vendor onboarding: cascader / autocomplete / rate / tags / transfer / tree-select + validation) · profile (three-theme appearance card) · i18n zh-CN / en switch (shell re-renders instantly) · fetch request layer (interceptors / timeout / local `/api/*` mock) · sidebar grouped by section (overview / business / system / demos) · smart sidebar-icon coloring (upstream `iconColor`, follows theme) · light/dark/system themes · menu touch-target baseline (raised to 44px on `pointer:coarse`) · mobile drawer sidebar · demo data persisted to localStorage (survives reload, cleared on storage reset).
+Features: two login layouts (split brand wall / glassmorphism, default `?style=split`, switch to `?style=glass`) · login (roles: admin / viewer) · hash router with permission guards · top progress bar on route change · dashboard (stat cards + oas-chart graphs + recent orders + top-5 best sellers) · multi-tab navigation (open multiple pages in the top-bar tab strip + right-click batch close menu) · command palette (Ctrl+K) · notification center · fullscreen · settings center (Appearance / Layout & Navigation / Data & Lists / Notifications: theme color, radius, font size, table density, theme editor, **menu-style×position matrix**, tabs-bar toggle, router mode, form mode, page size, notification-channel matrix) · **configurable navigation** (sidebar tree / menubar dropdown / navigation mega-panel; positions left / right / top / top-between-logo-and-search — switched live in settings, persisted) · **data screen** (`screen.html` standalone entry: MapLibre offline world map + real-time KPI refresh + 3 charts + country TOP-5 ranking, always dark, opened in a new tab from the sidebar sentinel, Esc to exit) · user management (search / filter / paginate / modal CRUD / empty state / popconfirm delete) · order management (tabs filter / status-flow drawer / CSV export) · product management (card grid / on-off switch / create-drawer form with categories pulled live from the data source) · product category management (`/system/category` CRUD) · role / menu / dept / dict / log system pages · multi-step form wizard · order details · result page · 403/404/500 result pages · basic form page · advanced form page (vendor onboarding: cascader / autocomplete / rate / tags / transfer / tree-select + validation) · profile (three-theme appearance card) · i18n zh-CN / en switch (shell re-renders instantly) · fetch request layer (interceptors / timeout / local `/api/*` mock) · sidebar grouped by section (overview / business / system / demos) · smart sidebar-icon coloring (upstream `iconColor`, follows theme) · light/dark/system themes · menu touch-target baseline (raised to 44px on `pointer:coarse`) · mobile drawer sidebar · demo data persisted to localStorage (survives reload, cleared on storage reset).
 
 ## Usage
 
@@ -201,6 +210,15 @@ npx degit <this-repo>/templates/admin-pro/vanilla-html my-admin
 - `/basic-form`: card-style form (input / select / switch / date-picker / upload / textarea + required and format validation)
 - `/advanced-form`: complex form (vendor onboarding) — cascader / autocomplete / combobox / rate / slider / captcha / tags / transfer / tree-select composed with `oas-form` validation / submit / reset
 - `/forbidden`, `/not-found`, `/500`: permission guard / unknown route / load-failure landing pages (`oas-result` + Back to Home + Go Back)
+
+## Data screen
+
+- `screen.html` is a standalone entry (not an SPA route — absent from routes.ts / tabs): opened in a new tab from the "Overview" group sentinel item (external-link icon) in the sidebar; works in all three nav styles (sidebar/menubar/navigation)
+- Always dark (forces `data-theme=dark` in head before paint, no light flash); 16:9 fixed canvas scaled proportionally to any screen
+- Content: clock + 4 KPIs (GMV / orders / new users / conversion, some with number-roll animation) · monthly revenue bar chart · channel trend stacked chart · category share donut · country sales TOP-5 ranking · world map (MapLibre GL + Natural Earth GeoJSON, colored cyan→blue by sales + 15-country label overlay)
+- Map is offline with zero network dependency: `public/world.geojson` loaded locally, graceful degradation to a pure label overlay on WebGL / fetch failure; fixed view with all interactions disabled
+- Real-time refresh: 5s tick jitters KPIs / charts / map labels; 1s clock
+- Exit: the "Back to admin" button (top-right) or the Esc key (`window.close()` falls back to navigating to `index.html` after 500ms when blocked); fullscreen button (shown when `document.fullscreenEnabled`)
 
 ## Multi-tab
 
