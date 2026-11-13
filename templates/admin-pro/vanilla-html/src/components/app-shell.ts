@@ -57,6 +57,11 @@ function sidebarItems(): string {
     })
     groups.set(g, items)
   }
+  // 数据大屏：哨兵项（非 SPA 路由，新标签页打开；不进 routes.ts、永不 active）
+  const outputItems = groups.get('nav.output')
+  if (outputItems) {
+    outputItems.push({ label: t('nav.screen'), value: 'screen-external', icon: 'external-link' })
+  }
   return JSON.stringify(
     GROUP_ORDER.filter((g) => groups.has(g)).map((g) => ({
       label: groupLabel(g),
@@ -88,6 +93,17 @@ function groupMenuItems(activePath: string, includeHref: boolean): string {
       ...(includeHref ? { href: href(r.path) } : {}),
     })
     groups.set(g, items)
+  }
+  // 数据大屏：哨兵项（不传 href——navigation 形态有 href 会渲染 <a> 致 404；
+  // 当前组件无 href 渲染为可点击 <li>/无 href <a>，点击走 oas-select）
+  const firstGroup = groups.values().next().value
+  if (firstGroup) {
+    firstGroup.push({
+      label: t('nav.screen'),
+      value: 'screen-external',
+      icon: 'external-link',
+      active: false,
+    })
   }
   return JSON.stringify(
     Array.from(groups.entries()).map(([label, children]) => ({
@@ -340,6 +356,12 @@ export function mountApp(root: HTMLElement): void {
     nav.addEventListener('oas-select', (e) => {
       const value = (e as CustomEvent<{ value: string }>).detail.value
       if (!value) return
+      // 数据大屏哨兵：非 SPA 路由，新标签页打开
+      if (value === 'screen-external') {
+        window.open('./screen.html', '_blank')
+        closeMenuPopover()
+        return
+      }
       if (currentPath() !== value) navigate(value)
       closeMenuPopover()
     })
@@ -372,6 +394,11 @@ export function mountApp(root: HTMLElement): void {
     nav.addEventListener('oas-select', (e) => {
       const value = (e as CustomEvent<{ value: string }>).detail.value
       if (!value) return
+      // 数据大屏哨兵：非 SPA 路由，新标签页打开
+      if (value === 'screen-external') {
+        window.open('./screen.html', '_blank')
+        return
+      }
       if (currentPath() === value) void resolve()
       else navigate(value)
     })
