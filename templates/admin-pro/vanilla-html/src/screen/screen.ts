@@ -1,4 +1,4 @@
-import { onLocaleChange, t } from '../i18n'
+import { currentLocale, onLocaleChange, t } from '../i18n'
 import { screenData, tickScreenData } from '../data/screen'
 import type { CountrySales, ScreenData } from '../data/screen'
 import type { CategorySlice, ChannelSeries } from '../data/board'
@@ -38,6 +38,7 @@ const COMPRESS_ICON = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor
 export function renderScreen(el: HTMLElement): () => void {
   let current = screenData()
   let exiting = false
+  let exitTimer: ReturnType<typeof setTimeout> | undefined
 
   function kpiCard(k: ScreenData['kpis'][number], idx: number): string {
     const label = t(KPI_KEYS[idx] ?? '')
@@ -69,6 +70,14 @@ export function renderScreen(el: HTMLElement): () => void {
     })
   }
 
+  // 榜单值按 locale 紧凑格式化（zh-CN→320万、en→3.2M），不再硬编码「万」
+  function fmtRankValue(value: number): string {
+    return new Intl.NumberFormat(currentLocale(), {
+      notation: 'compact',
+      maximumFractionDigits: 1,
+    }).format(value)
+  }
+
   function rankHtml(countries: CountrySales[]): string {
     const top = [...countries].sort((a, b) => b.value - a.value).slice(0, 5)
     const max = top[0]?.value ?? 1
@@ -80,7 +89,7 @@ export function renderScreen(el: HTMLElement): () => void {
         <span class="rank-no rank-no-${i + 1}">${i + 1}</span>
         <span class="rank-name">${c.name}</span>
         <div class="rank-bar"><i style="width:${pct}%"></i></div>
-        <span class="rank-val">${(c.value / 10000).toFixed(0)}万</span>
+        <span class="rank-val">${fmtRankValue(c.value)}</span>
       </div>`
       })
       .join('')
@@ -103,6 +112,10 @@ export function renderScreen(el: HTMLElement): () => void {
     })
     el.querySelector<HTMLElement>('.map-card .panel-title')!.textContent = t('screen.map.title')
     el.querySelector<HTMLElement>('.rank-card .panel-title')!.textContent = t('screen.rank.title')
+    // 榜单值随 locale 紧凑格式化（万/M），locale 切换时重渲染
+    el.querySelector<HTMLElement>('[data-testid="screen-rank"]')!.innerHTML = rankHtml(
+      current.countries,
+    )
     // 月度标签随 locale 变化，重挂 chart data
     el.querySelector<HTMLElement>('[data-chart="bar"]')?.setAttribute(
       'data',
@@ -168,7 +181,7 @@ export function renderScreen(el: HTMLElement): () => void {
     if (exiting) return
     exiting = true
     window.close()
-    setTimeout(() => {
+    exitTimer = setTimeout(() => {
       if (!window.closed) location.href = './index.html'
     }, 500)
   }
@@ -303,6 +316,9 @@ export function renderScreen(el: HTMLElement): () => void {
     fsBtn.classList.toggle('is-fullscreen', active)
     fsBtn.setAttribute('aria-pressed', String(active))
   }
+  // 挂载时初始化 aria-pressed / is-fullscreen（此前仅 fullscreenchange 时设置，
+  // 首帧 aria-pressed 缺失）
+  fsChange()
   document.addEventListener('fullscreenchange', fsChange)
 
   const resizeHandler = (): void => fit()
@@ -313,6 +329,7 @@ export function renderScreen(el: HTMLElement): () => void {
   return () => {
     clearInterval(tickTimer)
     clearInterval(clockTimer)
+    if (exitTimer !== undefined) clearTimeout(exitTimer)
     document.removeEventListener('keydown', escHandler)
     document.removeEventListener('fullscreenchange', fsChange)
     window.removeEventListener('resize', resizeHandler)
