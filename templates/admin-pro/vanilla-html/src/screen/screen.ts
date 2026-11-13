@@ -10,12 +10,15 @@ const KPI_KEYS = [
   'screen.kpi.users',
   'screen.kpi.conversion',
 ]
+// 顺序必须与 draw() 中 .chart-card 面板 DOM 序一致（bar → stacked → donut），
+// refreshText() 靠位置索引回填标题
 const CHART_KEYS = [
   'screen.chart.monthRevenue',
-  'screen.chart.categoryShare',
   'screen.chart.channelTrend',
+  'screen.chart.categoryShare',
 ]
-// 月度标签复用 data-board 的 board.month1..6（screen 数据同为 6 个月）
+// 月度标签复用 data-board 的 board.month1..6（monthRevenue 柱状图 6 个月；
+// channel 堆叠图同样取这些键，但 CHANNEL_SERIES 只有 4 个数据点，只用前 4 个）
 const MONTH_KEYS = [
   'board.month1',
   'board.month2',
@@ -88,7 +91,7 @@ export function renderScreen(el: HTMLElement): () => void {
     el.querySelectorAll<HTMLElement>('.kpi-card .kpi-label').forEach((n, i) => {
       n.textContent = t(KPI_KEYS[i] ?? '')
     })
-    // 面板标题（bar/donut/stacked 顺序与 CHART_KEYS 一致）
+    // 面板标题（DOM 序 bar/stacked/donut 与 CHART_KEYS 位置索引一致）
     const titles = el.querySelectorAll<HTMLElement>('.chart-card .panel-title')
     titles.forEach((n, i) => {
       const k = CHART_KEYS[i]
