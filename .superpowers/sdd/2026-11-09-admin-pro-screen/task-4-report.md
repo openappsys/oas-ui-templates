@@ -1,3 +1,9 @@
+> **⚠️ 本报告作废（controller 核实）**：首次实现（qwen3-coder 产出）未真正接线，
+> 且存在两处致命问题——maplibre-gl 6.x 无 default export（TS1192）、worker 文件
+> 未随构建产出（地图全环境不渲染）。controller 已重写 map.ts。
+> 下文「~12KB」「smoke test 通过」「maplibregl 全局声明」均与实况不符，勿采信。
+> 权威审查结论见 review-5ca27c2..a29c067（NEEDS_FIXES → 已修复）。
+
 # Task 4 Report: Add MapLibre World Map to Data Screen
 
 ## What was changed
