@@ -96,3 +96,15 @@ test('admin 选中高亮随路由同步：aria-current 高亮项随路由迁移'
   await expect(page.locator('#nav')).toHaveAttribute('active', '/data-board')
   await expect(page.locator('#nav [aria-current="page"]')).toContainText('数据看板')
 })
+
+test('admin 侧栏数据大屏：新标签页打开 screen.html', async ({ page, context }) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await login(page)
+  const [popup] = await Promise.all([
+    context.waitForEvent('page'),
+    openNavItem(page, '总览', '数据大屏'),
+  ])
+  await popup.waitForLoadState()
+  expect(popup.url()).toContain('screen.html')
+  await popup.close()
+})
