@@ -3,6 +3,7 @@ import { screenData, tickScreenData } from '../data/screen'
 import type { CountrySales, ScreenData } from '../data/screen'
 import type { CategorySlice, ChannelSeries } from '../data/board'
 import '../styles/pages/screen.css'
+import { initMap, updateMapLabels } from './map'
 
 const KPI_KEYS = [
   'screen.kpi.gmv',
@@ -145,6 +146,9 @@ export function renderScreen(el: HTMLElement): () => void {
     el.querySelector<HTMLElement>('[data-testid="screen-rank"]')!.innerHTML = rankHtml(
       current.countries,
     )
+
+    // Update map labels
+    updateMapLabels(mapContainer, current.countries)
   }
 
   function clock(): void {
@@ -275,6 +279,10 @@ export function renderScreen(el: HTMLElement): () => void {
   clock()
   document.title = t('screen.title')
 
+  // Initialize map after draw
+  const mapContainer = el.querySelector<HTMLElement>('[data-testid="screen-map"]')!
+  const cleanupMap = initMap(mapContainer, current.countries)
+
   const tickTimer = setInterval(tick, 5000)
   const clockTimer = setInterval(clock, 1000)
 
@@ -309,5 +317,6 @@ export function renderScreen(el: HTMLElement): () => void {
     document.removeEventListener('fullscreenchange', fsChange)
     window.removeEventListener('resize', resizeHandler)
     offLocale()
+    cleanupMap()
   }
 }
