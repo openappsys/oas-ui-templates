@@ -74,8 +74,9 @@ function sidebarItems(): string {
 
 /** 顶部/竖排菜单（menubar / navigation-menu）：顶级=分组、children=组内路由，点击弹出子菜单。
  *  active 字段标记当前路由高亮。
- *  includeHref：仅 navigation 需要（卡片用 <a href> 渲染，无 href 会落到 '#' 致点击被 <a> 默认跳转
- *  重置成 '#'，丢 #/settings）；menubar 子项是 li（走 select→navigate 本就正常）绝不传，保持原样 */
+ *  includeHref：仅 navigation 需要（卡片用 <a href> 渲染，点击走 <a> 默认跳转直达路由，
+ *  不依赖 select 事件）；menubar 子项是 li（走 select→navigate 本就正常）绝不传，保持原样。
+ *  注：无 href 项当前组件渲染为无 href <a tabIndex=0>/<li>，点击只派发 oas-select、无默认跳转 */
 function groupMenuItems(activePath: string, includeHref: boolean): string {
   const groups = new Map<
     string,
@@ -95,10 +96,11 @@ function groupMenuItems(activePath: string, includeHref: boolean): string {
     groups.set(g, items)
   }
   // 数据大屏：哨兵项（不传 href——navigation 形态有 href 会渲染 <a> 致 404；
-  // 当前组件无 href 渲染为可点击 <li>/无 href <a>，点击走 oas-select）
-  const firstGroup = groups.values().next().value
-  if (firstGroup) {
-    firstGroup.push({
+  // 当前组件无 href 渲染为可点击 <li>/无 href <a>，点击走 oas-select）。
+  // 显式定位「总览」组（与 sidebarItems 的 nav.output 对称），不依赖首路由顺序
+  const outputGroup = groups.get(groupLabel('nav.output'))
+  if (outputGroup) {
+    outputGroup.push({
       label: t('nav.screen'),
       value: 'screen-external',
       icon: 'external-link',
