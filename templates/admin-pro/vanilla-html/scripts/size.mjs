@@ -5,11 +5,14 @@ import { gzipSync } from 'node:zlib'
 // 2026-09-28 重定档（@oas-ui/* 2.5.7 实测）：registry 白名单随能力示范扩至 67 组件，
 // 组件库本体（form-associated/对比度门禁/移动专项等批次）体积持续增长——
 // entry 实测 367.2KB、total 489.9KB gzip，预算按实测 + ~9% 余量重定。
-// vanilla 已是按需注册模式，无进一步回落空间；后续增长应逐批评估。
+// 2026-11-13 为 /screen 地图特性（maplibre-gl）上调：多入口后 screen chunk（主线程
+// 283KB）+ worker（.mjs 144KB，setWorkerUrl 指向、建图时 fetch，与 screen chunk 同库同页）
+// 均只被 screen.html 加载，一并计入 total（口径一致，排除 worker 会低估 ~140KB）。
+// entry 实测 320.4KB、total 901.1KB gzip，预算按实测 + ~9% 余量重定。
 const BUDGETS = {
   entry: 400000,
   dashboard: 20480,
-  total: 534000,
+  total: 1006000,
 }
 
 const ASSETS_DIR = 'dist/assets'
@@ -18,15 +21,19 @@ function format(bytes) {
   return `${(bytes / 1024).toFixed(1)} KB`
 }
 
+// .mjs 一并计入：maplibre worker（setWorkerUrl 指向、建图时 fetch）随 screen.html 加载，
+// 与 screen chunk 同库同页，排除会低估地图特性真实成本
 const files = readdirSync(ASSETS_DIR)
-  .filter((name) => name.endsWith('.js'))
+  .filter((name) => name.endsWith('.js') || name.endsWith('.mjs'))
   .map((name) => {
     const raw = readFileSync(join(ASSETS_DIR, name))
     return { name, raw: raw.length, gzip: gzipSync(raw).length }
   })
   .sort((a, b) => b.gzip - a.gzip)
 
-const entry = files.find((f) => !f.name.includes('dashboard'))
+// 多入口（index + screen）：入口检测须显式锚定 index，
+// 旧写法「首个非 dashboard」在 screen chunk 变大后会误判
+const entry = files.find((f) => f.name.startsWith('index'))
 const dashboard = files.find((f) => f.name.includes('dashboard'))
 const total = files.reduce((sum, f) => sum + f.gzip, 0)
 
