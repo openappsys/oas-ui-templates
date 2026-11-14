@@ -73,6 +73,19 @@ export function href(path: string): string {
   return routerMode() === 'history' ? joinBase(path) : `#${path}`
 }
 
+/**
+ * 数据大屏独立入口（screen.html）的打开 URL。
+ * - hash 模式：文档 URL 恒停在 base 根（路由放 hash 段），相对 `./screen.html` 解析稳定。
+ * - history 模式：文档 URL 可能在二级路由（如 /system/logs），相对路径会解析成
+ *   /system/screen.html（404）；改用绝对路径 joinBase('/screen.html')。
+ * BASE 恒为 '/'（模板 base './'），绝对路径即 /screen.html，根部署下正确；
+ * history 模式在子路径部署下本就不可用（stripBase 不剥离、SPA 回退落错 index.html），
+ * 故无需覆盖子路径场景。
+ */
+export function screenUrl(): string {
+  return routerMode() === 'history' ? joinBase('/screen.html') : './screen.html'
+}
+
 /** 监听路由变化：hash 模式 hashchange、history 模式 popstate + pushState 后的自定义事件 */
 export function onRouteChange(cb: () => void): () => void {
   const evt = routerMode() === 'history' ? 'popstate' : 'hashchange'

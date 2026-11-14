@@ -108,3 +108,27 @@ test('admin 侧栏数据大屏：新标签页打开 screen.html', async ({ page,
   expect(popup.url()).toContain('screen.html')
   await popup.close()
 })
+
+test('admin 数据大屏：history 模式二级路径下哨兵打开根下 /screen.html（非 /system/screen.html）', async ({
+  page,
+  context,
+}) => {
+  void page.addInitScript(() => {
+    localStorage.setItem('oas-admin.router-mode', 'history')
+  })
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await login(page)
+  // 导航到二级路径页面：history 模式 pushState，文档 URL 变 /system/logs
+  await openNavItem(page, '系统', '日志中心')
+  await expect(page).toHaveURL(/\/system\/logs$/)
+  // 点「数据大屏」哨兵 → 新标签
+  const [popup] = await Promise.all([
+    context.waitForEvent('page'),
+    openNavItem(page, '总览', '数据大屏'),
+  ])
+  await popup.waitForLoadState()
+  // 修复前：相对 ./screen.html 在 /system/logs 下解析成 /system/screen.html（prod 404）；
+  // 修复后：绝对 /screen.html（根部署正确）
+  expect(new URL(popup.url()).pathname).toBe('/screen.html')
+  await popup.close()
+})

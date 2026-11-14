@@ -195,7 +195,7 @@ export function renderScreen(el: HTMLElement): () => void {
   }
 
   // 16:9 固定画布等比缩放（大屏通行范式）：1920×1080 设计稿，scale 适配任意屏幕
-  function fit(): void {
+  function fitCanvas(): void {
     const scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080)
     el.style.setProperty('--screen-scale', scale.toFixed(4))
   }
@@ -288,7 +288,7 @@ export function renderScreen(el: HTMLElement): () => void {
 
   draw()
   ensureChartGlow()
-  fit()
+  fitCanvas()
   clock()
   document.title = t('screen.title')
 
@@ -321,7 +321,7 @@ export function renderScreen(el: HTMLElement): () => void {
   fsChange()
   document.addEventListener('fullscreenchange', fsChange)
 
-  const resizeHandler = (): void => fit()
+  const resizeHandler = (): void => fitCanvas()
   window.addEventListener('resize', resizeHandler)
 
   const offLocale = onLocaleChange(refreshText)

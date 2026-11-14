@@ -2,7 +2,7 @@ import { message } from '@oas-ui/ui/feedback/message'
 import type { OASSidebar } from '@oas-ui/ui'
 import { listNotifications, markAllRead, markRead, unreadCount } from '../data/notifications'
 import { matchRoute, resolve } from '../router/router'
-import { currentPath, href, navigate, onRouteChange } from '../router/mode'
+import { currentPath, href, navigate, onRouteChange, screenUrl } from '../router/mode'
 import { routes, type RouteGroup } from '../router/routes'
 import { HOME_PATH, closeKeys, closeTab, visit } from '../router/tabs'
 import type { TabsView } from '../router/tabs'
@@ -360,7 +360,7 @@ export function mountApp(root: HTMLElement): void {
       if (!value) return
       // 数据大屏哨兵：非 SPA 路由，新标签页打开
       if (value === 'screen-external') {
-        window.open('./screen.html', '_blank')
+        window.open(screenUrl(), '_blank')
         closeMenuPopover()
         return
       }
@@ -398,7 +398,7 @@ export function mountApp(root: HTMLElement): void {
       if (!value) return
       // 数据大屏哨兵：非 SPA 路由，新标签页打开
       if (value === 'screen-external') {
-        window.open('./screen.html', '_blank')
+        window.open(screenUrl(), '_blank')
         return
       }
       if (currentPath() === value) void resolve()

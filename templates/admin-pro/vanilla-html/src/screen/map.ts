@@ -8,6 +8,7 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url'
 import type { FeatureCollection } from 'geojson'
 import type { CountrySales } from '../data/screen'
+import { currentLocale } from '../i18n'
 
 setWorkerUrl(workerUrl)
 
@@ -28,9 +29,12 @@ function webglAvailable(): boolean {
   }
 }
 
-// 与榜单一致的「万」单位
+// 与榜单一致的 locale-aware 紧凑单位（zh-CN→320万、en→3.2M）
 function fmtValue(v: number): string {
-  return `${Math.round(v / 10000)}万`
+  return new Intl.NumberFormat(currentLocale(), {
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  }).format(v)
 }
 
 // 等距投影（fallback 用），与 WORLD_BOUNDS 对齐，坐标为容器 layout px
