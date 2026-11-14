@@ -79,8 +79,7 @@ export function href(path: string): string {
  * - history 模式：文档 URL 可能在二级路由（如 /system/logs），相对路径会解析成
  *   /system/screen.html（404）；改用绝对路径 joinBase('/screen.html')。
  * BASE 恒为 '/'（模板 base './'），绝对路径即 /screen.html，根部署下正确；
- * history 模式在子路径部署下本就不可用（stripBase 不剥离、SPA 回退落错 index.html），
- * 故无需覆盖子路径场景。
+ * 本模板无子路径部署场景（BASE 恒 '/'），故无需覆盖子路径。
  */
 export function screenUrl(): string {
   return routerMode() === 'history' ? joinBase('/screen.html') : './screen.html'
