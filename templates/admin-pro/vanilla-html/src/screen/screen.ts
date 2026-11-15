@@ -35,6 +35,47 @@ const NEON = ['#22d3ee', '#38bdf8', '#a78bfa', '#34d399', '#fbbf24']
 const EXPAND_ICON = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 5V3.5A1.5 1.5 0 0 1 3.5 2H5"/><path d="M11 2h1.5A1.5 1.5 0 0 1 14 3.5V5"/><path d="M14 11v1.5a1.5 1.5 0 0 1-1.5 1.5H11"/><path d="M5 14H3.5A1.5 1.5 0 0 1 2 12.5V11"/></svg>`
 const COMPRESS_ICON = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 5h3V2"/><path d="M14 5h-3V2"/><path d="M14 11h-3v3"/><path d="M2 11h3v3"/></svg>`
 
+// 榜单细粒度 reconcile：按 data-country key 复用已有行（增/删/重排/在位更新），
+// tick 后 DOM 节点 identity 保留，rank-bar 宽度变化交给 CSS transition 平滑补间。
+// top 须由调用方按 value 降序排序（首帧 rankHtml 内部排序仅 draw 用）。
+export function reconcileRank(
+  list: HTMLElement,
+  top: CountrySales[],
+  fmtValue: (value: number) => string,
+): void {
+  const max = top[0]?.value ?? 1
+  const stale = new Map<string, HTMLElement>()
+  for (const row of Array.from(list.children) as HTMLElement[]) {
+    const key = row.dataset.country
+    if (key) stale.set(key, row)
+  }
+  top.forEach((c, i) => {
+    const pct = Math.max(6, Math.round((c.value / max) * 100))
+    let row = stale.get(c.key)
+    stale.delete(c.key)
+    if (!row) {
+      // 新进入 top：结构同 rankHtml 行
+      row = document.createElement('div')
+      row.className = 'rank-item'
+      row.dataset.country = c.key
+      row.innerHTML =
+        '<span class="rank-no"></span><span class="rank-name"></span>' +
+        '<div class="rank-bar"><i></i></div><span class="rank-val"></span>'
+    }
+    if (list.children[i] !== row) {
+      list.insertBefore(row, list.children[i] ?? null)
+    }
+    const no = row.querySelector<HTMLElement>('.rank-no')!
+    no.textContent = String(i + 1)
+    no.className = `rank-no rank-no-${i + 1}`
+    row.querySelector<HTMLElement>('.rank-name')!.textContent = c.name
+    row.querySelector<HTMLElement>('.rank-val')!.textContent = fmtValue(c.value)
+    row.querySelector<HTMLElement>('.rank-bar i')!.style.width = `${pct}%`
+  })
+  // top 里已不存在的旧行收尾删除
+  for (const row of stale.values()) row.remove()
+}
+
 export function renderScreen(el: HTMLElement): () => void {
   let current = screenData()
   let exiting = false
@@ -85,7 +126,7 @@ export function renderScreen(el: HTMLElement): () => void {
       .map((c, i) => {
         const pct = Math.max(6, Math.round((c.value / max) * 100))
         return `
-      <div class="rank-item">
+      <div class="rank-item" data-country="${c.key}">
         <span class="rank-no rank-no-${i + 1}">${i + 1}</span>
         <span class="rank-name">${c.name}</span>
         <div class="rank-bar"><i style="width:${pct}%"></i></div>
@@ -112,9 +153,11 @@ export function renderScreen(el: HTMLElement): () => void {
     })
     el.querySelector<HTMLElement>('.map-card .panel-title')!.textContent = t('screen.map.title')
     el.querySelector<HTMLElement>('.rank-card .panel-title')!.textContent = t('screen.rank.title')
-    // 榜单值随 locale 紧凑格式化（万/M），locale 切换时重渲染
-    el.querySelector<HTMLElement>('[data-testid="screen-rank"]')!.innerHTML = rankHtml(
-      current.countries,
+    // 榜单值随 locale 紧凑格式化（万/M）：reconcile 保节点 identity，只重排/重写字段
+    reconcileRank(
+      el.querySelector<HTMLElement>('[data-testid="screen-rank"]')!,
+      [...current.countries].sort((a, b) => b.value - a.value).slice(0, 5),
+      fmtRankValue,
     )
     // 月度标签随 locale 变化，重挂 chart data
     el.querySelector<HTMLElement>('[data-chart="bar"]')?.setAttribute(
@@ -156,8 +199,10 @@ export function renderScreen(el: HTMLElement): () => void {
         current.channel.series,
       ),
     )
-    el.querySelector<HTMLElement>('[data-testid="screen-rank"]')!.innerHTML = rankHtml(
-      current.countries,
+    reconcileRank(
+      el.querySelector<HTMLElement>('[data-testid="screen-rank"]')!,
+      [...current.countries].sort((a, b) => b.value - a.value).slice(0, 5),
+      fmtRankValue,
     )
 
     // Update map labels
@@ -166,10 +211,11 @@ export function renderScreen(el: HTMLElement): () => void {
 
   function clock(): void {
     const now = new Date()
-    el.querySelector<HTMLElement>('.clock-time')!.textContent = now.toLocaleTimeString('zh-CN', {
+    const locale = currentLocale()
+    el.querySelector<HTMLElement>('.clock-time')!.textContent = now.toLocaleTimeString(locale, {
       hour12: false,
     })
-    el.querySelector<HTMLElement>('.clock-date')!.textContent = now.toLocaleDateString('zh-CN', {
+    el.querySelector<HTMLElement>('.clock-date')!.textContent = now.toLocaleDateString(locale, {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -296,8 +342,32 @@ export function renderScreen(el: HTMLElement): () => void {
   const mapContainer = el.querySelector<HTMLElement>('[data-testid="screen-map"]')!
   const mapCtl = initMap(mapContainer, current.countries)
 
-  const tickTimer = setInterval(tick, 5000)
-  const clockTimer = setInterval(clock, 1000)
+  // 定时器 start/stop 成对管理：页面切后台（visibilitychange hidden）时暂停，
+  // 回前台立即重启并补一次 tick/clock，避免恢复后看到 5s 前的旧数据
+  let tickTimer: ReturnType<typeof setInterval> | undefined
+  let clockTimer: ReturnType<typeof setInterval> | undefined
+  function stopTimers(): void {
+    if (tickTimer !== undefined) clearInterval(tickTimer)
+    if (clockTimer !== undefined) clearInterval(clockTimer)
+    tickTimer = undefined
+    clockTimer = undefined
+  }
+  function startTimers(): void {
+    stopTimers()
+    tickTimer = setInterval(tick, 5000)
+    clockTimer = setInterval(clock, 1000)
+  }
+  const visibilityHandler = (): void => {
+    if (document.hidden) {
+      stopTimers()
+    } else {
+      startTimers()
+      tick()
+      clock()
+    }
+  }
+  document.addEventListener('visibilitychange', visibilityHandler)
+  startTimers()
 
   const escHandler = (e: KeyboardEvent): void => {
     if (e.key === 'Escape') exit()
@@ -322,17 +392,29 @@ export function renderScreen(el: HTMLElement): () => void {
   document.addEventListener('fullscreenchange', fsChange)
 
   const resizeHandler = (): void => fitCanvas()
-  window.addEventListener('resize', resizeHandler)
+  // 优先 ResizeObserver（容器尺寸变化即缩放，含非 window resize 的场景）；
+  // 不支持时回退 window resize
+  const resizeObserver =
+    typeof ResizeObserver === 'function' ? new ResizeObserver(() => fitCanvas()) : undefined
+  if (resizeObserver) {
+    resizeObserver.observe(el)
+  } else {
+    window.addEventListener('resize', resizeHandler)
+  }
 
   const offLocale = onLocaleChange(refreshText)
 
   return () => {
-    clearInterval(tickTimer)
-    clearInterval(clockTimer)
+    stopTimers()
+    document.removeEventListener('visibilitychange', visibilityHandler)
     if (exitTimer !== undefined) clearTimeout(exitTimer)
     document.removeEventListener('keydown', escHandler)
     document.removeEventListener('fullscreenchange', fsChange)
-    window.removeEventListener('resize', resizeHandler)
+    if (resizeObserver) {
+      resizeObserver.disconnect()
+    } else {
+      window.removeEventListener('resize', resizeHandler)
+    }
     offLocale()
     mapCtl.dispose()
   }
