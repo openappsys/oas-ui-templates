@@ -396,3 +396,8 @@
   font-weight: 500;
   transform: translate(-50%, -50%);
 }
+
+/* 标签优先级避让：被高优先级标签压盖者隐藏 */
+.screen-map .map-label.is-hidden {
+  display: none;
+}
