@@ -83,7 +83,7 @@ npx degit <本仓库地址>/templates/admin-pro/vanilla-html my-admin
 - 内容：时钟 + 4 KPI（GMV / 订单量 / 新增用户 / 转化率，部分带数字滚动动画）· 月度营收柱状图 · 渠道趋势堆叠图 · 品类占比环形图 · 国家销售 TOP5 榜单 · 世界地图（MapLibre GL + Natural Earth GeoJSON，按销售额青→蓝着色 + 15 国标签叠层）
 - 地图离线零网络依赖：`public/world.geojson` 本地加载，WebGL / fetch 失败优雅降级为纯标签叠层；固定视图全禁交互
 - 实时刷新：5s tick 抖动 KPI / 图表 / 地图标签；1s 时钟
-- 退出：右上角「返回管理端」按钮或 Esc 键（`window.close()` 被拦截时 500ms fallback 导航回 `index.html`）；全屏按钮（`document.fullscreenEnabled` 时显示）
+- 退出：右上角「返回管理端」按钮或 Esc 键（`window.close()` 被拦截时 500ms fallback 导航回 `index.html`）；全屏按钮（`document.fullscreenEnabled` 时显示）。注：`window.close()` 仅对 script 打开的标签页生效；地址栏直达打开时，「返回管理端」/Esc 退出走 `./index.html` 回退
 
 ## 多页签
 
@@ -218,7 +218,7 @@ npx degit <this-repo>/templates/admin-pro/vanilla-html my-admin
 - Content: clock + 4 KPIs (GMV / orders / new users / conversion, some with number-roll animation) · monthly revenue bar chart · channel trend stacked chart · category share donut · country sales TOP-5 ranking · world map (MapLibre GL + Natural Earth GeoJSON, colored cyan→blue by sales + 15-country label overlay)
 - Map is offline with zero network dependency: `public/world.geojson` loaded locally, graceful degradation to a pure label overlay on WebGL / fetch failure; fixed view with all interactions disabled
 - Real-time refresh: 5s tick jitters KPIs / charts / map labels; 1s clock
-- Exit: the "Back to admin" button (top-right) or the Esc key (`window.close()` falls back to navigating to `index.html` after 500ms when blocked); fullscreen button (shown when `document.fullscreenEnabled`)
+- Exit: the "Back to admin" button (top-right) or the Esc key (`window.close()` falls back to navigating to `index.html` after 500ms when blocked); fullscreen button (shown when `document.fullscreenEnabled`). Note: `window.close()` only works for tabs opened by script; when the page is opened directly from the address bar, "Back to admin" / Esc exits via the `./index.html` fallback
 
 ## Multi-tab
 
