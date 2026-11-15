@@ -57,3 +57,62 @@ test('数据大屏：Esc 键退出', async ({ page }) => {
   await page.keyboard.press('Escape')
   await expect(page).toHaveURL(/index\.html/, { timeout: 5000 })
 })
+
+test('数据大屏：时钟随 locale 变化（英文 locale 显示英文星期）', async ({ page }) => {
+  // addInitScript 在页面脚本前写入，避免任何首帧竞态。
+  // 值必须是应用 locale 白名单内的 'en'（i18n isAppLocale 只认 'zh-CN'/'en'，
+  // 'en-US' 会被拒并回落到 navigator 嗅探，config 已固定 locale: 'zh-CN'）
+  await page.addInitScript(() => localStorage.setItem('oas-admin.locale', 'en'))
+  await page.goto('/screen.html')
+  await expect(page.locator('.clock-date')).toContainText(
+    /(Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)/,
+  )
+})
+
+test('数据大屏：时钟默认 zh-CN 显示中文星期', async ({ page }) => {
+  await page.goto('/screen.html')
+  await expect(page.locator('.clock-date')).toContainText(/星期/)
+})
+
+test('数据大屏：榜单 tick 细粒度更新（identity 保留 + 宽度/值变化）', async ({ page }) => {
+  await page.goto('/screen.html')
+  const rank = page.getByTestId('screen-rank')
+  // 第二行：首行恒 100%（max 自身），width 无 from===to 参考价值
+  const bar = rank.locator('.rank-item').nth(1).locator('.rank-bar i')
+  const handle = await bar.elementHandle()
+  if (!handle) throw new Error('rank bar not found')
+  const beforeWidth = await page.evaluate((h) => (h as HTMLElement).style.width, handle)
+  const beforeVal = await rank.locator('.rank-item').nth(1).locator('.rank-val').textContent()
+
+  await page.waitForTimeout(5500) // ≥1 个 5s tick
+
+  // identity：reconcile 后节点未被重建（重建则旧 handle 引用与新查询不同）
+  const sameNode = await page.evaluate(
+    (h) =>
+      h ===
+      document.querySelector('[data-testid="screen-rank"] .rank-item:nth-child(2) .rank-bar i'),
+    handle,
+  )
+  expect(sameNode).toBe(true)
+
+  const afterWidth = await page.evaluate((h) => (h as HTMLElement).style.width, handle)
+  const afterVal = await rank.locator('.rank-item').nth(1).locator('.rank-val').textContent()
+  expect(afterWidth !== beforeWidth || afterVal !== beforeVal).toBe(true)
+})
+
+test('数据大屏：地图标签优先级避让（15 总数 + 隐藏数区间）', async ({ page }) => {
+  const errors = trackErrors(page)
+  await page.goto('/screen.html')
+  await expect(page.getByTestId('screen-map').locator('canvas')).toBeVisible()
+  await page.waitForTimeout(600) // 地图 load + 标签定位 + 避让 + 首帧补间
+
+  // 不硬编码具体哪国被隐藏（视口布局抖动 fragile），只断言区间
+  const stats = await page.evaluate(() => ({
+    total: document.querySelectorAll('.map-label').length,
+    hidden: document.querySelectorAll('.map-label.is-hidden').length,
+  }))
+  expect(stats.total).toBe(15)
+  expect(stats.hidden).toBeGreaterThanOrEqual(1)
+  expect(stats.hidden).toBeLessThanOrEqual(13)
+  expect(errors).toEqual([])
+})
