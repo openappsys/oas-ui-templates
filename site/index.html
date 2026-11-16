@@ -87,11 +87,19 @@
       })()
     </script>
     <style>
-      /* ===== 首页骨架主题变量（对齐 oas-theme.css zinc 色板；light 值=原硬编码，视觉零回归） ===== */
+      /* ===== 首页骨架主题变量（对齐 oas-theme.css zinc 色板；light 映射 oas 亮色 token，
+         勿写自引用——guaranteed-invalid 会使 light 下所有 var(--hp-*) 未定义，边框等 1px 声明
+         整体失效，导致深浅主题布局错位） ===== */
       :root {
-        --hp-bg: var(--hp-bg); --hp-card: var(--hp-card); --hp-soft: var(--hp-soft);
-        --hp-border: var(--hp-border); --hp-line: var(--hp-line);
-        --hp-text: var(--hp-text); --hp-text2: var(--hp-text2); --hp-text3: var(--hp-text3); --hp-muted: var(--hp-muted);
+        --hp-bg: var(--oas-color-bg);
+        --hp-card: var(--oas-color-bg-elevated);
+        --hp-soft: var(--oas-color-bg-hover);
+        --hp-border: var(--oas-color-border);
+        --hp-line: var(--oas-color-border-strong);
+        --hp-text: var(--oas-color-text-primary);
+        --hp-text2: var(--oas-color-text-secondary);
+        --hp-text3: var(--oas-color-text-disabled);
+        --hp-muted: var(--oas-color-text-disabled);
       }
       html[data-theme="dark"] {
         --hp-bg: #18181b; --hp-card: #27272a; --hp-soft: #27272a;
