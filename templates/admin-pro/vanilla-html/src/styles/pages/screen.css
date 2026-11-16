@@ -284,6 +284,44 @@
   color: #67e8f9;
 }
 
+/* ---------- conversion 卡：自绘液体环 ---------- */
+.kpi-card-ring {
+  align-items: center;
+  padding: 8px 0;
+}
+.liquid-ring {
+  position: relative;
+}
+.liquid-ring canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+.liquid-ring-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  pointer-events: none;
+}
+.liquid-ring-value {
+  font-size: 24px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #f0f9ff;
+  text-shadow:
+    0 0 16px rgba(34, 211, 238, 0.55),
+    0 0 34px rgba(56, 189, 248, 0.3);
+}
+.liquid-ring-label {
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  color: #7dd3fc;
+}
+
 /* ---------- 主区：左图栈 | 地图（最宽）| 右图栈 ---------- */
 .screen-main {
   grid-column: 1 / -1;

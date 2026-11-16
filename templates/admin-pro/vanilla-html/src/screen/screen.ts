@@ -4,6 +4,8 @@ import type { CountrySales, ScreenData } from '../data/screen'
 import type { CategorySlice, ChannelSeries } from '../data/board'
 import '../styles/pages/screen.css'
 import { initMap } from './map'
+import { createLiquidRing } from './liquid-ring'
+import type { LiquidRingHandle } from './liquid-ring'
 
 const KPI_KEYS = [
   'screen.kpi.gmv',
@@ -80,12 +82,19 @@ export function renderScreen(el: HTMLElement): () => void {
   let current = screenData()
   let exiting = false
   let exitTimer: ReturnType<typeof setTimeout> | undefined
+  // conversion 卡的液体环句柄：draw() 后创建，cleanup 时 dispose
+  let liquidRing: LiquidRingHandle | null = null
 
   function kpiCard(k: ScreenData['kpis'][number], idx: number): string {
+    // conversion 卡由自绘液体环接管：draw 后由 createLiquidRing 填充 ringHost，
+    // 数值+label 文本均在环容器内（e2e 断言 data-testid="screen-kpi-conversion" 可见）
+    if (k.key === 'conversion') {
+      return `<div class="panel kpi-card kpi-card-ring" data-ring-host="conversion"></div>`
+    }
     const label = t(KPI_KEYS[idx] ?? '')
     const value = k.anim
       ? `<oas-number-animation data-testid="screen-kpi-${k.key}" value="${k.value}"></oas-number-animation>`
-      : `<oas-statistic data-testid="screen-kpi-${k.key}" value="${k.value}" precision="${k.key === 'conversion' ? 1 : 0}">${k.suffix ? `<span slot="suffix">${k.suffix}</span>` : ''}</oas-statistic>`
+      : `<oas-statistic data-testid="screen-kpi-${k.key}" value="${k.value}" precision="0">${k.suffix ? `<span slot="suffix">${k.suffix}</span>` : ''}</oas-statistic>`
     return `
       <div class="panel kpi-card">
         <div class="kpi-label">${label}</div>
@@ -183,6 +192,12 @@ export function renderScreen(el: HTMLElement): () => void {
   function tick(): void {
     current = tickScreenData(current)
     current.kpis.forEach((k) => {
+      // conversion 的 testid 已挂在液体环容器上（setAttribute value 无意义），
+      // 改走 setValue：当前值每帧向目标逼近 1%，液面与文本同步过渡
+      if (k.key === 'conversion') {
+        liquidRing?.setValue(k.value)
+        return
+      }
       el.querySelector<HTMLElement>(`[data-testid="screen-kpi-${k.key}"]`)?.setAttribute(
         'value',
         String(k.value),
@@ -342,6 +357,22 @@ export function renderScreen(el: HTMLElement): () => void {
   const mapContainer = el.querySelector<HTMLElement>('[data-testid="screen-map"]')!
   const mapCtl = initMap(mapContainer, current.countries)
 
+  // conversion 卡：液体环 el 接管 data-testid="screen-kpi-conversion"。
+  // 内层 label 补挂 .kpi-label，使 refreshText() 按 .kpi-card .kpi-label
+  // 位置索引重写文案时能覆盖到环内 label（第 4 张卡，DOM 序不变）
+  const conversionKpi = current.kpis.find((k) => k.key === 'conversion')
+  const ringHost = el.querySelector<HTMLElement>('[data-ring-host="conversion"]')
+  if (conversionKpi && ringHost) {
+    liquidRing = createLiquidRing({
+      value: conversionKpi.value,
+      label: t('screen.kpi.conversion'),
+      size: 120,
+    })
+    liquidRing.el.dataset.testid = 'screen-kpi-conversion'
+    liquidRing.el.querySelector('.liquid-ring-label')?.classList.add('kpi-label')
+    ringHost.appendChild(liquidRing.el)
+  }
+
   // 定时器 start/stop 成对管理：页面切后台（visibilitychange hidden）时暂停，
   // 回前台立即重启并补一次 tick/clock，避免恢复后看到 5s 前的旧数据
   let tickTimer: ReturnType<typeof setInterval> | undefined
@@ -417,5 +448,6 @@ export function renderScreen(el: HTMLElement): () => void {
     }
     offLocale()
     mapCtl.dispose()
+    liquidRing?.dispose()
   }
 }
