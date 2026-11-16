@@ -61,6 +61,14 @@
   padding: 24px 28px 28px;
   width: 100%;
   height: 100%;
+  /* 画布内背景装饰：顶部居中径向光斑 + 左下/右下暗紫光晕 + 40px 细网格；
+     纯背景层天然不响应事件，不挡交互 */
+  background:
+    radial-gradient(1100px 460px at 50% 0%, rgba(14, 116, 144, 0.18), transparent 62%) no-repeat,
+    radial-gradient(720px 400px at 0% 100%, rgba(49, 46, 129, 0.12), transparent 62%) no-repeat,
+    radial-gradient(720px 400px at 100% 100%, rgba(49, 46, 129, 0.12), transparent 62%) no-repeat,
+    linear-gradient(rgba(56, 189, 248, 0.035) 1px, transparent 1px) 0 0 / 40px 40px,
+    linear-gradient(90deg, rgba(56, 189, 248, 0.035) 1px, transparent 1px) 0 0 / 40px 40px;
 }
 
 /* ---------- 顶栏：时钟左 / 主标题中 / 按钮右 ---------- */
@@ -88,17 +96,27 @@
   display: flex;
   align-items: center;
   gap: 22px;
+  /* 中央 4px 菱形：两条斜向渐变带相交成菱形，绘制在文字下层（纯背景层，
+     refreshText 改写 textContent 不受影响）；伪元素通道留给两翼 */
+  background:
+    linear-gradient(135deg, transparent 42%, rgba(165, 243, 252, 0.95) 50%, transparent 58%) center
+    / 4px 4px no-repeat,
+    linear-gradient(45deg, transparent 42%, rgba(34, 211, 238, 0.95) 50%, transparent 58%) center /
+    4px 4px no-repeat;
 }
-/* 主标题两侧装饰翼 */
+/* 主标题两翼：渐变翼线（外侧透明→青 40%），线端 45° 斜切（2px 高对应 2px 斜距） */
 .screen-title::before,
 .screen-title::after {
   content: "";
+  flex: none;
   height: 2px;
   width: 150px;
-  background: linear-gradient(90deg, transparent, rgba(103, 232, 249, 0.9));
+  background: linear-gradient(90deg, transparent, rgba(103, 232, 249, 0.4));
+  clip-path: polygon(2px 0, 100% 0, calc(100% - 2px) 100%, 0 100%);
 }
 .screen-title::after {
-  background: linear-gradient(270deg, transparent, rgba(103, 232, 249, 0.9));
+  background: linear-gradient(270deg, transparent, rgba(103, 232, 249, 0.4));
+  clip-path: polygon(0 0, calc(100% - 2px) 0, 100% 100%, 2px 100%);
 }
 .screen-clock {
   display: flex;
@@ -137,45 +155,54 @@
   display: none;
 }
 
-/* ---------- 科技面板框（组件库无此装饰框，大屏自绘） ---------- */
+/* 科技面板框（组件库无此装饰框，大屏自绘）。
+   单元素多段背景：四角双层括弧（外圈 14px 臂长 2px #38bdf8 + 内圈 8px 臂长 1px
+   半透明青，内圈向内收 5px）+ 顶部 accent 渐变线（宽 60% 居中）；
+   装饰层全部 background-image 叠加、no-repeat 定尺寸定位，底色渐变在最低层，
+   不遮挡内容区（原 ::before/::after 双角标由四角括弧背景取代） */
 .panel {
   position: relative;
   display: flex;
   flex-direction: column;
   min-height: 0;
   padding: 16px 18px 18px;
-  background: linear-gradient(
-    158deg,
-    rgba(15, 36, 78, 0.72) 0%,
-    rgba(7, 17, 42, 0.6) 60%,
-    rgba(5, 12, 32, 0.55) 100%
-  );
-  border: 1px solid rgba(56, 189, 248, 0.22);
+  background:
+    linear-gradient(90deg, transparent, rgba(103, 232, 249, 0.9), transparent) center top / 60% 1px
+    no-repeat,
+    linear-gradient(rgba(56, 189, 248, 0.5), rgba(56, 189, 248, 0.5)) left 5px top 5px / 8px 1px
+    no-repeat,
+    linear-gradient(rgba(56, 189, 248, 0.5), rgba(56, 189, 248, 0.5)) left 5px top 5px / 1px 8px
+    no-repeat,
+    linear-gradient(rgba(56, 189, 248, 0.5), rgba(56, 189, 248, 0.5)) right 5px top 5px / 8px 1px
+    no-repeat,
+    linear-gradient(rgba(56, 189, 248, 0.5), rgba(56, 189, 248, 0.5)) right 5px top 5px / 1px 8px
+    no-repeat,
+    linear-gradient(rgba(56, 189, 248, 0.5), rgba(56, 189, 248, 0.5)) left 5px bottom 5px / 8px 1px
+    no-repeat,
+    linear-gradient(rgba(56, 189, 248, 0.5), rgba(56, 189, 248, 0.5)) left 5px bottom 5px / 1px 8px
+    no-repeat,
+    linear-gradient(rgba(56, 189, 248, 0.5), rgba(56, 189, 248, 0.5)) right 5px bottom 5px / 8px 1px
+    no-repeat,
+    linear-gradient(rgba(56, 189, 248, 0.5), rgba(56, 189, 248, 0.5)) right 5px bottom 5px / 1px 8px
+    no-repeat,
+    linear-gradient(#38bdf8, #38bdf8) left top / 14px 2px no-repeat,
+    linear-gradient(#38bdf8, #38bdf8) left top / 2px 14px no-repeat,
+    linear-gradient(#38bdf8, #38bdf8) right top / 14px 2px no-repeat,
+    linear-gradient(#38bdf8, #38bdf8) right top / 2px 14px no-repeat,
+    linear-gradient(#38bdf8, #38bdf8) left bottom / 14px 2px no-repeat,
+    linear-gradient(#38bdf8, #38bdf8) left bottom / 2px 14px no-repeat,
+    linear-gradient(#38bdf8, #38bdf8) right bottom / 14px 2px no-repeat,
+    linear-gradient(#38bdf8, #38bdf8) right bottom / 2px 14px no-repeat,
+    linear-gradient(
+      158deg,
+      rgba(15, 36, 78, 0.72) 0%,
+      rgba(7, 17, 42, 0.6) 60%,
+      rgba(5, 12, 32, 0.55) 100%
+    );
+  border: 1px solid rgba(56, 189, 248, 0.35);
   box-shadow:
-    inset 0 0 26px rgba(34, 211, 238, 0.06),
-    0 0 22px rgba(34, 211, 238, 0.05);
-}
-/* 角标（左上 + 右下，通行科技风） */
-.panel::before,
-.panel::after {
-  content: "";
-  position: absolute;
-  width: 20px;
-  height: 20px;
-  border: 2px solid rgba(103, 232, 249, 0.85);
-  pointer-events: none;
-}
-.panel::before {
-  top: -1px;
-  left: -1px;
-  border-right: none;
-  border-bottom: none;
-}
-.panel::after {
-  bottom: -1px;
-  right: -1px;
-  border-left: none;
-  border-top: none;
+    0 0 16px rgba(34, 211, 238, 0.12),
+    inset 0 0 24px rgba(34, 211, 238, 0.04);
 }
 /* 面板标题条 */
 .panel-title {
@@ -234,12 +261,13 @@
   align-items: baseline;
   gap: 6px;
   color: #f0f9ff;
+  text-shadow: 0 0 12px rgba(34, 211, 238, 0.45);
 }
 .kpi-prefix {
   font-size: 24px;
   font-weight: 600;
   color: #67e8f9;
-  text-shadow: 0 0 12px rgba(103, 232, 249, 0.5);
+  text-shadow: 0 0 12px rgba(34, 211, 238, 0.45);
 }
 .kpi-value oas-number-animation,
 .kpi-value oas-statistic {
@@ -344,6 +372,20 @@
   box-shadow: 0 0 8px rgba(34, 211, 238, 0.6);
   transition: width 0.8s ease;
 }
+/* 位次配色：1 金 / 2-3 青（沿用既有青体系加亮）/ 4-5 蓝，宽度 transition 由基类保留 */
+.rank-item:nth-child(1) .rank-bar i {
+  background: linear-gradient(90deg, #b45309, #fbbf24);
+  box-shadow: 0 0 8px rgba(251, 191, 36, 0.55);
+}
+.rank-item:nth-child(2) .rank-bar i,
+.rank-item:nth-child(3) .rank-bar i {
+  background: linear-gradient(90deg, #06b6d4, #67e8f9);
+}
+.rank-item:nth-child(4) .rank-bar i,
+.rank-item:nth-child(5) .rank-bar i {
+  background: linear-gradient(90deg, #1d4ed8, #38bdf8);
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+}
 .rank-val {
   font-size: 14px;
   font-weight: 600;
@@ -400,4 +442,10 @@
 /* 标签优先级避让：被高优先级标签压盖者隐藏 */
 .screen-map .map-label.is-hidden {
   display: none;
+}
+
+/* ---------- 动效可及性：尊重系统减弱动效偏好 ----------
+   Task 2 将在此关闭地图呼吸点动画（填充时注明 animation 名，此处先立骨架） */
+@media (prefers-reduced-motion: reduce) {
+  /* Task 2 fills: disable pulse-dot animations here */
 }
