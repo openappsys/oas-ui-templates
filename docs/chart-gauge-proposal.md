@@ -10,12 +10,12 @@
 
 `oas-chart` 现有图型清单（oas-ui 仓 HEAD）：`line / bar / pie / area / donut / stacked-bar / radar / polar-area / horizontal-bar` 九型，**无 gauge 族**。donut 表达的是份额构成（part-of-whole），与「单值对量程」的 gauge 心智不同：donut 需要 ≥2 段数据才成立，单值场景被迫补一个占位的第二段，读数还要用户心算百分比。
 
-**存在性证据**：admin-pro 模板在数据大屏落地时被迫自绘了一个 canvas 波浪液体环（`templates/admin-pro/vanilla-html/src/screen/liquid-ring.ts`，约 120 行，2026-11-16 本轮产物）：
+**存在性证据**：admin-pro 模板在数据大屏落地时被迫自绘了一个 canvas 波浪液体环（`templates/admin-pro/vanilla-html/src/screen/liquid-ring.ts`，约 200 行，2026-11-16 本轮产物）：
 
 - 圆环底槽（`rgba(30,58,95,.6)`，线宽 8）+ 圆内双层正弦波液面，裁剪到环内圆自底部填充至 value% 高度
-- 后波 `#0891b2` opacity .6（相位偏移 π/2，深色垫底）/ 前波 `#22d3ee` opacity .9（亮色压上）形成层次
+- 后波 `#0891b2` opacity 0.7（相位偏移 π/2，深色垫底）/ 前波 `#22d3ee` opacity 1（亮色压上）形成层次
 - rAF 驱动：相位每帧 +0.05 流动，数值每帧逼近目标 1%（`approach` 纯函数，不越过目标、双向）
-- 波幅 4px（按 dpr 缩放保持视觉常量），波长 = 内半径
+- 波幅 6px（按 dpr 缩放保持视觉常量），波长 = 内半径
 - 中央文本槽（数值 `toFixed(1)%` + label）
 - `prefers-reduced-motion` 退化为单帧静态绘制（`setValue` 直接落到目标重绘，无循环）
 - `visibilitychange` 切后台停 rAF、回前台恢复；`dispose()` 全量清理
@@ -60,7 +60,7 @@
   "min": 0,                          // 量程下限，默认 0
   "max": 100,                        // 量程上限（gauge 语义：量程端点；与 radar 的全局量程上限同字段名，文档需消歧）
   "colors": ["#22d3ee", "#0891b2"],  // liquid 双色波；dial 分段色带
-  "amplitude": 4,                    // liquid 波幅（px，视觉常量，内部按 dpr 缩放）
+  "amplitude": 6,                    // liquid 波幅（px，视觉常量，内部按 dpr 缩放）
   "showLabel": true,                 // 中央文本槽显隐
   "label": "Conversion",             // 中央 label 文案（i18n 缺省口径待定）
   "valueFormat": "percent" | "raw"   // 中央数值格式，默认 'percent'
@@ -76,7 +76,7 @@ SSR 口径：
 
 - 推荐按 **NOT_SSR 登记**（SSR 客户端专属）处理：`oas-scanner`（getUserMedia）与 `oas-signature`（canvas 笔迹）均以「浏览器专属 API」登记 NOT_SSR，gauge 的 liquid 形态依赖 rAF 连续动画，同属此类
 - 备选：若希望纳入 SSR 白名单，则 SSR 快照渲染 value 高度的静态液面/静态指针（动画为客户端增强，水合后启动），参照 `hydrate()` 真水合接管模式——成本更高，收益有限（大屏场景基本无 SSR 需求），倾向不做
-- NOT_SSR 计数守恒（白名单 + NOT_SSR = 总数 212 当前口径）需同步登记
+- NOT_SSR 计数守恒（白名单 + NOT_SSR = 组件总数，当前 216 = 175 + 41，以登记时 `docs/ssr-matrix.md` 快照为准）需同步登记
 
 ARIA / 空态：沿用 oas-chart 现有口径——容器 `role="img"` + aria-label（组件属性优先，缺省按类型走 i18n）；无/非法数据 → 空态占位。
 
@@ -102,7 +102,7 @@ ARIA / 空态：沿用 oas-chart 现有口径——容器 `role="img"` + aria-la
 
 | 证据 | 位置 |
 | --- | --- |
-| 自写液体环实现（~120 行 canvas） | oas-ui-templates 仓 `templates/admin-pro/vanilla-html/src/screen/liquid-ring.ts` |
+| 自写液体环实现（约 200 行 canvas） | oas-ui-templates 仓 `templates/admin-pro/vanilla-html/src/screen/liquid-ring.ts` |
 | oas-chart 现有九型清单 | oas-ui 仓 `packages/ui/src/data/chart/oas-chart.ts` `ChartType` |
 | NOT_SSR 先例（scanner/signature） | oas-ui 仓 `CHANGELOG.md`（v2.6.x，SSR 客户端专属条目） |
 | SSR 矩阵守恒口径 | oas-ui 仓 `docs/ssr-matrix.md`、`ssr-matrix.json`、`.github/workflows/ci.yml` |
