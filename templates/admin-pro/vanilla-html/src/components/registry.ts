@@ -12,6 +12,9 @@ import '@oas-ui/ui/data/highlight'
 import '@oas-ui/ui/data/list'
 import '@oas-ui/ui/data/marquee'
 import '@oas-ui/ui/data/table'
+// 行内编辑能力（import 即注册）：v2.6.4 起默认 table 入口不再内含编辑，
+// products 页 price/stock 列内编辑演示依赖此入口
+import '@oas-ui/ui/data/table/edit'
 import '@oas-ui/ui/data/descriptions'
 import '@oas-ui/ui/data/timeline'
 import '@oas-ui/ui/data/tree'

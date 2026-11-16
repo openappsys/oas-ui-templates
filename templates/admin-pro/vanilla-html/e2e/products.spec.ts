@@ -47,6 +47,38 @@ test('admin 商品管理：卡片/列表双视图切换，列表含开关与操�
   expect(errors).toEqual([])
 })
 
+test('admin 商品管理：price/stock 行内编辑——双击进入编辑、校验拦截非法值、oas-edit 持久化', async ({
+  page,
+}) => {
+  await login(page, '张伟', 'admin')
+  await openNavItem(page, '业务', '商品管理')
+  await page.getByTestId('product-view').getByText('列表').click()
+  await expect(page.getByTestId('product-table')).toBeVisible()
+
+  // 合法值：双击 price 单元格 → 编辑态输入 → Enter 提交 → oas-edit 持久化后单元格重渲染
+  const priceCell = page.getByTestId('product-table').locator('[data-col="price"]').first()
+  await priceCell.dblclick()
+  const editor = priceCell.locator('input').first()
+  await expect(editor).toBeVisible()
+  await editor.fill('9876.5')
+  await editor.press('Enter')
+  await expect(priceCell).toContainText('9,876.5')
+  await expect(page.getByText('已保存')).toBeVisible()
+
+  // 非法值：validate 拦截（price 必须 >0），编辑不提交、Esc 退出后单元格保持原值
+  const stockCell = page.getByTestId('product-table').locator('[data-col="stock"]').first()
+  const stockBefore = (await stockCell.innerText()).trim()
+  await stockCell.dblclick()
+  const stockEditor = stockCell.locator('input').first()
+  await expect(stockEditor).toBeVisible()
+  await stockEditor.fill('-3')
+  await stockEditor.press('Enter')
+  // 校验失败：编辑器不收编（仍在编辑态），无保存提示
+  await expect(stockEditor).toBeVisible()
+  await stockEditor.press('Escape')
+  await expect(stockCell).toContainText(stockBefore)
+})
+
 test('admin 商品管理：dialog 模式下新建表单以对话框呈现', async ({ page }) => {
   const errors = await noConsoleErrors(page)
   await login(page, '张伟', 'admin')
