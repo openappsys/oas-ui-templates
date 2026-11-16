@@ -111,6 +111,18 @@ export function initMap(container: HTMLElement, countries: CountrySales[]): MapC
     labels.appendChild(el)
     labelEls.set(c.key, el)
   }
+
+  // TOP5 呼吸点：初始值排名前五国；定位与 label 走同一投影流程
+  // （map load 与 fallback 两条路径均设置 left/top），update 不重建
+  const top5 = [...countries].sort((a, b) => b.value - a.value).slice(0, 5)
+  const pulseEls = new Map<string, HTMLElement>()
+  for (const c of top5) {
+    const el = document.createElement('div')
+    el.className = 'map-pulse'
+    el.setAttribute('data-country', c.key)
+    labels.appendChild(el)
+    pulseEls.set(c.key, el)
+  }
   container.appendChild(labels)
 
   let map: MapLibreMap | null = null
@@ -169,17 +181,30 @@ export function initMap(container: HTMLElement, countries: CountrySales[]): MapC
     }
   }
 
-  function positionLabelsFallback(): void {
-    const w = container.clientWidth
-    const h = container.clientHeight
+  // label 与 TOP5 呼吸点共用同一投影定位入口，保证两条渲染路径
+  // （map load 回调 / positionLabelsFallback）锚点一致
+  function positionOverlays(point: (lng: number, lat: number) => { x: number; y: number }): void {
     for (const c of countries) {
       const el = labelEls.get(c.key)
       if (!el) continue
-      const { x, y } = projectFallback(c.lng, c.lat, w, h)
+      const { x, y } = point(c.lng, c.lat)
+      el.style.left = `${x}px`
+      el.style.top = `${y}px`
+    }
+    for (const c of top5) {
+      const el = pulseEls.get(c.key)
+      if (!el) continue
+      const { x, y } = point(c.lng, c.lat)
       el.style.left = `${x}px`
       el.style.top = `${y}px`
     }
     applyDeclutter()
+  }
+
+  function positionLabelsFallback(): void {
+    const w = container.clientWidth
+    const h = container.clientHeight
+    positionOverlays((lng, lat) => projectFallback(lng, lat, w, h))
   }
 
   function dispose(): void {
@@ -240,8 +265,18 @@ export function initMap(container: HTMLElement, countries: CountrySales[]): MapC
       'case',
       ['has', 'value'],
       minValue === maxValue
-        ? '#00d4ff'
-        : ['interpolate', ['linear'], ['get', 'value'], minValue, '#1e3a5f', maxValue, '#00d4ff'],
+        ? '#22d3ee'
+        : [
+            'interpolate',
+            ['linear'],
+            ['get', 'value'],
+            minValue,
+            '#312e81',
+            (minValue + maxValue) / 2,
+            '#155e75',
+            maxValue,
+            '#22d3ee',
+          ],
       '#16213e',
     ]
 
@@ -262,11 +297,19 @@ export function initMap(container: HTMLElement, countries: CountrySales[]): MapC
               source: 'world',
               paint: { 'fill-color': fillColor, 'fill-opacity': 0.85 },
             },
+            // 线双层：底层宽 4px 半透明青色做辉光，其上 1px 亮线描边，
+            // 同 source 两层叠加顺序即数组顺序（glow 在前）
+            {
+              id: 'world-line-glow',
+              type: 'line',
+              source: 'world',
+              paint: { 'line-color': 'rgba(56,189,248,.22)', 'line-width': 4 },
+            },
             {
               id: 'world-line',
               type: 'line',
               source: 'world',
-              paint: { 'line-color': '#1e293b', 'line-width': 0.6 },
+              paint: { 'line-color': '#7dd3fc', 'line-width': 1 },
             },
           ],
         },
@@ -306,14 +349,8 @@ export function initMap(container: HTMLElement, countries: CountrySales[]): MapC
     map.on('load', () => {
       if (!map) return // load 前补间 setData 可能因 source 未建而被吞，load 后强制同步一次
       ;(map.getSource('world') as GeoJSONSource | undefined)?.setData(geojson as FeatureCollection)
-      for (const c of countries) {
-        const el = labelEls.get(c.key)
-        if (!el) continue
-        const p = map.project([c.lng, c.lat])
-        el.style.left = `${p.x}px`
-        el.style.top = `${p.y}px`
-      }
-      applyDeclutter()
+      const m = map
+      positionOverlays((lng, lat) => m.project([lng, lat]))
     })
 
     // 运行期错误（worker 失败、WebGL 上下文丢失等）：吞掉不冒泡 console，

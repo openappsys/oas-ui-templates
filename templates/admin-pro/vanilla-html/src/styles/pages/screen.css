@@ -444,8 +444,47 @@
   display: none;
 }
 
+/* ---------- TOP5 呼吸点 ----------
+   6px 青色圆点（box-shadow 外发光）+ ::after 外扩环随 map-pulse keyframes
+   放大淡出；定位为投影锚点（left/top + translate(-50%,-50%) 居中） */
+.screen-map .map-pulse {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #22d3ee;
+  box-shadow:
+    0 0 6px rgba(34, 211, 238, 0.9),
+    0 0 12px rgba(34, 211, 238, 0.5);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.screen-map .map-pulse::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1.5px rgba(34, 211, 238, 0.6);
+  animation: map-pulse 1.6s ease-out infinite;
+}
+
+@keyframes map-pulse {
+  from {
+    transform: scale(0.8);
+    opacity: 0.8;
+  }
+  to {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
 /* ---------- 动效可及性：尊重系统减弱动效偏好 ----------
-   Task 2 将在此关闭地图呼吸点动画（填充时注明 animation 名，此处先立骨架） */
+   关闭呼吸点动画，静态圆点保留 */
 @media (prefers-reduced-motion: reduce) {
-  /* Task 2 fills: disable pulse-dot animations here */
+  .screen-map .map-pulse::after {
+    animation: none;
+    opacity: 0;
+  }
 }
