@@ -44,6 +44,9 @@ function discoverTemplates() {
 const templates = discoverTemplates()
 
 export default defineConfig({
+  // 门户 HTML 引用 ./assets/oas-theme.css（相对根路径）；vite 项目根是仓库根，
+  // 不设 publicDir 该资源在 dev 下 404 → 亮色 token 未定义 → 切主题布局跳动
+  publicDir: join(root, 'site'),
   server: {
     port: Number(process.env.PORT) || 5300,
     strictPort: true,
