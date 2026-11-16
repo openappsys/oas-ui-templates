@@ -333,6 +333,11 @@
   letter-spacing: 0.1em;
   color: #7dd3fc;
 }
+/* 环内 label 复用 kpi-label 类（refreshText 兼容），清零其 margin-bottom，
+   避免与 flex gap 叠加使文本组偏出环心；13px 字号覆写保留（环内缩放有意） */
+.liquid-ring-text .kpi-label {
+  margin-bottom: 0;
+}
 
 /* ---------- 主区：左图栈 | 地图（最宽）| 右图栈 ---------- */
 .screen-main {
@@ -496,7 +501,8 @@
 
 /* ---------- TOP5 呼吸点 ----------
    10px 青色圆点（box-shadow 外发光）+ ::after 外扩环随 map-pulse keyframes
-   放大淡出；定位为投影锚点（left/top + translate(-50%,-50%) 居中） */
+   放大淡出；定位为投影锚点（left/top 居中）。点上移至文字上方 -140%，
+   避免 10px 亮点与 1.6s 光晕扫过同锚点的国名 label */
 .screen-map .map-pulse {
   position: absolute;
   width: 10px;
@@ -506,7 +512,7 @@
   box-shadow:
     0 0 10px rgba(34, 211, 238, 1),
     0 0 22px rgba(34, 211, 238, 0.65);
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -140%);
   pointer-events: none;
 }
 
