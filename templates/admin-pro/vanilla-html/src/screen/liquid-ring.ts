@@ -92,7 +92,7 @@ export function createLiquidRing(opts: {
     ctx.beginPath()
     ctx.moveTo(cx - inner, level)
     for (let x = -inner; x <= inner; x += 2 * dpr) {
-      const y = level + Math.sin(((x / wavelength) * Math.PI * 2 + phase + offset) as number) * amp
+      const y = level + Math.sin((x / wavelength) * Math.PI * 2 + phase + offset) * amp
       ctx.lineTo(cx + x, y)
     }
     ctx.lineTo(cx + inner, cy + inner)
@@ -143,6 +143,9 @@ export function createLiquidRing(opts: {
   }
 
   function start(): void {
+    // 双调守卫：hidden-at-creation 场景下 onVisibility 的 start 可能与创建时的
+    // start 叠加；先停后启避免两个自持 rAF 循环（孤儿循环只被 stop 取消一半）
+    stop()
     if (stopped || reduced || typeof requestAnimationFrame !== 'function') return
     rafId = requestAnimationFrame(frame)
   }

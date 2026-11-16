@@ -4,16 +4,26 @@ import { approach, createLiquidRing } from './liquid-ring'
 // happy-dom 无真实 rAF 时序与 canvas 布局：requestAnimationFrame 换成可控队列，
 // 手动 pump 驱动帧；cancelAnimationFrame 记录调用作为 dispose 证据。
 // getContext 在 happy-dom 返回 null，draw() 内部已守卫（仅跳过绘制，不影响 DOM/文本逻辑）。
-let rafQueue: FrameRequestCallback[] = []
+let rafQueue: { id: number; cb: FrameRequestCallback }[] = []
+const cancelled = new Set<number>()
 let nextRafId = 0
 const cancelSpy = vi.fn<(id: number) => void>()
 
+// 已取消的帧不再执行（真实 cancelAnimationFrame 语义）——dispose/双调守卫
+// 的证据全靠它区分「队列里还有」与「实际还会跑」
 function pump(frames: number): void {
   for (let i = 0; i < frames; i++) {
     const batch = rafQueue
     rafQueue = []
-    for (const cb of batch) cb(performance.now())
+    for (const { id, cb } of batch) {
+      if (!cancelled.has(id)) cb(performance.now())
+    }
   }
+}
+
+// 当前未被取消的待执行帧数
+function liveFrames(): number {
+  return rafQueue.filter(({ id }) => !cancelled.has(id)).length
 }
 
 describe('approach', () => {
@@ -35,13 +45,16 @@ describe('approach', () => {
 describe('createLiquidRing', () => {
   beforeEach(() => {
     rafQueue = []
+    cancelled.clear()
     nextRafId = 0
     cancelSpy.mockReset()
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback): number => {
-      rafQueue.push(cb)
-      return ++nextRafId
+      const id = ++nextRafId
+      rafQueue.push({ id, cb })
+      return id
     })
     vi.stubGlobal('cancelAnimationFrame', (id: number): void => {
+      cancelled.add(id)
       cancelSpy(id)
     })
   })
@@ -90,11 +103,30 @@ describe('createLiquidRing', () => {
     ring.dispose()
     expect(cancelSpy).toHaveBeenCalled()
     const snapshot = ring.el.querySelector<HTMLElement>('.liquid-ring-value')?.textContent
-    const queueLen = rafQueue.length
     pump(10)
-    // 停止标记生效：帧队列被清空且文本不再变化
-    expect(rafQueue).toHaveLength(0)
+    // 停止标记生效：待执行帧清空且文本不再变化
+    expect(liveFrames()).toBe(0)
     expect(ring.el.querySelector<HTMLElement>('.liquid-ring-value')?.textContent).toBe(snapshot)
-    expect(queueLen).toBeGreaterThanOrEqual(0)
+  })
+
+  it('hidden 时创建后再 visible：双调 start 只维持一个 rAF 循环', () => {
+    let hidden = true
+    const hiddenSpy = vi.spyOn(document, 'hidden', 'get').mockImplementation(() => hidden)
+    try {
+      // 创建时 document 已 hidden：初始 start() 照常调度（问题的触发场景）
+      const ring = createLiquidRing({ value: 40, label: '转化率' })
+      expect(liveFrames()).toBe(1)
+      // 回到前台：onVisibility → start() 再次调度；无双调守卫时会叠加第二个自持循环
+      hidden = false
+      document.dispatchEvent(new Event('visibilitychange'))
+      expect(liveFrames()).toBe(1)
+      // 单循环证据：5 帧只逼近 5%（双循环则 2%/帧 → 50%）
+      ring.setValue(60)
+      pump(5)
+      expect(ring.el.querySelector<HTMLElement>('.liquid-ring-value')?.textContent).toBe('45.0%')
+      ring.dispose()
+    } finally {
+      hiddenSpy.mockRestore()
+    }
   })
 })
