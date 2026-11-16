@@ -116,3 +116,51 @@ test('数据大屏：地图标签优先级避让（15 总数 + 隐藏数区间�
   expect(stats.hidden).toBeLessThanOrEqual(13)
   expect(errors).toEqual([])
 })
+
+test('数据大屏：地图 TOP5 呼吸点（5 个且可见）', async ({ page }) => {
+  await page.goto('/screen.html')
+  await expect(page.getByTestId('screen-map').locator('canvas')).toBeVisible()
+  await page.waitForTimeout(600) // 地图 load + 标签/呼吸点定位 + 首帧补间
+
+  // offsetParent 非空 = 渲染可见（同层叠层，display 均非 none）
+  const stats = await page.evaluate(() => {
+    const els = [...document.querySelectorAll('.map-pulse')]
+    return {
+      total: els.length,
+      visible: els.filter((el) => el instanceof HTMLElement && el.offsetParent !== null).length,
+    }
+  })
+  expect(stats.total).toBe(5)
+  expect(stats.visible).toBe(5)
+})
+
+test('数据大屏：面板装饰钩子（box-shadow + 顶边色）', async ({ page }) => {
+  await page.goto('/screen.html')
+  await expect(page.locator('.panel').first()).toBeVisible()
+
+  // 装饰层在 CSS（背景角标/顶线/发光阴影），computed style 是回归兜底钩子：
+  // 防止后续重构意外剥掉 .panel 装饰规则
+  const style = await page.evaluate(() => {
+    const el = document.querySelector('.panel')
+    if (!el) return null
+    const cs = getComputedStyle(el)
+    return { boxShadow: cs.boxShadow, borderTopColor: cs.borderTopColor }
+  })
+  expect(style).not.toBeNull()
+  expect(style?.boxShadow).not.toBe('none')
+  // border-top-color 解析为 rgba 时 alpha > 0（非透明）
+  const alpha = Number(
+    style?.borderTopColor.match(/rgba\(\s*\d+,\s*\d+,\s*\d+,\s*([\d.]+)\s*\)/)?.[1] ?? 1,
+  )
+  expect(alpha).toBeGreaterThan(0)
+})
+
+test('数据大屏：转化率液体环（canvas + 标签 + 数值）', async ({ page }) => {
+  await page.goto('/screen.html')
+  const ring = page.getByTestId('screen-kpi-conversion')
+  await expect(ring).toBeVisible()
+  await expect(ring.locator('canvas')).toBeVisible()
+  // 标签来自 i18n（zh-CN：转化率）；数值为 4.6 族，不断言 tick 后瞬时值
+  await expect(ring).toContainText('转化率')
+  await expect(ring.locator('.liquid-ring-value')).toHaveText(/4\.6/)
+})
