@@ -96,13 +96,25 @@
   display: flex;
   align-items: center;
   gap: 22px;
-  /* 中央 4px 菱形：两条斜向渐变带相交成菱形，绘制在文字下层（纯背景层，
-     refreshText 改写 textContent 不受影响）；伪元素通道留给两翼 */
-  background:
-    linear-gradient(135deg, transparent 42%, rgba(165, 243, 252, 0.95) 50%, transparent 58%) center
-    / 4px 4px no-repeat,
-    linear-gradient(45deg, transparent 42%, rgba(34, 211, 238, 0.95) 50%, transparent 58%) center /
-    4px 4px no-repeat;
+  /* 中央菱形不在此绘制：元素自身 background 位于字形下层，40px 大字会完全遮盖。
+     菱形改由 .screen-header::after 定位于标题上方（refreshText 改写 textContent
+     与纯 CSS 伪元素无冲突）；两翼伪元素通道维持翼线 */
+}
+/* 主标题上方中央菱形：悬于字上的小方块旋转 45°，青白渐变 + 外发光，
+   纯 CSS 伪元素不随 textContent 改写消失 */
+.screen-header::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 2px;
+  width: 10px;
+  height: 10px;
+  transform: translateX(-50%) rotate(45deg);
+  background: linear-gradient(135deg, #a5f3fc, #22d3ee);
+  box-shadow:
+    0 0 10px rgba(34, 211, 238, 0.9),
+    0 0 22px rgba(34, 211, 238, 0.45);
+  pointer-events: none;
 }
 /* 主标题两翼：渐变翼线（外侧透明→青 40%），线端 45° 斜切（2px 高对应 2px 斜距） */
 .screen-title::before,
@@ -483,17 +495,17 @@
 }
 
 /* ---------- TOP5 呼吸点 ----------
-   6px 青色圆点（box-shadow 外发光）+ ::after 外扩环随 map-pulse keyframes
+   10px 青色圆点（box-shadow 外发光）+ ::after 外扩环随 map-pulse keyframes
    放大淡出；定位为投影锚点（left/top + translate(-50%,-50%) 居中） */
 .screen-map .map-pulse {
   position: absolute;
-  width: 6px;
-  height: 6px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background: #22d3ee;
   box-shadow:
-    0 0 6px rgba(34, 211, 238, 0.9),
-    0 0 12px rgba(34, 211, 238, 0.5);
+    0 0 10px rgba(34, 211, 238, 1),
+    0 0 22px rgba(34, 211, 238, 0.65);
   transform: translate(-50%, -50%);
   pointer-events: none;
 }
@@ -503,7 +515,7 @@
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  box-shadow: 0 0 0 1.5px rgba(34, 211, 238, 0.6);
+  box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.7);
   animation: map-pulse 1.6s ease-out infinite;
 }
 

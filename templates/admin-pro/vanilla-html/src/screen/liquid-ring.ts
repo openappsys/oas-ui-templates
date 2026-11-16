@@ -18,11 +18,13 @@ export function approach(current: number, target: number, step = 1): number {
 }
 
 const DEFAULT_SIZE = 120
-// 动画参数（brief 定值）：相位每帧 +0.05，数值每帧逼近 1%，波幅 4px，波长 = 半径
+// 动画参数（brief 定值）：相位每帧 +0.05，数值每帧逼近 1%，波幅 6px，波长 = 半径
 const PHASE_STEP = 0.05
 const VALUE_STEP = 1
-const WAVE_AMPLITUDE = 4
-// 环底槽 rgba(30,58,95,.6) 线宽 8；前波 #22d3ee opacity .9 相位 0，后波 #0891b2 opacity .6 相位 π/2
+const WAVE_AMPLITUDE = 6
+// 低值观感兜底：液面绘制不低于 8%（如转化率 4.6% 时不呈「空环」），中央文本仍显示真实值
+const MIN_VISIBLE_LEVEL = 8
+// 环底槽 rgba(30,58,95,.6) 线宽 8；前波 #22d3ee opacity 1 相位 0，后波 #0891b2 opacity .7 相位 π/2
 const TRACK_COLOR = 'rgba(30,58,95,.6)'
 const TRACK_WIDTH = 8
 const FRONT_COLOR = '#22d3ee'
@@ -42,7 +44,7 @@ export function createLiquidRing(opts: {
 }): LiquidRingHandle {
   const size = opts.size ?? DEFAULT_SIZE
   const dpr = window.devicePixelRatio || 1
-  // 减小波幅过高的 dpr 放大：视觉上保持设计稿 4px，画布坐标系按 dpr 缩放
+  // 减小波幅过高的 dpr 放大：视觉上保持设计稿 6px，画布坐标系按 dpr 缩放
   const amp = WAVE_AMPLITUDE * dpr
 
   const el = document.createElement('div')
@@ -117,15 +119,16 @@ export function createLiquidRing(opts: {
     ctx.strokeStyle = TRACK_COLOR
     ctx.lineWidth = TRACK_WIDTH * dpr
     ctx.stroke()
-    // 液面：裁剪到环内圆，自底部填充至 value% 高度
+    // 液面：裁剪到环内圆，自底部填充至液面高度；绘制用 max(value, 8%) 保证低值可读，
+    // 文本仍渲染真实 current（见 renderText）
     const inner = trackR - (TRACK_WIDTH / 2) * dpr
-    const level = cy + inner - (current / 100) * inner * 2
+    const level = cy + inner - (Math.max(current, MIN_VISIBLE_LEVEL) / 100) * inner * 2
     ctx.save()
     ctx.beginPath()
     ctx.arc(cx, cy, inner, 0, Math.PI * 2)
     ctx.clip()
-    drawWave(ctx, cx, cy, inner, level, Math.PI / 2, BACK_COLOR, 0.6)
-    drawWave(ctx, cx, cy, inner, level, 0, FRONT_COLOR, 0.9)
+    drawWave(ctx, cx, cy, inner, level, Math.PI / 2, BACK_COLOR, 0.7)
+    drawWave(ctx, cx, cy, inner, level, 0, FRONT_COLOR, 1)
     ctx.restore()
   }
 
