@@ -14,7 +14,7 @@ import enPages from './i18n/en-pages.js'
 const KEY = 'oas-admin-cdn.locale'
 // 语言包版本与 index.html 的 @oas-ui/ui@ 必须同版（同 release line）：
 // 版本钉在 URL 字面量里，scripts/bump-cdn.mjs 会同时校验/改写 theme/ui/i18n 三个 pin
-const EN_PACK_URL = 'https://unpkg.com/@oas-ui/i18n@2.6.4/dist/en.js'
+const EN_PACK_URL = 'https://unpkg.com/@oas-ui/i18n@2.6.8/dist/en.js'
 const listeners = new Set()
 
 const dict = {
