@@ -176,14 +176,14 @@ importers:
   templates/admin-pro/cdn:
     devDependencies:
       '@oas-ui/i18n':
-        specifier: ^2.6.7
-        version: 2.6.7
+        specifier: ^2.6.8
+        version: 2.6.8
       '@oas-ui/theme':
-        specifier: ^2.6.7
-        version: 2.6.7
+        specifier: ^2.6.8
+        version: 2.6.8
       '@oas-ui/ui':
-        specifier: ^2.6.7
-        version: 2.6.7
+        specifier: ^2.6.8
+        version: 2.6.8
       '@playwright/test':
         specifier: ^1.64.1
         version: 1.64.1
@@ -191,14 +191,14 @@ importers:
   templates/admin-pro/cdn-mpa:
     devDependencies:
       '@oas-ui/i18n':
-        specifier: ^2.6.7
-        version: 2.6.7
+        specifier: ^2.6.8
+        version: 2.6.8
       '@oas-ui/theme':
-        specifier: ^2.6.7
-        version: 2.6.7
+        specifier: ^2.6.8
+        version: 2.6.8
       '@oas-ui/ui':
-        specifier: ^2.6.7
-        version: 2.6.7
+        specifier: ^2.6.8
+        version: 2.6.8
       '@playwright/test':
         specifier: ^1.64.1
         version: 1.64.1
@@ -206,17 +206,17 @@ importers:
   templates/admin-pro/react:
     dependencies:
       '@oas-ui/i18n':
-        specifier: ^2.6.7
-        version: 2.6.7
+        specifier: ^2.6.8
+        version: 2.6.8
       '@oas-ui/icons':
-        specifier: ^2.6.7
-        version: 2.6.7
+        specifier: ^2.6.8
+        version: 2.6.8
       '@oas-ui/theme':
-        specifier: ^2.6.7
-        version: 2.6.7
+        specifier: ^2.6.8
+        version: 2.6.8
       '@oas-ui/ui':
-        specifier: ^2.6.7
-        version: 2.6.7
+        specifier: ^2.6.8
+        version: 2.6.8
       '@tanstack/react-query':
         specifier: ^5.104.2
         version: 5.104.2(react@19.3.1)
@@ -259,22 +259,22 @@ importers:
         version: 8.3.4(@types/node@26.6.5)
       vitest:
         specifier: ^5.0.4
-        version: 5.0.4(@types/node@26.6.5)(happy-dom@21.0.1)(vite@8.3.4(@types/node@26.6.5))
+        version: 5.0.5(@types/node@26.6.5)(happy-dom@21.0.1)(vite@8.3.4(@types/node@26.6.5))
 
   templates/admin-pro/svelte:
     dependencies:
       '@oas-ui/i18n':
-        specifier: ^2.6.7
-        version: 2.6.7
+        specifier: ^2.6.8
+        version: 2.6.8
       '@oas-ui/icons':
-        specifier: ^2.6.7
-        version: 2.6.7
+        specifier: ^2.6.8
+        version: 2.6.8
       '@oas-ui/theme':
-        specifier: ^2.6.7
-        version: 2.6.7
+        specifier: ^2.6.8
+        version: 2.6.8
       '@oas-ui/ui':
-        specifier: ^2.6.7
-        version: 2.6.7
+        specifier: ^2.6.8
+        version: 2.6.8
       svelte:
         specifier: ^5.57.2
         version: 5.57.2
@@ -302,22 +302,22 @@ importers:
         version: 8.3.4(@types/node@26.6.5)
       vitest:
         specifier: ^5.0.4
-        version: 5.0.4(@types/node@26.6.5)(happy-dom@21.0.1)(vite@8.3.4(@types/node@26.6.5))
+        version: 5.0.5(@types/node@26.6.5)(happy-dom@21.0.1)(vite@8.3.4(@types/node@26.6.5))
 
   templates/admin-pro/vanilla-html:
     dependencies:
       '@oas-ui/i18n':
-        specifier: ^2.6.7
-        version: 2.6.7
+        specifier: ^2.6.8
+        version: 2.6.8
       '@oas-ui/icons':
-        specifier: ^2.6.7
-        version: 2.6.7
+        specifier: ^2.6.8
+        version: 2.6.8
       '@oas-ui/theme':
-        specifier: ^2.6.7
-        version: 2.6.7
+        specifier: ^2.6.8
+        version: 2.6.8
       '@oas-ui/ui':
-        specifier: ^2.6.7
-        version: 2.6.7
+        specifier: ^2.6.8
+        version: 2.6.8
       maplibre-gl:
         specifier: ^6.18.0
         version: 6.18.0
@@ -339,22 +339,22 @@ importers:
         version: 8.3.4(@types/node@26.6.5)
       vitest:
         specifier: ^5.0.4
-        version: 5.0.4(@types/node@26.6.5)(happy-dom@21.0.1)(vite@8.3.4(@types/node@26.6.5))
+        version: 5.0.5(@types/node@26.6.5)(happy-dom@21.0.1)(vite@8.3.4(@types/node@26.6.5))
 
   templates/admin-pro/vue:
     dependencies:
       '@oas-ui/i18n':
-        specifier: ^2.6.7
-        version: 2.6.7
+        specifier: ^2.6.8
+        version: 2.6.8
       '@oas-ui/icons':
-        specifier: ^2.6.7
-        version: 2.6.7
+        specifier: ^2.6.8
+        version: 2.6.8
       '@oas-ui/theme':
-        specifier: ^2.6.7
-        version: 2.6.7
+        specifier: ^2.6.8
+        version: 2.6.8
       '@oas-ui/ui':
-        specifier: ^2.6.7
-        version: 2.6.7
+        specifier: ^2.6.8
+        version: 2.6.8
       pinia:
         specifier: ^4.1.0
         version: 4.1.0(@vue/devtools-api@8.2.1)(typescript@7.1.0-beta)(vue@3.5.44(typescript@7.1.0-beta))
@@ -388,19 +388,19 @@ importers:
         version: 8.3.4(@types/node@26.6.5)
       vitest:
         specifier: ^5.0.4
-        version: 5.0.4(@types/node@26.6.5)(happy-dom@21.0.1)(vite@8.3.4(@types/node@26.6.5))
+        version: 5.0.5(@types/node@26.6.5)(happy-dom@21.0.1)(vite@8.3.4(@types/node@26.6.5))
 
   templates/desktop:
     dependencies:
       '@oas-ui/icons':
-        specifier: ^2.6.7
-        version: 2.6.7
+        specifier: ^2.6.8
+        version: 2.6.8
       '@oas-ui/theme':
-        specifier: ^2.6.7
-        version: 2.6.7
+        specifier: ^2.6.8
+        version: 2.6.8
       '@oas-ui/ui':
-        specifier: ^2.6.7
-        version: 2.6.7
+        specifier: ^2.6.8
+        version: 2.6.8
     devDependencies:
       '@playwright/test':
         specifier: ^1.64.1
@@ -418,17 +418,17 @@ importers:
   templates/mobile-h5:
     dependencies:
       '@oas-ui/i18n':
-        specifier: ^2.6.7
-        version: 2.6.7
+        specifier: ^2.6.8
+        version: 2.6.8
       '@oas-ui/icons':
-        specifier: ^2.6.7
-        version: 2.6.7
+        specifier: ^2.6.8
+        version: 2.6.8
       '@oas-ui/theme':
-        specifier: ^2.6.7
-        version: 2.6.7
+        specifier: ^2.6.8
+        version: 2.6.8
       '@oas-ui/ui':
-        specifier: ^2.6.7
-        version: 2.6.7
+        specifier: ^2.6.8
+        version: 2.6.8
     devDependencies:
       '@playwright/test':
         specifier: ^1.64.1
@@ -446,17 +446,17 @@ importers:
   templates/pm:
     dependencies:
       '@oas-ui/i18n':
-        specifier: ^2.6.7
-        version: 2.6.7
+        specifier: ^2.6.8
+        version: 2.6.8
       '@oas-ui/icons':
-        specifier: ^2.6.7
-        version: 2.6.7
+        specifier: ^2.6.8
+        version: 2.6.8
       '@oas-ui/theme':
-        specifier: ^2.6.7
-        version: 2.6.7
+        specifier: ^2.6.8
+        version: 2.6.8
       '@oas-ui/ui':
-        specifier: ^2.6.7
-        version: 2.6.7
+        specifier: ^2.6.8
+        version: 2.6.8
       dexie:
         specifier: ^4.4.6
         version: 4.4.6
@@ -647,24 +647,24 @@ packages:
   '@maplibre/vt-pbf@4.3.3':
     resolution: {integrity: sha512-dEe5XUd64RQbxNxy2OzIkJnwNDWjVmSXjCd0A7zLirm7QJ/WWbmtDFIkfsiM4yt1cplqzG6oSivRYeWx1SM1yg==}
 
-  '@oas-ui/core@2.6.7':
-    resolution: {integrity: sha512-z724sUG9nWoiTVYhABaB+giEV5E+D/tCXR7UelpqO7RaBht79ZHEhvxvqamp6md8I91LwiPtBaNOLH6wmu1cSw==}
+  '@oas-ui/core@2.6.8':
+    resolution: {integrity: sha512-m3B52NABelXOvs1fQgcuZI1WCnPV2PPRRI1KWjFkhd49BPoI6XicHiULHWW4h+l13pVJuWxBo+sadlmhPhp98Q==}
     engines: {node: ^22.18.0 || ^24.0.0 || >=26.0.0}
 
-  '@oas-ui/i18n@2.6.7':
-    resolution: {integrity: sha512-x+mbPWuoL1oC+KO+kOq0w0XKBu5H3B7Gu2DwJ0LQuZupmywlj0yYXW4vJvzhgyN59LTgqb8Lm6rnt0HGosZSIQ==}
+  '@oas-ui/i18n@2.6.8':
+    resolution: {integrity: sha512-2qvIAc6+tp1tDt3aNRAJYuf7WE3qPnNlGxXKIBo9HYjOcnYZeQKI+S2iy+owpiKM0MvfREQD8bDn8f1P4p5uAQ==}
     engines: {node: ^22.18.0 || ^24.0.0 || >=26.0.0}
 
-  '@oas-ui/icons@2.6.7':
-    resolution: {integrity: sha512-mx4H7Q37RKn/VbXIdYtGKl6VoZBjw4WCTcrtdmMFIHRWHg0wsrhKqlGqz1in50+CzM/M3mMpbpiomZMjpTlQow==}
+  '@oas-ui/icons@2.6.8':
+    resolution: {integrity: sha512-YrwA2tv2BjUKZi0dH1MSrhyDMkMY+HfEguKTXXFtA6WcUYdISiUiAJVBlbGC2Rpf9Wu9yP7x1+ULpBp/2in1Og==}
     engines: {node: ^22.18.0 || ^24.0.0 || >=26.0.0}
 
-  '@oas-ui/theme@2.6.7':
-    resolution: {integrity: sha512-JHPtUyTSNxbQ5bC8Am9A+rDqPHRM9RPCQaQAHn/ThrsrQWcPICFw2T1lkldbagjdHnDF8+SC70qrocdgXPTd3A==}
+  '@oas-ui/theme@2.6.8':
+    resolution: {integrity: sha512-sa9VsuiiUQPYoV8O9Qmg4hrsK4pVsDAmh/ZcdKxAstIWbmKxcraEk7HUf9Pvn1Hdm+m0HoamTm5BWL9hG2LG5w==}
     engines: {node: ^22.18.0 || ^24.0.0 || >=26.0.0}
 
-  '@oas-ui/ui@2.6.7':
-    resolution: {integrity: sha512-jo+B0MIxGVLPC/oFj61/XI8fU55nQ6iZkJ4Ttz6yXb/tBNQ2ytzvpLjCB9kob/7pMJ8OJrbk5TM3eWMm5iXalQ==}
+  '@oas-ui/ui@2.6.8':
+    resolution: {integrity: sha512-hYUFzOor0NgowWXAKEQ8lLiU7Aucxa87tzoGO/hW1RS5e9bcWfHGroD2/jbuf036N5gjbX3a/lwfGFmHV5EEhQ==}
     engines: {node: ^22.18.0 || ^24.0.0 || >=26.0.0}
 
   '@one-ini/wasm@0.2.1':
@@ -1007,17 +1007,6 @@ packages:
       vite: ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0
       vue: ^3.2.25 || ^3.6.0-rc.10
 
-  '@vitest/mocker@5.0.4':
-    resolution: {integrity: sha512-tqAlrYWce4iUxhr3ncNohejtCTOcHeE8XWrSNZY3OhPoDn01yeGv+gnaBy64ATp7o6pb03eIbBAjzmibpc9vIQ==}
-    peerDependencies:
-      msw: ^2.4.9 || ^3.0.0
-      vite: ^6.0.0 || ^7.0.0 || ^8.0.0
-    peerDependenciesMeta:
-      msw:
-        optional: true
-      vite:
-        optional: true
-
   '@vitest/mocker@5.0.5':
     resolution: {integrity: sha512-xLL3lkDegJZw+MGoGaCCsFayDZthGgpAtr3Vziyfc4p7xH89K7KRPcRBBh/kEYm0Aqkt5DtTmkYpBtRV/FrHZg==}
     peerDependencies:
@@ -1028,9 +1017,6 @@ packages:
         optional: true
       vite:
         optional: true
-
-  '@vitest/spy@5.0.4':
-    resolution: {integrity: sha512-MZKk/gSkm2q+ICobMxCpH1mA+cCAWm8WV7UhxlqGjq/sJ3AGc1BqFOs5CRVXxH78wQtme9q/NAAgBquj4AcyMw==}
 
   '@vitest/spy@5.0.5':
     resolution: {integrity: sha512-lwJRExuH417257Q5wv9QYugN9IMJkoxcrKrYxGPQkBzl7wlNpTUxD/5yNX4ESKVUIShKPgkGchYPFMWOOk0wzw==}
@@ -1751,47 +1737,6 @@ packages:
       vite:
         optional: true
 
-  vitest@5.0.4:
-    resolution: {integrity: sha512-z0WxZRV2Sg48wF0FSgMq3TFG8JS38/Qr96vZVZdX6+Em9raQTvnXQvdTFJe2m3rfyJnEHeHQ/snceIdi8D1pVg==}
-    engines: {node: ^22.12.0 || ^24.0.0 || >=26.0.0}
-    hasBin: true
-    peerDependencies:
-      '@edge-runtime/vm': '*'
-      '@opentelemetry/api': ^1.9.0
-      '@types/node': ^22.0.0 || >=24.0.0
-      '@vitest/browser-playwright': 5.0.4
-      '@vitest/browser-preview': 5.0.4
-      '@vitest/browser-webdriverio': ^5.0.0-beta.5 || >=5.0.0
-      '@vitest/coverage-istanbul': 5.0.4
-      '@vitest/coverage-v8': 5.0.4
-      '@vitest/ui': 5.0.4
-      happy-dom: '*'
-      jsdom: '*'
-      vite: ^6.4.0 || ^7.0.0 || ^8.0.0
-    peerDependenciesMeta:
-      '@edge-runtime/vm':
-        optional: true
-      '@opentelemetry/api':
-        optional: true
-      '@types/node':
-        optional: true
-      '@vitest/browser-playwright':
-        optional: true
-      '@vitest/browser-preview':
-        optional: true
-      '@vitest/browser-webdriverio':
-        optional: true
-      '@vitest/coverage-istanbul':
-        optional: true
-      '@vitest/coverage-v8':
-        optional: true
-      '@vitest/ui':
-        optional: true
-      happy-dom:
-        optional: true
-      jsdom:
-        optional: true
-
   vitest@5.0.5:
     resolution: {integrity: sha512-cPODOMF8YnkiiYtDdHo6n4wWmBrOBBbOIYH2d33M4l3CdNn72h+qMmO6uXffUN6A5AZFXNND/d+krS9mgkXRfg==}
     engines: {node: ^22.12.0 || ^24.0.0 || >=26.0.0}
@@ -2034,21 +1979,21 @@ snapshots:
       '@types/geojson': 7946.0.16
       pbf: 5.1.2
 
-  '@oas-ui/core@2.6.7': {}
+  '@oas-ui/core@2.6.8': {}
 
-  '@oas-ui/i18n@2.6.7':
+  '@oas-ui/i18n@2.6.8':
     dependencies:
-      '@oas-ui/core': 2.6.7
+      '@oas-ui/core': 2.6.8
 
-  '@oas-ui/icons@2.6.7': {}
+  '@oas-ui/icons@2.6.8': {}
 
-  '@oas-ui/theme@2.6.7': {}
+  '@oas-ui/theme@2.6.8': {}
 
-  '@oas-ui/ui@2.6.7':
+  '@oas-ui/ui@2.6.8':
     dependencies:
-      '@oas-ui/core': 2.6.7
-      '@oas-ui/i18n': 2.6.7
-      '@oas-ui/icons': 2.6.7
+      '@oas-ui/core': 2.6.8
+      '@oas-ui/i18n': 2.6.8
+      '@oas-ui/icons': 2.6.8
 
   '@one-ini/wasm@0.2.1': {}
 
@@ -2264,15 +2209,6 @@ snapshots:
       vite: 8.3.4(@types/node@26.6.5)
       vue: 3.5.44(typescript@7.1.0-beta)
 
-  '@vitest/mocker@5.0.4(vite@8.3.4(@types/node@26.6.5))':
-    dependencies:
-      '@jridgewell/trace-mapping': 0.3.31
-      '@vitest/spy': 5.0.4
-      estree-walker: 3.0.3
-      magic-string: 1.4.3
-    optionalDependencies:
-      vite: 8.3.4(@types/node@26.6.5)
-
   '@vitest/mocker@5.0.5(vite@8.3.4(@types/node@24.19.2))':
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
@@ -2282,7 +2218,14 @@ snapshots:
     optionalDependencies:
       vite: 8.3.4(@types/node@24.19.2)
 
-  '@vitest/spy@5.0.4': {}
+  '@vitest/mocker@5.0.5(vite@8.3.4(@types/node@26.6.5))':
+    dependencies:
+      '@jridgewell/trace-mapping': 0.3.31
+      '@vitest/spy': 5.0.5
+      estree-walker: 3.0.3
+      magic-string: 1.4.3
+    optionalDependencies:
+      vite: 8.3.4(@types/node@26.6.5)
 
   '@vitest/spy@5.0.5': {}
 
@@ -2946,28 +2889,6 @@ snapshots:
     optionalDependencies:
       vite: 8.3.4(@types/node@26.6.5)
 
-  vitest@5.0.4(@types/node@26.6.5)(happy-dom@21.0.1)(vite@8.3.4(@types/node@26.6.5)):
-    dependencies:
-      '@types/chai': 5.2.3
-      '@vitest/mocker': 5.0.4(vite@8.3.4(@types/node@26.6.5))
-      chai: 6.3.0
-      es-module-lexer: 2.3.2
-      expect-type: 1.4.0
-      magic-string: 1.4.3
-      obug: 3.0.0
-      picomatch: 4.0.7
-      std-env: 4.3.0
-      tinybench: 6.2.2
-      tinyexec: 1.3.1
-      tinyglobby: 0.2.17
-      vite: 8.3.4(@types/node@26.6.5)
-      why-is-node-running: 3.2.1
-    optionalDependencies:
-      '@types/node': 26.6.5
-      happy-dom: 21.0.1
-    transitivePeerDependencies:
-      - msw
-
   vitest@5.0.5(@types/node@24.19.2)(happy-dom@21.0.1)(vite@8.3.4(@types/node@24.19.2)):
     dependencies:
       '@types/chai': 5.2.3
@@ -2986,6 +2907,28 @@ snapshots:
       why-is-node-running: 3.2.1
     optionalDependencies:
       '@types/node': 24.19.2
+      happy-dom: 21.0.1
+    transitivePeerDependencies:
+      - msw
+
+  vitest@5.0.5(@types/node@26.6.5)(happy-dom@21.0.1)(vite@8.3.4(@types/node@26.6.5)):
+    dependencies:
+      '@types/chai': 5.2.3
+      '@vitest/mocker': 5.0.5(vite@8.3.4(@types/node@26.6.5))
+      chai: 6.3.0
+      es-module-lexer: 2.3.2
+      expect-type: 1.4.0
+      magic-string: 1.4.3
+      obug: 3.0.0
+      picomatch: 4.0.7
+      std-env: 4.3.0
+      tinybench: 6.2.2
+      tinyexec: 1.3.1
+      tinyglobby: 0.2.17
+      vite: 8.3.4(@types/node@26.6.5)
+      why-is-node-running: 3.2.1
+    optionalDependencies:
+      '@types/node': 26.6.5
       happy-dom: 21.0.1
     transitivePeerDependencies:
       - msw
