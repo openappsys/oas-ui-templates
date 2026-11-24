@@ -73,18 +73,23 @@
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" />
     </noscript>
     <script>
+      // 语言提示条预测（防 CLS）：默认页 zh-CN，浏览器偏好语言不含 zh 时将出现英文提示条——
+      // 绘制前预置 lang-hint-show 预留横幅布局位，主脚本挂载后对账（预测不成立则撤类）。
+      // 政策对齐 oas-ui 文档站：不做 navigator.language 自动切换，可见提示 + 显式选择。
       (function () {
-        var KEY = "oas-templates.locale"
-        var saved = null
-        try { saved = localStorage.getItem(KEY) } catch (e) {}
-        function matchNav(lang) {
-          var n = (lang || "").toLowerCase()
-          if (n === "zh" || n.indexOf("zh-") === 0) return "zh-CN"
-          return "en"
-        }
-        var detected = saved === "zh-CN" || saved === "en" ? saved : matchNav(navigator.language)
-        document.documentElement.lang = detected
+        try {
+          var saved = localStorage.getItem("oas-templates.locale")
+          var dismissed = localStorage.getItem("oas-templates.lang-hint-dismissed")
+          if (saved === "zh-CN" || saved === "en" || dismissed === "1") return
+          var langs = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language]
+          var hasZh = false
+          for (var i = 0; i < langs.length; i++) {
+            if ((langs[i] || "").toLowerCase().indexOf("zh") === 0) { hasZh = true; break }
+          }
+          if (!hasZh) document.documentElement.classList.add("lang-hint-show")
+        } catch (e) {}
       })()
+    </script>
     </script>
     <style>
       /* ===== 首页骨架主题变量（对齐 oas-theme.css zinc 色板；light 映射 oas 亮色 token，
@@ -441,6 +446,26 @@
         .nav-word { display: none; }
         .nav-link[data-full] { display: none; }
       }
+      /* ===== 语言提示条（显隐由 html.lang-hint-show 驱动，head 预测防 CLS） ===== */
+      .lang-hint {
+        display: none;
+        align-items: center; justify-content: center; gap: 10px;
+        padding: 8px var(--oas-sp-5);
+        background: var(--oas-surface-2); border-bottom: 1px solid var(--oas-border);
+        font-size: 13px; color: var(--oas-text2);
+      }
+      html.lang-hint-show .lang-hint { display: flex; }
+      .lang-hint-link {
+        color: var(--oas-primary); font-weight: 600; text-decoration: none;
+        display: inline-flex; align-items: center; gap: 6px;
+      }
+      .lang-hint-link:hover { text-decoration: underline; }
+      .lang-hint-close {
+        appearance: none; border: 0; background: none; cursor: pointer;
+        color: var(--oas-text3); font-size: 16px; line-height: 1;
+        padding: 2px 6px; border-radius: var(--oas-radius-sm);
+      }
+      .lang-hint-close:hover { color: var(--oas-text); }
       /* ===== Reduced motion ===== */
       @media (prefers-reduced-motion: reduce) {
         .t-cursor, .cta, .f-card { animation: none; transition: none; }
@@ -451,6 +476,17 @@
     </style>
   </head>
   <body>
+    <!-- 语言提示条（对齐 oas-ui 文档站 LangHint）：默认页 zh-CN，浏览器偏好不含 zh 时提示英文版。
+         点击链接=原位切换并记住偏好；×=永久关闭。显隐由 html.lang-hint-show 驱动（head 预测防 CLS）。 -->
+    <div class="lang-hint" id="lang-hint" lang="en">
+      <a class="lang-hint-link" id="lang-hint-link" href="#hero" hreflang="en" rel="alternate">
+        <span id="lang-hint-text">This page is available in English</span>
+        <span aria-hidden="true">→</span>
+      </a>
+      <button type="button" class="lang-hint-close" id="lang-hint-close" lang="en" aria-label="Dismiss">
+        <span aria-hidden="true">×</span>
+      </button>
+    </div>
     <nav class="nav">
       <div class="nav-inner">
         <a class="nav-brand" href="./">
@@ -1144,15 +1180,51 @@
         }
       }
       var LOCALE_KEY = "oas-templates.locale"
+      var HINT_DISMISS_KEY = "oas-templates.lang-hint-dismissed"
       function readSaved() {
         try { var v = localStorage.getItem(LOCALE_KEY); return v === "zh-CN" || v === "en" ? v : null } catch (e) { return null }
       }
-      function detect() {
-        var saved = readSaved()
-        if (saved) return saved
-        var n = (navigator.language || "").toLowerCase()
-        if (n === "zh" || n.indexOf("zh-") === 0) return "zh-CN"
-        return "en"
+      // ===== 语言提示条（LangHint 移植，对齐 oas-ui 文档站政策：URL 即真源，不按浏览器语言自动切换，
+      // 可见提示 + 显式选择）。默认页 zh-CN；浏览器偏好不含 zh → 提示英文版，英文页 + 含 zh → 提示中文版。
+      // localStorage 不可用（极端策略）时降级内存：dismiss 仅本页生命周期有效，提示照常出现。 =====
+      var hintDismissedMem = false
+      var hintTarget = null
+      function hintDismissed() {
+        try { return localStorage.getItem(HINT_DISMISS_KEY) === "1" } catch (e) { return hintDismissedMem }
+      }
+      function browserHasZh() {
+        var langs = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language]
+        for (var i = 0; i < langs.length; i++) {
+          if ((langs[i] || "").toLowerCase().indexOf("zh") === 0) return true
+        }
+        return false
+      }
+      function evaluateHint() {
+        var show = false
+        hintTarget = null
+        var cur = document.documentElement.lang === "en" ? "en" : "zh-CN"
+        if (!readSaved() && !hintDismissed()) {
+          var hasZh = browserHasZh()
+          hintTarget = cur === "zh-CN" ? "en" : "zh-CN"
+          show = cur === "zh-CN" ? !hasZh : hasZh
+        }
+        var bar = document.getElementById("lang-hint")
+        if (bar) {
+          var text = document.getElementById("lang-hint-text")
+          if (hintTarget === "zh-CN") {
+            bar.setAttribute("lang", "zh-CN")
+            if (text) text.textContent = "本页提供简体中文版本"
+          } else {
+            bar.setAttribute("lang", "en")
+            if (text) text.textContent = "This page is available in English"
+          }
+        }
+        document.documentElement.classList.toggle("lang-hint-show", show)
+      }
+      function dismissHint() {
+        hintDismissedMem = true
+        try { localStorage.setItem(HINT_DISMISS_KEY, "1") } catch (e) {}
+        evaluateHint()
       }
       function applyLocale(loc) {
         var d = I18N[loc] || I18N["zh-CN"]
@@ -1177,6 +1249,7 @@
         for (var j = 0; j < btns.length; j++) {
           btns[j].setAttribute("aria-pressed", btns[j].getAttribute("data-lang") === loc ? "true" : "false")
         }
+        evaluateHint()
       }
       function setLocale(loc) {
         try { localStorage.setItem(LOCALE_KEY, loc) } catch (e) {}
@@ -1282,7 +1355,21 @@
         }
       }
       initTheme()
-      applyLocale(detect())
+      applyLocale(readSaved() || "zh-CN")
+      // 语言提示条事件：点链接=显式切换目标语言（setLocale 内写偏好，evaluateHint 随即收起）；
+      // 点 ×=永久关闭；无手动偏好时跟随系统语言变更实时重算（对称主题的 matchMedia 跟随）
+      var hintLink = document.getElementById("lang-hint-link")
+      if (hintLink) {
+        hintLink.addEventListener("click", function (e) {
+          e.preventDefault()
+          if (hintTarget) setLocale(hintTarget)
+        })
+      }
+      var hintClose = document.getElementById("lang-hint-close")
+      if (hintClose) hintClose.addEventListener("click", dismissHint)
+      window.addEventListener("languagechange", function () {
+        if (!readSaved()) evaluateHint()
+      })
       var termCtl = buildTerminal()
       window.__termCtl = termCtl
       termCtl.start()
